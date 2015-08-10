@@ -20,7 +20,7 @@ public class JSONOntologyLoaderBioportal {
 		
 	
 		String current = new java.io.File( "." ).getCanonicalPath().replace("\\", "/").replace(" ", "%20");        
-        String dir = current+"/ontologies/";
+        String dir = current+"/data/ontologies/";
 		
 		String link = "http://data.bioontology.org/ontologies/"+ontoShortName+"/classes/?apikey="+apikey;
 	
