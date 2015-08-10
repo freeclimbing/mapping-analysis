@@ -65,7 +65,7 @@ public class ImportMappingsToDB {
 		}
 		rs.close();
 		
-		String dir = "mappings";
+		String dir = "data/mappings";
 		File mappingDir	= new File (dir);
         
 		File[] importFiles	= mappingDir.listFiles();
