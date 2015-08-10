@@ -22,9 +22,9 @@ public class HTMLMappingLoaderBioportal {
 
 	public void parseSubPages(String basicLink,String sourceOntoShortname, String targetOntoShortname, String apikey) throws IOException {
 		String current = new java.io.File( "." ).getCanonicalPath().replace("\\", "/").replace(" ", "%20");        
-        String dir = current+"/mappings/";
+        String dir = current+"/data/mappings/";
 		
-		String pageLink = "/mappings/"+sourceOntoShortname+"?target=http://data.bioontology.org/ontologies/"+targetOntoShortname+"&apikey="+apikey;
+		String pageLink = "/data/mappings/"+sourceOntoShortname+"?target=http://data.bioontology.org/ontologies/"+targetOntoShortname+"&apikey="+apikey;
 		
 		//first page
 		System.out.println(basicLink+pageLink);
