@@ -24,10 +24,10 @@ public class HTMLMappingLoaderBioportal {
 		String current = new java.io.File( "." ).getCanonicalPath().replace("\\", "/").replace(" ", "%20");        
         String dir = current+"/data/mappings/";
 		
-		String pageLink = "/data/mappings/"+sourceOntoShortname+"?target=http://data.bioontology.org/ontologies/"+targetOntoShortname+"&apikey="+apikey;
+		String pageLink = "/mappings/"+sourceOntoShortname+"?target=http://data.bioontology.org/ontologies/"+targetOntoShortname+"&apikey="+apikey;
 		
 		//first page
-		System.out.println(basicLink+pageLink);
+		System.out.println("\n##################\n"+basicLink+pageLink);
 	
 		
 		HttpURLConnection conn = Utils.openUrlConnection(new URL(basicLink+pageLink));
@@ -44,7 +44,7 @@ public class HTMLMappingLoaderBioportal {
         	srcOnto = th.getElementsByIndexEquals(0).last().text();
         	trgOnto = th.getElementsByIndexEquals(1).last().text();
         }
-        System.out.println("\nDownload BioPortal Mapping: " +srcOnto+"_"+trgOnto);
+        System.out.println("Download BioPortal Mapping: " +srcOnto+"_"+trgOnto);
         System.out.println("from: "+pageLink);
 		
         // create file

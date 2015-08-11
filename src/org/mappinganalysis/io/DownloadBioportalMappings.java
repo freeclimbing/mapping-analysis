@@ -12,19 +12,23 @@ public class DownloadBioportalMappings {
 
 		String basicLink = "http://bioportal.bioontology.org";
 		String apikey = "df344784-0c8c-49c2-8a63-6067039711cd";
-		String sourceOntology = "NCIT";
+		//String sourceOntology = "NCIT";
+		//String targetOntology; 
 		
 		HTMLMappingLoaderBioportal bpm = new HTMLMappingLoaderBioportal();
 		
-		String targetOntology; 
-
-
-		//Mammalian Phenotype Ontology
-		//bisher nicht runtergeladen
-		targetOntology = "MPO";
-		bpm.parseSubPages(basicLink,sourceOntology,targetOntology,apikey);
-
+		//String[] ontos = {"MA","GALEN","NATPRO","OMIM","PDQ","RADLEX","FMA","CHEBI","LOINC","DOID","RXNORM","MESH"};//"NCIT"
+		String[] ontos = {"FMA","RADLEX"};//"NCIT"
 		
+		
+		for(int i = 0; i<ontos.length;i++){
+			for(int j = i+1; j<ontos.length;j++){
+				if(!(ontos[i].equals("MA")&&ontos[j].equals("GALEN"))){
+					bpm.parseSubPages(basicLink,ontos[i],ontos[j],apikey);
+				}
+			}
+		}
+	
 		/*
 		//Mouse Adult Gross Anatomy Ontology 
 		targetOntology = "MA";
@@ -74,5 +78,13 @@ public class DownloadBioportalMappings {
 		targetOntology = "MESH";
 		bpm.parseSubPages(basicLink,sourceOntology,targetOntology,apikey);
 		*/
+		
+		//Mammalian Phenotype Ontology
+		//bisher nicht runtergeladen
+		//targetOntology = "MPO";
+		//bpm.parseSubPages(basicLink,sourceOntology,targetOntology,apikey);
+
+	
+		
 	}
 }
