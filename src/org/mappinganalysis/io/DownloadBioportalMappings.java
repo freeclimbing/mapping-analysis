@@ -17,9 +17,7 @@ public class DownloadBioportalMappings {
 		
 		HTMLMappingLoaderBioportal bpm = new HTMLMappingLoaderBioportal();
 		
-		//String[] ontos = {"MA","GALEN","NATPRO","OMIM","PDQ","RADLEX","FMA","CHEBI","LOINC","DOID","RXNORM","MESH"};//"NCIT"
-		String[] ontos = {"FMA","RADLEX"};//"NCIT"
-		
+		String[] ontos = {"CHEBI","NCIT","DOID","LOINC","MESH","RXNORM","RADLEX","GALEN","OMIM","FMA","MA","PDQ","NATPRO"};//"NCIT"
 		
 		for(int i = 0; i<ontos.length;i++){
 			for(int j = i+1; j<ontos.length;j++){
