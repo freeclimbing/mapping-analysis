@@ -9,12 +9,15 @@ public class DownloadBioportalOntologies {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-	JSONOntologyLoaderBioportal l = new JSONOntologyLoaderBioportal();
-	
-	String ontoShortName = "MA";
-	String apikey = "df344784-0c8c-49c2-8a63-6067039711cd";
-	l.getOntology(ontoShortName,apikey);
-
-	}
-
+		JSONOntologyLoaderBioportal l = new JSONOntologyLoaderBioportal();
+		String apikey = "df344784-0c8c-49c2-8a63-6067039711cd";
+		
+		String[] ontos = {"CHEBI","NCIT","DOID","LOINC","MESH","RXNORM","RADLEX","GALEN","OMIM","FMA","MA","PDQ","NATPRO"};//"NCIT"
+		
+		//for(int i = 0; i<ontos.length;i++){
+			//String ontoShortName = ontos[i];
+			String ontoShortName = "MA"; //
+			l.getOntology(ontoShortName,apikey);
+		//}
+	}	
 }

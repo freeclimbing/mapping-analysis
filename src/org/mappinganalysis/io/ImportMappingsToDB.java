@@ -38,7 +38,9 @@ public class ImportMappingsToDB {
 			  `trgOntID`int(11) NULL,
 			  `method` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
               `mappingName` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
-			  PRIMARY KEY (`mapping_id`)
+			  PRIMARY KEY (`mapping_id`),
+			    KEY `srcOntID` (`srcOntID`),
+  				KEY `trgOntID` (`trgOntID`)
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
             
 			CREATE TABLE `links` (
