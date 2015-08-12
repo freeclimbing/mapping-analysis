@@ -37,20 +37,21 @@ public class ImportMappingsToDB {
 			  `srcOntID` int(11) DEFAULT NULL,
 			  `trgOntID`int(11) NULL,
 			  `method` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
+              `mappingName` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
 			  PRIMARY KEY (`mapping_id`)
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-			
+            
 			CREATE TABLE `links` (
-			  `srcURL` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
-			  `trgURL` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
-			  `mapping_id_fk` int(11) DEFAULT NULL,
-			  UNIQUE(`srcURL`,`trgURL`,`mapping_id_fk`)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+              `srcURL` varchar(150) COLLATE latin1_general_cs NOT NULL,
+              `trgURL` varchar(150) COLLATE latin1_general_cs NOT NULL,
+              `mapping_id_fk` int(11) DEFAULT NULL              
+            ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs;
+            
 		*/
 		
 		
 		//String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_07-2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_08_2015";
+		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_11_08_2015";
 		String user = "root";
 		String pw = "wwwdblog!";
 		Connection con = DriverManager.getConnection(dbURL, user, pw);
@@ -70,84 +71,93 @@ public class ImportMappingsToDB {
         
 		File[] importFiles	= mappingDir.listFiles();
 		for (File file : importFiles) {			
-			
-			String srcOnt		= file.getName().split("_")[0].split("\\[")[0];
-			String srcOntAbbr	= file.getName().split("_")[0].split("\\[")[1].replace("]", "");
-			String trgOnt		= file.getName().split("_")[1].split("\\[")[0];
-			String trgOntAbbr	= file.getName().split("_")[1].split("\\[")[1].replace("].txt", "");
-			int srcOntID, trgOntID;
-			
-			//insert ontologies if not contained so far 
-			if(!ontos.containsKey(srcOntAbbr)){
-				srcOntID = insertOnto(con, srcOnt, srcOntAbbr);
-				ontos.put(srcOntAbbr, srcOntID);
-				System.out.println(srcOntAbbr +" -->"+ srcOntID);
-			}
-			if(!ontos.containsKey(trgOntAbbr)){
-				trgOntID = insertOnto(con, trgOnt, trgOntAbbr);
-				ontos.put(trgOntAbbr, trgOntID);
-				System.out.println(trgOntAbbr +" -->"+ trgOntID);
-			}
-			System.out.println(srcOnt);
-			System.out.println(srcOntAbbr);
-			System.out.println(trgOnt);
-			System.out.println(trgOntAbbr);
-		
-			System.out.println("Import data from file '"+file+"'\n");	
-			
-			//save form metadata in db
-			dropTmpTable(con);
-			createTmpTable(con);
-			
-			sql =	"LOAD DATA LOCAL INFILE " +
-							"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
-							"INTO TABLE `tmp_links` " +
-							"IGNORE 2 LINES;";
+			if(!file.getName().equals(".svn")){
+				System.out.println("######################################");
+				//System.out.println("Import data from file '"+file+"'\n");
+				
+				String srcOnt		= file.getName().split("_")[0].split("\\[")[0];
+				String srcOntAbbr	= file.getName().split("_")[0].split("\\[")[1].replace("]", "");
+				String trgOnt		= file.getName().split("_")[1].split("\\[")[0];
+				String trgOntAbbr	= file.getName().split("_")[1].split("\\[")[1].replace("].txt", "");
+
+				//ignore LOINC
+				if(!(srcOntAbbr.equals("LOINC") || trgOntAbbr.equals("LOINC"))){
+					System.out.println("Import "+srcOnt + "["+srcOntAbbr+"] - "+trgOnt + "["+trgOntAbbr+"]");
+
+					int srcOntID, trgOntID;
 					
-			int lineNumber = con.prepareStatement(sql).executeUpdate();
-			System.out.println("Imported "+lineNumber+" links to tmp table ..");
+					//insert ontologies if not contained so far 
+					if(!ontos.containsKey(srcOntAbbr)){
+						srcOntID = insertOnto(con, srcOnt, srcOntAbbr);
+						ontos.put(srcOntAbbr, srcOntID);
+						System.out.println(srcOntAbbr +", ontoID = "+ srcOntID);
+					}
+					if(!ontos.containsKey(trgOntAbbr)){
+						trgOntID = insertOnto(con, trgOnt, trgOntAbbr);
+						ontos.put(trgOntAbbr, trgOntID);
+						System.out.println(trgOntAbbr +", ontoID = "+ trgOntID);
+					}
 					
-			//get distinct methods in file
-			HashMap<String, Integer> methodMapping = createMappingMetadata(con, srcOntAbbr, trgOntAbbr, ontos);
+					//save form metadata in db
+					dropTmpTable(con);
+					createTmpTable(con);
+					
+					sql =	"LOAD DATA LOCAL INFILE " +
+									"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
+									"INTO TABLE `tmp_links` " +
+									"IGNORE 2 LINES;";
+							
+					int lineNumber = con.prepareStatement(sql).executeUpdate();
+					System.out.println("Imported "+lineNumber+" links to tmp table ..");
+							
+					//get distinct methods in file
+					HashMap<String, Integer> methodMapping = createMappingMetadata(con, srcOntAbbr, trgOntAbbr, ontos);
+					
+					FileReader fr = new FileReader(file);
+				    BufferedReader br = new BufferedReader(fr);
+			  
+				    String query5 = "INSERT INTO `links` (srcURL, trgURL, mapping_id_fk) " +
+						    		"SELECT DISTINCT srcURL, trgURL, ? " + //eliminate duplicates (case sensitive decision!)
+						    		"FROM `tmp_links` tl " +
+						    		"WHERE method = ? " ;
+						    		//check that link has not been inserted previously
+						    		/*"AND NOT EXISTS (SELECT srcURL, trgURL, mapping_id_fk " +
+										    		"FROM links l2 " +
+										    		"WHERE l2.`srcURL` = tl.`srcURL` " +
+										    		"AND l2.`trgURL` = tl.`trgURL` " +
+										    		"AND l2.`mapping_id_fk` = ? )";*/
+				    
+				    PreparedStatement psmt3 = con.prepareStatement(query5);
+					System.out.println("Import links from tmplinks ..");
+					System.out.println("Methods:");
 			
-			FileReader fr = new FileReader(file);
-		    BufferedReader br = new BufferedReader(fr);
-	  
-		    String query5 = "INSERT INTO `links` (srcURL, trgURL, mapping_id_fk) " +
-				    		"SELECT srcURL, trgURL, ? " +
-				    		"FROM `tmp_links` tl " +
-				    		"WHERE method = ? " +
-				    		"AND NOT EXISTS (SELECT srcURL, trgURL, mapping_id_fk " +
-								    		"FROM links l2 " +
-								    		"WHERE l2.`srcURL` = tl.`srcURL` " +
-								    		"AND l2.`trgURL` = tl.`trgURL` " +
-								    		"AND l2.`mapping_id_fk` = ? )";
-		    
-		    PreparedStatement psmt3 = con.prepareStatement(query5);
-			System.out.println("Import links from tmplinks .. \nNotes:\n" +
-					"- already contained links (i.e. same srcURL, same trgURL, same method) are ignored!\n"+
-					"- links created by different methods, are inserted in different mappings:");
-	
-		    for(String m : methodMapping.keySet()){
-		    	System.out.println("\t- "+m);
-			    psmt3.setInt(1,methodMapping.get(m));
-			    psmt3.setString(2,m);
-			    psmt3.setInt(3,methodMapping.get(m));
-			    try {
-			    	psmt3.executeUpdate(); 
-				} catch (SQLException e) {
-					System.out.println(psmt3.toString());
-					System.err.println(e);
+					int rowcount = 0;
+				    for(String m : methodMapping.keySet()){
+				    	System.out.println("\t- "+m);
+					    psmt3.setInt(1,methodMapping.get(m));
+					    psmt3.setString(2,m);
+					    //psmt3.setInt(3,methodMapping.get(m));
+					    try {
+					    	rowcount = psmt3.executeUpdate(); 
+					    	System.out.println(rowcount + " rows inserted!");
+						} catch (SQLException e) {
+							System.out.println(psmt3.toString());
+							System.err.println(e);
+						}
+				    }
+				    psmt3.close();
+				    fr.close();
+				    br.close();
 				}
-		    }
-		    psmt3.close();
-		    fr.close();
-		    br.close();
+			}		
 		}
+	    dropTmpTable(con);
 	    con.close();
+	    
+	    System.out.println("Notes:\n" +
+						"- already contained links (i.e. same srcURL, same trgURL, same method) have been ignored!\n"+
+						"- links created by different methods, are inserted in different mappings:");
 	    System.out.println(".. done!");
-	    
-	    
 	}
 
 	private static HashMap<String, Integer> createMappingMetadata(Connection con, String srcOntAbbr, String trgOntAbbr, HashMap<String, Integer> ontos) {
@@ -175,16 +185,17 @@ public class ImportMappingsToDB {
 				psmt.setString(3, method);
 				
 				ResultSet rs3 = psmt.executeQuery();
-				String printStr = "\nCheck if mapping \""+srcOntAbbr+" - "+trgOntAbbr+" - "+method+"\" already exists ..";
+				String printStr = "";
 				
 				if(!rs3.next()){ //if mapping not contained, insert new mapping metadata
-					String query4 = "INSERT INTO `mappings` (srcOntID, trgOntID, method) " +
-									"VALUES (?,?,?)";
+					String query4 = "INSERT INTO `mappings` (srcOntID, trgOntID, method, mappingName) " +
+									"VALUES (?,?,?,?)";
 					
 					PreparedStatement psmt2 = con.prepareStatement(query4);
 					psmt2.setInt(1, ontos.get(srcOntAbbr));
 					psmt2.setInt(2, ontos.get(trgOntAbbr));
-					psmt2.setString(3, method);//
+					psmt2.setString(3, method);
+					psmt2.setString(4, srcOntAbbr+"_"+trgOntAbbr+"_"+method);
 					psmt2.executeUpdate();
 					psmt2.close();
 					
@@ -195,12 +206,12 @@ public class ImportMappingsToDB {
 					rs3 = psmt.executeQuery();
 					rs3.next();
 					methodMapping.put(method,rs3.getInt(1));
-					printStr+=" no --> mapping created!\n";
+					printStr+= "Mapping \""+srcOntAbbr+" - "+trgOntAbbr+" - "+method+"\" created!\n";
 				}else{//mapping already inserted, save method id
 					methodMapping.put(method,rs3.getInt(1));
-					printStr+=" yes!\n";
+					printStr+="Mapping \""+srcOntAbbr+" - "+trgOntAbbr+" - "+method+" already existed!\n";
 				}
-				System.out.println(printStr);
+				System.out.println(printStr.substring(0,printStr.length()-2));
 				psmt.close();
 				rs3.close();
 			}
@@ -247,12 +258,12 @@ public class ImportMappingsToDB {
 		}		
 	}
 	private static void createTmpTable(Connection con) {
+		//keep case sensitive URIs (srcURL, trgURL --> latin1_general_cs)
 		String createTmpTable =	"CREATE TABLE `tmp_links` (" +
-									"`srcURL` varchar(200) COLLATE utf8_unicode_ci NOT NULL, " +
-									"`trgURL` varchar(200) COLLATE utf8_unicode_ci NOT NULL, " +
+									"`srcURL` varchar(200) COLLATE latin1_general_cs NOT NULL, " +
+									"`trgURL` varchar(200) COLLATE latin1_general_cs NOT NULL, " +
 									"`method` varchar(50) COLLATE utf8_unicode_ci NOT NULL" +
-								") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;";
-		
+								") ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs;";		
 		try {
 			con.createStatement().executeUpdate(createTmpTable);
 			System.out.println("Created tmp table ..");
