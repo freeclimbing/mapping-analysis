@@ -12,7 +12,7 @@ public class DownloadBioportalOntologies {
 		JSONOntologyLoaderBioportal l = new JSONOntologyLoaderBioportal();
 		String apikey = "df344784-0c8c-49c2-8a63-6067039711cd";
 		
-		String[] ontos = {"NCIT","DOID","MESH","RXNORM","RADLEX","GALEN","OMIM","FMA","MA","PDQ","NATPRO"}; //("LOINC")
+		String[] ontos = {"DOID","MESH","RXNORM","RADLEX","GALEN","OMIM","FMA","MA","PDQ","NATPRO","NCIT"}; //("LOINC")
 		// schon importiert "CHEBI",
 		for(int i = 0; i<ontos.length;i++){
 			String ontoShortName = ontos[i];

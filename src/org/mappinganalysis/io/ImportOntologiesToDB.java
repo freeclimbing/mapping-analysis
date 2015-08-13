@@ -9,7 +9,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 
 public class ImportOntologiesToDB {
 
@@ -20,7 +19,10 @@ public class ImportOntologiesToDB {
 	 */
 	public static void main(String[] args) throws SQLException, IOException {
 		
-		/* Create the following table: 
+		/* 0) Create repository if not exists 'dbname'
+		 * 1) Download ontology files using DownloadBioportalOntologies.java
+		 * 2) Create the following table:
+		 *  
 			CREATE TABLE `concept_attributes` (
 				  `url` varchar(150) COLLATE latin1_general_cs NOT NULL,
 				  `attName` varchar(50) DEFAULT NULL,
@@ -28,9 +30,12 @@ public class ImportOntologiesToDB {
 				  `ontID` int(11) NOT NULL,
 				  KEY `url` (`url`)
 			);
+			
+			3) Run this class (ImportOntologiesToDB.java).
 		*/
 		
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_11_08_2015";
+		String dbname = "bioportal_mappings_11_08_2015";
+		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
 		String user = "root";
 		String pw = "wwwdblog!";
 		Connection con = DriverManager.getConnection(dbURL, user, pw);
@@ -41,16 +46,18 @@ public class ImportOntologiesToDB {
 	    
 		File[] importFiles	= ontoDir.listFiles();
 		for (File file : importFiles) {
-			dropTmpTable(con);
-			createTmpTable(con);
 			
-			if(!(file.getName().equals(".svn")||file.getName().equals("original_files"))){
-				System.out.println("######################################");
-				
+			if(!(file.getName().equals(".svn")||file.getName().equals("originalFiles"))){
+							
 				//extract ontoName from file name
 				String ontoName = file.getName().split("_")[0];
+
+				System.out.println("##############"+ontoName+"##############");
+				dropTmpTable(con);
+				createTmpTable(con);
+
+				//get onto id 
 				int oid = getOntologyID(con,ontoName);
-				System.out.println(ontoName+" (oid = "+oid+")");
 				
 				//extract attribute type from file name
 				String type = file.getName().split("_")[1].replace(".txt", "");
@@ -65,12 +72,14 @@ public class ImportOntologiesToDB {
 					attName = "other";
 				}
 				
+				System.out.println("Import "+ontoName +" " + attName);
+				
 				String sql = "LOAD DATA LOCAL INFILE " +
 							"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
 							"INTO TABLE `tmp_attributes`;";
 							
-				int lineNumber = con.prepareStatement(sql).executeUpdate();				
-				System.out.println("Imported "+lineNumber+" links to tmp table ..");
+				con.prepareStatement(sql).executeUpdate();				
+				System.out.println("Import to tmp table ..");
 						
 				FileReader fr = new FileReader(file);
 			    BufferedReader br = new BufferedReader(fr);
@@ -85,7 +94,7 @@ public class ImportOntologiesToDB {
 			    psmt.setInt(2, oid);
 			    int cnt = psmt.executeUpdate();
 			    
-				System.out.println("Imported "+cnt+" attributes to concept_attributes ..");
+				System.out.println("Imported "+cnt+" " +attName +"s to concept_attributes ..");
 			    psmt.close();
 			    fr.close();
 			    br.close();
@@ -93,7 +102,7 @@ public class ImportOntologiesToDB {
 		}
 	    dropTmpTable(con);
 	    con.close();
-	    System.out.println(".. done!");
+	    System.out.println("\nDone!");
 	}
 
 	private static int getOntologyID(Connection con, String ontoName) throws SQLException {
