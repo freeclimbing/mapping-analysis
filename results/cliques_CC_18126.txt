@@ -1,0 +1,180 @@
+-- CLIQUES RESULT --> ANALYSIEREN
+####
+ccID = 18126
+Cliques:
+
+Clique 1:
+http://purl.bioontology.org/ontology/OMIM/MTHU016766	Pilocytic astrocytoma
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+
+
+Clique 2:
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 3:
+http://purl.bioontology.org/ontology/PDQ/CDR0000040850	childhood oligodendroglioma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C4045	Childhood Oligodendroglioma
+http://www.owl-ontologies.com/NPOntology.owl#DOID_3183	childhood oligodendroglioma
+http://purl.obolibrary.org/obo/DOID_3183	childhood oligodendroglioma
+
+
+Clique 4:
+http://purl.bioontology.org/ontology/PDQ/CDR0000042425	childhood cerebral astrocytoma/malignant glioma
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+
+
+Clique 5:
+http://www.owl-ontologies.com/NPOntology.owl#DOID_3068	glioblastoma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C3058	Glioblastoma
+http://purl.bioontology.org/ontology/MESH/D005909	Glioblastoma
+http://purl.bioontology.org/ontology/OMIM/MTHU008964	Glioblastoma
+
+
+Clique 6:
+http://purl.bioontology.org/ontology/PDQ/CDR0000042503	low-grade childhood cerebral astrocytoma
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+
+
+Clique 7:
+http://purl.bioontology.org/ontology/OMIM/MTHU036791	Astrocytomas
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+
+
+Clique 8:
+http://purl.bioontology.org/ontology/MESH/D018315	Glioma, Subependymal
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 9:
+http://purl.bioontology.org/ontology/MESH/D009837	Oligodendroglioma
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 10:
+http://www.owl-ontologies.com/NPOntology.owl#DOID_3181	oligodendroglioma
+http://purl.obolibrary.org/obo/DOID_3181	oligodendroglioma
+http://purl.bioontology.org/ontology/OMIM/MTHU022890	Oligodendroglioma
+http://purl.bioontology.org/ontology/MESH/D009837	Oligodendroglioma
+http://www.owl-ontologies.com/Ontology1415135201.owl#RID4078	oligodendroglioma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C3288	Oligodendroglioma
+
+
+Clique 11:
+http://purl.bioontology.org/ontology/MESH/D009837	Oligodendroglioma
+http://purl.bioontology.org/ontology/OMIM/MTHU036793	Oligodendrogliomas
+
+
+Clique 12:
+http://purl.bioontology.org/ontology/OMIM/MTHU036795	Subependymomas
+http://purl.bioontology.org/ontology/MESH/D018315	Glioma, Subependymal
+
+
+Clique 13:
+http://purl.bioontology.org/ontology/PDQ/CDR0000040850	childhood oligodendroglioma
+http://purl.bioontology.org/ontology/MESH/D009837	Oligodendroglioma
+
+
+Clique 14:
+http://purl.bioontology.org/ontology/OMIM/MTHU036792	Glioblastoma multiforme
+http://purl.obolibrary.org/obo/DOID_3068	glioblastoma multiforme
+
+
+Clique 15:
+http://purl.bioontology.org/ontology/PDQ/CDR0000041742	adult subependymoma
+http://purl.bioontology.org/ontology/MESH/D018315	Glioma, Subependymal
+
+
+Clique 16:
+http://purl.bioontology.org/ontology/PDQ/CDR0000039056	adult oligodendroglioma
+http://purl.bioontology.org/ontology/MESH/D009837	Oligodendroglioma
+
+
+Clique 17:
+http://www.owl-ontologies.com/NPOntology.owl#DOID_3069	astrocytoma
+http://www.owl-ontologies.com/Ontology1415135201.owl#RID4027	astrocytoma
+http://purl.bioontology.org/ontology/OMIM/MTHU016131	Astrocytoma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C60781	Astrocytoma
+http://purl.obolibrary.org/obo/DOID_3069	astrocytoma
+http://purl.bioontology.org/ontology/MESH/D001254	Astrocytoma
+
+
+Clique 18:
+http://www.owl-ontologies.com/NPOntology.owl#DOID_4851	pilocytic astrocytoma
+http://purl.obolibrary.org/obo/DOID_4851	pilocytic astrocytoma
+http://www.owl-ontologies.com/Ontology1415135201.owl#RID4029	pilocytic astrocytoma
+http://purl.bioontology.org/ontology/OMIM/MTHU016766	Pilocytic astrocytoma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C4047	Pilocytic Astrocytoma
+
+
+Clique 19:
+http://purl.bioontology.org/ontology/MESH/D005909	Glioblastoma
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 20:
+http://purl.bioontology.org/ontology/MESH/C564230	Glioma of Brain, Familial
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 21:
+http://purl.bioontology.org/ontology/OMIM/MTHU036794	Ependymomas
+http://purl.bioontology.org/ontology/MESH/D004806	Ependymoma
+
+
+Clique 22:
+http://purl.bioontology.org/ontology/MESH/D004806	Ependymoma
+http://purl.bioontology.org/ontology/OMIM/137800	GLIOMA SUSCEPTIBILITY 1
+
+
+Clique 23:
+http://www.owl-ontologies.com/NPOntology.owl#DOID_4844	ependymoma
+http://purl.bioontology.org/ontology/MESH/D004806	Ependymoma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C3017	Ependymoma
+http://purl.bioontology.org/ontology/OMIM/MTHU008962	Ependymoma
+
+
+Clique 24:
+http://purl.bioontology.org/ontology/OMIM/MTHU036792	Glioblastoma multiforme
+http://purl.bioontology.org/ontology/MESH/D005909	Glioblastoma
+
+
+Clique 25:
+http://purl.bioontology.org/ontology/PDQ/CDR0000041742	adult subependymoma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C115623	Adult Subependymoma
+
+
+Clique 26:
+http://purl.bioontology.org/ontology/PDQ/CDR0000039056	adult oligodendroglioma
+http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C4014	Adult Oligodendroglioma
+http://www.owl-ontologies.com/NPOntology.owl#DOID_3186	adult oligodendroglioma
+http://purl.obolibrary.org/obo/DOID_3186	adult oligodendroglioma
+
+Cliquesals IDs:
+[66080, 29392]
+[29392, 135574]
+[66874, 57067, 125783, 20426]
+[139237, 29392]
+[129936, 53170, 29152, 65836]
+[139238, 29392]
+[137616, 29392]
+[36701, 135574]
+[28626, 135574]
+[125427, 18650, 65637, 28626, 102965, 50593]
+[28626, 135573]
+[137747, 36701]
+[66874, 28626]
+[128153, 24802]
+[139269, 36701]
+[66753, 28626]
+[123045, 102767, 65724, 48324, 18126, 29392]
+[125351, 20283, 102628, 66080, 56997]
+[29152, 135574]
+[36159, 135574]
+[137471, 29308]
+[29308, 135574]
+[129952, 29308, 55616, 65735]
+[128153, 29152]
+[139269, 59836]
+[66753, 57665, 123719, 19751]
