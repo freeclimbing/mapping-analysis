@@ -1,9 +1,14 @@
-0) create a database and adapt dbURL, user, pw in ImportMappingsToDB and ImportOntologiesToDB
-1) run DownloadBioportalMappings
-2) run DownloadBioportalOntologies
+0) create a database and change dbURL, user, pw in ImportMappingsToDB and ImportOntologiesToDB
+1) run DownloadBioportalMappings (includes: run the given create table statements to save the links) 
+2) run DownloadBioportalOntologies (includes: run the given create table statements to save ontology metadata)
 3) run ImportMappingsToDB - see docu in class
 4) run ImportOntoliesToDB - see docu in class
-5) CREATE TABLE `concept` (
+
+OR SKIP 1) - 4) and import data somehow different
+
+5) Bioportal gives us URIs, but we need integer to run CC algorithm in flink 
+
+  CREATE TABLE `concept` (
 	 `url` varchar(150) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL,
 	 `id` int(50) NOT NULL AUTO_INCREMENT,
 	  PRIMARY KEY (`url`),
@@ -18,6 +23,8 @@
     UNION 
       SELECT DISTINCT url AS url FROM `concept_attributes` 
     ) s;
+    
+    
 6) get integer IDs for edges and vertices and save to two files
 
 -- edges
@@ -67,3 +74,8 @@ LOAD DATA LOCAL INFILE
 INTO TABLE `connectedComponents` 
 FIELDS TERMINATED BY " ";
 
+9) Furthermore: 
+With ComputeCliques.java you can compute the set of cliques for each CC
+
+
+ggf. in VM arguments Speicher hochsetzen

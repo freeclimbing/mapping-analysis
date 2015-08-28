@@ -31,7 +31,7 @@ public class ComputeCliques {
 		//create map with onto abbreviation and ontid
 		String sql = "SELECT DISTINCT conceptID, ccID " +
 				"FROM connectedComponents " +
-				"WHERE ccID = 18126 " +
+				//"WHERE ccID = 18126 " +
 				"ORDER BY ccID;";
 		PreparedStatement psmt = con.prepareStatement(sql);
 		ResultSet rs = psmt.executeQuery();
