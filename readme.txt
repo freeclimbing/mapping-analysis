@@ -83,4 +83,4 @@ FIELDS TERMINATED BY " ";
 With ComputeCliques.java you can compute the set of cliques for each CC
 
 
-ggf. in VM arguments Speicher hochsetzen
+ggf. in VM arguments increase memory -Xmx
