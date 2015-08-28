@@ -51,8 +51,8 @@ public class ImportMappingsToDB {
             
 		*/
 		
-		//String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_07-2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/bioportal_mappings_11_08_2015";
+		String dbname = "bioportal_mappings_11_08_2015";
+		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
 		String user = "root";
 		String pw = "wwwdblog!";
 		Connection con = DriverManager.getConnection(dbURL, user, pw);

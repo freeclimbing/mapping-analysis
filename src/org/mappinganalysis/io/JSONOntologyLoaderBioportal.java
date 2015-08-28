@@ -27,9 +27,18 @@ public class JSONOntologyLoaderBioportal {
         Writer fwSyns = new FileWriter(dir+fileSyns+".txt");
         Writer fwObs = new FileWriter(dir+fileObs+".txt");
         
-		String link =	"http://data.bioontology.org/ontologies/"+ontoShortName+"/classes/" +
-						"?apikey="+apikey+"&display_context=false"+"&display_links=false" +
-						"&include=prefLabel,synonym,obsolete&format=json&also_search_obsolete=true";
+        boolean alsoSearchObsoletes = true;
+        
+		String link;
+		if(alsoSearchObsoletes){
+			link = "http://data.bioontology.org/ontologies/"+ontoShortName+"/classes/" +
+					"?apikey="+apikey+"&display_context=false"+"&display_links=false" +
+					"&include=prefLabel,synonym,obsolete&format=json&also_search_obsolete=true";	
+		}else{
+			link = "http://data.bioontology.org/ontologies/"+ontoShortName+"/classes/" +
+					"?apikey="+apikey+"&display_context=false"+"&display_links=false" +
+					"&include=prefLabel,synonym&format=json";
+		}
 		System.out.println("############################");
 		System.out.println(ontoShortName);
 		System.out.println(link);
@@ -37,14 +46,19 @@ public class JSONOntologyLoaderBioportal {
 		HttpURLConnection conn = Utils.openUrlConnection(new URL(link));
 		BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
         JsonObject jsonObject = JsonObject.readFrom(br);
+
 		int pageCount = jsonObject.get("pageCount").asInt();
-		
+        System.out.println("Parse "+pageCount+" pages ..");		
 		for(int i = 1; i<=pageCount; i++){
 			conn.disconnect();
-			
-			conn = Utils.openUrlConnection(new URL(link+"&page="+i));
-			br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-	        jsonObject = JsonObject.readFrom(br);
+			try{
+				conn = Utils.openUrlConnection(new URL(link+"&page="+i));
+				br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+				jsonObject = JsonObject.readFrom(br);
+			}catch(Exception e){
+				System.out.println("Current page number = "+i);
+				System.out.println(e);
+			}
 	        JsonArray collection = jsonObject.get("collection").asArray();		
 			
 			for(JsonValue v : collection.asArray()){
@@ -56,7 +70,13 @@ public class JSONOntologyLoaderBioportal {
 				}
 				
 				JsonArray synonyms = v.asObject().get("synonym").asArray();
-				Boolean obsStatus = v.asObject().get("obsolete").asBoolean();
+				Boolean obsStatus; 
+				if(alsoSearchObsoletes){
+					obsStatus = v.asObject().get("obsolete").asBoolean();
+				}else{
+					obsStatus = false;
+				}
+				
 				String uri = v.asObject().get("@id").asString();
 				//System.out.println(label + "\t" +synonyms + "\t" + uri);
 				

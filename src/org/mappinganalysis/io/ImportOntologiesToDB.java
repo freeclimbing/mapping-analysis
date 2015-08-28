@@ -26,10 +26,13 @@ public class ImportOntologiesToDB {
 			CREATE TABLE `concept_attributes` (
 				  `url` varchar(150) COLLATE latin1_general_cs NOT NULL,
 				  `attName` varchar(50) DEFAULT NULL,
-				  `attValue` varchar(1000) DEFAULT NULL,
+				  `attValue` varchar(1000) COLLATE latin1_general_cs NOT NULL,
 				  `ontID` int(11) NOT NULL,
 				  KEY `url` (`url`)
 			);
+			-- es gibt Duplikate fuer Attribute, betrifft aber nur Synonyme
+			-- mit unterschiedlicher Groﬂkleinschreibung
+			-- daher case sensitive
 			
 			3) Run this class (ImportOntologiesToDB.java).
 		*/
@@ -40,9 +43,10 @@ public class ImportOntologiesToDB {
 		String pw = "wwwdblog!";
 		Connection con = DriverManager.getConnection(dbURL, user, pw);
 		
-		String dir = "data/ontologies";
+		String dir = "data/ontologies/import";
 		File ontoDir = new File (dir);
         
+		boolean importObsolete = false;
 	    
 		File[] importFiles	= ontoDir.listFiles();
 		for (File file : importFiles) {
@@ -71,33 +75,61 @@ public class ImportOntologiesToDB {
 				}else {
 					attName = "other";
 				}
-				
-				System.out.println("Import "+ontoName +" " + attName);
-				
-				String sql = "LOAD DATA LOCAL INFILE " +
-							"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
-							"INTO TABLE `tmp_attributes`;";
+				if(!(importObsolete) && !(attName.equals("obsolete"))){
+					System.out.println("Import "+ontoName +" " + attName);
+					
+					String sql = "LOAD DATA LOCAL INFILE " +
+								"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
+								"INTO TABLE `tmp_attributes`;";
+								
+					int tmpInsertCount = con.prepareStatement(sql).executeUpdate();				
+					System.out.println("Imported "+tmpInsertCount+" rows to tmp table ..");
 							
-				con.prepareStatement(sql).executeUpdate();				
-				System.out.println("Import to tmp table ..");
-						
-				FileReader fr = new FileReader(file);
-			    BufferedReader br = new BufferedReader(fr);
-		  
-			    System.out.println("Insert "+attName+" ..");
-			    sql = "INSERT INTO `concept_attributes` (url, attName, attValue, ontID) " +
-					    		"SELECT DISTINCT url, ?, attValue, ? " + 
-					    		"FROM `tmp_attributes` tl ";
-					    		
-			    PreparedStatement psmt = con.prepareStatement(sql);
-			    psmt.setString(1, attName);
-			    psmt.setInt(2, oid);
-			    int cnt = psmt.executeUpdate();
-			    
-				System.out.println("Imported "+cnt+" " +attName +"s to concept_attributes ..");
-			    psmt.close();
-			    fr.close();
-			    br.close();
+					FileReader fr = new FileReader(file);
+				    BufferedReader br = new BufferedReader(fr);
+			  
+				    System.out.println("Insert "+attName+" ..");
+				    sql = "INSERT INTO `concept_attributes` (url, attName, attValue, ontID) " +
+						    		"SELECT DISTINCT url, ?, attValue, ? " + 
+						    		"FROM `tmp_attributes` tl ";
+						    		
+				    PreparedStatement psmt = con.prepareStatement(sql);
+				    psmt.setString(1, attName);
+				    psmt.setInt(2, oid);
+				    int insertCnt = psmt.executeUpdate();
+				    
+					System.out.println("Imported "+insertCnt+" " +attName +"s to concept_attributes ..");
+				    psmt.close();
+				    fr.close();
+				    br.close();
+				}else if(importObsolete && attName.equals("obsolete")){
+					System.out.println("Import "+ontoName +" " + attName);
+					
+					String sql = "LOAD DATA LOCAL INFILE " +
+								"'"+file.getAbsolutePath().replace("\\", "/")+"' " +
+								"INTO TABLE `tmp_attributes`;";
+								
+					con.prepareStatement(sql).executeUpdate();				
+					System.out.println("Import to tmp table ..");
+							
+					FileReader fr = new FileReader(file);
+				    BufferedReader br = new BufferedReader(fr);
+			  
+				    System.out.println("Insert "+attName+" ..");
+				    sql = "INSERT INTO `concept_attributes` (url, attName, attValue, ontID) " +
+						    		"SELECT DISTINCT url, ?, attValue, ? " + 
+						    		"FROM `tmp_attributes` tl ";
+						    		
+				    PreparedStatement psmt = con.prepareStatement(sql);
+				    psmt.setString(1, attName);
+				    psmt.setInt(2, oid);
+				    int cnt = psmt.executeUpdate();
+				    
+					System.out.println("Imported "+cnt+" " +attName +"s to concept_attributes ..");
+				    psmt.close();
+				    fr.close();
+				    br.close();
+				}
 			}		
 		}
 	    dropTmpTable(con);
