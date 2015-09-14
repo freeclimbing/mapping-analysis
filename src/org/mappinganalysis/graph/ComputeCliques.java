@@ -35,7 +35,7 @@ public class ComputeCliques {
 		ConnectedComponentSet ccSet = null;
 		
 		boolean printWithLabels = true; //load metadata takes about 20-25 sec
-		boolean runAll = true;
+		boolean runAll = false;
 		//true: run clique computation either for all available CCs in DB 
 		if(runAll){
 			ccSet = l.loadAllCCsFromDB(con);
