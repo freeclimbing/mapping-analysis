@@ -58,8 +58,10 @@ max number of iterations
 
 CREATE TABLE `connectedComponents` (
   `conceptID` int(11) DEFAULT NULL,
-  `ccID` int(11) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `ccID` int(11) DEFAULT NULL,
+  KEY `conceptID` (`conceptID`),
+  KEY `ccID` (`ccID`)
+);
 
 -- import result files from flink 1, 2, 3, 4, ...
 LOAD DATA LOCAL INFILE 

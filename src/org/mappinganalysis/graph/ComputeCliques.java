@@ -1,12 +1,11 @@
 package org.mappinganalysis.graph;
 
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,128 +27,118 @@ public class ComputeCliques {
 		String pw = "wwwdblog!";
 		Connection con = DriverManager.getConnection(dbURL, user, pw);
 		
-		//create map with onto abbreviation and ontid
-		String sql = "SELECT DISTINCT conceptID, ccID " +
-				"FROM connectedComponents " +
-				//"WHERE ccID = 18126 " +
-				"ORDER BY ccID;";
-		PreparedStatement psmt = con.prepareStatement(sql);
-		ResultSet rs = psmt.executeQuery();
-		HashMap<Integer,Integer> conceptToCCid = new HashMap<>();
-		HashSet<Integer> ccSet = new HashSet<>();
+		//load connected components from db
+		ConnectedComponentLoader l = new ConnectedComponentLoader();
 		
-		while(rs.next()){
-			int conceptID = rs.getInt(1);
-			int ccID = rs.getInt(2);
-			conceptToCCid.put(conceptID, ccID);
-			ccSet.add(ccID);
-			//System.out.println(conceptID + "\t" + ccID);
+	
+		Set<Integer> ccIDs = null;
+		ConnectedComponentSet ccSet = null;
+		
+		boolean printWithLabels = true; //load metadata takes about 20-25 sec
+		boolean runAll = true;
+		//true: run clique computation either for all available CCs in DB 
+		if(runAll){
+			ccSet = l.loadAllCCsFromDB(con);
+			ccIDs = ccSet.getCCids();
 		}
-		rs.close();
+		//false: or for some CCs (adapt integer array!)
+		else{
+			ccIDs = new HashSet<>();
+			List<Integer> ccList = Arrays.asList(new Integer[] { 18126, 1, 2, 3, 4});
+			ccIDs = new HashSet<Integer>(ccList);
+			ccSet = l.loadCCsFromDB(con,ccIDs);
+			ccIDs = ccSet.getCCids(); //only use existing CCids contained in the result (in case you looked for a cc that does not exit)
+			System.out.println(ccIDs);
+		}		
 		
-		//get connected components
-		for(int ccID:ccSet){
-
-			HashSet<Integer> nodes = new HashSet<Integer>();
-			HashMap<Integer, List<Integer>> edges = new HashMap<Integer,List<Integer>>();
+		long start = System.currentTimeMillis();
+		HashMap<Integer, String[]> idUrlLabelMap = null;
+		if(printWithLabels){
+			System.out.println("\nGet some metadata ..");
 			
-			//get correspondence set for current cc - both directions (--> union) 
-			sql = 	"(SELECT DISTINCT src.id, trg.id" +
-					" FROM connectedComponents cc, `concept` c, links l, concept src, concept trg" +
-					" WHERE cc.ccID = ?" +
-					" AND cc.`conceptID` = c.`id`" +
-					" AND (c.`url` = l.srcURL" +
-					" OR   c.`url` = l.trgURL)" +
-					" AND l.`srcURL` = src.`url`" +
-					" AND l.`trgURL` = trg.`url`)" +
-					" UNION (" +
-					" SELECT DISTINCT trg.id, src.id" +
-					" FROM connectedComponents cc, `concept` c, links l, concept src, concept trg" +
-					" WHERE cc.ccID = ?" +
-					" AND cc.`conceptID` = c.`id`" +
-					" AND (c.`url` = l.srcURL" +
-					" OR   c.`url` = l.trgURL)" +
-					" AND l.`srcURL` = src.`url`" +
-					" AND l.`trgURL` = trg.`url`)";
-			
-			
-			psmt = con.prepareStatement(sql);
-			psmt.setInt(1, ccID);
-			psmt.setInt(2, ccID);
-			rs = psmt.executeQuery();
-			
-			while(rs.next()){
-
-				int srcID = rs.getInt(1);
-				int trgID = rs.getInt(2);
-				//System.out.println(srcID+"\t"+trgID);
-				
-				//fill node set
-				nodes.add(srcID);
-				
-				//fill relationship set (node:list of node neighbors)
-				if(!edges.containsKey(srcID)){
-					List<Integer> neighbors = new ArrayList<Integer>();
-					neighbors.add(trgID);
-					edges.put(srcID, neighbors);
-				}else{
-					List<Integer> neighbors = edges.get(srcID);
-					neighbors.add(trgID);
-					edges.put(srcID, neighbors);
-				}
+			HashSet<Integer> allNodes = new HashSet<>();
+			for(int ccID:ccIDs){
+				allNodes.addAll(ccSet.getCC(ccID).getNodes());
 			}
-			rs.close();
 			
+			if(allNodes!=null){
+				idUrlLabelMap = getIdUrlLabelMap(con, allNodes);
+			}
+		}
+		System.out.println( "Time to load metadata: "+ ((System.currentTimeMillis() - start)/1000) + " sec\n");
+		
+		// compute cliques for CCs
+		System.out.println("Compute cliques .. ");
+		for(int ccID:ccIDs){
+		
 			System.out.println("####");
 			System.out.println("ccID = " + ccID);
-
-			/*for(Integer nodeID : edges.keySet()){
-				System.out.println(nodeID + ": " + edges.get(nodeID));
-			}*/
-			
-			sql = "SELECT distinct id, url FROM concept;";
-			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
-			
-			HashMap<Integer, String> idUrlMap = new HashMap<>();
-			
-			while (rs.next()) {
-				idUrlMap.put(rs.getInt(1), rs.getString(2));
-			}
-			
-			sql = "SELECT distinct url, attValue FROM concept_attributes " +
-				  "WHERE attName = \"label\";";
-			psmt = con.prepareStatement(sql);
-			rs = psmt.executeQuery();
-			
-			HashMap<String, String> urlLabelMap = new HashMap<>();
-			
-			while (rs.next()) {
-				urlLabelMap.put(rs.getString(1), rs.getString(2));
-			}			
-			
-			if(ccID != 124){ //ACHTUNG FUER 124 - Problem mit URI Eindeutigkeit 
-				// compute cliques for CCs
-				CliqueIdentification ci = new CliqueIdentification();
-				Set<Set<Integer>> cliqueSet = ci.simpleCluster(nodes, edges);
-				System.out.println("Cliques:");
+	
 				
-				int cnt = 1;
-				for(Set<Integer> clique : cliqueSet){
+			System.out.println("Nodes: "+ccSet.getNodesForCC(ccID));
+			System.out.println("Edges: "+ccSet.getEdgesForCC(ccID));
+			
+			CliqueIdentification ci = new CliqueIdentification();
+			Set<Set<Integer>> cliqueSet = ci.simpleCluster(ccSet.getNodesForCC(ccID), ccSet.getEdgesForCC(ccID));
+			System.out.println("Cliques:");
+			
+			int cnt = 1;
+			for(Set<Integer> clique : cliqueSet){
+				
+				StringBuilder cliqueString = new StringBuilder("\nClique "+cnt+":\n");
+				for(int c : clique){
 					
-					StringBuilder cliqueString = new StringBuilder("\nClique "+cnt+":\n");
-					for(int c : clique){
-						String url = idUrlMap.get(c);
-						String label = urlLabelMap.get(url);
-						cliqueString.append(url+"\t"+label+"\n");
-						
+					if(idUrlLabelMap!=null){
+						try{
+							String url = idUrlLabelMap.get(c)[0];
+							String label = idUrlLabelMap.get(c)[1];
+							cliqueString.append(url+"\t"+label+"\n");
+						}catch (Exception e){
+							System.out.println("No url/label available .. ? ");
+							System.out.println(e);
+						}
+					}else{
+						cliqueString.append(c+"\n");
 					}
-					System.out.println(cliqueString);
-					cnt++;
 				}
+				System.out.println(cliqueString);
+				cnt++;
 			}
 		}
-		psmt.close();
 		con.close();
 	}
+	
+	
+	private static HashMap<Integer, String[]> getIdUrlLabelMap(Connection con, HashSet<Integer> allNodeIds)
+			throws SQLException {
+		
+		String psmtString = "?";
+		for(int i = 0; i<allNodeIds.size()-1;i++){
+			psmtString+=",?";
+		}
+		String sql = "SELECT distinct c.id, c.url, a.attValue FROM concept c, concept_attributes a " +
+						"WHERE c.url = a.url " +
+						"AND a.attName = \"label\" " +
+						"AND c.id IN ("+psmtString+");";
+		
+		PreparedStatement psmt = con.prepareStatement(sql);
+		int index = 1;
+		for(int n:allNodeIds){
+			psmt.setInt(index, n);			
+			index++;
+		}
+		ResultSet rs = psmt.executeQuery();
+		
+		HashMap<Integer, String[]> idUrlLabelMap = new HashMap<>();
+		
+		while (rs.next()) {
+			String[] a = {rs.getString(2), rs.getString(3)};
+			idUrlLabelMap.put(rs.getInt(1), a);
+
+		}
+		psmt.close();
+		rs.close();
+		
+		return idUrlLabelMap;
+	}	
 }

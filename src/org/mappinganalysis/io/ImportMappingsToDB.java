@@ -46,7 +46,9 @@ public class ImportMappingsToDB {
 			CREATE TABLE `links` (
               `srcURL` varchar(150) COLLATE latin1_general_cs NOT NULL,
               `trgURL` varchar(150) COLLATE latin1_general_cs NOT NULL,
-              `mapping_id_fk` int(11) DEFAULT NULL              
+              `mapping_id_fk` int(11) DEFAULT NULL,
+                KEY `srcURL` (`srcURL`),
+  				KEY `trgURL` (`trgURL`)   
             ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs;
             
 		*/
