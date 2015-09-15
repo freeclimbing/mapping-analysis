@@ -34,8 +34,8 @@ public class ComputeCliques {
 		Set<Integer> ccIDs = null;
 		ConnectedComponentSet ccSet = null;
 		
-		boolean printWithLabels = false; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
-		boolean runAll = false;
+		boolean printWithLabels = true; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
+		boolean runAll = true;
 		//true: run clique computation either for all available CCs in DB 
 		if(runAll){
 			ccSet = l.loadAllCCsFromDB(con);

@@ -36,15 +36,8 @@ public class Utils {
 		try {
 
 			input = new FileInputStream("db.properties");
-
 			// load a properties file
 			prop.load(input);
-
-			// get the property value and print it out
-			System.out.println(prop.getProperty("dbURL"));
-			System.out.println(prop.getProperty("user"));
-			System.out.println(prop.getProperty("pw"));
-
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		} finally {
