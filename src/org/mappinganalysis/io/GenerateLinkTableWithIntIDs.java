@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.mappinganalysis.utils.Utils;
+
 public class GenerateLinkTableWithIntIDs {
 
 	/**
@@ -13,11 +15,7 @@ public class GenerateLinkTableWithIntIDs {
 	 */
 	public static void main(String[] args) throws SQLException {
 		
-		String dbname = "bioportal_mappings_11_08_2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
-		String user = "root";
-		String pw = "wwwdblog!";
-		Connection con = DriverManager.getConnection(dbURL, user, pw);
+		Connection con = Utils.openDbConnection();
 		
 		String sql = "DROP TABLE IF EXISTS `linksWithIDs`;";
 		PreparedStatement psmt = con.prepareStatement(sql);

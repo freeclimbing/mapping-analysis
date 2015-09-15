@@ -10,6 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.mappinganalysis.utils.Utils;
+
 public class ImportOntologiesToDB {
 
 	/**
@@ -37,11 +39,7 @@ public class ImportOntologiesToDB {
 			3) Run this class (ImportOntologiesToDB.java).
 		*/
 		
-		String dbname = "bioportal_mappings_11_08_2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
-		String user = "root";
-		String pw = "wwwdblog!";
-		Connection con = DriverManager.getConnection(dbURL, user, pw);
+		Connection con = Utils.openDbConnection();
 		
 		String dir = "data/ontologies/import";
 		File ontoDir = new File (dir);

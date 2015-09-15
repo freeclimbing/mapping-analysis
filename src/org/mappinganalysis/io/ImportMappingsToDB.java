@@ -11,6 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 
+import org.mappinganalysis.utils.Utils;
+
 public class ImportMappingsToDB {
 
 	/**
@@ -53,11 +55,7 @@ public class ImportMappingsToDB {
             
 		*/
 		
-		String dbname = "bioportal_mappings_11_08_2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
-		String user = "root";
-		String pw = "wwwdblog!";
-		Connection con = DriverManager.getConnection(dbURL, user, pw);
+		Connection con = Utils.openDbConnection();
 		
 		//create map with onto abbreviation and ontid
 		String sql = "SELECT abbreviation, ontid FROM `ontologies`";
