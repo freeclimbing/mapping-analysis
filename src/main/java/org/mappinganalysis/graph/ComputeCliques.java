@@ -32,8 +32,9 @@ public class ComputeCliques {
 		Set<Integer> ccIDs = null;
 		ConnectedComponentSet ccSet = null;
 		
-		boolean printWithLabels = true; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
-		boolean runAll = true;
+		boolean printWithLabels = false; //load metadata for all concepts takes about
+		// 20-30 sec (for bioportal dataset)
+		boolean runAll = false;
 		//true: run clique computation either for all available CCs in DB 
 		if(runAll){
 			ccSet = l.loadAllCCsFromDB(con);
@@ -41,8 +42,7 @@ public class ComputeCliques {
 		}
 		//false: or for some CCs (adapt integer array!)
 		else{
-			ccIDs = new HashSet<>();
-			List<Integer> ccList = Arrays.asList(new Integer[] { 18126, 1, 2, 3, 4});
+			List<Integer> ccList = Arrays.asList(990, 3893, 78, 16374);
 			ccIDs = new HashSet<Integer>(ccList);
 			ccSet = l.loadCCsFromDB(con,ccIDs);
 			ccIDs = ccSet.getCCids(); //only use existing CCids contained in the result (in case you looked for a cc that does not exit)
