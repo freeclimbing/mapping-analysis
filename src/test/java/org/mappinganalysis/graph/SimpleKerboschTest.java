@@ -31,8 +31,8 @@ public class SimpleKerboschTest {
 	 */
 	@Before
 	public void setUp(){
-		nodes = new HashSet<Integer>();
-		edges = new HashMap<Integer,List<Integer>>();
+		nodes = new HashSet<>();
+		edges = new HashMap<>();
 	
 		nodes.add(0);nodes.add(1);nodes.add(2);nodes.add(3);nodes.add(4);nodes.add(5);nodes.add(6);
 		List<Integer> n0 = new ArrayList<Integer>();
