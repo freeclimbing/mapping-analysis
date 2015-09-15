@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
+
+import org.mappinganalysis.utils.Utils;
 
 public class ComputeCliques {
 
@@ -21,11 +24,8 @@ public class ComputeCliques {
 	
 	public static void main(String[] args) throws SQLException {
 		
-		String dbname = "bioportal_mappings_11_08_2015";
-		String dbURL= "jdbc:mysql://dbserv2.informatik.uni-leipzig.de:3306/"+dbname;
-		String user = "root";
-		String pw = "wwwdblog!";
-		Connection con = DriverManager.getConnection(dbURL, user, pw);
+
+		Connection con = Utils.openDbConnection();
 		
 		//load connected components from db
 		ConnectedComponentLoader l = new ConnectedComponentLoader();
@@ -34,7 +34,7 @@ public class ComputeCliques {
 		Set<Integer> ccIDs = null;
 		ConnectedComponentSet ccSet = null;
 		
-		boolean printWithLabels = true; //load metadata takes about 20-25 sec
+		boolean printWithLabels = false; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
 		boolean runAll = false;
 		//true: run clique computation either for all available CCs in DB 
 		if(runAll){
@@ -52,7 +52,7 @@ public class ComputeCliques {
 		}		
 		
 		long start = System.currentTimeMillis();
-		HashMap<Integer, String[]> idUrlLabelMap = null;
+		HashMap<Integer, List<String>> idUrlLabelMap = null;
 		if(printWithLabels){
 			System.out.println("\nGet some metadata ..");
 			
@@ -69,6 +69,7 @@ public class ComputeCliques {
 		
 		// compute cliques for CCs
 		System.out.println("Compute cliques .. ");
+		int stopLoop = 0; 
 		for(int ccID:ccIDs){
 		
 			System.out.println("####");
@@ -89,13 +90,18 @@ public class ComputeCliques {
 				for(int c : clique){
 					
 					if(idUrlLabelMap!=null){
+						cliqueString.append(c);
 						try{
-							String url = idUrlLabelMap.get(c)[0];
-							String label = idUrlLabelMap.get(c)[1];
-							cliqueString.append(url+"\t"+label+"\n");
+							String url = idUrlLabelMap.get(c).get(0);
+							cliqueString.append("\t"+url);
 						}catch (Exception e){
-							System.out.println("No url/label available .. ? ");
-							System.out.println(e);
+							cliqueString.append("\tno url available");
+						}
+						try{
+							String label = idUrlLabelMap.get(c).get(1);
+							cliqueString.append("\t"+label+"\n");
+						}catch (Exception e){
+							cliqueString.append("\tno label available\n");
 						}
 					}else{
 						cliqueString.append(c+"\n");
@@ -104,40 +110,58 @@ public class ComputeCliques {
 				System.out.println(cliqueString);
 				cnt++;
 			}
+			stopLoop++;
+			if(stopLoop==100){
+				break;
+			}
 		}
 		con.close();
 	}
 	
 	
-	private static HashMap<Integer, String[]> getIdUrlLabelMap(Connection con, HashSet<Integer> allNodeIds)
+	private static HashMap<Integer, List<String>> getIdUrlLabelMap(Connection con, HashSet<Integer> allNodeIds)
 			throws SQLException {
 		
 		String psmtString = "?";
 		for(int i = 0; i<allNodeIds.size()-1;i++){
 			psmtString+=",?";
 		}
-		String sql = "SELECT distinct c.id, c.url, a.attValue FROM concept c, concept_attributes a " +
-						"WHERE c.url = a.url " +
-						"AND a.attName = \"label\" " +
-						"AND c.id IN ("+psmtString+");";
+		String sql1 = "SELECT distinct id, url " +
+						"FROM concept " +
+						"WHERE id IN ("+psmtString+");";
 		
-		PreparedStatement psmt = con.prepareStatement(sql);
+		String sql2 = "SELECT distinct cc.id, cc.url, a.attValue " +
+					  "FROM concept cc JOIN concept_attributes a ON (cc.url = a.url) " +
+					  "WHERE a.attName = \"label\" AND cc.id IN ("+psmtString+");";
+				
+		PreparedStatement psmt1 = con.prepareStatement(sql1);
+		PreparedStatement psmt2 = con.prepareStatement(sql2);
+		
 		int index = 1;
 		for(int n:allNodeIds){
-			psmt.setInt(index, n);			
+			psmt1.setInt(index, n);			
+			psmt2.setInt(index, n);	
 			index++;
 		}
-		ResultSet rs = psmt.executeQuery();
+		//System.out.println(psmt);
+		ResultSet rs1 = psmt1.executeQuery();
+		ResultSet rs2 = psmt2.executeQuery();
 		
-		HashMap<Integer, String[]> idUrlLabelMap = new HashMap<>();
+		HashMap<Integer, List<String>> idUrlLabelMap = new HashMap<>();
 		
-		while (rs.next()) {
-			String[] a = {rs.getString(2), rs.getString(3)};
-			idUrlLabelMap.put(rs.getInt(1), a);
-
+		while (rs1.next()) {
+			List<String> l = new Vector<>();
+			l.add(rs1.getString(2)); // [url]
+			idUrlLabelMap.put(rs1.getInt(1), l); // (id,[url])
 		}
-		psmt.close();
-		rs.close();
+		while (rs2.next()) {
+			List<String> l = idUrlLabelMap.get(rs2.getInt(1));
+			l.add(rs2.getString(3));//(id,[url,label])
+		}
+		psmt1.close();
+		psmt2.close();
+		rs1.close();
+		rs2.close();
 		
 		return idUrlLabelMap;
 	}	
