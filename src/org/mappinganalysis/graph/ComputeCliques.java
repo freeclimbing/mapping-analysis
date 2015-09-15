@@ -30,7 +30,6 @@ public class ComputeCliques {
 		//load connected components from db
 		ConnectedComponentLoader l = new ConnectedComponentLoader();
 		
-	
 		Set<Integer> ccIDs = null;
 		ConnectedComponentSet ccSet = null;
 		
@@ -64,8 +63,8 @@ public class ComputeCliques {
 			if(allNodes!=null){
 				idUrlLabelMap = getIdUrlLabelMap(con, allNodes);
 			}
+			System.out.println( "Time to load metadata: "+ ((System.currentTimeMillis() - start)/1000) + " sec\n");
 		}
-		System.out.println( "Time to load metadata: "+ ((System.currentTimeMillis() - start)/1000) + " sec\n");
 		
 		// compute cliques for CCs
 		System.out.println("Compute cliques .. ");
