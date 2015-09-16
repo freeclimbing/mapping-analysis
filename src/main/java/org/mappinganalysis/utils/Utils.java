@@ -25,6 +25,9 @@ public class Utils {
   public static final String MONGO_DB_PERFECT = "perfectGeo";// perfect hartung
   public static final String PERFECT_OUT = "geo-hartung-perfect.txt";
 
+  public static final String LL_DB_NAME = "linklion_links_9_2015";
+  public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
+
   public static final String COL_CC = "cc";
   public static final String CC_ATTR_VERTEX = "vertex";
   public static final String CC_ATTR_COMPONENT = "component";
