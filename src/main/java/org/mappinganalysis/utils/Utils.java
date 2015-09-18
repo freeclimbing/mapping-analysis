@@ -44,6 +44,8 @@ public class Utils {
   public static final String LABELS_ATTR_ID = "id";
   public static final String LABELS_ATTR_LABEL = "label";
 
+  private static boolean DB_UTF8_MODE = false;
+
   public static HttpURLConnection openUrlConnection(URL url) {
 		HttpURLConnection conn = null;
 		try {
@@ -84,7 +86,12 @@ public class Utils {
 		
 		Connection con = null;
 		try {
-			con = DriverManager.getConnection(prop.getProperty("dbURL"), prop.getProperty("user"), prop.getProperty("pw"));
+      String url = prop.getProperty("dbURL");
+      if (DB_UTF8_MODE) {
+         url += "?useUnicode=true&characterEncoding=utf-8";
+      }
+			con = DriverManager.getConnection(url, prop.getProperty("user"), prop
+        .getProperty("pw"));
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -103,5 +110,9 @@ public class Utils {
     MongoClient client = new MongoClient("localhost", 27017);
 
     return client.getDatabase(dbName);
+  }
+
+  public static void setUtf8Mode(boolean value) {
+    DB_UTF8_MODE = value;
   }
 }
