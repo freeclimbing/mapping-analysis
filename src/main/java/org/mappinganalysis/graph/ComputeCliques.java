@@ -23,7 +23,7 @@ public class ComputeCliques {
 
 	public static void main(String[] args) throws SQLException {
 
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 
 		//load connected components from db
 		ConnectedComponentLoader l = new ConnectedComponentLoader();

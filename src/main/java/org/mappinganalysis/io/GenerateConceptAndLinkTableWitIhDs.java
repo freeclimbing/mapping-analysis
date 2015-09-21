@@ -15,7 +15,7 @@ public class GenerateConceptAndLinkTableWitIhDs {
 	 */
 	public static void main(String[] args) throws SQLException {
 		
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 
 		String sql = "DROP TABLE IF EXISTS `concept`;";
 		PreparedStatement psmt = con.prepareStatement(sql);

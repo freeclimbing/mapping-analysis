@@ -17,7 +17,7 @@ public class ImportFlinkResults {
 	 */
 	public static void main(String[] args) throws SQLException, IOException {
 		
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 		//create table to import CCs (drop before if exists)
 		
 		String sql = "DROP TABLE IF EXISTS `connectedComponents`;";

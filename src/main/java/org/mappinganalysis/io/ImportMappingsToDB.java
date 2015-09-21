@@ -26,7 +26,7 @@ public class ImportMappingsToDB {
 		 * For first run: Create a new database and specify it in db.properties  
          */
 
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 
 
 		//create db schema for

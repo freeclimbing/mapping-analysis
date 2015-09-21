@@ -22,10 +22,10 @@ public class ImportOntologiesToDB {
 		
 		/* 0) Create repository if not exists 'dbname' (--> db.properties)
 		 * 1) Download ontology files using DownloadBioportalOntologies.java
-		   2) Run this class (ImportOntologiesToDB.java).
+		 * 2) Run this class (ImportOntologiesToDB.java).
 		*/
 
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 
 		createConceptAttributeTable(con);
 

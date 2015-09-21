@@ -41,7 +41,7 @@ public class GenerateNeo4JQuery {
 
 	private static String sqlGetEdgesForComponent(int[] componentIDs) throws SQLException {
 		
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 		String psmtString = "?";
 		for(int i = 0; i<componentIDs.length-1;i++){
 			psmtString+=",?";
@@ -87,7 +87,7 @@ public class GenerateNeo4JQuery {
 
 	private static String sqlGetNodesForComponent(int[] componentIDs) throws SQLException {
 		
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
 		String psmtString = "?";
 		for(int i = 0; i<componentIDs.length-1;i++){
 			psmtString+=",?";
