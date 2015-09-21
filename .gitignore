@@ -3,3 +3,16 @@ target/
 output/
 *.iml
 db.properties
+*.pdf
+*.aux
+*.bbl
+*.blg
+paper/*.log
+paper/*.out
+*.cb
+*.cb2
+draft/*.log
+draft/*.out
+*.latexmain
+*.bak
+*.swp
