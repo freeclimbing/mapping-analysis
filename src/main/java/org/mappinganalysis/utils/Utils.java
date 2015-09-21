@@ -25,8 +25,11 @@ public class Utils {
   public static final String MONGO_DB_PERFECT = "perfectGeo";// perfect hartung
   public static final String PERFECT_OUT = "geo-hartung-perfect.txt";
 
+  public static String DB_NAME = "";
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
+  public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
+
 
   public static final String COL_CC = "cc";
   public static final String CC_ATTR_VERTEX = "vertex";
@@ -62,42 +65,36 @@ public class Utils {
 		return conn;
 	}
 
-	public static Connection openDbConnection() {
-	
+	public static Connection openDbConnection() throws SQLException {
 		Properties prop = new Properties();
-		InputStream input = null;
+    InputStream input = null;
 
-		try {
-
-			input = new FileInputStream("db.properties");
-			// load a properties file
-			prop.load(input);
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		
-		Connection con = null;
-		try {
-      String url = prop.getProperty("dbURL");
-      if (DB_UTF8_MODE) {
-         url += "?useUnicode=true&characterEncoding=utf-8";
+    try {
+      input = new FileInputStream("db.properties");
+      // load a properties file
+      prop.load(input);
+    } catch (IOException ex) {
+      ex.printStackTrace();
+    } finally {
+      if (input != null) {
+        try {
+          input.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
-			con = DriverManager.getConnection(url, prop.getProperty("user"), prop
-        .getProperty("pw"));
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return con;
+    }
+
+    Connection con;
+    String url = prop.getProperty("dbURL");
+    url += DB_NAME;
+    if (DB_UTF8_MODE) {
+      url += "?useUnicode=true&characterEncoding=utf-8";
+    }
+    con = DriverManager.getConnection(url, prop.getProperty("user"), prop
+      .getProperty("pw"));
+
+    return con;
 	}
 
 
@@ -114,5 +111,10 @@ public class Utils {
 
   public static void setUtf8Mode(boolean value) {
     DB_UTF8_MODE = value;
+  }
+
+  public static Connection openDbConnection(String dbName) throws SQLException {
+    DB_NAME = dbName;
+    return openDbConnection();
   }
 }
