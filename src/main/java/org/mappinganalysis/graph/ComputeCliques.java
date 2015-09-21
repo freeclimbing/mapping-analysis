@@ -15,15 +15,15 @@ import org.mappinganalysis.utils.Utils;
 
 public class ComputeCliques {
 
+  public static final String dbName = Utils.GEO_PERFECT_DB_NAME;
 	/**
 	 * main class to compute cliques 
 	 * for all connected components in db (runAll=true)
 	 * or for a set of  connected components (runAll=true + specify CCs in ccList)
 	 */
-
 	public static void main(String[] args) throws SQLException {
 
-		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
+		Connection con = Utils.openDbConnection(dbName);
 
 		//load connected components from db
 		ConnectedComponentLoader l = new ConnectedComponentLoader();
@@ -34,7 +34,7 @@ public class ComputeCliques {
 		boolean printWithLabels = true; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
 		boolean runAll = true;
 		//add CC IDs of interest to array, if  runAll = false
-		List<Integer> ccList = Arrays.asList(new Integer[] {124}); //18126, 1, 2, 3, 4
+		List<Integer> ccList = Arrays.asList(124, 1); //18126, 1, 2, 3, 4
 
 		//true: run clique computation either for all available CCs in DB 
 		if(runAll){
@@ -116,16 +116,22 @@ public class ComputeCliques {
 			throws SQLException {
 
 		String psmtString = "?";
-		for(int i = 0; i<allNodeIds.size()-1;i++){
+    for(int i = 0; i<allNodeIds.size()-1;i++){
 			psmtString+=",?";
 		}
 		String sql1 = "SELECT distinct id, url " +
 				"FROM concept " +
 				"WHERE id IN ("+psmtString+");";
 
-		String sql2 = "SELECT distinct cc.id, cc.url, a.attValue " +
-				"FROM concept cc JOIN concept_attributes a ON (cc.url = a.url) " +
-				"WHERE a.attName = \"label\" AND cc.id IN ("+psmtString+");";
+    String sql2;
+    if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
+      sql2 = "SELECT distinct id, attValue FROM concept_attributes " +
+        "WHERE attName = \"label\" AND id IN (" + psmtString + ");";
+    } else {
+      sql2 = "SELECT distinct cc.id, a.attValue " +
+        "FROM concept cc JOIN concept_attributes a ON (cc.url = a.url) " +
+        "WHERE a.attName = \"label\" AND cc.id IN (" + psmtString + ");";
+    }
 
 		PreparedStatement psmt1 = con.prepareStatement(sql1);
 		PreparedStatement psmt2 = con.prepareStatement(sql2);
@@ -149,7 +155,7 @@ public class ComputeCliques {
 		}
 		while (rs2.next()) {
 			List<String> l = idUrlLabelMap.get(rs2.getInt(1));
-			l.add(rs2.getString(3));//(id,[url,label])
+			l.add(rs2.getString(2));//(id,[url,label])
 		}
 		psmt1.close();
 		psmt2.close();
