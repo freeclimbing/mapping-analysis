@@ -30,6 +30,8 @@ public class Utils {
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
 
+  public static final String FLINK_RESULT_PATH = "/data/flink_data/CCresult/";
+
 
   public static final String COL_CC = "cc";
   public static final String CC_ATTR_VERTEX = "vertex";

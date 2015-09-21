@@ -16,18 +16,21 @@ import org.mappinganalysis.utils.Utils;
 public class ImportMappingsToDB {
 
 	/**
+     * create initial db schema and import ontology and mapping metadata as well as the downloaded links from Bioportal
+     * (mapping = set of links)
+	 * import mappings to database based on files that have been previously downloaded using  DownloadBioportalMappings.java
+	 *
+	 * For first run: Create a new database and specify it in db.properties
 	 * @param args
 	 * @throws SQLException
 	 * @throws IOException
 	 */
+
+	public static final String dbName = Utils.BIO_DB_NAME; // BIO_DB_NAME, GEO_PERFECT_DB_NAME
+
 	public static void main(String[] args) throws SQLException, IOException {
 		
-		/* 
-		 * For first run: Create a new database and specify it in db.properties  
-         */
-
-		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
-
+		Connection con = Utils.openDbConnection(dbName);
 
 		//create db schema for
 		//metadata: tables 'ontologies' + 'mappings'

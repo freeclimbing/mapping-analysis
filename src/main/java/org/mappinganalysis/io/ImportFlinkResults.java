@@ -11,13 +11,14 @@ import org.mappinganalysis.utils.Utils;
 public class ImportFlinkResults {
 
 	/**
-	 * @param args
-	 * @throws SQLException 
-	 * @throws IOException 
+	 * Import results of connected component computation with flink
 	 */
+
+	public static final String dbName = Utils.BIO_DB_NAME; // BIO_DB_NAME, GEO_PERFECT_DB_NAME
+
 	public static void main(String[] args) throws SQLException, IOException {
 		
-		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
+		Connection con = Utils.openDbConnection(dbName);
 		//create table to import CCs (drop before if exists)
 		
 		String sql = "DROP TABLE IF EXISTS `connectedComponents`;";
@@ -37,7 +38,7 @@ public class ImportFlinkResults {
 		
 		//navigate to flink result directory 
 		String current = new File( "." ).getCanonicalPath().replace("\\", "/").replace(" ", "%20");
-        String dir = current+"/data/flink_data/CCresult/"; 
+        String dir = current+Utils.FLINK_RESULT_PATH;
         File flinkResultDir	= new File (dir);
 		File[] importFiles	= flinkResultDir.listFiles();
 		//import all files to table `connectedComponents`

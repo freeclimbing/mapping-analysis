@@ -10,13 +10,13 @@ import org.mappinganalysis.utils.Utils;
 public class GenerateNeo4JQuery {
 
 	/**
-	 * @param args
-	 * @throws SQLException 
+	 * Generate Neo4J CREATE query for a set of connected componentIDs.
 	 */
+
+    public static final String dbName = Utils.BIO_DB_NAME;
+
 	public static void main(String[] args) throws SQLException {
-		
-		
-		
+
 		//delete all NODES + EDGES
 		String neo4jQuery = "MATCH (n) \n"+
 					  		"OPTIONAL MATCH (n)-[r]-() \n" +
@@ -41,7 +41,7 @@ public class GenerateNeo4JQuery {
 
 	private static String sqlGetEdgesForComponent(int[] componentIDs) throws SQLException {
 		
-		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
+		Connection con = Utils.openDbConnection(dbName);
 		String psmtString = "?";
 		for(int i = 0; i<componentIDs.length-1;i++){
 			psmtString+=",?";
@@ -87,7 +87,7 @@ public class GenerateNeo4JQuery {
 
 	private static String sqlGetNodesForComponent(int[] componentIDs) throws SQLException {
 		
-		Connection con = Utils.openDbConnection(Utils.BIO_DB_NAME);
+		Connection con = Utils.openDbConnection(dbName);
 		String psmtString = "?";
 		for(int i = 0; i<componentIDs.length-1;i++){
 			psmtString+=",?";
