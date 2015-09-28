@@ -18,34 +18,10 @@ public class Utils {
 
   private static final Logger LOG = Logger.getLogger(Utils.class);
 
-  public static final String MONGO_DB_HASH = "hash"; //linklion
-  public static final String HASH_OUT = "geo-linklion.txt";
-  public static final String MONGO_DB_HARTUNG = "hartung";//hartung low sim res
-  public static final String HARTUNG_OUT = "geo-hartung.txt";
-  public static final String MONGO_DB_PERFECT = "perfectGeo";// perfect hartung
-  public static final String PERFECT_OUT = "geo-hartung-perfect.txt";
-
   public static String DB_NAME = "";
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
-
-
-  public static final String COL_CC = "cc";
-  public static final String CC_ATTR_VERTEX = "vertex";
-  public static final String CC_ATTR_COMPONENT = "component";
-
-  public static final String COL_VERTICES = "vertices";
-  public static final String VERTICES_ATTR_RES = "res";
-  public static final String VERTICES_ATTR_COUNT = "count";
-
-  public static final String COL_EDGES = "edges";
-  public static final String EDGES_ATTR_SUBJECT = "subject";
-  public static final String EDGES_ATTR_OBJECT = "object";
-
-  public static final String COL_LABELS = "labels";
-  public static final String LABELS_ATTR_ID = "id";
-  public static final String LABELS_ATTR_LABEL = "label";
 
   private static boolean DB_UTF8_MODE = false;
 

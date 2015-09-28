@@ -24,12 +24,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * DEPRECATED
  * Compute cliques for each of the connected components in the input.
  */
 public class ComputeGeoCliques {
 
   private static final Logger LOG = Logger.getLogger(ComputeGeoCliques.class);
 
+  static final String MONGO_DB_HASH = "hash"; //linklion
+  static final String HASH_OUT = "geo-linklion.txt";
 
   /**
    * @param args -
@@ -38,13 +41,13 @@ public class ComputeGeoCliques {
     UnsupportedEncodingException {
 //    BasicConfigurator.configure();
 
-    MongoDatabase db = Utils.getMongoDatabase(Utils.MONGO_DB_HASH);
-    MongoCollection<BsonValue> componentIds = db.getCollection(Utils.COL_CC,
+    MongoDatabase db = Utils.getMongoDatabase(MONGO_DB_HASH);
+    MongoCollection<BsonValue> componentIds = db.getCollection("cc",
       BsonValue.class);
-    DistinctIterable<BsonValue> distinctComps = componentIds.distinct(Utils
-      .CC_ATTR_COMPONENT, BsonValue.class);
+    DistinctIterable<BsonValue> distinctComps = componentIds.distinct
+      ("component", BsonValue.class);
 
-    PrintWriter writer = new PrintWriter(Utils.HASH_OUT, "UTF-8");
+    PrintWriter writer = new PrintWriter(HASH_OUT, "UTF-8");
 
     int processedComponents = 0;
     for (BsonValue compId : distinctComps) {
@@ -54,11 +57,6 @@ public class ComputeGeoCliques {
         + " # internal component number: " + id;
       writer.println(message);
       System.out.println(message);
-
-      Component component = new Component(db, id);
-      computeCliques(writer, component);
-
-      ++processedComponents;
     }
     writer.close();
 
