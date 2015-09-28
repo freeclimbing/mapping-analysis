@@ -14,18 +14,19 @@ import org.mappinganalysis.utils.Utils;
 public class ImportOntologiesToDB {
 
 	/**
-	 * @param args
+	 * import ontologies to database based on files that have been previously downloaded using  DownloadBioportalOntologies.java
+	 * 0) Create repository if not exists 'dbname' (--> db.properties)
+	 * 1) Download ontology files using DownloadBioportalOntologies.java
+	 * 2) Run this class (ImportOntologiesToDB.java).
 	 * @throws SQLException
 	 * @throws IOException
 	 */
+
+	public static final String dbName = Utils.BIO_DB_NAME; // BIO_DB_NAME, GEO_PERFECT_DB_NAME
+
 	public static void main(String[] args) throws SQLException, IOException {
 		
-		/* 0) Create repository if not exists 'dbname' (--> db.properties)
-		 * 1) Download ontology files using DownloadBioportalOntologies.java
-		   2) Run this class (ImportOntologiesToDB.java).
-		*/
-
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(dbName);
 
 		createConceptAttributeTable(con);
 

@@ -10,12 +10,15 @@ import org.mappinganalysis.utils.Utils;
 public class GenerateConceptAndLinkTableWitIhDs {
 
 	/**
-	 * @param args
-	 * @throws SQLException 
+	 * Generation of concept table and link table based on IDs instead of URLs
+     * (useful since graph algorithms e.g. clique computation expect integer/long but no string based identifiers)
 	 */
+
+	public static final String dbName = Utils.BIO_DB_NAME;
+
 	public static void main(String[] args) throws SQLException {
 		
-		Connection con = Utils.openDbConnection();
+		Connection con = Utils.openDbConnection(dbName);
 
 		String sql = "DROP TABLE IF EXISTS `concept`;";
 		PreparedStatement psmt = con.prepareStatement(sql);

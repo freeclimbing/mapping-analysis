@@ -15,7 +15,7 @@ import org.mappinganalysis.utils.Utils;
 
 public class ComputeCliques {
 
-  public static final String dbName = Utils.GEO_PERFECT_DB_NAME;
+  public static final String dbName = Utils.GEO_PERFECT_DB_NAME; // BIO_DB_NAME, GEO_PERFECT_DB_NAME
 	/**
 	 * main class to compute cliques 
 	 * for all connected components in db (runAll=true)
