@@ -38,14 +38,13 @@ public class ComputeGeoCliques {
    * @param args -
    */
   public static void main(String[] args) throws FileNotFoundException,
-    UnsupportedEncodingException {
+      UnsupportedEncodingException {
 //    BasicConfigurator.configure();
 
     MongoDatabase db = Utils.getMongoDatabase(MONGO_DB_HASH);
-    MongoCollection<BsonValue> componentIds = db.getCollection("cc",
-      BsonValue.class);
+    MongoCollection<BsonValue> componentIds = db.getCollection("cc", BsonValue.class);
     DistinctIterable<BsonValue> distinctComps = componentIds.distinct
-      ("component", BsonValue.class);
+        ("component", BsonValue.class);
 
     PrintWriter writer = new PrintWriter(HASH_OUT, "UTF-8");
 
@@ -53,8 +52,7 @@ public class ComputeGeoCliques {
     for (BsonValue compId : distinctComps) {
       long id = compId.asInt32().longValue();
 
-      String message = "processing: " + processedComponents
-        + " # internal component number: " + id;
+      String message = "processing: " + processedComponents + " # internal component number: " + id;
       writer.println(message);
       System.out.println(message);
     }

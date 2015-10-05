@@ -1,6 +1,9 @@
 package org.mappinganalysis.utils;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -22,6 +25,8 @@ public class Utils {
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
+
+  public static final String FLINK_RESULT_PATH = "/data/flink_data/CCresult/";
 
   private static boolean DB_UTF8_MODE = false;
 
@@ -73,7 +78,6 @@ public class Utils {
     return con;
 	}
 
-
   /**
    * Get a MongoDB (currently only working on wdi05 -> localhost)
    * @param dbName mongo db name
@@ -85,10 +89,20 @@ public class Utils {
     return client.getDatabase(dbName);
   }
 
+  /**
+   * Set UTF8 Mode for database access
+   * @param value true
+   */
   public static void setUtf8Mode(boolean value) {
     DB_UTF8_MODE = value;
   }
 
+  /**
+   * Open a db connection to a specified database name.
+   * @param dbName db name
+   * @return db connection
+   * @throws SQLException
+   */
   public static Connection openDbConnection(String dbName) throws SQLException {
     DB_NAME = dbName;
     return openDbConnection();
