@@ -35,22 +35,108 @@ public class ComponentCheck {
     BasicConfigurator.configure();
 
     Connection connection = Utils.openDbConnection(Utils.GEO_PERFECT_DB_NAME);
-    ComponentCheck worker = new ComponentCheck();
+    ComponentCheck check = new ComponentCheck();
 
-    ResultSet resLabels = worker.getLabels(connection);
-    worker.setLabels(resLabels);
+    ResultSet resLabels = check.getLabels(connection);
+    check.setLabels(resLabels);
 
-    ResultSet resNodes = worker.getNodes(connection);
-    worker.addNodesToComponents(resNodes);
+    ResultSet resNodes = check.getNodes(connection);
+    check.addNodesToComponents(resNodes);
 
-    ResultSet resEdges = worker.getEdges(connection);
-    worker.addEdges(resEdges);
+    ResultSet resEdges = check.getEdges(connection);
+    check.addEdges(resEdges);
 
-
-    worker.check();
+    HashSet<Component> result = check.getComponentsWithOneToManyInstances();
+    for (Component component : result) {
+      System.out.println(component.getId() + ":");
+      for (Vertex vertex : component.getVertices()) {
+        System.out.println(vertex.getUrl());
+      }
+    }
+//    check.process();
 
 
 //    worker.printComponents();
+  }
+
+  /**
+   * Loop through all components to check quality of contained vertices.
+   */
+  private void process() {
+    for (Component component : components) {
+      HashSet<String> uniqueOntologies = new HashSet<>();
+
+      for (Vertex vertex : component.getVertices()) {
+        LinkedHashSet<Vertex> processed = new LinkedHashSet<>();
+        System.out.println("--- next vertex: " + vertex.getId());
+//        traverse(component, uniqueOntologies, vertex, processed);
+      }
+    }
+  }
+
+  public HashSet<Component> getComponentsWithOneToManyInstances() {
+    HashSet<Component> excludedComponents = new HashSet<>();
+
+    for (Component component : components) {
+      HashSet<String> uniqueOntologies = new HashSet<>();
+      for (Vertex vertex : component.getVertices()) {
+        if (!uniqueOntologies.add(vertex.getSource())) {
+          excludedComponents.add(component);
+          break;
+        }
+      }
+    }
+
+    return excludedComponents;
+  }
+
+  /**
+   * TODO not yet working correctly/completely
+   * Check integrity of a single component, create new components on error case.
+   * Recursively processes all vertices within the component.
+   * @param component component to be checked
+   * @param uniqueOntologies set of (already) involved unique ontologies
+   * @param vertex starting vertex for this run
+   * @param processed already processed vertices
+   */
+  public void traverse(Component component, HashSet<String> uniqueOntologies,
+    Vertex vertex, LinkedHashSet<Vertex> processed) {
+    Set<Integer> neighbors = getNeighbors(edges, vertex.getId());
+    System.out.println("--- next vertex: " + vertex.getId());
+
+    if (!uniqueOntologies.add(vertex.getSource())) {
+      System.out.println(vertex.getId() + ": already processed a vertex with source: " + vertex.getSource() );
+      // 1. case: error found
+      // * check path backwards
+      // * check neighbors
+      // * create new component
+
+      Vertex dupOntVertex = findDuplicateOntologyVertex(vertex, processed);
+      Vertex sourceVertex = processed.iterator().next();
+    } else {
+      System.out.println(vertex.getId() + ": vertex not yet processed, process... ");
+      if (!neighbors.isEmpty()) {
+        System.out.println(vertex.getId() + ": neighbors: " + neighbors);
+        for (Integer neighbor : neighbors) {
+          System.out.println(vertex.getId() + ": -- is neighbor " + neighbor + " already contained in processed vertices?");
+          Vertex neighborVertex = component.getVertex(neighbor);
+          if (processed.contains(neighborVertex)) {
+            System.out.println(vertex.getId() + ": neighbors: " + neighbors);
+            System.out.println(vertex.getId() + ": yes, neighbor already existing " + neighbor);
+            // 3. case: vertex already processed
+//            break;
+          } else {
+            // 4. process next vertex
+            // Vertex next = component.getVertex(neighbor);//neighbors.iterator().next());
+            processed.add(vertex);
+            System.out.println(vertex.getId() + ": neighbors: " + neighbors);
+            System.out.println(vertex.getId() + ": no, take this vertex (from neighbors) to process: " + neighborVertex.getId());
+            traverse(component, uniqueOntologies, neighborVertex, processed);
+          }
+        }
+      } // case: no neighbors
+    }
+    System.out.println(vertex.getId() + ": -- done");
   }
 
   /**
@@ -66,6 +152,15 @@ public class ComponentCheck {
   }
 
   /**
+   * Add single edge within a component.
+   * @param sourceId source vertex id
+   * @param targetId target vertex id
+   */
+  public void addEdge(int sourceId, int targetId) {
+    edges.add(new Pair(sourceId, targetId));
+  }
+
+  /**
    * Get all edges from database
    * @param connection db connection
    * @return SQL result set
@@ -78,53 +173,29 @@ public class ComponentCheck {
     return s.executeQuery();
   }
 
-  private void check() {
-    for (Component component : components) {
-      HashSet<String> uniqueOntologies = new HashSet<>();
-
-      for (Vertex vertex : component.getVertices()) {
-        LinkedHashSet<Vertex> processed = new LinkedHashSet<>();
-        traverse(component, uniqueOntologies, vertex, processed);
-
-      }
-    }
-  }
-
-  private void traverse(Component component, HashSet<String> uniqueOntologies,
-    Vertex vertex, LinkedHashSet<Vertex> processed) {
-    Set<Integer> neighbors = getNeighbors(edges, vertex.getId());
-
-    if (!uniqueOntologies.add(vertex.getSource())) {
-      // 1. case: error found
-      Vertex dupOntVertex = findDuplicateOntologyVertex(vertex, processed);
-      Vertex sourceVertex = processed.iterator().next();
-    } else {
-      if (!neighbors.isEmpty()) { // 2. case: no neighbors
-        for (Integer neighbor : neighbors) {
-          if (processed.contains(component.getVertex(neighbor))) {
-            // 3. case: vertex already processed
-            break;
-          } else {
-            // 4. process next vertex
-            Vertex next = component.getVertex(neighbors.iterator().next());
-            processed.add(vertex);
-            traverse(component, uniqueOntologies, next, processed);
-          }
-        }
-      }
-    }
-  }
-
+  /**
+   * Check if vertex is from source which has already been processed.
+   * @param vertex vertex to be checked
+   * @param processed already processed vertices
+   * @return return vertex where source is equal
+   */
   private Vertex findDuplicateOntologyVertex(Vertex vertex,
     LinkedHashSet<Vertex> processed) {
     for (Vertex checkVertex : processed) {
       if (checkVertex.getSource().equals(vertex.getSource())) {
+        System.out.println(checkVertex.getId() + " same source like " + vertex.getId());
         return checkVertex;
       }
     }
     return null;
   }
 
+  /**
+   * Get neighbors for a given vertex
+   * @param edges edges from starting vertex
+   * @param id vertex id
+   * @return set of vertex ids for neighbors
+   */
   private Set<Integer> getNeighbors(HashSet<Pair> edges, int id) {
     HashSet<Integer> neighbors = new HashSet<>();
     for (Pair edge : edges) {
@@ -145,20 +216,12 @@ public class ComponentCheck {
     while (resNodes.next()) {
       int id = resNodes.getInt(1);
       String url = resNodes.getString(2);
-      // not yet working for Bioportal data
+      // not yet working for Bioportal data, source is extracted from URL
       String source = getSource(url);
       int ccId = resNodes.getInt(3);
 
-//      HashSet<Integer> v_edges = new HashSet<>();
-//      if (edges.containsKey(id) || edges.containsValue(id)) {
-//
-//        v_edges.add()
-//      }
-
       Vertex vertex = new Vertex(id, url, source, labels.get(id));
-      if (!addToExistingComponent(vertex, ccId)) {
-        createComponentWithVertex(vertex, ccId);
-      }
+      addVertexToComponent(vertex, ccId);
     }
   }
 
@@ -182,14 +245,16 @@ public class ComponentCheck {
   }
 
   /**
-   * Create a new component with a single vertex.
+   * Add a single vertex to its corresponding component.
    * @param vertex vertex
    * @param ccId component id
    */
-  private void createComponentWithVertex(Vertex vertex, int ccId) {
-    Component newComponent = new Component(ccId);
-    newComponent.addVertex(vertex);
-    components.add(newComponent);
+  public void addVertexToComponent(Vertex vertex, int ccId) {
+    if (!addToExistingComponent(vertex, ccId)) {
+      Component newComponent = new Component(ccId);
+      newComponent.addVertex(vertex);
+      components.add(newComponent);
+    }
   }
 
   /**
@@ -268,7 +333,10 @@ public class ComponentCheck {
   }
 
 
-  class Pair {
+  /**
+   * Simple helper class to express a pair of ids building an edge.
+   */
+  public class Pair {
     Integer source;
     Integer target;
 
