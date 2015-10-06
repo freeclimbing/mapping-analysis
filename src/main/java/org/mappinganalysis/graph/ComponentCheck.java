@@ -4,8 +4,12 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.utils.RDFPropertyXMLHandler;
 import org.mappinganalysis.utils.Utils;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,10 +31,12 @@ public class ComponentCheck {
   HashMap<Integer, String> labels = new HashMap<>();
   HashSet<Pair> edges = new HashSet<>();
 
+  RDFPropertyXMLHandler handler = new RDFPropertyXMLHandler();
+
   public ComponentCheck() {
   }
 
-  public static void main(String[] args) throws SQLException {
+  public static void main(String[] args) throws SQLException, ParserConfigurationException, SAXException, IOException {
 
     BasicConfigurator.configure();
 
@@ -53,11 +59,39 @@ public class ComponentCheck {
         System.out.println(vertex.getUrl());
       }
     }
+
+    // TODO work in progress
+    HashSet<String[]> properties = check.getXMLHandler().getLabelsForURI("http://rdf.freebase.com/ns/en.berlin");
+
+//    check.enrichVertexWithProperties(vertex, properties);
+
 //    check.process();
 
 
 //    worker.printComponents();
   }
+
+  /**
+   * Write all extracted properties to the vertex object.
+   * @param vertex vertex to be written to
+   * @param properties properties from XML handler
+   * @return enriched vertex
+   */
+//  private Vertex enrichVertexWithProperties(Vertex vertex,
+//                                            HashSet<String[]> properties) {
+//    if (!properties.isEmpty()) {
+//      for (String[] property : properties) {
+//        String key = property[0];
+//        String value = property[1];
+//        if (!value.isEmpty() || !value.equals("")) {
+//          vertex.addProperty(key, value);
+//        }
+//      }
+//    } else {
+//      vertex.addProperty(NO_PROPERTY, EMPTY_PROPERTY_VALUE);
+//    }
+//    return vertex;
+//  }
 
   /**
    * Loop through all components to check quality of contained vertices.
@@ -74,6 +108,10 @@ public class ComponentCheck {
     }
   }
 
+  /**
+   * TODO
+   * @return
+   */
   public HashSet<Component> getComponentsWithOneToManyInstances() {
     HashSet<Component> excludedComponents = new HashSet<>();
 
@@ -330,6 +368,10 @@ public class ComponentCheck {
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();
+  }
+
+  public RDFPropertyXMLHandler getXMLHandler() {
+    return handler;
   }
 
 
