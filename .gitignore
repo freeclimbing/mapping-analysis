@@ -1,7 +1,6 @@
 .idea
 target/
 output/
-*.iml
 db.properties
 *.pdf
 *.aux

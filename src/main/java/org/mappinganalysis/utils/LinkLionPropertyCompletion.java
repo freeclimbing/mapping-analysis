@@ -9,20 +9,20 @@ import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.mysql.jdbc.exceptions.jdbc4
-  .MySQLIntegrityConstraintViolationException;
-import org.eclipse.jetty.util.ajax.JSON;
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Retrieve additional property information for LinkLion data.
@@ -32,39 +32,45 @@ public class LinkLionPropertyCompletion {
 //  private static final Logger LOG =
 //    Logger.getLogger(LinkLionLabelCompletion.class);
 
-  static final String GN_ONTOLOGY = "http://www.geonames.org/ontology";
-  static final String DBP_ONTOLOGY = "http://dbpedia.org/ontology";
-  static final String SCHEMA_ONTOLOGY = "http://schema.org";
-  static final String UMBEL_ONTOLOGY = "http://umbel.org/umbel/rc";
-  static final String LGD_ONTOLOGY = "http://linkedgeodata.org/ontology";
+  private static final String GN_ONTOLOGY = "http://www.geonames.org/ontology";
+  private static final String DBP_ONTOLOGY = "http://dbpedia.org/ontology";
+  private static final String SCHEMA_ONTOLOGY = "http://schema.org";
+  private static final String UMBEL_ONTOLOGY = "http://umbel.org/umbel/rc";
+  private static final String LGD_ONTOLOGY = "http://linkedgeodata.org/ontology";
+  private static final String FREEBASE_NS = "http://rdf.freebase.com/ns/";
 
-  static final String GN_NAME = "http://www.geonames.org/ontology#name";
-  static final String SKOS_LABEL =
+
+  private static final String GN_NAME = "http://www.geonames.org/ontology#name";
+  private static final String SKOS_LABEL =
     "http://www.w3.org/2004/02/skos/core#prefLabel";
-  static final String RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
-  static final String LAT_URL = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
-  static final String LONG_URL = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
-  static final String TYPE_URL =
+  private static final String RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+  private static final String LAT_URL = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
+  private static final String LONG_URL = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
+  private static final String TYPE_URL =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-  static final String GN_CLASS_TYPE =
+  private static final String GN_CLASS_TYPE =
     "http://www.geonames.org/ontology#featureClass";
-  static final String GN_CODE_TYPE =
+  private static final String GN_CODE_TYPE =
     "http://www.geonames.org/ontology#featureCode";
+  private static final String FB_TYPE = "ns:rdf:type";
+  private static final String FB_ELEVATION = "ns:location.geocode.elevation";
+  private static final String FB_LATITUDE = "ns:location.geocode.latitude";
+  private static final String FB_LONGITUDE = "ns:location.geocode.longitude";
 
-  static final String MODE_LAT_LONG_TYPE = "latLongType";
-  static final String MODE_LABEL = "labelMode";
-  static final String MODE_TYPE = "typeMode";
-  static final String LABEL_NAME = "label";
-  static final String LAT_NAME = "lat";
-  static final String LON_NAME = "lon";
-  static final String TYPE_NAME = "type";
-  static final String TYPE_DETAIL_NAME = "typeDetail";
-
+  private static final String MODE_LAT_LONG_TYPE = "latLongType";
+  private static final String MODE_LABEL = "labelMode";
+  private static final String MODE_TYPE = "typeMode";
+  private static final String LABEL_NAME = "label";
+  private static final String LAT_NAME = "lat";
+  private static final String LON_NAME = "lon";
+  private static final String ELE_Name = "ele";
+  private static final String TYPE_NAME = "type";
+  private static final String TYPE_DETAIL_NAME = "typeDetail";
 
   // TODO additional partly available: ele, population, feature class, country
 
-  static final String LL_ENDPOINT = "http://linklion.org:8890/sparql";
-  static final String DBP_ENDPOINT = "http://dbpedia.org/sparql";
+  private static final String LL_ENDPOINT = "http://linklion.org:8890/sparql";
+  private static final String DBP_ENDPOINT = "http://dbpedia.org/sparql";
 
   String processingMode = "";
   String dbName = "";
@@ -74,10 +80,13 @@ public class LinkLionPropertyCompletion {
   // use this for information like rdf:type
   String graph = "";
 
-  TypeOntologyRetriever tr;
+  // for geonames resources
+  private TypeOntologyRetriever tr = new TypeOntologyRetriever("ontology_v3.1.rdf");
+  // for freebase resources
+  private FreebasePropertyHandler handler;
 
-  public LinkLionPropertyCompletion() throws SQLException,
-    ParserConfigurationException, SAXException, IOException {
+
+  public LinkLionPropertyCompletion() throws Exception {
     Utils.setUtf8Mode(true);
     // TODO choose DB to process
     //this.dbName = Utils.GEO_PERFECT_DB_NAME;
@@ -85,22 +94,24 @@ public class LinkLionPropertyCompletion {
     this.con = Utils.openDbConnection(dbName);
 
     // TODO choose processing mode
-    this.processingMode = MODE_LAT_LONG_TYPE;
-    this.tr = new TypeOntologyRetriever("ontology_v3.1.rdf");
+    this.processingMode = MODE_TYPE;
+    // freebase http requests are minimized if processing mode is != MODE_LAT_LONG_TYPE
+    handler = new FreebasePropertyHandler(processingMode);
   }
 
   /**
    * main - care for db connection
    * @throws SQLException
    */
-  public static void main(String[] args) throws SQLException, IOException,
-    SAXException, ParserConfigurationException, XPathExpressionException {
+  public static void main(String[] args) throws Exception {
+
     LinkLionPropertyCompletion ll = new LinkLionPropertyCompletion();
 
     System.out.println(ll.processingMode);
     System.out.println("Get nodes without specified properties ..");
 //    ResultSet nodes = ll.getNodesWithoutLabels(ll.con);
 
+    // TODO customize query to restrict working set, if needed
     ResultSet vertices = ll.getAllNodes();
     // ll.getAllNodesWithAnyType();
 
@@ -111,6 +122,29 @@ public class LinkLionPropertyCompletion {
 
     System.out.println("Process nodes one by one ..");
     ll.processResult(vertices);
+
+
+    // TODO work in progress
+
+//    check.writeFreebaseProperties(vertex, properties);
+  }
+
+  /**
+   * Write all (Freebase) properties for a single vertex to the db.
+   * @param id vertex id
+   * @param url vertex url
+   */
+  private Boolean writeFreebaseProperties(int id, String url) throws Exception {
+    HashSet<String[]> properties = handler.getPropertiesForURI(url);
+
+    if (!properties.isEmpty()) {
+      for (String[] property : properties) {
+        parsePropertyAndWriteToDb(id, property);
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -137,38 +171,26 @@ public class LinkLionPropertyCompletion {
   }
 
   /**
-   * Process all nodes returned from database for label enrichment.
-   * @param nodes SQL result set
+   * Process all vertices returned from database for label enrichment.
+   * @param vertices SQL result set
    * @throws SQLException
    */
-  private void processResult(ResultSet nodes) throws SQLException,
-    XPathExpressionException {
-//    HashMap<Integer, String> processed = new HashMap<>();
-    while (nodes.next()) {
-      String url = nodes.getString("url");
-      int id = nodes.getInt("id");
-//      String type = nodes.getString("attName");
-//      type = type != null ? type : "";
-      // don't process if type is already existing or in error list
-//      if (errorMap.containsKey(id)) {
-//        if (errorMap.get(id).contains(type)) {
-//          break;
-//        }
-//      }
-//      System.out.println(id + " " + url + " " + type);
-//      if (type.equals(LABEL_NAME)
-//          || type.equals(LAT_NAME)
-//          || type.equals(LON_NAME)
-//          || type.equals(TYPE_NAME)) {
-//        System.out.println(id + " with type " + type + " already processed");
-//        continue;
-//      }
-
-//      System.out.println(" id: " + id + " url: " + url);
-
+  private void processResult(ResultSet vertices) throws Exception {
+    HashMap<Integer, String> retryMap = new HashMap<>();
+    int count = 0;
+    while (vertices.next()) {
+      ++count;
+      String url = vertices.getString("url");
+      int id = vertices.getInt("id");
       com.hp.hpl.jena.query.ResultSet properties = null;
       String endpoint = "";
-      if (dbName.equals(Utils.LL_DB_NAME)) {
+
+      // TODO rethink if this is always correct here (i.e., for the linklion dataset)
+      if (url.startsWith(FREEBASE_NS)) {
+        if (!writeFreebaseProperties(id, url)) {
+          retryMap.put(id, url);
+        }
+      } else if (dbName.equals(Utils.LL_DB_NAME)) {
         if (url.startsWith("http://dbpedia.org")) {
           endpoint = DBP_ENDPOINT;
         } else {
@@ -192,11 +214,31 @@ public class LinkLionPropertyCompletion {
         propsMap.put(TYPE_NAME, Boolean.FALSE);
 
         while (properties.hasNext()) {
-          propsMap = getPropertyAndWriteToDb(properties.next(), con, id,
-            propsMap);
+          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
         }
         reportErrors(url, id, endpoint, propsMap);
       }
+    }
+
+    System.out.println("Processed " + count + " vertices."
+    );
+    // perhaps no longer needed with implemented google api key usage
+    int retryCount = 5;
+    System.out.println(retryCount + " retries left.");
+    while (!retryMap.isEmpty() && (retryCount > 0)) {
+      HashMap<Integer, String> tmpRetryMap = new HashMap<>();
+      for (Integer id : retryMap.keySet()) {
+        String value = retryMap.get(id);
+        if (!writeFreebaseProperties(id, value)) {
+          tmpRetryMap.put(id, value);
+        }
+      }
+      retryMap = tmpRetryMap;
+      --retryCount;
+      System.out.println(retryCount + " retries left.");
+    }
+    for (Integer id : retryMap.keySet()) {
+      System.out.println("Missing properties for id: " + id + " and property: " + retryMap.get(id));
     }
   }
 
@@ -209,7 +251,7 @@ public class LinkLionPropertyCompletion {
    * @throws SQLException
    */
   private void reportErrors(String url, int id, String endpoint,
-    HashMap<String, Boolean> propsMap) throws SQLException {
+      HashMap<String, Boolean> propsMap) throws SQLException {
     String error = "property not found on " + endpoint;
     if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
       if (!propsMap.get(LAT_NAME)) {
@@ -231,19 +273,45 @@ public class LinkLionPropertyCompletion {
 
   /**
    * Get property value for vertex and write to DB.
+   * @param id node id
+   * @param keyValue key value pair from result
+   * @throws SQLException
+   */
+  private void parsePropertyAndWriteToDb(int id, String[] keyValue)
+      throws SQLException, XPathExpressionException {
+    String key = getDbPropertyName(keyValue[0]);
+    writePropertyToDb(id, key, keyValue[1]);
+  }
+
+  /**
+   * Get property value for vertex and write to DB.
    * @param line SPARQL result line
-   * @param con db connection
    * @param id node id
    * @param propsMap error map
    * @throws SQLException
    */
-  private HashMap<String, Boolean> getPropertyAndWriteToDb(QuerySolution line,
-    Connection con, int id, HashMap<String, Boolean> propsMap) throws
-    SQLException, XPathExpressionException {
+  private HashMap<String, Boolean> parseSolutionLineAndWriteToDb(QuerySolution line,
+      int id, HashMap<String, Boolean> propsMap) throws Exception {
     String keyUrl = line.getResource("p").getURI();
     String key = getDbPropertyName(keyUrl);
     String value = getPropertyValue(line);
 
+    String errorKey = writePropertyToDb(id, key, value);
+    if (!errorKey.isEmpty()) {
+      propsMap.put(errorKey, Boolean.TRUE);
+    }
+    return propsMap;
+  }
+
+  /**
+   * Write single property for single vertex to db. If query is unsuccessful, return key for error processing.
+   * @param id vertex id
+   * @param key property key
+   * @param value property value
+   * @return property key, if exception occurs
+   * @throws SQLException
+   */
+  private String writePropertyToDb(int id, String key, String value) throws SQLException {
     if (!value.isEmpty() && !key.isEmpty()) {
       String insert = "INSERT INTO concept_attributes (id, attName, " +
         "attValue) VALUES (?, ?, ?);";
@@ -256,57 +324,48 @@ public class LinkLionPropertyCompletion {
         insertStmt.executeUpdate();
         System.out.println("Written for Vertex: " + id + " Property: " +
           key + " Value: " + value);
-        propsMap.put(key, Boolean.TRUE);
+        return key;
       } catch (MySQLIntegrityConstraintViolationException ignore) {
-        if (keyUrl.equals(TYPE_URL)) {
-          System.out.println("error");
+        if (key.equals(TYPE_NAME)) {
+          System.err.println(TYPE_NAME + "error");
         }
       } finally {
         insertStmt.close();
       }
     }
-    return propsMap;
+    return "";
   }
 
   private String getDbPropertyName(String propTypeUrl) {
-    String writeProperty = "";
     if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
       switch (propTypeUrl) {
-      case LAT_URL:
-        writeProperty = LAT_NAME;
-        break;
-      case LONG_URL:
-        writeProperty = LON_NAME;
-        break;
-      case TYPE_URL:
-      case GN_CLASS_TYPE:
-        System.out.println("writeProperty set to: " + TYPE_NAME);
-        writeProperty = TYPE_NAME;
-        break;
-      case GN_CODE_TYPE:
-        System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
-        writeProperty = TYPE_DETAIL_NAME;
-      default:
-        break;
-      }
-    } else if (processingMode.equals(MODE_TYPE)) { // TODO duplicate code
-      switch (propTypeUrl) {
-      case TYPE_URL:
-      case GN_CLASS_TYPE:
-        System.out.println("writeProperty set to: " + TYPE_NAME);
-        writeProperty = TYPE_NAME;
-        break;
-      case GN_CODE_TYPE:
-        System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
-        writeProperty = TYPE_DETAIL_NAME;
-      default:
-        break;
+        case LAT_URL:
+        case FB_LATITUDE:
+          return LAT_NAME;
+        case LONG_URL:
+        case FB_LONGITUDE:
+          return LON_NAME;
+        case FB_ELEVATION:
+          return ELE_Name;
       }
     } else if (processingMode.equals(MODE_LABEL) &&
       (propTypeUrl.equals(RDFS_LABEL) || propTypeUrl.equals(SKOS_LABEL))) {
-      writeProperty = LABEL_NAME;
+      return LABEL_NAME;
     }
-    return writeProperty;
+
+    if (!processingMode.equals(MODE_LABEL)) {
+      switch (propTypeUrl) {
+        case TYPE_URL:
+        case FB_TYPE:
+        case GN_CLASS_TYPE:
+//          System.out.println("writeProperty set to: " + TYPE_NAME);
+          return TYPE_NAME;
+        case GN_CODE_TYPE:
+//          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
+          return TYPE_DETAIL_NAME;
+      }
+    }
+    return "";
   }
 
   /**
@@ -448,7 +507,7 @@ public class LinkLionPropertyCompletion {
    * @throws SQLException
    */
   private ResultSet getAllNodes() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept;";
+    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com%';";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();

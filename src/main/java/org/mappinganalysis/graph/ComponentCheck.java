@@ -4,7 +4,6 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
-import org.mappinganalysis.utils.RDFPropertyXMLHandler;
 import org.mappinganalysis.utils.Utils;
 import org.xml.sax.SAXException;
 
@@ -31,8 +30,6 @@ public class ComponentCheck {
   HashMap<Integer, String> labels = new HashMap<>();
   HashSet<Pair> edges = new HashSet<>();
 
-  RDFPropertyXMLHandler handler = new RDFPropertyXMLHandler();
-
   public ComponentCheck() {
   }
 
@@ -52,46 +49,20 @@ public class ComponentCheck {
     ResultSet resEdges = check.getEdges(connection);
     check.addEdges(resEdges);
 
-    HashSet<Component> result = check.getComponentsWithOneToManyInstances();
-    for (Component component : result) {
+    HashSet<Component> errorComponents = check.getComponentsWithOneToManyInstances();
+    for (Component component : errorComponents) {
       System.out.println(component.getId() + ":");
       for (Vertex vertex : component.getVertices()) {
         System.out.println(vertex.getUrl());
       }
     }
 
-    // TODO work in progress
-    HashSet<String[]> properties = check.getXMLHandler().getLabelsForURI("http://rdf.freebase.com/ns/en.berlin");
-
-//    check.enrichVertexWithProperties(vertex, properties);
 
 //    check.process();
 
 
 //    worker.printComponents();
   }
-
-  /**
-   * Write all extracted properties to the vertex object.
-   * @param vertex vertex to be written to
-   * @param properties properties from XML handler
-   * @return enriched vertex
-   */
-//  private Vertex enrichVertexWithProperties(Vertex vertex,
-//                                            HashSet<String[]> properties) {
-//    if (!properties.isEmpty()) {
-//      for (String[] property : properties) {
-//        String key = property[0];
-//        String value = property[1];
-//        if (!value.isEmpty() || !value.equals("")) {
-//          vertex.addProperty(key, value);
-//        }
-//      }
-//    } else {
-//      vertex.addProperty(NO_PROPERTY, EMPTY_PROPERTY_VALUE);
-//    }
-//    return vertex;
-//  }
 
   /**
    * Loop through all components to check quality of contained vertices.
@@ -354,7 +325,6 @@ public class ComponentCheck {
     return s.executeQuery();
   }
 
-
   /**
    * Get all nodes from a given connection.
    * @param con db connection
@@ -369,11 +339,6 @@ public class ComponentCheck {
 
     return s.executeQuery();
   }
-
-  public RDFPropertyXMLHandler getXMLHandler() {
-    return handler;
-  }
-
 
   /**
    * Simple helper class to express a pair of ids building an edge.
@@ -395,4 +360,4 @@ public class ComponentCheck {
       this.target = p2;
     }
   }
-  }
+}

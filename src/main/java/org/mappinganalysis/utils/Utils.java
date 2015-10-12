@@ -1,17 +1,13 @@
 package org.mappinganalysis.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
@@ -47,37 +43,32 @@ public class Utils {
 	}
 
 	public static Connection openDbConnection() throws SQLException {
-		Properties prop = new Properties();
-    InputStream input = null;
-
-    try {
-      input = new FileInputStream("db.properties");
-      // load a properties file
-      prop.load(input);
-    } catch (IOException ex) {
-      ex.printStackTrace();
-    } finally {
-      if (input != null) {
-        try {
-          input.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    }
+    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    ResourceBundle prop = ResourceBundle.getBundle("db", Locale.getDefault(), loader);
 
     Connection con;
-    String url = prop.getProperty("dbURL");
+    String url = prop.getString("dbURL");
+    System.out.println(url);
     url += DB_NAME;
     if (DB_UTF8_MODE) {
       url += "?useUnicode=true&characterEncoding=utf-8";
     }
-    con = DriverManager.getConnection(url, prop.getProperty("user"), prop
-      .getProperty("pw"));
+    con = DriverManager.getConnection(url, prop.getString("user"), prop
+      .getString("pw"));
 
     return con;
 	}
 
+  /**
+   * Custom API key for Freebase data retrieval - 100.000 queries/day possible
+   * @return api key
+   */
+  public static String getGoogleApiKey() {
+    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    ResourceBundle prop = ResourceBundle.getBundle("db", Locale.getDefault(), loader);
+
+    return prop.getString("apiKey");
+  }
   /**
    * Get a MongoDB (currently only working on wdi05 -> localhost)
    * @param dbName mongo db name
