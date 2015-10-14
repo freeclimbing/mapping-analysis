@@ -22,6 +22,11 @@ public class Utils {
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
 
+  public static final String MODE_LAT_LONG_TYPE = "modeLatLongType";
+  public static final String MODE_LABEL = "modeLabel";
+  public static final String MODE_TYPE = "modeType";
+  public static final String MODE_ALL = "modeAll";
+
   public static final String FLINK_RESULT_PATH = "/data/flink_data/CCresult/";
 
   private static boolean DB_UTF8_MODE = false;

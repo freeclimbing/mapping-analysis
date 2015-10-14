@@ -4,11 +4,9 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.utils.HaversineGeoDistance;
 import org.mappinganalysis.utils.Utils;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,42 +24,135 @@ import java.util.regex.Pattern;
 public class ComponentCheck {
   private static final Logger LOG = Logger.getLogger(ComponentCheck.class);
 
+  private static final String STRATEGY_EXCLUDE = "strategy-exclude";
+
   HashSet<Component> components = new HashSet<>();
   HashMap<Integer, String> labels = new HashMap<>();
   HashSet<Pair> edges = new HashSet<>();
+  String strategy = "";
 
-  public ComponentCheck() {
+
+  public ComponentCheck(String strategy) {
+    this.strategy = strategy;
   }
 
-  public static void main(String[] args) throws SQLException, ParserConfigurationException, SAXException, IOException {
-
+  public static void main(String[] args) throws Exception {
     BasicConfigurator.configure();
 
     Connection connection = Utils.openDbConnection(Utils.GEO_PERFECT_DB_NAME);
-    ComponentCheck check = new ComponentCheck();
+    ComponentCheck check = new ComponentCheck(STRATEGY_EXCLUDE);
 
-    ResultSet resLabels = check.getLabels(connection);
-    check.setLabels(resLabels);
+    check.populateComponents(connection);
 
-    ResultSet resNodes = check.getNodes(connection);
-    check.addNodesToComponents(resNodes);
+    System.out.println("Old size: " + check.components.size());
 
-    ResultSet resEdges = check.getEdges(connection);
-    check.addEdges(resEdges);
-
+//    HashSet<Component> compCopy = new HashSet<>(check.components);
     HashSet<Component> errorComponents = check.getComponentsWithOneToManyInstances();
     for (Component component : errorComponents) {
-      System.out.println(component.getId() + ":");
-      for (Vertex vertex : component.getVertices()) {
-        System.out.println(vertex.getUrl());
-      }
+      check.components.remove(component);
     }
 
+    System.out.println("New size: " + check.components.size());
+
+    int count = 0;
+    for (Component component : check.components) {
+      if (count > 10) {
+        break;
+      }
+      System.out.println("Component: " + component.getId());
+      if (simpleCompare(component.getVertices())) {
+        ++count;
+      }
+    }
+    System.out.println("complete components: " + count);
+
+    printStats(check);
 
 //    check.process();
 
 
 //    worker.printComponents();
+  }
+
+  /**
+   * Print statistics from the dataset.
+   * @param check process
+   */
+  private static void printStats(ComponentCheck check) {
+    int vertexCount = 0;
+    int nytCount = 0;
+    int missingTypeCount = 0;
+    int missingLatLonCount = 0;
+    int missingBothCount = 0;
+    for (Component component : check.components) {
+      for (Vertex vertex : component.getVertices()) {
+        ++vertexCount;
+        boolean isNyt = Boolean.FALSE;
+        if (vertex.getSource().startsWith("http://data.nyt")) {
+          ++nytCount;
+          isNyt = Boolean.TRUE;
+        }
+        boolean bothMissingPremise = Boolean.FALSE;
+        if (!isNyt && vertex.getTypeSet().isEmpty()) {
+//          System.out.println(vertex.getUrl());
+          ++missingTypeCount;
+          bothMissingPremise = Boolean.TRUE;
+        }
+        if (vertex.getLat() == 0 || vertex.getLon() == 0) {
+          ++missingLatLonCount;
+//          System.out.println(vertex.getUrl());
+          if (bothMissingPremise) {
+            ++missingBothCount;
+          }
+        }
+      }
+    }
+    System.out.println("#########################");
+    System.out.println("Vertex Count: " + vertexCount);
+    System.out.println("NYT resources: " + nytCount);
+    System.out.println("Missing type (nyt resources are excluded here, no type available): " + missingTypeCount);
+    System.out.println("##########################");
+    System.out.println("Missing lat/lon: " + missingLatLonCount);
+    System.out.println("Missing both: " + missingBothCount);
+  }
+
+  private static boolean simpleCompare(HashSet<Vertex> vertices) {
+    double lat = 0;
+    double lon = 0;
+    for (Vertex vertex : vertices) {
+      if (vertex.getLat() == 0.0 || vertex.getLon() == 0.0) {
+        return false;
+      } else if (!vertex.getSource().startsWith("http://data.nyt") && vertex.getTypeSet().isEmpty()) {
+        return false;
+      }
+    }
+    for (Vertex vertex : vertices) {
+      if (lat != 0) {
+        double result = HaversineGeoDistance.distance(lat, lon, vertex.getLat(), vertex.getLon());
+        System.out.println("##### distance to last vertex: " + result/1000 + " km");
+      }
+      System.out.println(vertex.toString());
+      lat = vertex.getLat();
+      lon = vertex.getLon();
+    }
+    return true;
+  }
+
+  private void populateComponents(Connection connection) throws SQLException {
+    if (strategy.equals(STRATEGY_EXCLUDE)) {
+
+    }
+    ResultSet resLabels = getLabels(connection);
+    setLabels(resLabels);
+
+    ResultSet resNodes = getNodes(connection);
+    addNodesToComponents(resNodes);
+
+    ResultSet properties = getProperties(connection);
+    addProperties(properties);
+
+    ResultSet resEdges = getEdges(connection);
+    addEdges(resEdges);
   }
 
   /**
@@ -218,6 +309,39 @@ public class ComponentCheck {
   }
 
   /**
+   * Add properties to already existing vertices.
+   * @param properties result set containing properties
+   */
+  private void addProperties(ResultSet properties) throws SQLException {
+    while (properties.next()) {
+      int id = properties.getInt(1);
+      String key = properties.getString(2);
+      String value = properties.getString(3);
+
+      for (Component c : components) {
+        Vertex vertex = c.getVertex(id);
+        if (vertex != null) {
+          switch (key) {
+            case "lat":
+              vertex.setLat(Double.parseDouble(value));
+              break;
+            case "lon":
+//              if (value.endsWith(".")) {
+//                System.out.println("id: " + vertex.getId() + " value: " + value);
+//              } else {
+                vertex.setLon(Double.parseDouble(value));
+//              }
+              break;
+            case "type":
+              vertex.addType(value);
+              break;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Add all nodes to components. If component does not exist, create it.
    * @param resNodes SQL result set of all nodes
    */
@@ -225,32 +349,12 @@ public class ComponentCheck {
     while (resNodes.next()) {
       int id = resNodes.getInt(1);
       String url = resNodes.getString(2);
-      // not yet working for Bioportal data, source is extracted from URL
-      String source = getSource(url);
-      int ccId = resNodes.getInt(3);
+      String source = resNodes.getString(3);
+      int ccId = resNodes.getInt(4);
 
       Vertex vertex = new Vertex(id, url, source, labels.get(id));
       addVertexToComponent(vertex, ccId);
     }
-  }
-
-  /**
-   * Extract source from an URL.
-   * @param url instance url
-   * @return source string
-   */
-  private String getSource(String url) {
-    String source = "";
-    if (url.startsWith("http://")) {
-      String regex = "(http:\\/\\/.*?)\\/";
-      Pattern pattern = Pattern.compile(regex);
-      Matcher matcher = pattern.matcher(url);
-      if (matcher.find()) {
-        source = matcher.group(1);
-      }
-    }
-
-    return source;
   }
 
   /**
@@ -315,6 +419,21 @@ public class ComponentCheck {
    * @return SQL result set
    * @throws SQLException
    */
+  private ResultSet getProperties(Connection connection) throws SQLException {
+    String sql = "SELECT id, attName, attValue, ontID FROM concept_attributes" +
+        " WHERE attName NOT IN ('label');";
+    PreparedStatement s = connection.prepareStatement(sql);
+
+    return s.executeQuery();
+  }
+
+
+  /**
+   * Get all labels from all nodes.
+   * @param connection db connection
+   * @return SQL result set
+   * @throws SQLException
+   */
   private ResultSet getLabels(Connection connection) throws SQLException {
     String property = "label";
     String sql = "SELECT id, attValue FROM concept_attributes" +
@@ -332,7 +451,7 @@ public class ComponentCheck {
    * @throws SQLException
    */
   private ResultSet getNodes(Connection con) throws SQLException {
-    String sql = "SELECT c.id, c.url, cc.ccID FROM concept AS c," +
+    String sql = "SELECT c.id, c.url, c.ontID_fk, cc.ccID FROM concept AS c," +
       "connectedComponents AS cc " +
       "WHERE c.id = cc.conceptID ORDER BY cc.ccID;";
     PreparedStatement s = con.prepareStatement(sql);

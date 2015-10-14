@@ -10,12 +10,8 @@ import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,6 +19,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Retrieve additional property information for LinkLion data.
@@ -37,8 +35,8 @@ public class LinkLionPropertyCompletion {
   private static final String SCHEMA_ONTOLOGY = "http://schema.org";
   private static final String UMBEL_ONTOLOGY = "http://umbel.org/umbel/rc";
   private static final String LGD_ONTOLOGY = "http://linkedgeodata.org/ontology";
-  private static final String FREEBASE_NS = "http://rdf.freebase.com/ns/";
-
+  private static final String FB_NS = "http://rdf.freebase.com/ns/";
+  private static final String DBP_NS = "http://dbpedia.org/";
 
   private static final String GN_NAME = "http://www.geonames.org/ontology#name";
   private static final String SKOS_LABEL =
@@ -57,14 +55,15 @@ public class LinkLionPropertyCompletion {
   private static final String FB_LATITUDE = "ns:location.geocode.latitude";
   private static final String FB_LONGITUDE = "ns:location.geocode.longitude";
 
-  private static final String MODE_LAT_LONG_TYPE = "latLongType";
-  private static final String MODE_LABEL = "labelMode";
-  private static final String MODE_TYPE = "typeMode";
   private static final String LABEL_NAME = "label";
   private static final String LAT_NAME = "lat";
   private static final String LON_NAME = "lon";
-  private static final String ELE_Name = "ele";
+  private static final String ELE_NAME = "ele";
   private static final String TYPE_NAME = "type";
+  private static final String DB_URL_FIELD = "url";
+  private static final String DB_ID_FIELD = "id";
+  private static final String DB_ONTID_FIELD = "ontID_fk";
+
   private static final String TYPE_DETAIL_NAME = "typeDetail";
 
   // TODO additional partly available: ele, population, feature class, country
@@ -73,29 +72,27 @@ public class LinkLionPropertyCompletion {
   private static final String DBP_ENDPOINT = "http://dbpedia.org/sparql";
 
   String processingMode = "";
+  boolean repairMode = Boolean.FALSE;
+  boolean sourceToDbMode = Boolean.FALSE;
+
   String dbName = "";
   Connection con = null;
-  // TODO hartung dataset: only label + lat + lon are in this graph
+  // TODO 3. hartung dataset: only label + lat + lon are in this graph, for rdf:type use empty graph
   //String graph = "http://www.linklion.org/geo-properties";
-  // use this for information like rdf:type
   String graph = "";
 
-  // for geonames resources
-  private TypeOntologyRetriever tr = new TypeOntologyRetriever("ontology_v3.1.rdf");
-  // for freebase resources
+  private GeonamesTypeRetriever tr = new GeonamesTypeRetriever("ontology_v3.1.rdf");
   private FreebasePropertyHandler handler;
-
 
   public LinkLionPropertyCompletion() throws Exception {
     Utils.setUtf8Mode(true);
-    // TODO choose DB to process
-    //this.dbName = Utils.GEO_PERFECT_DB_NAME;
+    // TODO 1. choose DB to process
+//    this.dbName = Utils.LL_DB_NAME;
     this.dbName = Utils.GEO_PERFECT_DB_NAME;
     this.con = Utils.openDbConnection(dbName);
 
-    // TODO choose processing mode
-    this.processingMode = MODE_TYPE;
-    // freebase http requests are minimized if processing mode is != MODE_LAT_LONG_TYPE
+    // TODO 2. choose processing mode
+    this.processingMode = Utils.MODE_ALL;
     handler = new FreebasePropertyHandler(processingMode);
   }
 
@@ -106,27 +103,116 @@ public class LinkLionPropertyCompletion {
   public static void main(String[] args) throws Exception {
 
     LinkLionPropertyCompletion ll = new LinkLionPropertyCompletion();
-
     System.out.println(ll.processingMode);
-    System.out.println("Get nodes without specified properties ..");
-//    ResultSet nodes = ll.getNodesWithoutLabels(ll.con);
 
-    // TODO customize query to restrict working set, if needed
-    ResultSet vertices = ll.getAllNodes();
-    // ll.getAllNodesWithAnyType();
-
-//    ResultSet errorNodes = ll.getAllErrorNodes(ll.con);
-//    ResultSet errorNodes = ll.getErrorNodes();
-
-//    HashMap<Integer, ArrayList<String>> errorIDs = getErrorIDs(errorNodes);
+    System.out.println("Get nodes with specified properties ..");
+    // TODO 3. customize query to restrict working set, if needed
+//    ResultSet nodes = ll.getNodesWithoutLabels();
+//    ResultSet vertices = ll.getMaliciousDbpResources();
+    ResultSet vertices = ll.getAllFreebaseNodes();
+    //ll.enrichMissingSourceValues();
 
     System.out.println("Process nodes one by one ..");
     ll.processResult(vertices);
+  }
 
+  /**
+   * Process all vertices returned from database for label enrichment.
+   * @param vertices SQL result set
+   * @throws SQLException
+   */
+  private void processResult(ResultSet vertices) throws Exception {
+    HashMap<Integer, String> retryMap = new HashMap<>();
+    int count = 0;
+    while (vertices.next()) {
+      ++count;
+      int id = vertices.getInt(DB_ID_FIELD);
+      String url = vertices.getString(DB_URL_FIELD);
+      String endpoint = "";
+      com.hp.hpl.jena.query.ResultSet properties = null;
 
-    // TODO work in progress
+      if (repairMode) {
+        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
+        updateDbProperty(id, DB_URL_FIELD, url);
+      }
+      // TODO rethink if this is always correct here (especially for the linklion dataset)
+      if (url.startsWith(FB_NS)) {
+        if (!writeFreebaseProperties(id, url)) {
+          retryMap.put(id, url);
+        }
+      } else {
+        if (url.startsWith(DBP_NS)) {
+          endpoint = DBP_ENDPOINT;
+        } else {
+          endpoint = LL_ENDPOINT;
+        }
+        if (dbName.equals(Utils.LL_DB_NAME)) {
+          properties = getPropertiesFromSparql(endpoint, id, url);
+        } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
+          properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
+        }
+      }
 
-//    check.writeFreebaseProperties(vertex, properties);
+      if (properties != null) {
+        HashMap<String, Boolean> propsMap = getPropertyErrorMap();
+        while (properties.hasNext()) {
+          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
+        }
+        reportErrors(url, id, endpoint, propsMap);
+      }
+    }
+    System.out.println("Processed " + count + " vertices.");
+    retryMissingVertices(retryMap);
+  }
+
+  /**
+   * Extract source from an URL.
+   * @param url instance url
+   * @return source string
+   */
+  private String getSource(String url) {
+    String source = "";
+    if (url.startsWith("http://")) {
+      String regex = "(http://.*?/).*";
+      Pattern pattern = Pattern.compile(regex);
+      Matcher matcher = pattern.matcher(url);
+      if (matcher.find()) {
+        source = matcher.group(1);
+      }
+    }
+
+    return source;
+  }
+
+  private HashMap<String, Boolean> getPropertyErrorMap() {
+    HashMap<String, Boolean> propsMap = new HashMap<>();
+    propsMap.put(LABEL_NAME, Boolean.FALSE);
+    propsMap.put(LAT_NAME, Boolean.FALSE);
+    propsMap.put(LON_NAME, Boolean.FALSE);
+    propsMap.put(TYPE_NAME, Boolean.FALSE);
+
+    return propsMap;
+  }
+
+  private void retryMissingVertices(HashMap<Integer, String> retryMap) throws Exception {
+    // perhaps no longer needed with implemented google api key usage
+    int retryCount = 5;
+    System.out.println(retryCount + " retries left.");
+    while (!retryMap.isEmpty() && (retryCount > 0)) {
+      HashMap<Integer, String> tmpRetryMap = new HashMap<>();
+      for (Integer id : retryMap.keySet()) {
+        String value = retryMap.get(id);
+        if (!writeFreebaseProperties(id, value)) {
+          tmpRetryMap.put(id, value);
+        }
+      }
+      retryMap = tmpRetryMap;
+      --retryCount;
+      System.out.println(retryCount + " retries left.");
+    }
+    for (Integer id : retryMap.keySet()) {
+      System.out.println("Missing properties for id: " + id + " and property: " + retryMap.get(id));
+    }
   }
 
   /**
@@ -154,7 +240,7 @@ public class LinkLionPropertyCompletion {
    * @throws SQLException
    */
   private static HashMap<Integer, ArrayList<String>> getErrorIDs(
-    ResultSet errorNodes) throws SQLException {
+      ResultSet errorNodes) throws SQLException {
     HashMap<Integer, ArrayList<String>> resultMap = new HashMap<>();
 
     while (errorNodes.next()) {
@@ -171,78 +257,6 @@ public class LinkLionPropertyCompletion {
   }
 
   /**
-   * Process all vertices returned from database for label enrichment.
-   * @param vertices SQL result set
-   * @throws SQLException
-   */
-  private void processResult(ResultSet vertices) throws Exception {
-    HashMap<Integer, String> retryMap = new HashMap<>();
-    int count = 0;
-    while (vertices.next()) {
-      ++count;
-      String url = vertices.getString("url");
-      int id = vertices.getInt("id");
-      com.hp.hpl.jena.query.ResultSet properties = null;
-      String endpoint = "";
-
-      // TODO rethink if this is always correct here (i.e., for the linklion dataset)
-      if (url.startsWith(FREEBASE_NS)) {
-        if (!writeFreebaseProperties(id, url)) {
-          retryMap.put(id, url);
-        }
-      } else if (dbName.equals(Utils.LL_DB_NAME)) {
-        if (url.startsWith("http://dbpedia.org")) {
-          endpoint = DBP_ENDPOINT;
-        } else {
-          endpoint = LL_ENDPOINT;
-        }
-        properties = getPropertiesFromSparql(endpoint, id, url);
-      } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
-        if (url.startsWith("http://dbpedia.org")) {
-          endpoint = DBP_ENDPOINT;
-        } else {
-          endpoint = LL_ENDPOINT;
-        }
-        properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
-      }
-
-      if (properties != null) {
-        HashMap<String, Boolean> propsMap = new HashMap<>();
-        propsMap.put(LABEL_NAME, Boolean.FALSE);
-        propsMap.put(LAT_NAME, Boolean.FALSE);
-        propsMap.put(LON_NAME, Boolean.FALSE);
-        propsMap.put(TYPE_NAME, Boolean.FALSE);
-
-        while (properties.hasNext()) {
-          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
-        }
-        reportErrors(url, id, endpoint, propsMap);
-      }
-    }
-
-    System.out.println("Processed " + count + " vertices."
-    );
-    // perhaps no longer needed with implemented google api key usage
-    int retryCount = 5;
-    System.out.println(retryCount + " retries left.");
-    while (!retryMap.isEmpty() && (retryCount > 0)) {
-      HashMap<Integer, String> tmpRetryMap = new HashMap<>();
-      for (Integer id : retryMap.keySet()) {
-        String value = retryMap.get(id);
-        if (!writeFreebaseProperties(id, value)) {
-          tmpRetryMap.put(id, value);
-        }
-      }
-      retryMap = tmpRetryMap;
-      --retryCount;
-      System.out.println(retryCount + " retries left.");
-    }
-    for (Integer id : retryMap.keySet()) {
-      System.out.println("Missing properties for id: " + id + " and property: " + retryMap.get(id));
-    }
-  }
-
-  /**
    * Write potential errors for vertex to DB.
    * @param url vertex url
    * @param id vertex id
@@ -253,7 +267,7 @@ public class LinkLionPropertyCompletion {
   private void reportErrors(String url, int id, String endpoint,
       HashMap<String, Boolean> propsMap) throws SQLException {
     String error = "property not found on " + endpoint;
-    if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
+    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
       if (!propsMap.get(LAT_NAME)) {
         writeError(id, url, error, LAT_NAME);
       }
@@ -263,10 +277,10 @@ public class LinkLionPropertyCompletion {
       if (!propsMap.get(TYPE_NAME)) {
         writeError(id, url, error, TYPE_NAME);
       }
-    } else if (processingMode.equals(MODE_TYPE) && !propsMap.get(TYPE_NAME)) {
+    } else if (processingMode.equals(Utils.MODE_TYPE) && !propsMap.get(TYPE_NAME)) {
       writeError(id, url, error, TYPE_NAME); // TODO whats with type detail?
     }
-    if (processingMode.equals(MODE_LABEL) && !propsMap.get(LABEL_NAME)) {
+    if (processingMode.equals(Utils.MODE_LABEL) && !propsMap.get(LABEL_NAME)) {
       writeError(id, url, error, LABEL_NAME);
     }
   }
@@ -304,6 +318,48 @@ public class LinkLionPropertyCompletion {
   }
 
   /**
+   * Update a single property value for a single vertex. (only working for col name 'url')
+   * @param id vertex id
+   * @param key property name
+   * @param value new value
+   */
+  private void updateDbProperty(int id, String key, String value) throws SQLException {
+    if (!value.isEmpty() && !key.isEmpty()
+        && (key.equals(DB_URL_FIELD) || key.equals(DB_ONTID_FIELD))) {
+      String update = "UPDATE concept SET ".concat(key).concat(" = ? WHERE id = ?;");
+
+      PreparedStatement updStmt = con.prepareStatement(update);
+      updStmt.setString(1, value);
+      updStmt.setInt(2, id);
+
+      updStmt.executeUpdate();
+      updStmt.close();
+      System.out.println("Written for Vertex: " + id + " Property: " +
+          key + " Value: " + value);
+    }
+  }
+
+  /**
+   * Delete single attribute value.
+   * @param id vertex id
+   * @param value value to delete
+   * @throws SQLException
+   */
+  private void deleteSingleValue(int id, String value) throws SQLException {
+    if (!value.isEmpty()) {
+      String del = "DELETE FROM concept_attributes WHERE attName = 'lon' AND attValue = ? AND id = ?;";
+
+      PreparedStatement stmt = con.prepareStatement(del);
+      stmt.setString(1, value);
+      stmt.setInt(2, id);
+
+      stmt.executeUpdate();
+      stmt.close();
+      System.out.println("Deleted for Vertex: " + id + " Value: " + value);
+    }
+  }
+
+  /**
    * Write single property for single vertex to db. If query is unsuccessful, return key for error processing.
    * @param id vertex id
    * @param key property key
@@ -336,32 +392,49 @@ public class LinkLionPropertyCompletion {
     return "";
   }
 
+  /**
+   * Source value needed for component check and further analysis.
+   * Retrieves all vertices without source and extracts the value from URL.
+   * @throws SQLException
+   */
+  private void enrichMissingSourceValues() throws SQLException {
+    ResultSet vertices = getNodesMissingSource();
+
+    while (vertices.next()) {
+      int id = vertices.getInt(DB_ID_FIELD);
+      String url = vertices.getString(DB_URL_FIELD);
+
+      updateDbProperty(id, DB_ONTID_FIELD, getSource(url));
+    }
+  }
+
   private String getDbPropertyName(String propTypeUrl) {
-    if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
+    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE) || processingMode.equals(Utils.MODE_ALL)) {
       switch (propTypeUrl) {
         case LAT_URL:
         case FB_LATITUDE:
+          System.out.println("writeProperty set to: " + LAT_NAME);
           return LAT_NAME;
         case LONG_URL:
         case FB_LONGITUDE:
           return LON_NAME;
         case FB_ELEVATION:
-          return ELE_Name;
+          return ELE_NAME;
       }
-    } else if (processingMode.equals(MODE_LABEL) &&
+    }
+    if ((processingMode.equals(Utils.MODE_LABEL) || processingMode.equals(Utils.MODE_ALL)) &&
       (propTypeUrl.equals(RDFS_LABEL) || propTypeUrl.equals(SKOS_LABEL))) {
       return LABEL_NAME;
     }
-
-    if (!processingMode.equals(MODE_LABEL)) {
+    if (!processingMode.equals(Utils.MODE_LABEL)) {
       switch (propTypeUrl) {
         case TYPE_URL:
         case FB_TYPE:
         case GN_CLASS_TYPE:
-//          System.out.println("writeProperty set to: " + TYPE_NAME);
+          System.out.println("writeProperty set to: " + TYPE_NAME + " propType: " + propTypeUrl);
           return TYPE_NAME;
         case GN_CODE_TYPE:
-//          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
+          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
           return TYPE_DETAIL_NAME;
       }
     }
@@ -501,13 +574,11 @@ public class LinkLionPropertyCompletion {
     writeError(id, url, e, "general_error");
   }
 
-  /**
-   * Get all nodes without coordinates or type
-   * @return SQL result set
-   * @throws SQLException
-   */
-  private ResultSet getAllNodes() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com%';";
+
+  private ResultSet getMaliciousDbpResources() throws SQLException {
+    repairMode = Boolean.TRUE;
+    String sql = "SELECT id, url FROM hartung_perfect_geo_links.concept " +
+        "where url like '%\\%2C%';";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();
@@ -518,9 +589,20 @@ public class LinkLionPropertyCompletion {
    * @return SQL result set
    * @throws SQLException
    */
-  private ResultSet getAllNodesWithAnyType() throws SQLException {
-    String sql = "SELECT DISTINCT c.id, c.url, a.attName FROM concept AS c " +
-      "LEFT JOIN concept_attributes AS a ON c.id = a.id;";
+  private ResultSet getAllFreebaseNodes() throws SQLException {
+    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com%';";
+    PreparedStatement s = con.prepareStatement(sql);
+
+    return s.executeQuery();
+  }
+
+  /**
+   * Only needed once per dataset, enrich missing source/ontID_fk fields in db with URLs of vertex.
+   * @return SQL result set
+   * @throws SQLException
+   */
+  private ResultSet getNodesMissingSource() throws SQLException {
+    String sql = "SELECT DISTINCT id, url FROM concept WHERE ontID_fk IS NULL;";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();
@@ -533,7 +615,7 @@ public class LinkLionPropertyCompletion {
    */
   private ResultSet getErrorNodes() throws SQLException {
     String custom;
-    if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
+    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
       custom = "IN (?, ?, ?);";
     } else {
       custom = "= ?;";
@@ -541,7 +623,7 @@ public class LinkLionPropertyCompletion {
     String sqlErrorNodes = "SELECT id, error_type FROM error_concept WHERE " +
       "error_type " + custom;
     PreparedStatement s = con.prepareStatement(sqlErrorNodes);
-    if (processingMode.equals(MODE_LAT_LONG_TYPE)) {
+    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
       s.setString(1, LON_NAME);
       s.setString(2, LAT_NAME);
       s.setString(3, TYPE_NAME);

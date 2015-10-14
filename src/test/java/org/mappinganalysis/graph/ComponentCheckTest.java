@@ -17,7 +17,7 @@ public class ComponentCheckTest {
 
   @Test
   public void testGetComponentsWithOneToManyInstances() throws Exception {
-    ComponentCheck tool = new ComponentCheck();
+    ComponentCheck tool = new ComponentCheck("");
     createTestVerticesAndEdges(tool);
     assertEquals(2, tool.components.size());
 

@@ -26,7 +26,7 @@ public class Vertex {
   /**
    * RDF type
    */
-  private String type = "";
+  private HashSet<String> typeSet = new HashSet<>();
   /**
    * latitude
    */
@@ -127,12 +127,28 @@ public class Vertex {
     return source;
   }
 
-  public String getType() {
-    return type;
+  public String toString() {
+    String types = "";
+    for (String s : typeSet) {
+      types = types.concat(s).concat("\n");
+    }
+    return "Vertex{" +
+        "id=" + getId() +
+        ", url=" + getUrl() +
+        ", label=" + getLabel() +
+        ", source=" + getSource() +
+        ", lat=" + getLat() +
+        ", lon=" + getLon() +
+        ", types=" + types +
+        "}";
   }
 
-  public void setType(String type) {
-    this.type = type;
+  public HashSet<String> getTypeSet() {
+    return typeSet;
+  }
+
+  public void addType(String type) {
+    this.typeSet.add(type);
   }
 
   public double getLat() {

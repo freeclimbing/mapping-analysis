@@ -14,6 +14,7 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashSet;
 
 /**
@@ -32,8 +33,6 @@ public class FreebasePropertyHandler {
   private static final String FREEBASE_NS = "http://rdf.freebase.com/ns/";
   private static final String FB_SERVICE_URL = "https://www.googleapis.com/freebase/v1/rdf/";
 
-
-  private static final String MODE_LAT_LONG_TYPE = "latLongType";
 //  private static final String MODE_LABEL = "labelMode";
 //  private static final String MODE_TYPE = "typeMode";
 
@@ -78,10 +77,9 @@ public class FreebasePropertyHandler {
     BufferedReader reader = new BufferedReader(new StringReader(result));
     String line;
     while ((line = reader.readLine()) != null) {
-      Iterable<String> lineIterable = Splitter.on(' ').omitEmptyStrings().split(line);
+      Iterable<String> lineIterable = Splitter.on(' ').limit(2).omitEmptyStrings().split(line);
       String[] keyValue = Iterables.toArray(lineIterable, String.class);
-
-      properties.addAll(getProperty(isGeoLocation, keyValue));
+      properties.addAll(getProperty(keyValue, isGeoLocation));
     }
     reader.close();
 
@@ -100,22 +98,28 @@ public class FreebasePropertyHandler {
    * @throws IOException
    * @throws URISyntaxException
    */
-  private HashSet<String[]> getProperty(Boolean isGeoLocation, String[] keyValue) throws Exception {
+  private HashSet<String[]> getProperty(String[] keyValue, Boolean isGeoLocation) throws Exception {
     HashSet<String[]> properties = new HashSet<>();
     if (keyValue.length == 2) {
       String key = keyValue[0];
       String value = removeTrailingSemicolon(keyValue[1]);
+      if (mode.equals(Utils.MODE_ALL)) {
+        if (key.equals("rdfs:label") && value.endsWith("@en")) {
+          value = value.replaceAll("\"(.*)\".*", "$1");
+          properties.add(new String[]{key, value});
+        }
+      }
       if (!isGeoLocation) {
         if (key.equals(TYPE) && value.startsWith(LOCATION_START)) {
           value = FREEBASE_NS.concat(value.substring(value.indexOf(":") + 1));
-//          System.out.println(key + " " + value);
           properties.add(new String[]{key, value});
-        } else if (key.equals(GEO_LOCATION) && mode.equals(MODE_LAT_LONG_TYPE)) {
+        } else if (key.equals(GEO_LOCATION) && (mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL))) {
           String splitValue = value.substring(value.indexOf(":") + 1);
+          System.out.println(splitValue);
 //          System.out.println("SPLITVALUE: " + splitValue);
           properties.addAll(getPropertiesForURI(FREEBASE_NS + splitValue, true));
         }
-      } else if (mode.equals(MODE_LAT_LONG_TYPE) && (key.equals(ELEVATION)
+      } else if ((mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL)) && (key.equals(ELEVATION)
           || key.equals(LATITUDE) || key.equals(LONGITUDE))) {
         value = value.substring(value.indexOf(":") + 1);
         properties.add(new String[]{key, value});
@@ -137,12 +141,13 @@ public class FreebasePropertyHandler {
   }
 
   /**
-   * Remove trailing semicolon from freebase property value
+   * Remove trailing semicolon or dot from freebase property value
    * @param value value to be checked
-   * @return string without semicolon
+   * @return string without semicolon/dot
    */
   private String removeTrailingSemicolon(String value) {
-    if (value.length() > 0 && value.charAt(value.length() - 1) == ';') {
+    if (value.length() > 0 && (value.charAt(value.length() - 1) == ';'
+        || value.charAt(value.length() - 1) == '.')) {
       value = value.substring(0, value.length() - 1);
     }
     return value;

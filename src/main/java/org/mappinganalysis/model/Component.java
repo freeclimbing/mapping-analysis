@@ -17,7 +17,7 @@ public class Component {
   /**
    *  Vertices of component
    */
-  private Set<Vertex> vertices = new HashSet<>();
+  private HashSet<Vertex> vertices = new HashSet<>();
   private int id;
 
   /**
@@ -32,7 +32,7 @@ public class Component {
    * Get set of vertices for a single component.
    * @return set of vertices
    */
-  public Set<Vertex> getVertices() {
+  public HashSet<Vertex> getVertices() {
     return vertices;
   }
 
