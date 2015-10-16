@@ -9,11 +9,8 @@ import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 
 import javax.xml.xpath.XPathExpressionException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -55,16 +52,11 @@ public class LinkLionPropertyCompletion {
   private static final String FB_LATITUDE = "ns:location.geocode.latitude";
   private static final String FB_LONGITUDE = "ns:location.geocode.longitude";
 
+  private static final String TYPE_DETAIL_NAME = "typeDetail";
   private static final String LABEL_NAME = "label";
   private static final String LAT_NAME = "lat";
   private static final String LON_NAME = "lon";
   private static final String ELE_NAME = "ele";
-  private static final String TYPE_NAME = "type";
-  private static final String DB_URL_FIELD = "url";
-  private static final String DB_ID_FIELD = "id";
-  private static final String DB_ONTID_FIELD = "ontID_fk";
-
-  private static final String TYPE_DETAIL_NAME = "typeDetail";
 
   // TODO additional partly available: ele, population, feature class, country
 
@@ -76,7 +68,7 @@ public class LinkLionPropertyCompletion {
   boolean sourceToDbMode = Boolean.FALSE;
 
   String dbName = "";
-  Connection con = null;
+  DbOps dbOps;
   // TODO 3. hartung dataset: only label + lat + lon are in this graph, for rdf:type use empty graph
   //String graph = "http://www.linklion.org/geo-properties";
   String graph = "";
@@ -89,7 +81,8 @@ public class LinkLionPropertyCompletion {
     // TODO 1. choose DB to process
 //    this.dbName = Utils.LL_DB_NAME;
     this.dbName = Utils.GEO_PERFECT_DB_NAME;
-    this.con = Utils.openDbConnection(dbName);
+    this.dbOps = new DbOps(dbName);
+
 
     // TODO 2. choose processing mode
     this.processingMode = Utils.MODE_ALL;
@@ -97,7 +90,7 @@ public class LinkLionPropertyCompletion {
   }
 
   /**
-   * main - care for db connection
+   * LinkLionPropertyCompletion
    * @throws SQLException
    */
   public static void main(String[] args) throws Exception {
@@ -108,8 +101,9 @@ public class LinkLionPropertyCompletion {
     System.out.println("Get nodes with specified properties ..");
     // TODO 3. customize query to restrict working set, if needed
 //    ResultSet nodes = ll.getNodesWithoutLabels();
+//    repairMode = Boolean.TRUE;
 //    ResultSet vertices = ll.getMaliciousDbpResources();
-    ResultSet vertices = ll.getAllFreebaseNodes();
+    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
     //ll.enrichMissingSourceValues();
 
     System.out.println("Process nodes one by one ..");
@@ -126,14 +120,14 @@ public class LinkLionPropertyCompletion {
     int count = 0;
     while (vertices.next()) {
       ++count;
-      int id = vertices.getInt(DB_ID_FIELD);
-      String url = vertices.getString(DB_URL_FIELD);
+      int id = vertices.getInt(Utils.DB_ID_FIELD);
+      String url = vertices.getString(Utils.DB_URL_FIELD);
       String endpoint = "";
       com.hp.hpl.jena.query.ResultSet properties = null;
 
       if (repairMode) {
         url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
-        updateDbProperty(id, DB_URL_FIELD, url);
+        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
       }
       // TODO rethink if this is always correct here (especially for the linklion dataset)
       if (url.startsWith(FB_NS)) {
@@ -189,7 +183,7 @@ public class LinkLionPropertyCompletion {
     propsMap.put(LABEL_NAME, Boolean.FALSE);
     propsMap.put(LAT_NAME, Boolean.FALSE);
     propsMap.put(LON_NAME, Boolean.FALSE);
-    propsMap.put(TYPE_NAME, Boolean.FALSE);
+    propsMap.put(Utils.TYPE_NAME, Boolean.FALSE);
 
     return propsMap;
   }
@@ -269,19 +263,19 @@ public class LinkLionPropertyCompletion {
     String error = "property not found on " + endpoint;
     if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
       if (!propsMap.get(LAT_NAME)) {
-        writeError(id, url, error, LAT_NAME);
+        dbOps.writeError(id, url, error, LAT_NAME);
       }
       if (!propsMap.get(LON_NAME)) {
-        writeError(id, url, error, LON_NAME);
+        dbOps.writeError(id, url, error, LON_NAME);
       }
-      if (!propsMap.get(TYPE_NAME)) {
-        writeError(id, url, error, TYPE_NAME);
+      if (!propsMap.get(Utils.TYPE_NAME)) {
+        dbOps.writeError(id, url, error, Utils.TYPE_NAME);
       }
-    } else if (processingMode.equals(Utils.MODE_TYPE) && !propsMap.get(TYPE_NAME)) {
-      writeError(id, url, error, TYPE_NAME); // TODO whats with type detail?
+    } else if (processingMode.equals(Utils.MODE_TYPE) && !propsMap.get(Utils.TYPE_NAME)) {
+      dbOps.writeError(id, url, error, Utils.TYPE_NAME); // TODO whats with type detail?
     }
     if (processingMode.equals(Utils.MODE_LABEL) && !propsMap.get(LABEL_NAME)) {
-      writeError(id, url, error, LABEL_NAME);
+      dbOps.writeError(id, url, error, LABEL_NAME);
     }
   }
 
@@ -294,7 +288,7 @@ public class LinkLionPropertyCompletion {
   private void parsePropertyAndWriteToDb(int id, String[] keyValue)
       throws SQLException, XPathExpressionException {
     String key = getDbPropertyName(keyValue[0]);
-    writePropertyToDb(id, key, keyValue[1]);
+    dbOps.writePropertyToDb(id, key, keyValue[1]);
   }
 
   /**
@@ -310,86 +304,11 @@ public class LinkLionPropertyCompletion {
     String key = getDbPropertyName(keyUrl);
     String value = getPropertyValue(line);
 
-    String errorKey = writePropertyToDb(id, key, value);
+    String errorKey = dbOps.writePropertyToDb(id, key, value);
     if (!errorKey.isEmpty()) {
       propsMap.put(errorKey, Boolean.TRUE);
     }
     return propsMap;
-  }
-
-  /**
-   * Update a single property value for a single vertex. (only working for col name 'url')
-   * @param id vertex id
-   * @param key property name
-   * @param value new value
-   */
-  private void updateDbProperty(int id, String key, String value) throws SQLException {
-    if (!value.isEmpty() && !key.isEmpty()
-        && (key.equals(DB_URL_FIELD) || key.equals(DB_ONTID_FIELD))) {
-      String update = "UPDATE concept SET ".concat(key).concat(" = ? WHERE id = ?;");
-
-      PreparedStatement updStmt = con.prepareStatement(update);
-      updStmt.setString(1, value);
-      updStmt.setInt(2, id);
-
-      updStmt.executeUpdate();
-      updStmt.close();
-      System.out.println("Written for Vertex: " + id + " Property: " +
-          key + " Value: " + value);
-    }
-  }
-
-  /**
-   * Delete single attribute value.
-   * @param id vertex id
-   * @param value value to delete
-   * @throws SQLException
-   */
-  private void deleteSingleValue(int id, String value) throws SQLException {
-    if (!value.isEmpty()) {
-      String del = "DELETE FROM concept_attributes WHERE attName = 'lon' AND attValue = ? AND id = ?;";
-
-      PreparedStatement stmt = con.prepareStatement(del);
-      stmt.setString(1, value);
-      stmt.setInt(2, id);
-
-      stmt.executeUpdate();
-      stmt.close();
-      System.out.println("Deleted for Vertex: " + id + " Value: " + value);
-    }
-  }
-
-  /**
-   * Write single property for single vertex to db. If query is unsuccessful, return key for error processing.
-   * @param id vertex id
-   * @param key property key
-   * @param value property value
-   * @return property key, if exception occurs
-   * @throws SQLException
-   */
-  private String writePropertyToDb(int id, String key, String value) throws SQLException {
-    if (!value.isEmpty() && !key.isEmpty()) {
-      String insert = "INSERT INTO concept_attributes (id, attName, " +
-        "attValue) VALUES (?, ?, ?);";
-
-      PreparedStatement insertStmt = con.prepareStatement(insert);
-      insertStmt.setInt(1, id);
-      insertStmt.setString(2, key);
-      insertStmt.setString(3, value);
-      try {
-        insertStmt.executeUpdate();
-        System.out.println("Written for Vertex: " + id + " Property: " +
-          key + " Value: " + value);
-        return key;
-      } catch (MySQLIntegrityConstraintViolationException ignore) {
-        if (key.equals(TYPE_NAME)) {
-          System.err.println(TYPE_NAME + "error");
-        }
-      } finally {
-        insertStmt.close();
-      }
-    }
-    return "";
   }
 
   /**
@@ -398,13 +317,12 @@ public class LinkLionPropertyCompletion {
    * @throws SQLException
    */
   private void enrichMissingSourceValues() throws SQLException {
-    ResultSet vertices = getNodesMissingSource();
+    ResultSet vertices = dbOps.getNodesMissingSource();
 
     while (vertices.next()) {
-      int id = vertices.getInt(DB_ID_FIELD);
-      String url = vertices.getString(DB_URL_FIELD);
-
-      updateDbProperty(id, DB_ONTID_FIELD, getSource(url));
+      int id = vertices.getInt(Utils.DB_ID_FIELD);
+      String url = vertices.getString(Utils.DB_URL_FIELD);
+      dbOps.updateDbProperty(id, Utils.DB_ONTID_FIELD, getSource(url));
     }
   }
 
@@ -431,8 +349,8 @@ public class LinkLionPropertyCompletion {
         case TYPE_URL:
         case FB_TYPE:
         case GN_CLASS_TYPE:
-          System.out.println("writeProperty set to: " + TYPE_NAME + " propType: " + propTypeUrl);
-          return TYPE_NAME;
+          System.out.println("writeProperty set to: " + Utils.TYPE_NAME + " propType: " + propTypeUrl);
+          return Utils.TYPE_NAME;
         case GN_CODE_TYPE:
           System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
           return TYPE_DETAIL_NAME;
@@ -534,103 +452,9 @@ public class LinkLionPropertyCompletion {
       qExec.close();
     } catch (Exception e) {
       System.out.println("id: " + id + " url: " + url + " e: " + e.getMessage());
-      writeError(id, url, e.getCause() + " " + e.getMessage());
+      dbOps.writeError(id, url, e.getCause() + " " + e.getMessage());
     }
 
     return results;
-  }
-
-  /**
-   * Write potential error while retrieving label to DB for later analysis.
-   * @param id node id
-   * @param url node url
-   * @param e error
-   * @param type error type
-   * @throws SQLException
-   */
-  private void writeError(int id, String url, String e, String type) throws
-    SQLException {
-    String error = "INSERT INTO error_concept (id, url, error, error_type) " +
-      "VALUES (?, ?, ?, ?);";
-
-    PreparedStatement insertStmt = con.prepareStatement(error);
-    insertStmt.setInt(1, id);
-    insertStmt.setString(2, url);
-    insertStmt.setString(3, e);
-    insertStmt.setString(4, type);
-    insertStmt.executeUpdate();
-    insertStmt.close();
-  }
-
-  /**
-   * Write potential error while retrieving label to DB for later analysis.
-   * @param id node id
-   * @param url node url
-   * @param e error
-   * @throws SQLException
-   */
-  private void writeError(int id, String url, String e) throws
-    SQLException {
-    writeError(id, url, e, "general_error");
-  }
-
-
-  private ResultSet getMaliciousDbpResources() throws SQLException {
-    repairMode = Boolean.TRUE;
-    String sql = "SELECT id, url FROM hartung_perfect_geo_links.concept " +
-        "where url like '%\\%2C%';";
-    PreparedStatement s = con.prepareStatement(sql);
-
-    return s.executeQuery();
-  }
-
-  /**
-   * Get all nodes without coordinates or type
-   * @return SQL result set
-   * @throws SQLException
-   */
-  private ResultSet getAllFreebaseNodes() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com%';";
-    PreparedStatement s = con.prepareStatement(sql);
-
-    return s.executeQuery();
-  }
-
-  /**
-   * Only needed once per dataset, enrich missing source/ontID_fk fields in db with URLs of vertex.
-   * @return SQL result set
-   * @throws SQLException
-   */
-  private ResultSet getNodesMissingSource() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept WHERE ontID_fk IS NULL;";
-    PreparedStatement s = con.prepareStatement(sql);
-
-    return s.executeQuery();
-  }
-
-  /**
-   * Get all nodes where labels have not been found in a previously program run.
-   * @return SQL result set
-   * @throws SQLException
-   */
-  private ResultSet getErrorNodes() throws SQLException {
-    String custom;
-    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
-      custom = "IN (?, ?, ?);";
-    } else {
-      custom = "= ?;";
-    }
-    String sqlErrorNodes = "SELECT id, error_type FROM error_concept WHERE " +
-      "error_type " + custom;
-    PreparedStatement s = con.prepareStatement(sqlErrorNodes);
-    if (processingMode.equals(Utils.MODE_LAT_LONG_TYPE)) {
-      s.setString(1, LON_NAME);
-      s.setString(2, LAT_NAME);
-      s.setString(3, TYPE_NAME);
-    } else {
-      s.setString(1, LABEL_NAME);
-    }
-
-    return s.executeQuery();
   }
 }

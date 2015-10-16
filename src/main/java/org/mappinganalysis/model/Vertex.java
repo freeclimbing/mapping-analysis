@@ -1,5 +1,7 @@
 package org.mappinganalysis.model;
 
+import com.google.common.collect.Sets;
+
 import java.util.HashSet;
 
 /**
@@ -10,7 +12,7 @@ public class Vertex {
   /**
    * source
    */
-  private String source ="";
+  private String source = "";
   /**
    * unique vertex id
    */
@@ -39,10 +41,11 @@ public class Vertex {
   /**
    * edges expressed via vertex ids which are connected to the vertex
    */
-  private HashSet<Integer> edges = new HashSet<>();
+  private HashSet<Integer> edges = null;
 
   /**
    * Constructor - build vertex with unique id
+   *
    * @param id id
    */
   public Vertex(Integer id) {
@@ -51,10 +54,11 @@ public class Vertex {
 
   /**
    * Constructor - Create vertex with additional information.
-   * @param id vertex id
-   * @param url vertex url
+   *
+   * @param id     vertex id
+   * @param url    vertex url
    * @param source data set where vertex comes from
-   * @param label vertex label
+   * @param label  vertex label
    */
   public Vertex(int id, String url, String source, String label) {
     this.id = id;
@@ -65,6 +69,7 @@ public class Vertex {
 
   /**
    * Set label of single vertex.
+   *
    * @param label label
    */
   public void setLabel(String label) {
@@ -73,6 +78,7 @@ public class Vertex {
 
   /**
    * Set url of single vertex.
+   *
    * @param url url
    */
   public void setUrl(String url) {
@@ -81,14 +87,21 @@ public class Vertex {
 
   /**
    * Add edge (vertex id of target) to a vertex.
+   *
    * @param edge id
    */
   public void addEdge(Integer edge) {
-    edges.add(edge);
+    if (edges == null) {
+      this.edges = Sets.newHashSet();
+    } else {
+      this.edges = Sets.newHashSet(edges);
+    }
+    this.edges.add(edge);
   }
 
   /**
    * Get vertex id of single vertex.
+   *
    * @return vertex id
    */
   public Integer getId() {
@@ -97,6 +110,7 @@ public class Vertex {
 
   /**
    * Get label of single vertex.
+   *
    * @return label
    */
   public String getLabel() {
@@ -105,6 +119,7 @@ public class Vertex {
 
   /**
    * Get url of single vertex.
+   *
    * @return url
    */
   public String getUrl() {
@@ -113,6 +128,7 @@ public class Vertex {
 
   /**
    * Get all edges for a vertex
+   *
    * @return set of target vertex ids
    */
   public HashSet<Integer> getEdges() {
@@ -121,9 +137,10 @@ public class Vertex {
 
   /**
    * Get source data set name where vertex comes from
+   *
    * @return source string
    */
-  public String getSource() {
+  public String getOntology() {
     return source;
   }
 
@@ -132,11 +149,11 @@ public class Vertex {
     for (String s : typeSet) {
       types = types.concat(s).concat("\n");
     }
-    return "Vertex{" +
+    return "SimpleVertex{" +
         "id=" + getId() +
         ", url=" + getUrl() +
         ", label=" + getLabel() +
-        ", source=" + getSource() +
+        ", source=" + getOntology() +
         ", lat=" + getLat() +
         ", lon=" + getLon() +
         ", types=" + types +

@@ -27,6 +27,14 @@ public class Utils {
   public static final String MODE_TYPE = "modeType";
   public static final String MODE_ALL = "modeAll";
 
+  public static final String DB_URL_FIELD = "url";
+  public static final String DB_ID_FIELD = "id";
+  public static final String DB_ONTID_FIELD = "ontID_fk";
+  public static final String DB_CCID_FIELD = "ccID";
+  public static final String DB_CONCEPTID_FIELD = "conceptID";
+  public static final String DB_CC_TABLE = "connectedComponents";
+  public static final String TYPE_NAME = "type";
+
   public static final String FLINK_RESULT_PATH = "/data/flink_data/CCresult/";
 
   private static boolean DB_UTF8_MODE = false;

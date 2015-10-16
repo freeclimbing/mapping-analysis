@@ -1,12 +1,14 @@
 package org.mappinganalysis.graph;
 
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.junit.Test;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.utils.Utils;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -17,9 +19,9 @@ public class ComponentCheckTest {
 
   @Test
   public void testGetComponentsWithOneToManyInstances() throws Exception {
-    ComponentCheck tool = new ComponentCheck("");
+    ComponentCheck tool = new ComponentCheck("", Utils.GEO_PERFECT_DB_NAME);
     createTestVerticesAndEdges(tool);
-    assertEquals(2, tool.components.size());
+    assertEquals(2, tool.getComponents().size());
 
     HashSet<Component> result = tool.getComponentsWithOneToManyInstances();
     assertEquals(1, result.size());
@@ -80,11 +82,63 @@ public class ComponentCheckTest {
       tool.addVertexToComponent(vertex, 4794);
     }
 
+    for (Component component : tool.getComponents()) {
+      if (component.getId() == 4795) {
+        assertEquals(4, component.getVertices().size());
+      } else if (component.getId() == 4794) {
+        assertEquals(7, component.getVertices().size());
+      }
+    }
+
     tool.addEdge(nytNewfoundland.getId(), dbpNewfIsland.getId());
     tool.addEdge(nytNewfoundland.getId(), fbNewfoundland.getId());
     tool.addEdge(nytNewfoundland.getId(), gnNewfLabra.getId());
     tool.addEdge(nytLabrador.getId(), gnNewfLabra.getId());
     tool.addEdge(nytLabrador.getId(), dbpLabrador.getId());
     tool.addEdge(nytLabrador.getId(), fbLabrador.getId());
+
+    // TEST?
+  }
+
+  @Test
+  public void testCreateDbAndFlinkVertices() throws Exception {
+    Connection connection = Utils.openDbConnection(Utils.GEO_PERFECT_DB_NAME);
+    ComponentCheck componentCheck = new ComponentCheck("strategy-exclude", Utils.GEO_PERFECT_DB_NAME);
+    ResultSet resLabels = componentCheck.getLabels(connection);
+    componentCheck.setLabels(resLabels);
+
+    HashSet<Integer> flinkVertices = componentCheck.createFlinkVertices(connection);
+    assertEquals(7540, componentCheck.getVerticesCount());
+    assertEquals(7540, flinkVertices.size());
+
+    HashSet<Tuple2<Integer, Integer>> flinkEdges = componentCheck.createDbAndFlinkEdges(connection);
+    assertEquals(5627, componentCheck.getEdgeCount());
+    assertEquals(5613, componentCheck.getEdges().size());
+    assertEquals(5613, flinkEdges.size());
+  }
+
+  @Test
+  public void testGetVertex() throws Exception {
+
+  }
+
+  @Test
+  public void testGetComponentsWithOneToManyInstances1() throws Exception {
+
+  }
+
+  @Test
+  public void testTraverse() throws Exception {
+
+  }
+
+  @Test
+  public void testAddEdge() throws Exception {
+
+  }
+
+  @Test
+  public void testAddVertexToComponent() throws Exception {
+
   }
 }
