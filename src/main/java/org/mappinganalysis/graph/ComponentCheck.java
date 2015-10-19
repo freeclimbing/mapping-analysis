@@ -2,6 +2,7 @@ package org.mappinganalysis.graph;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
@@ -35,35 +36,28 @@ public class ComponentCheck {
 
   public ComponentCheck(String strategy, String dbName) throws SQLException {
     this.strategy = strategy;
-    this.dbOps = new DbOps(Utils.GEO_PERFECT_DB_NAME);
+    this.dbOps = new DbOps(dbName);
   }
 
   public static void main(String[] args) throws Exception {
-//    BasicConfigurator.configure();
+    BasicConfigurator.configure();
 
     ComponentCheck check = new ComponentCheck(STRATEGY_EXCLUDE, Utils.GEO_PERFECT_DB_NAME);
 
-    //old way
-//    check.populateComponents(connection);
+    boolean doCcComputation = true;
+    check.preprocessing(check.dbOps.getCon(), !doCcComputation);
 
-    //new way
-
-    check.preprocessing(check.dbOps.getCon());
-
-//
-//    System.out.println("New size: " + check.components.size());
-//
-//    int count = 0;
-//    for (Component component : check.components) {
-//      if (count > 10) {
-//        break;
-//      }
-//      System.out.println("Component: " + component.getId());
-//      if (simpleCompare(component.getVertices())) {
-//        ++count;
-//      }
-//    }
-//    System.out.println("complete components: " + count);
+    int count = 0;
+    for (Component component : check.components) {
+      if (count > 10) {
+        break;
+      }
+      System.out.println("Component: " + component.getId());
+      if (simpleCompare(component.getVertices())) {
+        ++count;
+      }
+    }
+    System.out.println("complete components: " + count);
 //
 //    printStats(check);
 
@@ -76,44 +70,65 @@ public class ComponentCheck {
   /**
    * Populate vertices and edges for further analysis. Compute connected components at the end.
    * @param connection db connection
+   * @param doCcComputation if true, compute connected components new for this run. if false, use db data.
    * @throws Exception
    */
-  private void preprocessing(Connection connection) throws Exception {
+  private void preprocessing(Connection connection, boolean doCcComputation) throws Exception {
     ResultSet resLabels = getLabels(connection);
     setLabels(resLabels);
 
+    readDbVertices(connection);
     HashSet<Integer> flinkVertices = createFlinkVertices(connection);
     HashSet<Tuple2<Integer, Integer>> flinkEdges = createDbAndFlinkEdges(connection);
 
-    // CC compute
-    int maxIterations = 1000;
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
-    DataSet<Tuple2<Integer, Integer>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
-    long distinctComps = flinkResult.project(1).distinct().count();
+    if (doCcComputation) {
+      long startTime = System.nanoTime();
+      int maxIterations = 1000;
+      LOG.info("Compute Flink connected components ...");
+      FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
+      DataSet<Tuple2<Integer, Integer>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
+      long endTime = System.nanoTime();
+      long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.#
+      long distinctComps = flinkResult.project(1).distinct().count();
+      LOG.info("Computed " + distinctComps + " connected components in " + duration / 1000000 + " ms with Flink.");
 
-    //TODO exclude unneded edges?
-
-    // set CC in db
-    List<Tuple2<Integer, Integer>> vertexComponentList = flinkResult.collect();
-    for (Tuple2<Integer, Integer> vertexAndCc : vertexComponentList) {
-      // TODO fix property value to string
-      dbOps.updateDbProperty(Utils.DB_CONCEPTID_FIELD, vertexAndCc.f0,
-          Utils.DB_CC_TABLE, Utils.DB_CCID_FIELD, String.valueOf(vertexAndCc.f1));
+      // set CC in db
+      List<Tuple2<Integer, Integer>> vertexComponentList = flinkResult.collect();
+      for (Tuple2<Integer, Integer> vertexAndCc : vertexComponentList) {
+        // TODO fix property value to string
+        dbOps.updateDbProperty(Utils.DB_CONCEPTID_FIELD, vertexAndCc.f0,
+            Utils.DB_CC_TABLE, Utils.DB_CCID_FIELD, String.valueOf(vertexAndCc.f1));
+      }
     }
 
-    System.out.println("Created " + getVerticesCount() + " vertices.");
-    System.out.println("With strategy " + strategy + " " + (getEdgeCount() - edges.size()) + " have been removed.");
-    System.out.println("Created " + edges.size() + " edges.");
-    System.out.println("Computed " + distinctComps + " connected components with Flink.");
-//    ResultSet properties = getProperties(connection);
-//    addProperties(properties);
+    ResultSet resVertices = getVerticesWithPrecomputedCcId(connection);
+    addVerticesToComponents(resVertices);
+
+    long startTimeProps = System.nanoTime();
+    ResultSet properties = getProperties(connection);
+    addProperties(properties);
+    long endTimeProps = System.nanoTime();
+    long durationProps = (endTimeProps - startTimeProps);  //divide by 1000000 to get milliseconds.#
+    LOG.info("Time for property enrichment: " + durationProps / 1000000 + " ms");
+
+    LOG.info("Created " + getVerticesCount() + " vertices.");
+    LOG.info("With strategy '" + strategy + "' " + (getEdgeCount() - edges.size()) + " edges have been removed.");
+    LOG.info("Created " + edges.size() + " edges.");
   }
 
+  /**
+   * Create all edges for Flink and for further processing. Strategy for potential edge removal is executed here, too.
+   * @param connection db connection
+   * @return edge set ready for Flink processing
+   * @throws SQLException
+   */
   public  HashSet<Tuple2<Integer, Integer>> createDbAndFlinkEdges(Connection connection) throws SQLException {
+    LOG.info("Create edges ...");
     ResultSet resEdges = getEdges(connection);
     while (resEdges.next()) {
       edges.add(new Pair(resEdges.getInt(1), resEdges.getInt(2)));
     }
+    setEdgeCount(edges.size());
 
     if (strategy.equals(STRATEGY_EXCLUDE)) {
       ResultSet excludeResultSet = retrieveOneToManyLinksWithOntology(connection);
@@ -127,23 +142,14 @@ public class ComponentCheck {
     return flinkEdges;
   }
 
-  public  HashSet<Tuple2<Integer, Integer>> createDbEdges(Connection connection) throws SQLException {
-    ResultSet resEdges = getEdges(connection);
-    setEdgeCount(addEdges(vertices, resEdges));
-
-    if (strategy.equals(STRATEGY_EXCLUDE)) {
-      ResultSet excludeResultSet = retrieveOneToManyLinksWithOntology(connection);
-      removeProblemEdges(excludeResultSet);
-    }
-
-    HashSet<Tuple2<Integer, Integer>> flinkEdges = new HashSet<>();
-    for (Pair edge : edges) {
-      flinkEdges.add(new Tuple2<>(edge.getSrcId(), edge.getTrgId()));
-    }
-    return flinkEdges;
-  }
-
+  /**
+   * Read vertices from db connection and prepare the simple set of vertex ids for Flink computation.
+   * @param connection db connection
+   * @return set of vertex ids
+   * @throws SQLException
+   */
   public HashSet<Integer> createFlinkVertices(Connection connection) throws SQLException {
+    LOG.info("Create Flink vertices ...");
     ResultSet resVertices = getVertices(connection);
     HashSet<Integer> flinkVertices = new HashSet<>();
     while (resVertices.next()) {
@@ -152,7 +158,13 @@ public class ComponentCheck {
     return flinkVertices;
   }
 
+  /**
+   * Read vertices from db connection and create vertices for further processing.
+   * @param connection db connection
+   * @throws SQLException
+   */
   public void readDbVertices(Connection connection) throws SQLException {
+    LOG.info("Read vertices from database for application ...");
     ResultSet resVertices = getVertices(connection);
     while (resVertices.next()) {
       int id = resVertices.getInt(Utils.DB_ID_FIELD);
@@ -172,9 +184,8 @@ public class ComponentCheck {
     while (excludeResultSet.next()) {
       int sourceId = excludeResultSet.getInt(1);
       String problemOntology = excludeResultSet.getString(2);
-
       HashSet<Integer> vertexEdgeSet = getVertex(sourceId).getEdges();
-      if (vertexEdgeSet != null) {
+      if (vertexEdgeSet != null) { // "if" not tested/needed in small dataset
         for (Integer targetId : vertexEdgeSet) {
           String source = getVertex(targetId).getOntology();
           System.out.println("t: " + source);
@@ -232,7 +243,7 @@ public class ComponentCheck {
       for (Vertex vertex : component.getVertices()) {
         ++vertexCount;
         boolean isNyt = Boolean.FALSE;
-        if (vertex.getOntology().startsWith("http://data.nyt")) {
+        if (vertex.getOntology().equals("http://data.nytimes.com/")) {
           ++nytCount;
           isNyt = Boolean.TRUE;
         }
@@ -264,7 +275,7 @@ public class ComponentCheck {
     for (Vertex vertex : compVertices) {
       if (vertex.getLat() == 0.0 || vertex.getLon() == 0.0) {
         return false;
-      } else if (!vertex.getOntology().startsWith("http://data.nyt") && vertex.getTypeSet().isEmpty()) {
+      } else if (!vertex.getOntology().equals("http://data.nytimes.com/") && vertex.getTypeSet().isEmpty()) {
         return false;
       }
     }
@@ -278,24 +289,6 @@ public class ComponentCheck {
       lon = vertex.getLon();
     }
     return true;
-  }
-
-  private void populateComponents(Connection connection) throws SQLException {
-    ResultSet resEdges = getEdges(connection);
-    addEdges(vertices, resEdges);
-
-    ResultSet resLabels = getLabels(connection);
-    setLabels(resLabels);
-
-    ResultSet resVertices = getVerticesWithPrecomputedCcId(connection);
-    addVerticesToComponents(resVertices);
-
-    ResultSet properties = getProperties(connection);
-    addProperties(properties);
-  }
-
-  private void computeConnectedComponents() {
-
   }
 
   /**
@@ -314,8 +307,8 @@ public class ComponentCheck {
   }
 
   /**
-   * TODO
-   * @return
+   * Only used for testing.
+   * @return set components
    */
   public HashSet<Component> getComponentsWithOneToManyInstances() {
     HashSet<Component> excludedComponents = new HashSet<>();
@@ -480,14 +473,18 @@ public class ComponentCheck {
               vertex.setLat(Double.parseDouble(value));
               break;
             case "lon":
-//              if (value.endsWith(".")) {
-//                System.out.println("id: " + vertex.getId() + " value: " + value);
-//              } else {
                 vertex.setLon(Double.parseDouble(value));
-//              }
               break;
             case "type":
               vertex.addType(value);
+              break;
+            case "ele":
+              vertex.setEle(Double.parseDouble(value));
+              break;
+            case "typeDetail":
+              vertex.setTypeDetail(value);
+              break;
+            default:
               break;
           }
         }
@@ -500,6 +497,7 @@ public class ComponentCheck {
    * @param resNodes SQL result set of all nodes
    */
   private void addVerticesToComponents(ResultSet resNodes) throws SQLException {
+    LOG.info("Add vertices to application components ...");
     while (resNodes.next()) {
       int id = resNodes.getInt(1);
       String url = resNodes.getString(2);
@@ -562,6 +560,7 @@ public class ComponentCheck {
    * @throws SQLException
    */
   public void setLabels(ResultSet resLabels) throws SQLException {
+    LOG.info("Set labels in application...");
     while (resLabels.next()) {
       labels.put(resLabels.getInt(1), resLabels.getString(2));
     }
@@ -581,29 +580,28 @@ public class ComponentCheck {
         "    WHERE trgID = id) AS b " +
         "    ON a.srcID = b.srcID AND a.trgID = b.trgID " +
         "GROUP BY a.trgID , sourceOnt , targetOnt " +
-        "HAVING COUNT(a.trgID) > 1 ";
-//    +
-//        "UNION ALL " +
-//        "SELECT " +
-//        "    a.srcID as resultID, sourceOnt as ontology " +
-//        "FROM " +
-//        "    (SELECT srcID, trgID, ontID_fk AS sourceOnt, url " +
-//        "    FROM linksWithIDs, concept " +
-//        "    WHERE srcID = id) AS a " +
-//        "        LEFT OUTER JOIN " +
-//        "    (SELECT srcID, trgID, ontID_fk AS targetOnt, url " +
-//        "    FROM linksWithIDs, concept " +
-//        "    WHERE trgID = id) AS b  " +
-//        "    ON a.srcID = b.srcID AND a.trgID = b.trgID " +
-//        "GROUP BY a.srcID , sourceOnt , targetOnt " +
-//        "HAVING COUNT(a.srcID) > 1;";
+        "HAVING COUNT(a.trgID) > 1 " +
+        "UNION ALL " +
+        "SELECT " +
+        "    a.srcID as resultID, sourceOnt as ontology " +
+        "FROM " +
+        "    (SELECT srcID, trgID, ontID_fk AS sourceOnt, url " +
+        "    FROM linksWithIDs, concept " +
+        "    WHERE srcID = id) AS a " +
+        "        LEFT OUTER JOIN " +
+        "    (SELECT srcID, trgID, ontID_fk AS targetOnt, url " +
+        "    FROM linksWithIDs, concept " +
+        "    WHERE trgID = id) AS b  " +
+        "    ON a.srcID = b.srcID AND a.trgID = b.trgID " +
+        "GROUP BY a.srcID , sourceOnt , targetOnt " +
+        "HAVING COUNT(a.srcID) > 1;";
     PreparedStatement s = connection.prepareStatement(sql);
 
     return s.executeQuery();
   }
 
   /**
-   * Get all labels from all nodes.
+   * Get all properties from all vertices. (ontID is empty in attributes)
    * @param connection db connection
    * @return SQL result set
    * @throws SQLException
@@ -624,6 +622,7 @@ public class ComponentCheck {
    * @throws SQLException
    */
   public ResultSet getLabels(Connection connection) throws SQLException {
+    LOG.info("Get labels from database...");
     String property = "label";
     String sql = "SELECT id, attValue FROM concept_attributes" +
       " WHERE attName = ?";
@@ -653,6 +652,7 @@ public class ComponentCheck {
    * @throws SQLException
    */
   private ResultSet getVerticesWithPrecomputedCcId(Connection con) throws SQLException {
+    LOG.info("Get additional properties from database ...");
     String sql = "SELECT c.id, c.url, c.ontID_fk, cc.ccID FROM concept AS c," +
       "connectedComponents AS cc " +
       "WHERE c.id = cc.conceptID ORDER BY cc.ccID;";

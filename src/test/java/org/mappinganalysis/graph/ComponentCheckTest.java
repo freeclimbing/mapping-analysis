@@ -27,6 +27,7 @@ public class ComponentCheckTest {
     assertEquals(1, result.size());
     for (Component component : result) {
       assertEquals(4794, component.getId());
+      assertEquals(7, component.getVertices().size());
     }
   }
 
@@ -47,6 +48,10 @@ public class ComponentCheckTest {
 //
 //  }
 
+  /**
+   * Create test data for testGetComponentsWithOneToManyInstances
+   * @param tool tool
+   */
   private void createTestVerticesAndEdges(ComponentCheck tool) {
     HashSet<Vertex> vertices = new HashSet<>();
 
@@ -82,22 +87,12 @@ public class ComponentCheckTest {
       tool.addVertexToComponent(vertex, 4794);
     }
 
-    for (Component component : tool.getComponents()) {
-      if (component.getId() == 4795) {
-        assertEquals(4, component.getVertices().size());
-      } else if (component.getId() == 4794) {
-        assertEquals(7, component.getVertices().size());
-      }
-    }
-
     tool.addEdge(nytNewfoundland.getId(), dbpNewfIsland.getId());
     tool.addEdge(nytNewfoundland.getId(), fbNewfoundland.getId());
     tool.addEdge(nytNewfoundland.getId(), gnNewfLabra.getId());
     tool.addEdge(nytLabrador.getId(), gnNewfLabra.getId());
     tool.addEdge(nytLabrador.getId(), dbpLabrador.getId());
     tool.addEdge(nytLabrador.getId(), fbLabrador.getId());
-
-    // TEST?
   }
 
   @Test

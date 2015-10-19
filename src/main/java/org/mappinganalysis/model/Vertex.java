@@ -30,6 +30,10 @@ public class Vertex {
    */
   private HashSet<String> typeSet = new HashSet<>();
   /**
+   * Geonames rdf:type detail information
+   */
+  private String typeDetail = "";
+  /**
    * latitude
    */
   private double lat;
@@ -42,6 +46,7 @@ public class Vertex {
    * edges expressed via vertex ids which are connected to the vertex
    */
   private HashSet<Integer> edges = null;
+  private double ele;
 
   /**
    * Constructor - build vertex with unique id
@@ -172,6 +177,17 @@ public class Vertex {
     return lat;
   }
 
+  public String getTypeDetail() {
+    return typeDetail;
+  }
+
+  public void setTypeDetail(String typeDetail) {
+    this.typeDetail = typeDetail;
+  }
+
+  public double getEle() {
+    return ele;
+  }
   public void setLat(double lat) {
     this.lat = lat;
   }
@@ -182,5 +198,9 @@ public class Vertex {
 
   public void setLon(double lon) {
     this.lon = lon;
+  }
+
+  public void setEle(double ele) {
+    this.ele = ele;
   }
 }

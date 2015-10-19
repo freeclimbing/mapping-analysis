@@ -1,6 +1,7 @@
 package org.mappinganalysis.utils;
 
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
+import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,6 +12,7 @@ import java.sql.SQLException;
  * database operations
  */
 public class DbOps {
+  private static final Logger LOG = Logger.getLogger(DbOps.class);
   Connection con;
   String dbName;
 
@@ -51,8 +53,8 @@ public class DbOps {
       }
       updStmt.executeUpdate();
       updStmt.close();
-      System.out.println("Written for Vertex: " + vertexId + " Property: " +
-          fieldName + " Value: " + value);
+//      LOG.info("Written for Vertex: " + vertexId + " Property: " +
+//          fieldName + " Value: " + value);
     }
   }
 
@@ -72,7 +74,7 @@ public class DbOps {
 
       stmt.executeUpdate();
       stmt.close();
-      System.out.println("Deleted for Vertex: " + id + " Value: " + value);
+      LOG.info("Deleted for Vertex: " + id + " Value: " + value);
     }
   }
 
