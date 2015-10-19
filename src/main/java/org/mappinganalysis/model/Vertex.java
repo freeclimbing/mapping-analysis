@@ -2,6 +2,7 @@ package org.mappinganalysis.model;
 
 import com.google.common.collect.Sets;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 /**
@@ -45,7 +46,7 @@ public class Vertex {
   /**
    * edges expressed via vertex ids which are connected to the vertex
    */
-  private HashSet<Integer> edges = null;
+  private HashSet<Integer> edges;
   private double ele;
 
   /**
@@ -54,6 +55,7 @@ public class Vertex {
    * @param id id
    */
   public Vertex(Integer id) {
+    this.edges = Sets.newHashSet();
     this.id = id;
   }
 
@@ -66,6 +68,7 @@ public class Vertex {
    * @param label  vertex label
    */
   public Vertex(int id, String url, String source, String label) {
+    this.edges = Sets.newHashSet();
     this.id = id;
     this.url = url;
     this.label = label;
@@ -96,12 +99,7 @@ public class Vertex {
    * @param edge id
    */
   public void addEdge(Integer edge) {
-    if (edges == null) {
-      this.edges = Sets.newHashSet();
-    } else {
-      this.edges = Sets.newHashSet(edges);
-    }
-    this.edges.add(edge);
+    edges.add(edge);
   }
 
   /**
@@ -150,18 +148,15 @@ public class Vertex {
   }
 
   public String toString() {
-    String types = "";
-    for (String s : typeSet) {
-      types = types.concat(s).concat("\n");
-    }
+    String types = Arrays.toString(typeSet.toArray(new String[typeSet.size()]));
     return "SimpleVertex{" +
-        "id=" + getId() +
-        ", url=" + getUrl() +
-        ", label=" + getLabel() +
-        ", source=" + getOntology() +
-        ", lat=" + getLat() +
-        ", lon=" + getLon() +
-        ", types=" + types +
+        "id = " + getId() +
+        ", url = " + getUrl() +
+        ", label = " + getLabel() +
+        ", source = " + getOntology() +
+        ", lat = " + getLat() +
+        ", lon = " + getLon() +
+        ", type = " + types +
         "}";
   }
 

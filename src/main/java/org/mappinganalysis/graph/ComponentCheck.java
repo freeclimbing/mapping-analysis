@@ -1,5 +1,7 @@
 package org.mappinganalysis.graph;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.log4j.BasicConfigurator;
@@ -24,10 +26,10 @@ public class ComponentCheck {
 
   private static final String STRATEGY_EXCLUDE = "strategy-exclude";
 
-  private HashSet<Component> components = new HashSet<>();
-  private HashMap<Integer, String> labels = new HashMap<>();
-  private HashSet<Pair> edges = new HashSet<>();
-  private HashSet<Vertex> vertices = new HashSet<>();
+  private HashSet<Component> components;
+  private HashMap<Integer, String> labels;
+  private HashSet<Pair> edges;
+  private HashSet<Vertex> vertices;
   private int edgeCount;
   private int verticesCount;
 
@@ -49,11 +51,11 @@ public class ComponentCheck {
 
     int count = 0;
     for (Component component : check.components) {
-      if (count > 10) {
+      if (count > 1) {
         break;
       }
-      System.out.println("Component: " + component.getId());
-      if (simpleCompare(component.getVertices())) {
+      LOG.info("Component: " + component.getId());
+      if (check.simpleCompare(component.getVertices())) {
         ++count;
       }
     }
@@ -62,7 +64,6 @@ public class ComponentCheck {
 //    printStats(check);
 
 //    check.process();
-
 
 //    worker.printComponents();
   }
@@ -90,7 +91,6 @@ public class ComponentCheck {
       long endTime = System.nanoTime();
       long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.#
       long distinctComps = flinkResult.project(1).distinct().count();
-      LOG.info("Computed " + distinctComps + " connected components in " + duration / 1000000 + " ms with Flink.");
 
       // set CC in db
       List<Tuple2<Integer, Integer>> vertexComponentList = flinkResult.collect();
@@ -99,17 +99,14 @@ public class ComponentCheck {
         dbOps.updateDbProperty(Utils.DB_CONCEPTID_FIELD, vertexAndCc.f0,
             Utils.DB_CC_TABLE, Utils.DB_CCID_FIELD, String.valueOf(vertexAndCc.f1));
       }
+      LOG.info("Computed " + distinctComps + " connected components in " + duration / 1000000 + " ms with Flink.");
     }
 
     ResultSet resVertices = getVerticesWithPrecomputedCcId(connection);
     addVerticesToComponents(resVertices);
 
-    long startTimeProps = System.nanoTime();
     ResultSet properties = getProperties(connection);
     addProperties(properties);
-    long endTimeProps = System.nanoTime();
-    long durationProps = (endTimeProps - startTimeProps);  //divide by 1000000 to get milliseconds.#
-    LOG.info("Time for property enrichment: " + durationProps / 1000000 + " ms");
 
     LOG.info("Created " + getVerticesCount() + " vertices.");
     LOG.info("With strategy '" + strategy + "' " + (getEdgeCount() - edges.size()) + " edges have been removed.");
@@ -124,6 +121,7 @@ public class ComponentCheck {
    */
   public  HashSet<Tuple2<Integer, Integer>> createDbAndFlinkEdges(Connection connection) throws SQLException {
     LOG.info("Create edges ...");
+    edges = Sets.newHashSet();
     ResultSet resEdges = getEdges(connection);
     while (resEdges.next()) {
       edges.add(new Pair(resEdges.getInt(1), resEdges.getInt(2)));
@@ -138,6 +136,11 @@ public class ComponentCheck {
     HashSet<Tuple2<Integer, Integer>> flinkEdges = new HashSet<>();
     for (Pair edge : edges) {
       flinkEdges.add(new Tuple2<>(edge.getSrcId(), edge.getTrgId()));
+      // not working, vertex needs to be changed within component
+//      Vertex vertex = getVertex(from);
+//      vertices.remove(vertex);
+//      vertex.addEdge(to);
+//      vertices.add(vertex);
     }
     return flinkEdges;
   }
@@ -151,7 +154,7 @@ public class ComponentCheck {
   public HashSet<Integer> createFlinkVertices(Connection connection) throws SQLException {
     LOG.info("Create Flink vertices ...");
     ResultSet resVertices = getVertices(connection);
-    HashSet<Integer> flinkVertices = new HashSet<>();
+    HashSet<Integer> flinkVertices = Sets.newHashSet();
     while (resVertices.next()) {
       flinkVertices.add(resVertices.getInt(Utils.DB_ID_FIELD));
     }
@@ -165,6 +168,7 @@ public class ComponentCheck {
    */
   public void readDbVertices(Connection connection) throws SQLException {
     LOG.info("Read vertices from database for application ...");
+    vertices = Sets.newHashSet();
     ResultSet resVertices = getVertices(connection);
     while (resVertices.next()) {
       int id = resVertices.getInt(Utils.DB_ID_FIELD);
@@ -184,19 +188,19 @@ public class ComponentCheck {
     while (excludeResultSet.next()) {
       int sourceId = excludeResultSet.getInt(1);
       String problemOntology = excludeResultSet.getString(2);
-      HashSet<Integer> vertexEdgeSet = getVertex(sourceId).getEdges();
-      if (vertexEdgeSet != null) { // "if" not tested/needed in small dataset
-        for (Integer targetId : vertexEdgeSet) {
-          String source = getVertex(targetId).getOntology();
-          System.out.println("t: " + source);
-          if (source.equals(problemOntology)) {
-            System.out.println("exclude targetId to " + targetId);
-            edges.remove(new Pair(targetId, sourceId));
-            edges.remove(new Pair(sourceId, targetId));
-          }
-        }
-      } else { //rly? (working for small data set)
-        HashSet<Pair> excludeSet = new HashSet<>();
+//      HashSet<Integer> vertexEdgeSet = getVertex(sourceId).getEdges(); // TODO check if needed for linklion dataset
+//      if (vertexEdgeSet != null || !vertexEdgeSet.isEmpty()) { // "if" not tested/needed in small dataset
+//        for (Integer targetId : vertexEdgeSet) {
+//          String source = getVertex(targetId).getOntology();
+//          System.out.println("t: " + source);
+//          if (source.equals(problemOntology)) {
+//            System.out.println("exclude targetId to " + targetId);
+//            edges.remove(new Pair(targetId, sourceId));
+//            edges.remove(new Pair(sourceId, targetId));
+//          }
+//        }
+//      } else { //rly? (working for small data set)
+        HashSet<Pair> excludeSet = Sets.newHashSet();
         for (Pair edge : edges) {
           if (edge.getSrcId().equals(sourceId)) {
             if (getVertex(edge.getSrcId()).getOntology().equals(problemOntology)) {
@@ -211,7 +215,7 @@ public class ComponentCheck {
         for (Pair pair : excludeSet) {
           edges.remove(pair);
         }
-      }
+//      }
     }
   }
 
@@ -234,14 +238,12 @@ public class ComponentCheck {
    * @param check process
    */
   private static void printStats(ComponentCheck check) {
-    int vertexCount = 0;
     int nytCount = 0;
     int missingTypeCount = 0;
     int missingLatLonCount = 0;
     int missingBothCount = 0;
     for (Component component : check.components) {
       for (Vertex vertex : component.getVertices()) {
-        ++vertexCount;
         boolean isNyt = Boolean.FALSE;
         if (vertex.getOntology().equals("http://data.nytimes.com/")) {
           ++nytCount;
@@ -260,16 +262,15 @@ public class ComponentCheck {
         }
       }
     }
-    System.out.println("#########################");
-    System.out.println("Vertex Count: " + vertexCount);
-    System.out.println("NYT resources: " + nytCount);
-    System.out.println("Missing type (nyt resources are excluded here, no type available): " + missingTypeCount);
-    System.out.println("##########################");
-    System.out.println("Missing lat/lon: " + missingLatLonCount);
-    System.out.println("Missing both: " + missingBothCount);
+    LOG.info("#########################");
+    LOG.info("NYT resources: " + nytCount);
+    LOG.info("Missing type (nyt resources are excluded here, no type available): " + missingTypeCount);
+    LOG.info("##########################");
+    LOG.info("Missing lat/lon: " + missingLatLonCount);
+    LOG.info("Missing both: " + missingBothCount);
   }
 
-  private static boolean simpleCompare(HashSet<Vertex> compVertices) {
+  private boolean simpleCompare(HashSet<Vertex> compVertices) {
     double lat = 0;
     double lon = 0;
     for (Vertex vertex : compVertices) {
@@ -280,11 +281,14 @@ public class ComponentCheck {
       }
     }
     for (Vertex vertex : compVertices) {
-      if (lat != 0) {
-        double result = HaversineGeoDistance.distance(lat, lon, vertex.getLat(), vertex.getLon());
-        System.out.println("##### distance to last vertex: " + result/1000 + " km");
-      }
-      System.out.println(vertex.toString());
+//      if (lat != 0) {
+//        double result = HaversineGeoDistance.distance(lat, lon, vertex.getLat(), vertex.getLon());
+//        System.out.println("##### distance to last vertex: " + result/1000 + " km");
+//      }
+      LOG.info(vertex.toString());
+      HashSet<Integer> neighbors = getNeighbors(vertex.getId());
+      LOG.info("edges to: " + neighbors.toString());
+
       lat = vertex.getLat();
       lon = vertex.getLon();
     }
@@ -297,12 +301,14 @@ public class ComponentCheck {
   private void process() {
     for (Component component : components) {
       HashSet<String> uniqueOntologies = new HashSet<>();
+      System.out.println("Component: " + component.getId());
+      traverse(component, uniqueOntologies, component.getVertices().iterator().next(), Sets.<Vertex>newLinkedHashSet());
 
-      for (Vertex vertex : component.getVertices()) {
-        LinkedHashSet<Vertex> processed = new LinkedHashSet<>();
-        System.out.println("--- next vertex: " + vertex.getId());
+//      for (Vertex vertex : component.getVertices()) {
+//        LinkedHashSet<Vertex> processed = Sets.newLinkedHashSet();
+//        System.out.println("######## next vertex: " + vertex.getId());
 //        traverse(component, uniqueOntologies, vertex, processed);
-      }
+//      }
     }
   }
 
@@ -337,18 +343,19 @@ public class ComponentCheck {
    */
   public void traverse(Component component, HashSet<String> uniqueOntologies,
     Vertex vertex, LinkedHashSet<Vertex> processed) {
-    Set<Integer> neighbors = getNeighbors(edges, vertex.getId());
-    System.out.println("--- next vertex: " + vertex.getId());
+    HashSet<Integer> neighbors = getNeighbors(vertex.getId());
+    System.out.println("--- next vertex: " + vertex.getId() + " " + vertex.getUrl());
 
     if (!uniqueOntologies.add(vertex.getOntology())) {
-      System.out.println(vertex.getId() + ": already processed a vertex with source: " + vertex.getOntology() );
+      LOG.info(vertex.getId() + ": already processed a vertex with source: " + vertex.getOntology() );
+      return;
       // 1. case: error found
       // * check path backwards
       // * check neighbors
       // * create new component
 
-      Vertex dupOntVertex = findDuplicateOntologyVertex(vertex, processed);
-      Vertex sourceVertex = processed.iterator().next();
+//      Vertex dupOntVertex = findDuplicateOntologyVertex(vertex, processed);
+//      Vertex sourceVertex = processed.iterator().next();
     } else {
       System.out.println(vertex.getId() + ": vertex not yet processed, process... ");
       if (!neighbors.isEmpty()) {
@@ -356,8 +363,8 @@ public class ComponentCheck {
         for (Integer neighbor : neighbors) {
           System.out.println(vertex.getId() + ": -- is neighbor " + neighbor + " already contained in processed vertices?");
           Vertex neighborVertex = component.getVertex(neighbor);
+          System.out.println(neighborVertex.getUrl());
           if (processed.contains(neighborVertex)) {
-            System.out.println(vertex.getId() + ": neighbors: " + neighbors);
             System.out.println(vertex.getId() + ": yes, neighbor already existing " + neighbor);
             // 3. case: vertex already processed
 //            break;
@@ -365,7 +372,6 @@ public class ComponentCheck {
             // 4. process next vertex
             // Vertex next = component.getVertex(neighbor);//neighbors.iterator().next());
             processed.add(vertex);
-            System.out.println(vertex.getId() + ": neighbors: " + neighbors);
             System.out.println(vertex.getId() + ": no, take this vertex (from neighbors) to process: " + neighborVertex.getId());
             traverse(component, uniqueOntologies, neighborVertex, processed);
           }
@@ -439,11 +445,10 @@ public class ComponentCheck {
 
   /**
    * Get neighbors for a given vertex
-   * @param edges edges from starting vertex
    * @param id vertex id
    * @return set of vertex ids for neighbors
    */
-  private Set<Integer> getNeighbors(HashSet<Pair> edges, int id) {
+  private HashSet<Integer> getNeighbors(int id) {
     HashSet<Integer> neighbors = new HashSet<>();
     for (Pair edge : edges) {
       if (edge.getSrcId() == id) {
@@ -498,6 +503,7 @@ public class ComponentCheck {
    */
   private void addVerticesToComponents(ResultSet resNodes) throws SQLException {
     LOG.info("Add vertices to application components ...");
+    components = Sets.newHashSet();
     while (resNodes.next()) {
       int id = resNodes.getInt(1);
       String url = resNodes.getString(2);
@@ -561,6 +567,7 @@ public class ComponentCheck {
    */
   public void setLabels(ResultSet resLabels) throws SQLException {
     LOG.info("Set labels in application...");
+    labels = Maps.newHashMap();
     while (resLabels.next()) {
       labels.put(resLabels.getInt(1), resLabels.getString(2));
     }
