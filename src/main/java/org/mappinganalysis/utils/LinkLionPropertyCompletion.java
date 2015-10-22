@@ -94,20 +94,55 @@ public class LinkLionPropertyCompletion {
    * @throws SQLException
    */
   public static void main(String[] args) throws Exception {
-
     LinkLionPropertyCompletion ll = new LinkLionPropertyCompletion();
     System.out.println(ll.processingMode);
 
     System.out.println("Get nodes with specified properties ..");
     // TODO 3. customize query to restrict working set, if needed
-//    ResultSet nodes = ll.getNodesWithoutLabels();
-//    repairMode = Boolean.TRUE;
-//    ResultSet vertices = ll.getMaliciousDbpResources();
-    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
-    //ll.enrichMissingSourceValues();
+//    ResultSet nodes = ll.dbOps.getNodesWithoutLabels();
+//    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
+
+
+
 
     System.out.println("Process nodes one by one ..");
-    ll.processResult(vertices);
+//    ll.processResult(vertices);
+
+    // add type to concept attributes
+     ResultSet properties = ll.dbOps.getProperties();
+     ll.processProperties(properties);
+
+    // repair dbp resources where unicode was not fully enforced
+    // repairMode = Boolean.TRUE;
+    // ResultSet vertices = ll.getMaliciousDbpResources();
+    // ll.processResult(vertices);
+
+    // example (for a single vertex): vertex with label dbpedia:Berlin gets source/ontology set to http://dbpedia.org/
+    //ll.enrichMissingSourceValues();
+  }
+
+  private void processProperties(ResultSet properties) throws SQLException {
+    while (properties.next()) {
+      int id = properties.getInt("id");
+      String attName = properties.getString("attName");
+      String attValue = properties.getString("attValue");
+
+      switch (attName) {
+        case "lat":
+        case "lon":
+        case "ele":
+          dbOps.updateDbAttributesProperty(id, attName, attValue, "double");
+          break;
+        case "label":
+        case "type":
+        case "typeDetail":
+          dbOps.updateDbAttributesProperty(id, attName, attValue, "string");
+          break;
+        default:
+          break;
+
+      }
+    }
   }
 
   /**

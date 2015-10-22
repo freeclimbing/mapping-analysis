@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Locale;
@@ -29,6 +30,7 @@ public class Utils {
 
   public static final String DB_URL_FIELD = "url";
   public static final String DB_ID_FIELD = "id";
+  public static final String DB_ATT_VALUE_TYPE = "attValueType";
   public static final String DB_ONTID_FIELD = "ontID_fk";
   public static final String DB_CCID_FIELD = "ccID";
   public static final String DB_CONCEPTID_FIELD = "conceptID";

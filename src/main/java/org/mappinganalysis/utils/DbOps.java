@@ -46,7 +46,9 @@ public class DbOps {
           .concat(" = ? WHERE ").concat(idField).concat(" = ?;");
       PreparedStatement updStmt = con.prepareStatement(update);
       updStmt.setInt(2, vertexId);
-      if (fieldName.equals(Utils.DB_URL_FIELD) || fieldName.equals(Utils.DB_ONTID_FIELD)) {
+      if (fieldName.equals(Utils.DB_URL_FIELD)
+          || fieldName.equals(Utils.DB_ONTID_FIELD)
+          || fieldName.equals(Utils.DB_ATT_VALUE_TYPE)) {
         updStmt.setString(1, value);
       } else if (fieldName.equals(Utils.DB_CCID_FIELD)) {
         updStmt.setInt(1, Integer.valueOf(value));
@@ -55,6 +57,29 @@ public class DbOps {
       updStmt.close();
 //      LOG.info("Written for Vertex: " + vertexId + " Property: " +
 //          fieldName + " Value: " + value);
+    }
+  }
+
+  /**
+   * Update single property for a vertex in a table.
+   * @param vertexId vertex id
+   * @param attName vertex attributes type name
+   * @param attValue vertex attributes type value
+   * @param value property value
+   * @throws SQLException
+   */
+  public void updateDbAttributesProperty(Integer vertexId, String attName,
+                                         String attValue, String value) throws SQLException {
+    if (!value.isEmpty()) {
+      String update = "UPDATE concept_attributes"
+          .concat(" SET attValueType = ? WHERE id = ? AND attName = ? AND attValue = ?;");
+      PreparedStatement updStmt = con.prepareStatement(update);
+      updStmt.setString(1, value);
+      updStmt.setInt(2, vertexId);
+      updStmt.setString(3, attName);
+      updStmt.setString(4, attValue);
+      updStmt.executeUpdate();
+      updStmt.close();
     }
   }
 
@@ -145,6 +170,12 @@ public class DbOps {
     writeError(id, url, e, "general_error");
   }
 
+  public ResultSet getProperties() throws SQLException {
+    String sql = "SELECT id, attName, attValue FROM concept_attributes;";
+    PreparedStatement s = con.prepareStatement(sql);
+
+    return s.executeQuery();
+  }
 
   private ResultSet getMaliciousDbpResources() throws SQLException {
     String sql = "SELECT id, url FROM hartung_perfect_geo_links.concept " +
