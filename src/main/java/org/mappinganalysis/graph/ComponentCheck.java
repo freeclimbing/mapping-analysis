@@ -2,19 +2,14 @@ package org.mappinganalysis.graph;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.jdbc.JDBCInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple5;
-import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.Vertex;
 import org.mappinganalysis.utils.DbOps;
-import org.mappinganalysis.utils.HaversineGeoDistance;
 import org.mappinganalysis.utils.Utils;
 
 import java.sql.Connection;
@@ -22,10 +17,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-
-import static org.apache.flink.api.common.typeinfo.BasicTypeInfo.DOUBLE_TYPE_INFO;
-import static org.apache.flink.api.common.typeinfo.BasicTypeInfo.INT_TYPE_INFO;
-import static org.apache.flink.api.common.typeinfo.BasicTypeInfo.STRING_TYPE_INFO;
 
 /**
  * Check components for 1:n links, dissolve into single components.
@@ -96,16 +87,16 @@ public class ComponentCheck {
       int maxIterations = 1000;
       LOG.info("Compute Flink connected components ...");
       FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
-      DataSet<Tuple2<Integer, Integer>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
+      DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
       long endTime = System.nanoTime();
       long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.#
       long distinctComps = flinkResult.project(1).distinct().count();
 
       // set CC in db
-      List<Tuple2<Integer, Integer>> vertexComponentList = flinkResult.collect();
-      for (Tuple2<Integer, Integer> vertexAndCc : vertexComponentList) {
+      List<Tuple2<Long, Long>> vertexComponentList = flinkResult.collect();
+      for (Tuple2<Long, Long> vertexAndCc : vertexComponentList) {
         // TODO fix property value to string
-        dbOps.updateDbProperty(Utils.DB_CONCEPTID_FIELD, vertexAndCc.f0,
+        dbOps.updateDbProperty(Utils.DB_CONCEPTID_FIELD, Ints.checkedCast(vertexAndCc.f0),
             Utils.DB_CC_TABLE, Utils.DB_CCID_FIELD, String.valueOf(vertexAndCc.f1));
       }
       LOG.info("Computed " + distinctComps + " connected components in " + duration / 1000000 + " ms with Flink.");

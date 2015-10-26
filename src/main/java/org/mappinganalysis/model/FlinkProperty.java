@@ -19,12 +19,9 @@ package org.mappinganalysis.model;
 import org.apache.flink.api.java.tuple.Tuple3;
 
 /**
- * Represents a key-value pair which is associated to a multi-valued property
- * (e.g. email).
- *
+ *  Flink property
  * f0: vertex id which owns the property
  * f1: property key
- * f2: property value
  */
 public class FlinkProperty extends Tuple3<Integer, String, String> {
   public Integer getVertexId() {

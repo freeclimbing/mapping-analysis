@@ -1,5 +1,6 @@
 package org.mappinganalysis;
 
+import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -13,23 +14,21 @@ import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.GeoCode;
+import org.mappinganalysis.utils.HaversineGeoDistance;
 
 import java.util.HashSet;
-import java.util.ResourceBundle;
 
 /**
  * Read data from MySQL database via JDBC into Apache Flink.
  */
 public class MySQLToFlink {
   private static final Logger LOG = Logger.getLogger(MySQLToFlink.class);
-  private final ExecutionEnvironment env;
-  private final ResourceBundle prop;
 
-  public MySQLToFlink(ExecutionEnvironment env, ResourceBundle prop) {
-    this.env = env;
-    this.prop = prop;
+  public MySQLToFlink() {
   }
 
   public static void main(String[] args) throws Exception {
@@ -37,36 +36,39 @@ public class MySQLToFlink {
     JDBCDataLoader loader = new JDBCDataLoader(environment);
 
     DataSet<FlinkVertex> vertices = loader.getVertices();
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdges();
 
-    DataSet<Edge<Integer, NullValue>> edges = loader.getEdges();
-    Graph graph = Graph.fromDataSet(vertices, edges, environment);
+    // TODO fix this
+//    Graph<Long, PropertyContainer, NullValue> graph1 = Graph.fromDataSet(vertices, edges, environment);
 
+    Graph<Long, GeoCode, NullValue> graph = Graph.fromDataSet(vertices.map(new GeoCodeExtractor()), edges, environment);
+//    graph.getVertices().print();
+
+    long count = graph.getTriplets().filter(new EmptyGeoCodeFilter())
+        .map(new GeoCodeSimFunction()).filter(new GeoCodeThreshold()).count();
+    System.out.println(count);
+    // cc on geo coords
+//    DataSet<Tuple2<Long, Long>> ccEdges = edges.project(0, 1);//.print();
+//    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
+//    DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents.compute(vertices.map(new CcVerticesCreator()), ccEdges, 100);
+//    flinkResult.print();
   }
 
-  private static void printVerticesWithUnsimilarNames() throws Exception {
+  public static void getLinksWhereLabelIsEqualExample() throws Exception {
     ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
     JDBCDataLoader loader = new JDBCDataLoader(environment);
 
-    DataSet<Vertex<Integer, String>> vertices = loader.getVertices()
+    DataSet<Vertex<Long, String>> vertices = loader.getVertices()
         .map(new LabelExtractor());
 
-//
-//    // exclude null labels
-//    flinkVertexDataSet = flinkVertexDataSet.filter(new FilterFunction<FlinkVertex>() {
-//      @Override
-//      public boolean filter(FlinkVertex vertex) throws Exception {
-//        return vertex.getProperties().get("label") != null;
-//      }
-//    });
-
-    DataSet<Edge<Integer, NullValue>> edges = loader.getEdges();
-    Graph<Integer, String, NullValue> graph = Graph.fromDataSet(vertices, edges, environment);
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdges();
+    Graph<Long, String, NullValue> graph = Graph.fromDataSet(vertices, edges, environment);
 
 //    // check if each edge points to existing vertices
     // System.out.println(graph.validate(new InvalidVertexIdsValidator<Integer, String, NullValue>()));
-//
+
     graph.getTriplets()
-        .map(new TripletExtractor())
+        .map(new SimilarTripletExtractor())
         .filter(new TripletFilter()).print();
   }
   private static void getVerticesExcludeOneToMany(Graph<Integer, String, NullValue> graph) throws Exception {
@@ -98,31 +100,44 @@ public class MySQLToFlink {
   }
 
   private static class OntologyExtractor implements MapFunction<FlinkVertex, Vertex<Integer, String>> {
-
+    @Override
     public Vertex<Integer, String> map(FlinkVertex flinkVertex) throws Exception {
-      String ontology = flinkVertex.getProperties().get("ontology").toString();
-      return new Vertex<>(flinkVertex.getVertexId(), ontology);
+      String ontology = flinkVertex.getValue().get("ontology").toString();
+      return new Vertex<>(Ints.checkedCast(flinkVertex.getId()), ontology);
     }
   }
 
-  private static class LabelExtractor implements MapFunction<FlinkVertex, Vertex<Integer, String>> {
-
-    public Vertex<Integer, String> map(FlinkVertex flinkVertex) throws Exception {
-      Object label = flinkVertex.getProperties().get("label");
-      return new Vertex<>(flinkVertex.getVertexId(), (label != null) ? label.toString() : "null");
+  private static class LabelExtractor implements MapFunction<FlinkVertex, Vertex<Long, String>> {
+    @Override
+    public Vertex<Long, String> map(FlinkVertex flinkVertex) throws Exception {
+      Object label = flinkVertex.getValue().get("label");
+      return new Vertex<>(flinkVertex.getId(), (label != null) ? label.toString() : "null");
     }
   }
 
-  private static class TripletFilter implements FilterFunction<Triplet<Integer, String, Float>> {
+  private static class TripletFilter implements FilterFunction<Triplet<Long, String, Float>> {
+    @Override
+    public boolean filter(Triplet<Long, String, Float> weightedTriplet) throws Exception {
+      return weightedTriplet.getEdge().getValue() == 1f;
+    }
+  }
 
-    public boolean filter(Triplet<Integer, String, Float> weightedTriplet) throws Exception {
-      return weightedTriplet.getEdge().getValue() == 0f;
-    }  }
+  private static class GeoCodeThreshold implements FilterFunction<Triplet<Long, GeoCode, Double>> {
+    @Override
+    public boolean filter(Triplet<Long, GeoCode, Double> distanceThreshold) throws Exception {
+      return distanceThreshold.getEdge().getValue() < 1;
+    }
+  }
 
-  private static class TripletExtractor implements MapFunction<Triplet<Integer, String, NullValue>, Triplet<Integer, String, Float>> {
-
-    public Triplet<Integer, String, Float> map(Triplet<Integer, String, NullValue> triplet) throws Exception {
-      boolean isSimilar = triplet.getSrcVertex().getValue().toLowerCase().equals(triplet.getTrgVertex().getValue().toLowerCase());
+  /**
+   * Return similarity 1f if labels of two resources are equal.
+   */
+  private static class SimilarTripletExtractor implements MapFunction<Triplet<Long, String, NullValue>,
+      Triplet<Long, String, Float>> {
+    @Override
+    public Triplet<Long, String, Float> map(Triplet<Long, String, NullValue> triplet) throws Exception {
+      boolean isSimilar = triplet.getSrcVertex().getValue().toLowerCase()
+          .equals(triplet.getTrgVertex().getValue().toLowerCase());
       return new Triplet<>(
           triplet.getSrcVertex(),
           triplet.getTrgVertex(),
@@ -130,6 +145,25 @@ public class MySQLToFlink {
               triplet.getSrcVertex().getId(),
               triplet.getTrgVertex().getId(),
               (isSimilar) ? 1f : 0f));
+    }
+  }
+
+  /**
+   * Return triple including the distance between 2 geo points as edge value.
+   */
+  private static class GeoCodeSimFunction implements MapFunction<Triplet<Long, GeoCode, NullValue>, Triplet<Long, GeoCode, Double>> {
+    @Override
+    public Triplet<Long, GeoCode, Double> map(Triplet<Long, GeoCode, NullValue> triplet) throws Exception {
+      GeoCode s = triplet.getSrcVertex().getValue();
+      GeoCode t = triplet.getTrgVertex().getValue();
+      double distance = HaversineGeoDistance.distance(s.getLat(), s.getLon(), t.getLat(), t.getLon());
+      return new Triplet<>(
+          triplet.getSrcVertex(),
+          triplet.getTrgVertex(),
+          new Edge<>(
+              triplet.getSrcVertex().getId(),
+              triplet.getTrgVertex().getId(),
+              distance));
     }
   }
 
@@ -160,6 +194,36 @@ public class MySQLToFlink {
         }
       }
       out.collect(new Tuple2<>(src, count));
+    }
+  }
+
+  private static class GeoCodeExtractor implements MapFunction<FlinkVertex, Vertex<Long, GeoCode>> {
+
+      public Vertex<Long, GeoCode> map(FlinkVertex flinkVertex) throws Exception {
+        Object latitude = flinkVertex.getValue().get("lat");
+        Object longitude = flinkVertex.getValue().get("lon");
+        GeoCode geoCode = new GeoCode((latitude != null) ? (double) latitude : 0,
+            (longitude != null) ? (double) longitude : 0);
+        return new Vertex<>(flinkVertex.getId(), geoCode);
+      }
+  }
+
+  private static class CcVerticesCreator implements MapFunction<FlinkVertex, Long> {
+    @Override
+    public Long map(FlinkVertex flinkVertex) throws Exception {
+      return flinkVertex.getId();
+    }
+  }
+
+  /**
+   * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
+   */
+  private static class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, GeoCode, NullValue>> {
+    @Override
+    public boolean filter(Triplet<Long, GeoCode, NullValue> triplet) throws Exception {
+      GeoCode s = triplet.getSrcVertex().getValue();
+      GeoCode t = triplet.getTrgVertex().getValue();
+      return (s.getLat() != 0 && s.getLon() != 0) || (t.getLat() != 0 && t.getLon() != 0);
     }
   }
 }

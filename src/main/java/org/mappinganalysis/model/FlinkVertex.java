@@ -1,38 +1,31 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.java.tuple.Tuple3;
-
-import java.util.Map;
+import org.apache.flink.graph.Vertex;
 
 /**
  * Flink vertex.
  *
  * f0: vertex identifier
- * f1: vertex label
- * f2: vertex properties
+ * f1: vertex properties
  */
-public class FlinkVertex extends Tuple3<Integer, String, Map<String, Object>> {
-  public Integer getVertexId() {
+public class FlinkVertex extends Vertex<Long, PropertyContainer> {
+
+  public FlinkVertex() {
+  }
+
+  public Long getId() {
     return f0;
   }
 
-  public void setVertexId(Integer vertexId) {
+  public void setId(Long vertexId) {
     f0 = vertexId;
   }
 
-  public String getLabel() {
+  public PropertyContainer getValue() {
     return f1;
   }
 
-  public void setLabel(String vertexLabel) {
-    f1 = vertexLabel;
-  }
-
-  public Map<String, Object> getProperties() {
-    return f2;
-  }
-
-  public void setProperties(Map<String, Object> properties) {
-    f2 = properties;
+  public void setValue(PropertyContainer properties) {
+    f1 = properties;
   }
 }
