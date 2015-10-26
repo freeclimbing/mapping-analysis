@@ -33,7 +33,11 @@ public class HaversineGeoDistanceTest {
         testEle, testEleBerlin);
     assertNotEquals(notEqual, 0.0, 0.0);
 
-
-
+    final double one = 27.7167;
+    final double lonone = 85.3164;
+    final double two = 27.7;
+    final double lontwo = 85.3667;
+    double foo = HaversineGeoDistance.distance(one, lonone, two, lontwo);
+    System.out.println(foo);
   }
 }
