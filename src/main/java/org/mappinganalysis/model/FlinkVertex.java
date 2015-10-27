@@ -2,13 +2,15 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.graph.Vertex;
 
+import java.util.Map;
+
 /**
  * Flink vertex.
  *
  * f0: vertex identifier
  * f1: vertex properties
  */
-public class FlinkVertex extends Vertex<Long, PropertyContainer> {
+public class FlinkVertex extends Vertex<Long, Map<String, Object>> {
 
   public FlinkVertex() {
   }
@@ -21,11 +23,11 @@ public class FlinkVertex extends Vertex<Long, PropertyContainer> {
     f0 = vertexId;
   }
 
-  public PropertyContainer getValue() {
+  public Map<String, Object> getProperties() {
     return f1;
   }
 
-  public void setValue(PropertyContainer properties) {
+  public void setProperties(Map<String, Object> properties) {
     f1 = properties;
   }
 }

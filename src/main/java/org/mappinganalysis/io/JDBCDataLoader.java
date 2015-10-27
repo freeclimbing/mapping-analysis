@@ -1,7 +1,10 @@
 package org.mappinganalysis.io;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.CoGroupFunction;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.java.DataSet;
@@ -11,18 +14,15 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
-import org.apache.flink.graph.Edge;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.FlinkProperty;
 import org.mappinganalysis.model.FlinkVertex;
-import org.mappinganalysis.model.PropertyContainer;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 
 /**
  * JDBC Data Loader for Flink
@@ -74,10 +74,9 @@ public class JDBCDataLoader {
    * @return DataSet containing all properties from database.
    */
   @SuppressWarnings("unchecked")
-  public DataSet<FlinkVertex> getProperties() {
+  public DataSet<FlinkProperty> getProperties() {
     LOG.info("Reading properties");
-    DataSet<Tuple4<Integer, String, String, String>> input
-        = env.createInput(JDBCInputFormat.buildJDBCInputFormat()
+    return env.createInput(JDBCInputFormat.buildJDBCInputFormat()
             .setDrivername("com.mysql.jdbc.Driver")
             .setDBUrl(prop.getString("dbURLfull"))
             .setUsername(prop.getString("user"))
@@ -87,9 +86,19 @@ public class JDBCDataLoader {
         new TupleTypeInfo(Tuple4.class, BasicTypeInfo.INT_TYPE_INFO,
             BasicTypeInfo.STRING_TYPE_INFO, BasicTypeInfo.STRING_TYPE_INFO,
             BasicTypeInfo.STRING_TYPE_INFO)
-    );
+    ).map(new MapFunction<Tuple4<Integer, String, String, String>, FlinkProperty>() {
+      @Override
+      public FlinkProperty map(Tuple4<Integer, String, String, String> in) throws Exception {
+        FlinkProperty property = new FlinkProperty();
+        property.f0 = (long) in.f0;
+        property.f1 = in.f1;
+        property.f2 = in.f2;
+        property.f3 = in.f3;
+        return property;
+      }
+    }).withForwardedFields("f1;f2;f3");
 
-    return input.map(new VertexPropertyCreator());
+//    return input.map(new VertexPropertyCreator());
 
   }
 
@@ -116,21 +125,40 @@ public class JDBCDataLoader {
   }
 
   private static class PropertyCoGroupFunction implements CoGroupFunction<FlinkVertex,
-      FlinkVertex, FlinkVertex> {
-    public void coGroup(Iterable<FlinkVertex> vertices, Iterable<FlinkVertex> properties,
+      FlinkProperty, FlinkVertex> {
+    public void coGroup(Iterable<FlinkVertex> vertices, Iterable<FlinkProperty> properties,
         Collector<FlinkVertex> out) throws Exception {
-      FlinkVertex result = vertices.iterator().next();
-      PropertyContainer resultingProperties = result.getValue();
+      FlinkVertex vertex = Iterables.get(vertices, 0);
+      Map<String, Object> vertexProperties = vertex.getProperties();
 
-      for (FlinkVertex singlePropVertex : properties) {
-        Map.Entry<String, Object> property = singlePropVertex.getValue().entrySet().iterator().next();
-        resultingProperties.put(property.getKey(), property.getValue());
+      for (FlinkProperty property : properties) {
+        Object value = property.getPropertyValue();
+        String key = property.getPropertyKey();
+        if (property.getPropertyType().equals("double")) {
+          value = Doubles.tryParse(value.toString());
+        } else if (property.getPropertyType().equals("string")){
+          value = value.toString();
+        }
+        if (vertexProperties.containsKey(key)) {
+          // handle multi valued properties
+          Object oldValue = vertexProperties.get(key);
+          if (oldValue instanceof List) {
+            // add to existing list, either value as list or single value
+            List<Object> values = Lists.newArrayList((List<Object>) oldValue);
+            values.add(value);
+            vertexProperties.put(key, values);
+          } else {
+            vertexProperties.put(key, Lists.newArrayList(oldValue, value));
+          }
+        } else {
+          vertexProperties.put(key, value);
+        }
       }
-
-      result.setValue(resultingProperties);
-      out.collect(result);
+      vertex.setProperties(vertexProperties);
+      out.collect(vertex);
     }
   }
+
   private static class FlinkEdgeCreator implements MapFunction<Tuple2<Integer, Integer>, Edge<Long, NullValue>> {
 
     private final Edge<Long, NullValue> reuseEdge;
@@ -155,17 +183,20 @@ public class JDBCDataLoader {
     private VertexPropertyCreator() {
       reuseVertex = new FlinkVertex();
     }
+
     @SuppressWarnings("ConstantConditions")
     public FlinkVertex map(Tuple4<Integer, String, String, String> tuple) throws Exception {
       reuseVertex.setId((long) tuple.f0);
-      PropertyContainer propMap = new PropertyContainer();
+      Map<String, Object> propMap = Maps.newHashMap();
       switch (tuple.f3) {
         case "string":
-          propMap.put(tuple.f1, String.valueOf(tuple.f2));
+          propMap.put(tuple.f1, tuple.f2);
+          break;
         case "double":
           propMap.put(tuple.f1, Doubles.tryParse(tuple.f2));
+          break;
       }
-      reuseVertex.setValue(propMap);
+      reuseVertex.setProperties(propMap);
       return reuseVertex;
     }
   }
@@ -180,7 +211,7 @@ public class JDBCDataLoader {
 
     public FlinkVertex map(Tuple3<Integer, String, String> tuple) throws Exception {
       reuseVertex.setId((long) tuple.f0);
-      PropertyContainer propMap = new PropertyContainer();
+      Map<String, Object> propMap = Maps.newHashMap();
       propMap.put("url", tuple.f1);
       propMap.put("ontology", tuple.f2);
       reuseVertex.setValue(propMap);

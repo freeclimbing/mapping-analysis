@@ -16,19 +16,21 @@
 
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 
 /**
  *  Flink property
  * f0: vertex id which owns the property
  * f1: property key
+ * f2: property value
+ * f3: property type
  */
-public class FlinkProperty extends Tuple3<Integer, String, String> {
-  public Integer getVertexId() {
+public class FlinkProperty extends Tuple4<Long, String, String, String> {
+  public Long getVertexId() {
     return f0;
   }
 
-  public void setVertexId(Integer vertexId) {
+  public void setVertexId(Long vertexId) {
     f0 = vertexId;
   }
 
@@ -46,5 +48,13 @@ public class FlinkProperty extends Tuple3<Integer, String, String> {
 
   public void setPropertyValue(String propertyValue) {
     f2 = propertyValue;
+  }
+
+  public String getPropertyType() {
+    return f3;
+  }
+
+  public void setPropertyType(String propertyType) {
+    f3 = propertyType;
   }
 }
