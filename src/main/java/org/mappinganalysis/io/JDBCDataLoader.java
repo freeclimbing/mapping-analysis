@@ -97,9 +97,6 @@ public class JDBCDataLoader {
         return property;
       }
     }).withForwardedFields("f1;f2;f3");
-
-//    return input.map(new VertexPropertyCreator());
-
   }
 
   /**

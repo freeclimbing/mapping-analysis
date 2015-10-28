@@ -7,7 +7,7 @@ import static org.junit.Assert.*;
 /**
  * Geo Distance Test
  */
-public class HaversineGeoDistanceTest {
+public class GeoDistanceTest {
 
   @Test
   public void testDistance() throws Exception {
@@ -23,13 +23,13 @@ public class HaversineGeoDistanceTest {
 
     final double distancePrBe = 279853.933175651;
 
-    double result = HaversineGeoDistance.distance(latitudePrague, longitudePrague, latitudeBerlin, longitudeBerlin);
+    double result = GeoDistance.distance(latitudePrague, longitudePrague, latitudeBerlin, longitudeBerlin);
     assertEquals(result, distancePrBe, 0.0);
 
-    double equal = HaversineGeoDistance.distance(latitudePrague, longitudePrague, latitudePrague, longitudePrague);
+    double equal = GeoDistance.distance(latitudePrague, longitudePrague, latitudePrague, longitudePrague);
     assertEquals(equal, 0.0, 0.0);
 
-    double notEqual = HaversineGeoDistance.distance(latitudePrague, longitudePrague, latitudePrague, longitudePrague,
+    double notEqual = GeoDistance.distance(latitudePrague, longitudePrague, latitudePrague, longitudePrague,
         testEle, testEleBerlin);
     assertNotEquals(notEqual, 0.0, 0.0);
 
@@ -37,7 +37,7 @@ public class HaversineGeoDistanceTest {
     final double lonone = 85.3164;
     final double two = 27.7;
     final double lontwo = 85.3667;
-    double foo = HaversineGeoDistance.distance(one, lonone, two, lontwo);
+    double foo = GeoDistance.distance(one, lonone, two, lontwo);
     System.out.println(foo);
   }
 }

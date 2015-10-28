@@ -4,7 +4,7 @@ package org.mappinganalysis.utils;
  * GeoDistance
  * http://stackoverflow.com/questions/3694380/calculating-distance-between-two-points-using-latitude-longitude-what-am-i-doi%5D
  */
-public class HaversineGeoDistance {
+public class GeoDistance {
   /**
    * Calculate distance between two points in latitude and longitude taking
    * into account height difference. Uses Haversine method as its base.
