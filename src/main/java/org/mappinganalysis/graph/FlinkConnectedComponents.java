@@ -19,7 +19,7 @@ import java.util.HashSet;
 public class FlinkConnectedComponents {
 
   /**
-   * used in first version of component check
+   * used in first version of component check, soon deprecated
    * @param vertexSet set of vertices
    * @param edgeSet set of edges
    * @param maxIterations max iterations for cc
@@ -30,21 +30,28 @@ public class FlinkConnectedComponents {
                                                    int maxIterations) {
     ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
     DataSet<Long> vertices = env.fromCollection(vertexSet).map(new LongMapper());
-    DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeSet).flatMap(new UndirectedEdge());
-
+    DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeSet)
+        .map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> map(Tuple2<Integer, Integer> integerIntegerTuple2) throws Exception {
+            return new Tuple2<>((long) integerIntegerTuple2.f0, (long) integerIntegerTuple2.f1);
+          }
+        });
+//        .flatMap(new UndirectedEdge());
     return compute(vertices, edges, maxIterations);
   }
 
   /**
    * Compute connected components with Flink
    * @param vertices set of vertices
-   * @param edges set of edges
+   * @param inEdges set of edges
    * @param maxIterations max iterations for cc
    * @return flink dataset
    */
   public DataSet<Tuple2<Long, Long>> compute(DataSet<Long> vertices,
-                                                   DataSet<Tuple2<Long, Long>> edges,
+                                                   DataSet<Tuple2<Long, Long>> inEdges,
                                                    int maxIterations) {
+    DataSet<Tuple2<Long, Long>> edges = inEdges.flatMap(new UndirectedEdge());
     // assign the initial component IDs (equal to the vertex ID)
     DataSet<Tuple2<Long, Long>> verticesWithInitialId = vertices.map(new DuplicateValue<Long>());
 
@@ -75,14 +82,14 @@ public class FlinkConnectedComponents {
   }
 
   private static final class UndirectedEdge
-      implements FlatMapFunction<Tuple2<Integer, Integer>, Tuple2<Long, Long>> {
+      implements FlatMapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>> {
     protected Tuple2<Long, Long> invertedEdge = new Tuple2<>();
 
     @Override
-    public void flatMap(Tuple2<Integer, Integer> edge, Collector<Tuple2<Long, Long>> out) {
-      invertedEdge.f0 = (long) edge.f1;
-      invertedEdge.f1 = (long) edge.f0;
-      out.collect(new Tuple2<>((long) edge.f1, (long) edge.f0));
+    public void flatMap(Tuple2<Long, Long> edge, Collector<Tuple2<Long, Long>> out) {
+      invertedEdge.f0 = edge.f1;
+      invertedEdge.f1 = edge.f0;
+      out.collect(edge);
       out.collect(invertedEdge);
     }
   }

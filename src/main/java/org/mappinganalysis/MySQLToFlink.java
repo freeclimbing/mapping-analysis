@@ -4,6 +4,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -19,7 +20,6 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
-import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.utils.GeoDistance;
 
 import java.util.HashSet;
@@ -39,25 +39,25 @@ public class MySQLToFlink {
 
     Graph<Long, FlinkVertex, NullValue> graph = getInputGraph();
 
-    // preprocessing TODO restrict edges strategy
+    // preprocessing, comment line if not needed
+//    graph = applyLinkFilterStrategy(graph);
 
-    FilterOperator<Triplet<Long, FlinkVertex, Double>> filter
-        = graph.getTriplets()
+    DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
+
+    FilterOperator<Triplet<Long, FlinkVertex, Double>> geoSimilarity
+        = baseTriplets
         .filter(new EmptyGeoCodeFilter())
         .map(new GeoCodeSimFunction())
         .filter(new GeoCodeThreshold());
 
-    filter.print();
-
-    DataSet<Tuple2<Long, Long>> ccEdges = filter.project(0, 1);
-//
     // cc on geo coords
+    DataSet<Tuple2<Long, Long>> ccEdges = geoSimilarity.project(0, 1);
+
     FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
     DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents
         .compute(graph.getVertices().map(new CcVerticesCreator()), ccEdges, 1000);
 
-//    flinkResult.print();
-//    System.out.println(flinkResult.project(1).distinct().count());
+    System.out.println(flinkResult.project(1).distinct().count());
     List<Tuple2<Long, Long>> ccGeoList = flinkResult
         .groupBy(1)
         .reduceGroup(new GroupReduceFunction<Tuple2<Long, Long>, Tuple2<Long, Long>>() {
@@ -66,6 +66,9 @@ public class MySQLToFlink {
             long count = 0;
             long id = 0;
             for (Tuple2<Long, Long> vertex : component) {
+              if (vertex.f1 == 4794 || vertex.f1 == 5680) {
+                System.out.println(vertex);
+              }
               count++;
               id = vertex.f1;
             }
@@ -78,7 +81,9 @@ public class MySQLToFlink {
     int two = 0;
     int three = 0;
     int four = 0;
-    int more = 0;
+    int five = 0;
+    int six = 0;
+    int seven = 0;
     for (Tuple2<Long, Long> tuple2 : ccGeoList) {
       if (tuple2.f1 == 1) {
         one++;
@@ -88,11 +93,16 @@ public class MySQLToFlink {
         three++;
       } else if (tuple2.f1 == 4) {
         four++;
-      } else if (tuple2.f1 > 4) {
-        more++;
+      } else if (tuple2.f1 == 5) {
+        five++;
+      } else if (tuple2.f1 == 6) {
+        six++;
+      } else if (tuple2.f1 == 7) {
+        seven++;
       }
     }
-    System.out.println("one: " + one + " two: " + two + " three: " + three + " four: " + four + " more: " + more);
+    System.out.println("one: " + one + " two: " + two + " three: " + three +
+        " four: " + four + " five: " + five + " six: " + six + " seven: " + seven);
   }
 
   private static Graph<Long, FlinkVertex, NullValue> getInputGraph() throws Exception {
@@ -131,31 +141,64 @@ public class MySQLToFlink {
         .filter(new TripletFilter()).print();
   }
 
-  private static void getVerticesExcludeOneToMany(Graph<Integer, String, NullValue> graph) throws Exception {
-//    DataSet<Vertex<Integer, String>> vertices = loader.getVertices()
-//        .map(new OntologyExtractor());
-//    DataSet<Edge<Integer, NullValue>> edges = loader.getEdges();
-//    Graph<Integer, String, NullValue> graph = Graph.fromDataSet(vertices, edges, environment);
+  private static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(Graph<Long, FlinkVertex, NullValue> graph) throws Exception {
 
-    graph.groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
-        .map(new Tuple4Mapper())
+    // TODO EdgeDirection.IN
+    DataSet<Edge<Long, NullValue>> deleteEdges = graph.groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
         .groupBy(1, 2)
         .aggregate(Aggregations.SUM, 3)
         .filter(new ExcludeOneToManyOntologiesFilter())
-        .print();
+        .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>, Edge<Long, NullValue>>() {
+          @Override
+          public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple) throws Exception {
+            return tuple.f0;
+          }
+        });
+
+    return Graph.fromDataSet(graph.getVertices(), deleteEdges, ExecutionEnvironment.createLocalEnvironment());
   }
 
-  private static class ExcludeOneToManyOntologiesFilter implements FilterFunction<Tuple4<Integer, Integer, String, Integer>> {
+  private static class JoinFilterStrategyFunction implements JoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>> {
     @Override
-    public boolean filter(Tuple4<Integer, Integer, String, Integer> tuple) throws Exception {
+    public Edge<Long, NullValue> join(Edge<Long, NullValue> edge, Edge<Long, NullValue> deleteEdge) throws Exception {
+      return edge;
+    }
+  }
+
+  private static class ExcludeOneToManyOntologiesFilter implements FilterFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
+    @Override
+    public boolean filter(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple) throws Exception {
       return tuple.f3 < 2;
     }
   }
 
-  private static class Tuple4Mapper implements MapFunction<Tuple3<Integer, Integer, String>, Tuple4<Integer, Integer, String, Integer>> {
+  private static class NeighborOntologyFunction
+      implements NeighborsFunctionWithVertexValue<Long, FlinkVertex, NullValue, Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
+
     @Override
-    public Tuple4<Integer, Integer, String, Integer> map(Tuple3<Integer, Integer, String> tuple) throws Exception {
-      return new Tuple4<>(tuple.f0, tuple.f1, tuple.f2, 1);
+    public void iterateNeighbors(Vertex<Long, FlinkVertex> vertex,
+                                 Iterable<Tuple2<Edge<Long, NullValue>, Vertex<Long, FlinkVertex>>> neighbors,
+                                 Collector<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> collector) throws Exception {
+
+      for (Tuple2<Edge<Long, NullValue>, Vertex<Long, FlinkVertex>> neighbor : neighbors) {
+        collector.collect(new Tuple4<>(neighbor.f0, neighbor.f1.getId(), neighbor.f1.getValue().getProperties().get("ontology").toString(), 1));
+      }
+    }
+  }
+
+  private static class OntologyReduce implements GroupReduceFunction<Tuple3<Integer, Integer, String>, Tuple2<Integer, Integer>> {
+    @Override
+    public void reduce(Iterable<Tuple3<Integer, Integer, String>> in, Collector<Tuple2<Integer, Integer>> out) throws Exception {
+      HashSet<String> uniqueStrings = new HashSet<>();
+      int count = 0;
+      int src = 0;
+      for (Tuple3<Integer, Integer, String> tuple : in) {
+        src = tuple.f0;
+        if (!uniqueStrings.add(tuple.f2)) {
+          ++count;
+        }
+      }
+      out.collect(new Tuple2<>(src, count));
     }
   }
 
@@ -249,36 +292,6 @@ public class MySQLToFlink {
       } else {
         return Doubles.tryParse(latlon.toString());
       }
-    }
-  }
-
-  private static class NeighborOntologyFunction
-      implements NeighborsFunctionWithVertexValue<Integer, String, NullValue, Tuple3<Integer, Integer, String>> {
-
-    @Override
-    public void iterateNeighbors(Vertex<Integer, String> vertex,
-                                 Iterable<Tuple2<Edge<Integer, NullValue>, Vertex<Integer, String>>> neighbors,
-                                 Collector<Tuple3<Integer, Integer, String>> collector) throws Exception {
-
-      for (Tuple2<Edge<Integer, NullValue>, Vertex<Integer, String>> neighbor : neighbors) {
-        collector.collect(new Tuple3<>(vertex.getId(), neighbor.f1.getId(), neighbor.f1.getValue()));
-      }
-    }
-  }
-
-  private static class OntologyReduce implements GroupReduceFunction<Tuple3<Integer, Integer, String>, Tuple2<Integer, Integer>> {
-    @Override
-    public void reduce(Iterable<Tuple3<Integer, Integer, String>> in, Collector<Tuple2<Integer, Integer>> out) throws Exception {
-      HashSet<String> uniqueStrings = new HashSet<>();
-      int count = 0;
-      int src = 0;
-      for (Tuple3<Integer, Integer, String> tuple : in) {
-        src = tuple.f0;
-        if (!uniqueStrings.add(tuple.f2)) {
-          ++count;
-        }
-      }
-      out.collect(new Tuple2<>(src, count));
     }
   }
 
