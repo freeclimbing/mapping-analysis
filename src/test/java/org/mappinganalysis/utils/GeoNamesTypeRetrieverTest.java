@@ -9,13 +9,13 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class GeonamesTypeRetrieverTest {
+public class GeoNamesTypeRetrieverTest {
 
   @Test
   public void responseHandlerTest() throws ParserConfigurationException,
     SAXException, IOException, XPathExpressionException {
-    GeonamesTypeRetriever handler =
-      new GeonamesTypeRetriever("ontology_v3.1.rdf");
+    GeoNamesTypeRetriever handler =
+      new GeoNamesTypeRetriever("ontology_v3.1.rdf");
 
     String correctResult = "country, state, region ...";
     String classExperiment = handler.getInstanceType("#A", true);

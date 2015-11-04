@@ -1,7 +1,5 @@
 package org.mappinganalysis;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
@@ -11,7 +9,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.operators.FilterOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
@@ -20,11 +17,12 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
-import org.mappinganalysis.utils.GeoDistance;
+import org.mappinganalysis.model.functions.EmptyGeoCodeFilter;
+import org.mappinganalysis.model.functions.GeoCodeSimFunction;
+import org.mappinganalysis.model.functions.NeighborOntologyFunction;
+import org.mappinganalysis.model.functions.SimilarTripletExtractor;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Read data from MySQL database via JDBC into Apache Flink.
@@ -40,7 +38,7 @@ public class MySQLToFlink {
     Graph<Long, FlinkVertex, NullValue> graph = getInputGraph();
 
     // preprocessing, comment line if not needed
-//    graph = applyLinkFilterStrategy(graph);
+    graph = applyLinkFilterStrategy(graph);
 
     DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
 
@@ -54,11 +52,21 @@ public class MySQLToFlink {
     DataSet<Tuple2<Long, Long>> ccEdges = geoSimilarity.project(0, 1);
 
     FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
-    DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents
+    DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
         .compute(graph.getVertices().map(new CcVerticesCreator()), ccEdges, 1000);
 
-    System.out.println(flinkResult.project(1).distinct().count());
-    List<Tuple2<Long, Long>> ccGeoList = flinkResult
+
+    countPrintResourcesPerCc(ccResult);
+  }
+
+  /**
+   * Count resources per component for a given flink connected component result set.
+   * @param ccResult dataset to be analyzed
+   * @throws Exception
+   */
+  private static void countPrintResourcesPerCc(DataSet<Tuple2<Long, Long>> ccResult) throws Exception {
+    System.out.println(ccResult.project(1).distinct().count());
+    List<Tuple2<Long, Long>> ccGeoList = ccResult
         .groupBy(1)
         .reduceGroup(new GroupReduceFunction<Tuple2<Long, Long>, Tuple2<Long, Long>>() {
           @Override
@@ -105,6 +113,11 @@ public class MySQLToFlink {
         " four: " + four + " five: " + five + " six: " + six + " seven: " + seven);
   }
 
+  /**
+   * Create the input graph for further analysis.
+   * @return graph with vertices and edges.
+   * @throws Exception
+   */
   private static Graph<Long, FlinkVertex, NullValue> getInputGraph() throws Exception {
     ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
     JDBCDataLoader loader = new JDBCDataLoader(environment);
@@ -141,73 +154,50 @@ public class MySQLToFlink {
         .filter(new TripletFilter()).print();
   }
 
-  private static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(Graph<Long, FlinkVertex, NullValue> graph) throws Exception {
+  /**
+   * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.
+   *
+   * First strategy: delete all links which are involved in 1:n mappings
+   * @param graph input graph
+   * @return output graph
+   * @throws Exception
+   */
+  private static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(Graph<Long, FlinkVertex, NullValue> graph)
+      throws Exception {
 
     // TODO EdgeDirection.IN
-    DataSet<Edge<Long, NullValue>> deleteEdges = graph.groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
+    DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
+        .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
         .groupBy(1, 2)
         .aggregate(Aggregations.SUM, 3)
         .filter(new ExcludeOneToManyOntologiesFilter())
-        .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>, Edge<Long, NullValue>>() {
+        .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>,
+            Edge<Long, NullValue>>() {
           @Override
-          public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple) throws Exception {
+          public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple)
+              throws Exception {
             return tuple.f0;
           }
         });
 
-    return Graph.fromDataSet(graph.getVertices(), deleteEdges, ExecutionEnvironment.createLocalEnvironment());
+    return Graph.fromDataSet(graph.getVertices(),
+        edgesNoDuplicates,
+        ExecutionEnvironment.createLocalEnvironment());
   }
 
-  private static class JoinFilterStrategyFunction implements JoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>> {
+  private static class JoinFilterStrategyFunction
+      implements JoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>> {
     @Override
     public Edge<Long, NullValue> join(Edge<Long, NullValue> edge, Edge<Long, NullValue> deleteEdge) throws Exception {
       return edge;
     }
   }
 
-  private static class ExcludeOneToManyOntologiesFilter implements FilterFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
+  private static class ExcludeOneToManyOntologiesFilter
+      implements FilterFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
     @Override
     public boolean filter(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple) throws Exception {
       return tuple.f3 < 2;
-    }
-  }
-
-  private static class NeighborOntologyFunction
-      implements NeighborsFunctionWithVertexValue<Long, FlinkVertex, NullValue, Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
-
-    @Override
-    public void iterateNeighbors(Vertex<Long, FlinkVertex> vertex,
-                                 Iterable<Tuple2<Edge<Long, NullValue>, Vertex<Long, FlinkVertex>>> neighbors,
-                                 Collector<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> collector) throws Exception {
-
-      for (Tuple2<Edge<Long, NullValue>, Vertex<Long, FlinkVertex>> neighbor : neighbors) {
-        collector.collect(new Tuple4<>(neighbor.f0, neighbor.f1.getId(), neighbor.f1.getValue().getProperties().get("ontology").toString(), 1));
-      }
-    }
-  }
-
-  private static class OntologyReduce implements GroupReduceFunction<Tuple3<Integer, Integer, String>, Tuple2<Integer, Integer>> {
-    @Override
-    public void reduce(Iterable<Tuple3<Integer, Integer, String>> in, Collector<Tuple2<Integer, Integer>> out) throws Exception {
-      HashSet<String> uniqueStrings = new HashSet<>();
-      int count = 0;
-      int src = 0;
-      for (Tuple3<Integer, Integer, String> tuple : in) {
-        src = tuple.f0;
-        if (!uniqueStrings.add(tuple.f2)) {
-          ++count;
-        }
-      }
-      out.collect(new Tuple2<>(src, count));
-    }
-  }
-
-  private static class OntologyExtractor implements MapFunction<FlinkVertex, Vertex<Integer, String>> {
-    @Override
-    public Vertex<Integer, String> map(FlinkVertex flinkVertex) throws Exception {
-
-      String ontology = flinkVertex.getValue().toString();
-      return new Vertex<>(Ints.checkedCast(flinkVertex.getId()), ontology);
     }
   }
 
@@ -226,6 +216,9 @@ public class MySQLToFlink {
     }
   }
 
+  /**
+   * TODO Threshold needs to be flexible.
+   */
   private static class GeoCodeThreshold implements FilterFunction<Triplet<Long, FlinkVertex, Double>> {
     @Override
     public boolean filter(Triplet<Long, FlinkVertex, Double> distanceThreshold) throws Exception {
@@ -240,91 +233,4 @@ public class MySQLToFlink {
     }
   }
 
-  /**
-   * Return similarity 1f if labels of two resources are equal.
-   */
-  private static class SimilarTripletExtractor implements MapFunction<Triplet<Long, String, NullValue>,
-      Triplet<Long, String, Float>> {
-    @Override
-    public Triplet<Long, String, Float> map(Triplet<Long, String, NullValue> triplet) throws Exception {
-      boolean isSimilar = triplet.getSrcVertex().getValue().toLowerCase()
-          .equals(triplet.getTrgVertex().getValue().toLowerCase());
-      return new Triplet<>(
-          triplet.getSrcVertex(),
-          triplet.getTrgVertex(),
-          new Edge<>(
-              triplet.getSrcVertex().getId(),
-              triplet.getTrgVertex().getId(),
-              (isSimilar) ? 1f : 0f));
-    }
-  }
-
-  /**
-   * Return triple including the distance between 2 geo points as edge value.
-   */
-    private static class GeoCodeSimFunction implements MapFunction<Triplet<Long, FlinkVertex, NullValue>,
-          Triplet<Long, FlinkVertex, Double>> {
-
-    @Override
-    public Triplet<Long, FlinkVertex, Double> map(Triplet<Long,
-        FlinkVertex, NullValue> triplet) throws Exception {
-      Map<String, Object> source = triplet.getSrcVertex().getValue().getProperties();
-      Map<String, Object> target = triplet.getTrgVertex().getValue().getProperties();
-
-
-      double distance = GeoDistance.distance(getDouble(source.get("lat")),
-          getDouble(source.get("lon")),
-          getDouble(target.get("lat")),
-          getDouble(target.get("lon")));
-
-      return new Triplet<>(
-          triplet.getSrcVertex(),
-          triplet.getTrgVertex(),
-          new Edge<>(triplet.getSrcVertex().getId(),
-          triplet.getTrgVertex().getId(), distance));
-    }
-
-    private Double getDouble(Object latlon) {
-      // TODO how to handle multiple values in lat/lon correctly?
-
-      if (latlon instanceof List) {
-        return Doubles.tryParse(((List) latlon).get(0).toString());
-      } else {
-        return Doubles.tryParse(latlon.toString());
-      }
-    }
-  }
-
-  /**
-   * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
-   */
-  private static class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, FlinkVertex, NullValue>> {
-    @Override
-    public boolean filter(Triplet<Long, FlinkVertex, NullValue> triplet) throws Exception {
-
-      Map<String, Object> source = triplet.getSrcVertex().getValue().getProperties();
-      Map<String, Object> target = triplet.getTrgVertex().getValue().getProperties();
-
-      return isGeoPoint(source) && isGeoPoint(target);
-    }
-
-    private boolean isGeoPoint(Map<String, Object> props) {
-      if (props.containsKey("lat") && props.containsKey("lon")) {
-        Object lat = props.get("lat");
-        Object lon = props.get("lon");
-        // TODO how to handle multiple values in lat/lon correctly?
-        return ((getDouble(lat) == null) || (getDouble(lon) == null)) ? Boolean.FALSE : Boolean.TRUE;
-      } else {
-        return Boolean.FALSE;
-      }
-    }
-
-    private Double getDouble(Object latlon) {
-      if (latlon instanceof List) {
-        return Doubles.tryParse(((List) latlon).get(0).toString());
-      } else {
-        return Doubles.tryParse(latlon.toString());
-      }
-    }
-  }
 }

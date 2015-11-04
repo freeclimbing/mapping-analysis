@@ -23,7 +23,7 @@ import java.util.Iterator;
 /**
  * TypeOntologyRetriever
  */
-public class GeonamesTypeRetriever extends DefaultHandler {
+public class GeoNamesTypeRetriever extends DefaultHandler {
 
   private Document doc = null;
 
@@ -34,7 +34,7 @@ public class GeonamesTypeRetriever extends DefaultHandler {
    * @throws SAXException
    * @throws ParserConfigurationException
    */
-  public GeonamesTypeRetriever(String fileName) throws IOException,
+  public GeoNamesTypeRetriever(String fileName) throws IOException,
     SAXException, ParserConfigurationException {
     BufferedReader reader = getInputStreamReader(fileName);
     doc = getXmlDocument(reader);

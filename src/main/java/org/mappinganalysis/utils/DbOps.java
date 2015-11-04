@@ -18,6 +18,7 @@ public class DbOps {
 
   public DbOps(String dbName) throws SQLException {
     this.dbName = dbName;
+    Utils.setUtf8Mode(true);
     this.con = Utils.openDbConnection(dbName);
   }
 
@@ -177,16 +178,27 @@ public class DbOps {
     return s.executeQuery();
   }
 
-  private ResultSet getMaliciousDbpResources() throws SQLException {
-    String sql = "SELECT id, url FROM hartung_perfect_geo_links.concept " +
-        "where url like '%\\%2C%';";
+  public ResultSet getMaliciousDbpResources() throws SQLException {
+    String sql = "SELECT id, url FROM concept where url like '%\\%2C%';";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();
   }
 
   /**
-   * Get all nodes without coordinates or type
+   * Get all nodes
+   * @return SQL result set
+   * @throws SQLException
+   */
+  public ResultSet getAllNodesBiggerThan() throws SQLException {
+    String sql = "SELECT DISTINCT id, url FROM concept where id > 856900 order by id;";
+    PreparedStatement s = con.prepareStatement(sql);
+
+    return s.executeQuery();
+  }
+
+  /**
+   * Get all freebase nodes
    * @return SQL result set
    * @throws SQLException
    */

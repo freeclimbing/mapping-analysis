@@ -73,14 +73,13 @@ public class LinkLionPropertyCompletion {
   //String graph = "http://www.linklion.org/geo-properties";
   String graph = "";
 
-  private GeonamesTypeRetriever tr = new GeonamesTypeRetriever("ontology_v3.1.rdf");
+  private GeoNamesTypeRetriever tr = new GeoNamesTypeRetriever("ontology_v3.1.rdf");
   private FreebasePropertyHandler handler;
 
   public LinkLionPropertyCompletion() throws Exception {
-    Utils.setUtf8Mode(true);
     // TODO 1. choose DB to process
-//    this.dbName = Utils.LL_DB_NAME;
-    this.dbName = Utils.GEO_PERFECT_DB_NAME;
+    this.dbName = Utils.LL_DB_NAME;
+//    this.dbName = Utils.GEO_PERFECT_DB_NAME;
     this.dbOps = new DbOps(dbName);
 
 
@@ -100,25 +99,23 @@ public class LinkLionPropertyCompletion {
     System.out.println("Get nodes with specified properties ..");
     // TODO 3. customize query to restrict working set, if needed
 //    ResultSet nodes = ll.dbOps.getNodesWithoutLabels();
-//    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
 
-
-
+    ResultSet vertices = ll.dbOps.getAllNodesBiggerThan();
 
     System.out.println("Process nodes one by one ..");
-//    ll.processResult(vertices);
+    ll.processResult(vertices);
 
-    // add type to concept attributes
-     ResultSet properties = ll.dbOps.getProperties();
-     ll.processProperties(properties);
+    // add type to concept attributes LAST Step
+//     ResultSet properties = ll.dbOps.getProperties();
+//     ll.processProperties(properties);
 
     // repair dbp resources where unicode was not fully enforced
-    // repairMode = Boolean.TRUE;
-    // ResultSet vertices = ll.getMaliciousDbpResources();
-    // ll.processResult(vertices);
+//     ll.repairMode = Boolean.TRUE;
+//     ResultSet vertices = ll.dbOps.getMaliciousDbpResources();
+//     ll.processResult(vertices);
 
-    // example (for a single vertex): vertex with label dbpedia:Berlin gets source/ontology set to http://dbpedia.org/
-    //ll.enrichMissingSourceValues();
+//     example (for a single vertex): vertex with label dbpedia:Berlin gets source/ontology set to http://dbpedia.org/
+//    ll.enrichMissingSourceValues();
   }
 
   private void processProperties(ResultSet properties) throws SQLException {
@@ -356,8 +353,11 @@ public class LinkLionPropertyCompletion {
 
     while (vertices.next()) {
       int id = vertices.getInt(Utils.DB_ID_FIELD);
-      String url = vertices.getString(Utils.DB_URL_FIELD);
-      dbOps.updateDbProperty(id, Utils.DB_ONTID_FIELD, getSource(url));
+      String source = getSource(vertices.getString(Utils.DB_URL_FIELD));
+      if (source.length() > 50) {
+        System.out.println("url too long: " + source);
+      }
+      dbOps.updateDbProperty(id, Utils.DB_ONTID_FIELD, source);
     }
   }
 
@@ -366,7 +366,7 @@ public class LinkLionPropertyCompletion {
       switch (propTypeUrl) {
         case LAT_URL:
         case FB_LATITUDE:
-          System.out.println("writeProperty set to: " + LAT_NAME);
+//          System.out.println("writeProperty set to: " + LAT_NAME);
           return LAT_NAME;
         case LONG_URL:
         case FB_LONGITUDE:
@@ -384,10 +384,10 @@ public class LinkLionPropertyCompletion {
         case TYPE_URL:
         case FB_TYPE:
         case GN_CLASS_TYPE:
-          System.out.println("writeProperty set to: " + Utils.TYPE_NAME + " propType: " + propTypeUrl);
+//          System.out.println("writeProperty set to: " + Utils.TYPE_NAME + " propType: " + propTypeUrl);
           return Utils.TYPE_NAME;
         case GN_CODE_TYPE:
-          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
+//          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
           return TYPE_DETAIL_NAME;
       }
     }
@@ -429,7 +429,6 @@ public class LinkLionPropertyCompletion {
       }
       if (objNameSpace.startsWith(GN_ONTOLOGY)) { // GeoNames special case type
         String name = "#" + obj.getLocalName();
-        System.out.println("getPropertyValue().isResource(): " + name);
         if (predicateUri.equals(GN_CLASS_TYPE)) {
           return tr.getInstanceType(name, true);
         } else if (predicateUri.equals(GN_CODE_TYPE)) {
@@ -440,9 +439,7 @@ public class LinkLionPropertyCompletion {
         || objNameSpace.startsWith(SCHEMA_ONTOLOGY)
         || objNameSpace.startsWith(UMBEL_ONTOLOGY)
         || objNameSpace.startsWith(LGD_ONTOLOGY)) {
-        String name = obj.getURI();
-        System.out.println("getPropertyValue().isResource(): " + name);
-        return name;
+        return obj.getURI();
       }
     }
     return "";
@@ -472,21 +469,20 @@ public class LinkLionPropertyCompletion {
    */
   private com.hp.hpl.jena.query.ResultSet getPropertiesFromSparqlGraph(
     String endpoint, int id, String url, String graph) throws SQLException {
+    System.out.println("id: " + id + " url: " + url);
     if (!graph.isEmpty()) {
       graph = " FROM <" + graph + "> ";
     }
-    String query = "SELECT * " + graph + " WHERE { <" + url + "> ?p ?o } " +
-      "ORDER BY ?p ?o";
+    String query = "SELECT ?p ?o " + graph + " WHERE { <" + url + "> ?p ?o . } ";
     Query jenaQuery = QueryFactory.create(query, Syntax.syntaxARQ);
 
     com.hp.hpl.jena.query.ResultSet results = null;
     try {
-      QueryExecution qExec = QueryExecutionFactory
-        .sparqlService(endpoint, jenaQuery);
+      QueryExecution qExec = QueryExecutionFactory.sparqlService(endpoint, jenaQuery);
       results = ResultSetFactory.copyResults(qExec.execSelect());
       qExec.close();
     } catch (Exception e) {
-      System.out.println("id: " + id + " url: " + url + " e: " + e.getMessage());
+      System.out.println("id: " + id + " url: " + url + " e: " + e.getCause().toString());
       dbOps.writeError(id, url, e.getCause() + " " + e.getMessage());
     }
 

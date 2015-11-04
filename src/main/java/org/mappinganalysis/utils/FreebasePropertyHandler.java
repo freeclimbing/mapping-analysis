@@ -115,7 +115,6 @@ public class FreebasePropertyHandler {
           properties.add(new String[]{key, value});
         } else if (key.equals(GEO_LOCATION) && (mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL))) {
           String splitValue = value.substring(value.indexOf(":") + 1);
-          System.out.println(splitValue);
 //          System.out.println("SPLITVALUE: " + splitValue);
           properties.addAll(getPropertiesForURI(FREEBASE_NS + splitValue, true));
         }
