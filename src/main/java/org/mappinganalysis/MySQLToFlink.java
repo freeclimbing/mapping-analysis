@@ -1,13 +1,10 @@
 package org.mappinganalysis;
 
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import com.google.common.collect.Maps;
+import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
-import org.apache.flink.api.java.operators.FilterOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.*;
@@ -22,7 +19,9 @@ import org.mappinganalysis.model.functions.GeoCodeSimFunction;
 import org.mappinganalysis.model.functions.NeighborOntologyFunction;
 import org.mappinganalysis.model.functions.SimilarTripletExtractor;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Read data from MySQL database via JDBC into Apache Flink.
@@ -34,29 +33,63 @@ public class MySQLToFlink {
   }
 
   public static void main(String[] args) throws Exception {
-
+    // check if each edge points to existing vertices
+    // System.out.println(graph.validate(new InvalidVertexIdsValidator<Integer, String, NullValue>()));
     Graph<Long, FlinkVertex, NullValue> graph = getInputGraph();
 
     // preprocessing, comment line if not needed
     graph = applyLinkFilterStrategy(graph);
 
+    // 2 similarity functions, similarities are added as edge value and merged (if more than one similarity)
     DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
 
-    FilterOperator<Triplet<Long, FlinkVertex, Double>> geoSimilarity
+    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> geoSimilarity
         = baseTriplets
         .filter(new EmptyGeoCodeFilter())
         .map(new GeoCodeSimFunction())
         .filter(new GeoCodeThreshold());
 
+    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> exactSim
+        = baseTriplets
+        .map(new SimilarTripletExtractor())
+        .filter(new TripletFilter());
+
+    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> joinedSimValues = geoSimilarity.fullOuterJoin(exactSim)
+        .where(0, 1)
+        .equalTo(0, 1)
+        .with(new JoinSimilarityValueFunction());
+
+//    joinedSimValues.filter(new FilterSizeMinTwo()).print();
+
     // cc on geo coords
-    DataSet<Tuple2<Long, Long>> ccEdges = geoSimilarity.project(0, 1);
+//    DataSet<Tuple2<Long, Long>> geoEdges = geoSimilarity.project(0, 1);
+//    DataSet<Tuple2<Long, Long>> labelEdges = exactSim.project(0, 1);
+    DataSet<Tuple2<Long, Long>> ccEdges = joinedSimValues.project(0, 1);
+
+
+    DataSet<Long> ccVertices = graph.getVertices().map(new CcVerticesCreator());
 
     FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
     DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
-        .compute(graph.getVertices().map(new CcVerticesCreator()), ccEdges, 1000);
+        .compute(ccVertices, ccEdges, 1000);
 
-
-    countPrintResourcesPerCc(ccResult);
+//
+//
+//
+//    //???
+//    DataSet<Vertex<Long, FlinkVertex>> vertices = graph.getVertices();
+//    vertices
+//        .map(new MapFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>>() {
+//          @Override
+//          public Vertex<Long, FlinkVertex> map(Vertex<Long, FlinkVertex> longFlinkVertexVertex) throws Exception {
+//            return null;
+//          }
+//        });
+//
+////    Graph.fromDataSet(graph.getVertices(),
+////        edges, ExecutionEnvironment.createLocalEnvironment());
+//
+        countPrintResourcesPerCc(ccResult);
   }
 
   /**
@@ -136,24 +169,6 @@ public class MySQLToFlink {
     return Graph.fromDataSet(vertices, edges, environment);
   }
 
-  public static void getLinksWhereLabelIsEqualExample() throws Exception {
-    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
-    JDBCDataLoader loader = new JDBCDataLoader(environment);
-
-    DataSet<Vertex<Long, String>> vertices = loader.getVertices()
-        .map(new LabelExtractor());
-
-    DataSet<Edge<Long, NullValue>> edges = loader.getEdges();
-    Graph<Long, String, NullValue> graph = Graph.fromDataSet(vertices, edges, environment);
-
-//    // check if each edge points to existing vertices
-    // System.out.println(graph.validate(new InvalidVertexIdsValidator<Integer, String, NullValue>()));
-
-    graph.getTriplets()
-        .map(new SimilarTripletExtractor())
-        .filter(new TripletFilter()).print();
-  }
-
   /**
    * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.
    *
@@ -185,6 +200,20 @@ public class MySQLToFlink {
         ExecutionEnvironment.createLocalEnvironment());
   }
 
+  public static class FilterExactMatch implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
+    @Override
+    public boolean filter(Triplet<Long, FlinkVertex, Map<String, Object>> triplet) throws Exception {
+      return triplet.getEdge().getValue().containsKey("exactMatch");
+    }
+  }
+
+  public static class FilterSizeMinTwo implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
+    @Override
+    public boolean filter(Triplet<Long, FlinkVertex, Map<String, Object>> triplet) throws Exception {
+      return triplet.getEdge().getValue().size() > 1;
+    }
+  }
+
   private static class JoinFilterStrategyFunction
       implements JoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>> {
     @Override
@@ -209,20 +238,59 @@ public class MySQLToFlink {
     }
   }
 
-  private static class TripletFilter implements FilterFunction<Triplet<Long, String, Float>> {
+  private static class JoinSimilarityValueFunction
+      implements JoinFunction<Triplet<Long, FlinkVertex, Map<String, Object>>,
+      Triplet<Long, FlinkVertex, Map<String, Object>>,
+      Triplet<Long, FlinkVertex, Map<String, Object>>> {
     @Override
-    public boolean filter(Triplet<Long, String, Float> weightedTriplet) throws Exception {
-      return weightedTriplet.getEdge().getValue() == 1f;
+    public Triplet<Long, FlinkVertex, Map<String, Object>> join(
+        Triplet<Long, FlinkVertex, Map<String, Object>> t1,
+        Triplet<Long, FlinkVertex, Map<String, Object>> t2) throws Exception {
+
+      Vertex<Long, FlinkVertex> source;
+      Vertex<Long, FlinkVertex> target;
+      if (t1 != null) {
+        source = t1.getSrcVertex();
+        target = t1.getTrgVertex();
+      } else {
+        source = t2.getSrcVertex();
+        target = t2.getTrgVertex();
+      }
+
+      Map<String, Object> result = Maps.newHashMap();
+      if (t1 != null) {
+        result.putAll(t1.getEdge().getValue());
+      }
+      if (t2 != null) {
+        result.putAll(t2.getEdge().getValue());
+      }
+
+      return new Triplet<>(
+          source,
+          target,
+          new Edge<>(
+              source.getId(),
+              target.getId(),
+              result));
+    }
+  }
+
+  private static class TripletFilter implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
+    @Override
+    public boolean filter(Triplet<Long, FlinkVertex, Map<String, Object>> weightedTriplet) throws Exception {
+      Map<String, Object> props = weightedTriplet.getEdge().getValue();
+      return props.containsKey("exactMatch") && (float) props.get("exactMatch") == 1f;
     }
   }
 
   /**
    * TODO Threshold needs to be flexible.
    */
-  private static class GeoCodeThreshold implements FilterFunction<Triplet<Long, FlinkVertex, Double>> {
+  private static class GeoCodeThreshold
+      implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
     @Override
-    public boolean filter(Triplet<Long, FlinkVertex, Double> distanceThreshold) throws Exception {
-      return distanceThreshold.getEdge().getValue() < 50000;
+    public boolean filter(Triplet<Long, FlinkVertex, Map<String, Object>> distanceThreshold) throws Exception {
+      return ((double) distanceThreshold.getEdge().getValue().get("distance")) < 50000;
     }
   }
 
@@ -232,5 +300,4 @@ public class MySQLToFlink {
       return flinkVertex.getId();
     }
   }
-
 }

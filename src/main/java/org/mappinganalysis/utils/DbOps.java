@@ -113,7 +113,7 @@ public class DbOps {
    * @throws SQLException
    */
   public String writePropertyToDb(Integer id, String key, String value) throws SQLException {
-    if (!value.isEmpty() && !key.isEmpty()) {
+    if (id != null && !value.isEmpty() && !key.isEmpty()) {
       String insert = "INSERT INTO concept_attributes (id, attName, " +
           "attValue) VALUES (?, ?, ?);";
 
@@ -189,9 +189,28 @@ public class DbOps {
    * Get all nodes
    * @return SQL result set
    * @throws SQLException
+   * problems: 856911: order by in sparql query, nullpointer
+   * 931620: too much dbpedia queries? nullpointer
+   * 1115141: too much dbpedia queries? nullpointer
+   * 1176332: dbpedia down ;)
+   * 1724191: SocketTimeoutException: Read timed out (freebase get)
    */
   public ResultSet getAllNodesBiggerThan() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept where id > 856900 order by id;";
+    String sql = "SELECT DISTINCT id, url FROM concept where id > 1724189 order by id;";
+    PreparedStatement s = con.prepareStatement(sql);
+
+    return s.executeQuery();
+  }
+
+  /**
+   * After initial property enrichment, use this query for resources which are not on linklion sparql endpoint
+   * @return SQL result set
+   * @throws SQLException
+   */
+  public ResultSet getResourcesWithoutProperties() throws SQLException {
+    String sql = "SELECT c.id, c.url FROM linklion_links_9_2015.concept c" +
+        "  LEFT JOIN linklion_links_9_2015.concept_attributes a ON c.id = a.id" +
+        " WHERE a.id IS NULL;";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();

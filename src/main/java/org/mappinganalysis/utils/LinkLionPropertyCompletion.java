@@ -1,5 +1,6 @@
 package org.mappinganalysis.utils;
 
+import com.google.common.collect.Sets;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -34,6 +35,7 @@ public class LinkLionPropertyCompletion {
   private static final String LGD_ONTOLOGY = "http://linkedgeodata.org/ontology";
   private static final String FB_NS = "http://rdf.freebase.com/ns/";
   private static final String DBP_NS = "http://dbpedia.org/";
+  private static final String LGD_NS = "http://linkedgeodata.org/";
 
   private static final String GN_NAME = "http://www.geonames.org/ontology#name";
   private static final String SKOS_LABEL =
@@ -51,6 +53,7 @@ public class LinkLionPropertyCompletion {
   private static final String FB_ELEVATION = "ns:location.geocode.elevation";
   private static final String FB_LATITUDE = "ns:location.geocode.latitude";
   private static final String FB_LONGITUDE = "ns:location.geocode.longitude";
+  private static final String LGD_ELEVATION = "http://linkedgeodata.org/ontology/ele";
 
   private static final String TYPE_DETAIL_NAME = "typeDetail";
   private static final String LABEL_NAME = "label";
@@ -74,7 +77,8 @@ public class LinkLionPropertyCompletion {
   String graph = "";
 
   private GeoNamesTypeRetriever tr = new GeoNamesTypeRetriever("ontology_v3.1.rdf");
-  private FreebasePropertyHandler handler;
+  private FreebasePropertyHandler fbHandler;
+  private LinkedGeoDataPropertyHandler lgdHandler = new LinkedGeoDataPropertyHandler();
 
   public LinkLionPropertyCompletion() throws Exception {
     // TODO 1. choose DB to process
@@ -85,7 +89,7 @@ public class LinkLionPropertyCompletion {
 
     // TODO 2. choose processing mode
     this.processingMode = Utils.MODE_ALL;
-    handler = new FreebasePropertyHandler(processingMode);
+    fbHandler = new FreebasePropertyHandler(processingMode);
   }
 
   /**
@@ -98,9 +102,8 @@ public class LinkLionPropertyCompletion {
 
     System.out.println("Get nodes with specified properties ..");
     // TODO 3. customize query to restrict working set, if needed
-//    ResultSet nodes = ll.dbOps.getNodesWithoutLabels();
-
-    ResultSet vertices = ll.dbOps.getAllNodesBiggerThan();
+//    ResultSet vertices = ll.dbOps.getAllNodesBiggerThan();
+    ResultSet vertices = ll.dbOps.getResourcesWithoutProperties();
 
     System.out.println("Process nodes one by one ..");
     ll.processResult(vertices);
@@ -157,35 +160,35 @@ public class LinkLionPropertyCompletion {
       String endpoint = "";
       com.hp.hpl.jena.query.ResultSet properties = null;
 
-      if (repairMode) {
-        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
-        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
-      }
-      // TODO rethink if this is always correct here (especially for the linklion dataset)
-      if (url.startsWith(FB_NS)) {
-        if (!writeFreebaseProperties(id, url)) {
+//      if (repairMode) {
+//        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
+//        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
+//      }
+//      // TODO rethink if this is always correct here (especially for the linklion dataset)
+      if (url.startsWith(LGD_NS)) { // url.startsWith(FB_NS) ||
+        if (!writeFbOrLgdProperties(id, url)) {
           retryMap.put(id, url);
         }
-      } else {
-        if (url.startsWith(DBP_NS)) {
-          endpoint = DBP_ENDPOINT;
-        } else {
-          endpoint = LL_ENDPOINT;
-        }
-        if (dbName.equals(Utils.LL_DB_NAME)) {
-          properties = getPropertiesFromSparql(endpoint, id, url);
-        } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
-          properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
-        }
-      }
-
-      if (properties != null) {
-        HashMap<String, Boolean> propsMap = getPropertyErrorMap();
-        while (properties.hasNext()) {
-          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
-        }
-        reportErrors(url, id, endpoint, propsMap);
-      }
+      } //else {
+//        if (url.startsWith(DBP_NS)) {
+//          endpoint = DBP_ENDPOINT;
+//        } else {
+//          endpoint = LL_ENDPOINT;
+//        }
+//        if (dbName.equals(Utils.LL_DB_NAME)) {
+//          properties = getPropertiesFromSparql(endpoint, id, url);
+//        } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
+//          properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
+//        }
+//      }
+//
+//      if (properties != null) {
+//        HashMap<String, Boolean> propsMap = getPropertyErrorMap();
+//        while (properties.hasNext()) {
+//          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
+//        }
+//        reportErrors(url, id, endpoint, propsMap);
+//      }
     }
     System.out.println("Processed " + count + " vertices.");
     retryMissingVertices(retryMap);
@@ -228,7 +231,7 @@ public class LinkLionPropertyCompletion {
       HashMap<Integer, String> tmpRetryMap = new HashMap<>();
       for (Integer id : retryMap.keySet()) {
         String value = retryMap.get(id);
-        if (!writeFreebaseProperties(id, value)) {
+        if (!writeFbOrLgdProperties(id, value)) {
           tmpRetryMap.put(id, value);
         }
       }
@@ -246,8 +249,13 @@ public class LinkLionPropertyCompletion {
    * @param id vertex id
    * @param url vertex url
    */
-  private Boolean writeFreebaseProperties(int id, String url) throws Exception {
-    HashSet<String[]> properties = handler.getPropertiesForURI(url);
+  private Boolean writeFbOrLgdProperties(int id, String url) throws Exception {
+    HashSet<String[]> properties = Sets.newHashSet();
+    if (url.startsWith(FB_NS)) {
+      properties = fbHandler.getPropertiesForURI(url);
+    } else if (url.startsWith(LGD_NS)) {
+      properties = lgdHandler.getPropertiesForURI(url);
+    }
 
     if (!properties.isEmpty()) {
       for (String[] property : properties) {
@@ -372,6 +380,7 @@ public class LinkLionPropertyCompletion {
         case FB_LONGITUDE:
           return LON_NAME;
         case FB_ELEVATION:
+        case LGD_ELEVATION:
           return ELE_NAME;
       }
     }
