@@ -122,14 +122,14 @@ public class DbOps {
       insertStmt.setString(2, key);
       insertStmt.setString(3, value);
       try {
-        insertStmt.executeUpdate();
+//        insertStmt.executeUpdate();
         System.out.println("Written for Vertex: " + id + " Property: " +
             key + " Value: " + value);
         return key;
-      } catch (MySQLIntegrityConstraintViolationException ignore) {
-        if (key.equals(Utils.TYPE_NAME)) {
-          System.err.println(Utils.TYPE_NAME + "error");
-        }
+//      } catch (MySQLIntegrityConstraintViolationException ignore) {
+//        if (key.equals(Utils.TYPE)) {
+//          System.err.println(Utils.TYPE + "error");
+//        }
       } finally {
         insertStmt.close();
       }
@@ -227,6 +227,7 @@ public class DbOps {
 
     return s.executeQuery();
   }
+
 
   /**
    * Only needed once per dataset, enrich missing source/ontID_fk fields in db with URLs of vertex.

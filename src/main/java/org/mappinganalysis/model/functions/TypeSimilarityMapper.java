@@ -21,6 +21,8 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, FlinkVert
     Map<String, Object> trgProps = triplet.getTrgVertex().getValue().getProperties();
     String trgType = trgProps.containsKey("type") ? trgProps.get("type").toString() : "null";
 
+    System.out.println(triplet);
+
     boolean isSimilar = false;
     if (!srcType.equals("null") && !trgType.equals("null")
         && !srcType.equals("-1") && !trgType.equals("-1")) {

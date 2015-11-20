@@ -7,7 +7,7 @@ import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.BasicTest;
 import org.mappinganalysis.model.FlinkVertex;
-import org.simmetrics.StringDistance;
+import org.mappinganalysis.model.Preprocessing;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.metrics.StringMetrics;
@@ -15,26 +15,59 @@ import org.simmetrics.tokenizers.Tokenizers;
 
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
 /**
  * similarity test
  */
-public class SimilarTripletExtractorTest extends BasicTest {
+public class SimilarityMapperTest extends BasicTest {
 
   @Test
-  public void similarityTest() throws Exception {
+  public void trigramSimilarityTest() throws Exception {
     Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
     final DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
 
     DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> exactSim
       = baseTriplets
-      .map(new SimilarTripletExtractor())
+      .map(new TrigramSimilarityMapper())
       .filter(new TripletFilter());
-    exactSim.print();
+
+    for (Triplet<Long, FlinkVertex, Map<String, Object>> triplet : exactSim.collect()) {
+      if (triplet.getSrcVertex().getId() == 5680) {
+        if (triplet.getTrgVertex().getId() == 5984 || triplet.getTrgVertex().getId() == 5681) {
+          assertEquals(0.6324555f, triplet.getEdge().getValue().get("trigramSim"));
+        } else {
+          assertFalse(true);
+        }
+      }
+    }
   }
 
   @Test
+  public void typeSimilarityTest() throws Exception {
+    Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
+    graph = Preprocessing.applyTypePreprocessing(graph);
+
+    final DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
+
+    baseTriplets.print();
+
+    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> typeSim
+        = baseTriplets
+        .map(new TypeSimilarityMapper())
+        .filter(new TypeFilter());
+
+    for (Triplet<Long, FlinkVertex, Map<String, Object>> triplet : typeSim.collect()) {
+      System.out.println(triplet);
+    }
+  }
+
+  @Test
+  /**
+   * not rly a test
+   */
   public void differentSimilaritiesTest() {
     String leipzig = "Leipzig";
     String leipzigsachsen = "Leipzig (Sachsen)";

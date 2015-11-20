@@ -82,13 +82,13 @@ public class LinkLionPropertyCompletion {
 
   public LinkLionPropertyCompletion() throws Exception {
     // TODO 1. choose DB to process
-    this.dbName = Utils.LL_DB_NAME;
-//    this.dbName = Utils.GEO_PERFECT_DB_NAME;
+//    this.dbName = Utils.LL_DB_NAME;
+    this.dbName = Utils.GEO_PERFECT_DB_NAME;
     this.dbOps = new DbOps(dbName);
 
 
     // TODO 2. choose processing mode
-    this.processingMode = Utils.MODE_ALL;
+    this.processingMode = Utils.MODE_TYPE;
     fbHandler = new FreebasePropertyHandler(processingMode);
   }
 
@@ -103,7 +103,8 @@ public class LinkLionPropertyCompletion {
     System.out.println("Get nodes with specified properties ..");
     // TODO 3. customize query to restrict working set, if needed
 //    ResultSet vertices = ll.dbOps.getAllNodesBiggerThan();
-    ResultSet vertices = ll.dbOps.getResourcesWithoutProperties();
+//    ResultSet vertices = ll.dbOps.getResourcesWithoutProperties();
+    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
 
     System.out.println("Process nodes one by one ..");
     ll.processResult(vertices);
@@ -160,12 +161,14 @@ public class LinkLionPropertyCompletion {
       String endpoint = "";
       com.hp.hpl.jena.query.ResultSet properties = null;
 
+      System.out.println(count);
+
 //      if (repairMode) {
 //        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
 //        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
 //      }
 //      // TODO rethink if this is always correct here (especially for the linklion dataset)
-      if (url.startsWith(LGD_NS)) { // url.startsWith(FB_NS) ||
+      if (url.startsWith(FB_NS)) { // || url.startsWith(LGD_NS)) {
         if (!writeFbOrLgdProperties(id, url)) {
           retryMap.put(id, url);
         }
@@ -191,7 +194,7 @@ public class LinkLionPropertyCompletion {
 //      }
     }
     System.out.println("Processed " + count + " vertices.");
-    retryMissingVertices(retryMap);
+//    retryMissingVertices(retryMap);
   }
 
   /**
@@ -218,7 +221,7 @@ public class LinkLionPropertyCompletion {
     propsMap.put(LABEL_NAME, Boolean.FALSE);
     propsMap.put(LAT_NAME, Boolean.FALSE);
     propsMap.put(LON_NAME, Boolean.FALSE);
-    propsMap.put(Utils.TYPE_NAME, Boolean.FALSE);
+    propsMap.put(Utils.TYPE, Boolean.FALSE);
 
     return propsMap;
   }
@@ -308,11 +311,11 @@ public class LinkLionPropertyCompletion {
       if (!propsMap.get(LON_NAME)) {
         dbOps.writeError(id, url, error, LON_NAME);
       }
-      if (!propsMap.get(Utils.TYPE_NAME)) {
-        dbOps.writeError(id, url, error, Utils.TYPE_NAME);
+      if (!propsMap.get(Utils.TYPE)) {
+        dbOps.writeError(id, url, error, Utils.TYPE);
       }
-    } else if (processingMode.equals(Utils.MODE_TYPE) && !propsMap.get(Utils.TYPE_NAME)) {
-      dbOps.writeError(id, url, error, Utils.TYPE_NAME); // TODO whats with type detail?
+    } else if (processingMode.equals(Utils.MODE_TYPE) && !propsMap.get(Utils.TYPE)) {
+      dbOps.writeError(id, url, error, Utils.TYPE); // TODO whats with type detail?
     }
     if (processingMode.equals(Utils.MODE_LABEL) && !propsMap.get(LABEL_NAME)) {
       dbOps.writeError(id, url, error, LABEL_NAME);
@@ -393,8 +396,8 @@ public class LinkLionPropertyCompletion {
         case TYPE_URL:
         case FB_TYPE:
         case GN_CLASS_TYPE:
-//          System.out.println("writeProperty set to: " + Utils.TYPE_NAME + " propType: " + propTypeUrl);
-          return Utils.TYPE_NAME;
+//          System.out.println("writeProperty set to: " + Utils.TYPE + " propType: " + propTypeUrl);
+          return Utils.TYPE;
         case GN_CODE_TYPE:
 //          System.out.println("writeProperty set to: " + TYPE_DETAIL_NAME);
           return TYPE_DETAIL_NAME;

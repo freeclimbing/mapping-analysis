@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * helper class, possibly deprecated soon
  */
-public class VertexCreator implements MapFunction<FlinkVertex, Vertex<Long, FlinkVertex>> { //} , ResultTypeQueryable {
+public class VertexCreator implements MapFunction<FlinkVertex, Vertex<Long, FlinkVertex>> {//}, ResultTypeQueryable {
   private final Vertex<Long, FlinkVertex> reuseVertex;
 
   public VertexCreator() {
@@ -50,6 +50,7 @@ public class VertexCreator implements MapFunction<FlinkVertex, Vertex<Long, Flin
 //    TupleTypeInfo<FlinkVertex> fvInfo = new TupleTypeInfo(BasicTypeInfo.LONG_TYPE_INFO, gtInfo);
 //
 //
-//    return new TupleTypeInfo(Vertex.class, BasicTypeInfo.LONG_TYPE_INFO, fvInfo);
+//    return new TupleTypeInfo(Vertex.class, BasicTypeInfo.LONG_TYPE_INFO,
+//        TypeExtractor.getForClass(FlinkVertex.class));
 //  }
 }

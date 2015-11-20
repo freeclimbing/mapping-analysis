@@ -35,7 +35,18 @@ public class Utils {
   public static final String DB_CCID_FIELD = "ccID";
   public static final String DB_CONCEPTID_FIELD = "conceptID";
   public static final String DB_CC_TABLE = "connectedComponents";
-  public static final String TYPE_NAME = "type";
+
+  public static final String TYPE = "type";
+  public static final String LAT = "lat";
+  public static final String LON = "lon";
+  public static final String LABEL = "label";
+  public static final String TYPE_INTERN = "typeIntern";
+  public static final String CC_ID = "ccId";
+  public static final String CL_REPRESENTATIVE = "clusterRepresentative";
+  public static final String ONTOLOGY = "ontology";
+
+  public static final String DBP_ONTOLOGY = "http://dbpedia.org/";
+  public static final String GN_ONTOLOGY = "http://sws.geonames.org/";
 
   public static final String FLINK_RESULT_PATH = "/data/flink_data/CCresult/";
 

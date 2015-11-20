@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.functions.VertexCreator;
-import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.assertEquals;
 
@@ -83,6 +82,7 @@ public class BasicTest {
     Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
     assertEquals(4, graph.getVertices().count());
     assertEquals(3, graph.getEdges().count());
+    graph.getVertices().print();
   }
 
 }

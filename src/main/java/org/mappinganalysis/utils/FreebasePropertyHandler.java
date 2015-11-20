@@ -30,6 +30,7 @@ public class FreebasePropertyHandler {
   private static final String LATITUDE = "ns:location.geocode.latitude";
   private static final String LONGITUDE = "ns:location.geocode.longitude";
   private static final String LOCATION_START = "ns:location";
+  private static final String GEOGRAPHY_START = "ns:geography";
   private static final String FREEBASE_NS = "http://rdf.freebase.com/ns/";
   private static final String FB_SERVICE_URL = "https://www.googleapis.com/freebase/v1/rdf/";
 
@@ -98,7 +99,8 @@ public class FreebasePropertyHandler {
    * @throws IOException
    * @throws URISyntaxException
    */
-  private HashSet<String[]> getProperty(String[] keyValue, Boolean isGeoLocation) throws Exception {
+  private HashSet<String[]> getProperty(String[] keyValue, Boolean isGeoLocation)
+      throws Exception {
     HashSet<String[]> properties = new HashSet<>();
     if (keyValue.length == 2) {
       String key = keyValue[0];
@@ -110,16 +112,18 @@ public class FreebasePropertyHandler {
         }
       }
       if (!isGeoLocation) {
-        if (key.equals(TYPE) && value.startsWith(LOCATION_START)) {
+        if (key.equals(TYPE) && (value.startsWith(GEOGRAPHY_START))) {
+//            || value.startsWith(LOCATION_START))) {
           value = FREEBASE_NS.concat(value.substring(value.indexOf(":") + 1));
           properties.add(new String[]{key, value});
-        } else if (key.equals(GEO_LOCATION) && (mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL))) {
+        } else if (key.equals(GEO_LOCATION) && (mode.equals(Utils.MODE_LAT_LONG_TYPE)
+            || mode.equals(Utils.MODE_ALL))) {
           String splitValue = value.substring(value.indexOf(":") + 1);
 //          System.out.println("SPLITVALUE: " + splitValue);
           properties.addAll(getPropertiesForURI(FREEBASE_NS + splitValue, true));
         }
-      } else if ((mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL)) && (key.equals(ELEVATION)
-          || key.equals(LATITUDE) || key.equals(LONGITUDE))) {
+      } else if ((mode.equals(Utils.MODE_LAT_LONG_TYPE) || mode.equals(Utils.MODE_ALL))
+          && (key.equals(ELEVATION) || key.equals(LATITUDE) || key.equals(LONGITUDE))) {
         value = value.substring(value.indexOf(":") + 1);
         properties.add(new String[]{key, value});
       }
