@@ -122,14 +122,14 @@ public class DbOps {
       insertStmt.setString(2, key);
       insertStmt.setString(3, value);
       try {
-//        insertStmt.executeUpdate();
+        insertStmt.executeUpdate();
         System.out.println("Written for Vertex: " + id + " Property: " +
             key + " Value: " + value);
         return key;
-//      } catch (MySQLIntegrityConstraintViolationException ignore) {
-//        if (key.equals(Utils.TYPE)) {
-//          System.err.println(Utils.TYPE + "error");
-//        }
+      } catch (MySQLIntegrityConstraintViolationException ignore) {
+        if (key.equals(Utils.TYPE)) {
+          System.err.println(Utils.TYPE + "error");
+        }
       } finally {
         insertStmt.close();
       }
@@ -222,7 +222,7 @@ public class DbOps {
    * @throws SQLException
    */
   public ResultSet getAllFreebaseNodes() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com%';";
+    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com/ns%' and id > 658135 order by id;";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();

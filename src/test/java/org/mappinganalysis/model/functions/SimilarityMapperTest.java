@@ -32,7 +32,7 @@ public class SimilarityMapperTest extends BasicTest {
     DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> exactSim
       = baseTriplets
       .map(new TrigramSimilarityMapper())
-      .filter(new TripletFilter());
+      .filter(new TrigramSimilarityFilter());
 
     for (Triplet<Long, FlinkVertex, Map<String, Object>> triplet : exactSim.collect()) {
       if (triplet.getSrcVertex().getId() == 5680) {

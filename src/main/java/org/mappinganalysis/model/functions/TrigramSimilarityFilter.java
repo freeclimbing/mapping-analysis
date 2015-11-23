@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Exact match triplet filter, soon deprecated!?
  */
-public class TripletFilter implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
+public class TrigramSimilarityFilter implements FilterFunction<Triplet<Long, FlinkVertex, Map<String, Object>>> {
   @Override
   public boolean filter(Triplet<Long, FlinkVertex, Map<String, Object>> weightedTriplet) throws Exception {
     Map<String, Object> props = weightedTriplet.getEdge().getValue();

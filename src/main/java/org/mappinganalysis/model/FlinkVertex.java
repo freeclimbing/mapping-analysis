@@ -15,10 +15,10 @@ public class FlinkVertex extends Vertex<Long, Map<String, Object>> {
   public FlinkVertex() {
   }
 
-//  public FlinkVertex(long vId, Map<String, Object> properties) {
-//    f0 = vId;
-//    f1 = properties;
-//  }
+  public FlinkVertex(long vId, Map<String, Object> properties) {
+    f0 = vId;
+    f1 = properties;
+  }
 
   public Long getId() {
     return f0;
