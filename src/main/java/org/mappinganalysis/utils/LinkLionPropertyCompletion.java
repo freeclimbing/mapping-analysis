@@ -82,8 +82,8 @@ public class LinkLionPropertyCompletion {
 
   public LinkLionPropertyCompletion() throws Exception {
     // TODO 1. choose DB to process
-//    this.dbName = Utils.LL_DB_NAME;
-    this.dbName = Utils.GEO_PERFECT_DB_NAME;
+    this.dbName = Utils.LL_DB_NAME;
+//    this.dbName = Utils.GEO_PERFECT_DB_NAME;
     this.dbOps = new DbOps(dbName);
 
 
@@ -124,7 +124,12 @@ public class LinkLionPropertyCompletion {
   }
 
   private void processProperties(ResultSet properties) throws SQLException {
+    int count = 0;
     while (properties.next()) {
+      count++;
+      if (count % 1000 == 0) {
+        System.out.println(count);
+      }
       int id = properties.getInt("id");
       String attName = properties.getString("attName");
       String attValue = properties.getString("attValue");

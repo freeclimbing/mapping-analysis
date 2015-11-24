@@ -29,7 +29,7 @@ public class BestDataSourceGroupReduceFunction
         isRepresentative = true;
       }
       resultProps = PropertyHelper
-          .addValueToProperties(resultProps, vertex.getId(), "clusteredVertices");
+          .addValueToProperties(resultProps, vertex.getValue(), "clusteredVertices");
 
       createRepresentativeProperties(resultProps, vertex);
     }

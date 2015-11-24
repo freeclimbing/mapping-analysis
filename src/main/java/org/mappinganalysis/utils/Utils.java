@@ -1,18 +1,17 @@
 package org.mappinganalysis.utils;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoDatabase;
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoDatabase;
-import org.apache.log4j.Logger;
 
 public class Utils {
 
@@ -43,6 +42,7 @@ public class Utils {
   public static final String TYPE_INTERN = "typeIntern";
   public static final String CC_ID = "ccId";
   public static final String CL_REPRESENTATIVE = "clusterRepresentative";
+  public static final String CL_VERTICES = "clusteredVertices";
   public static final String ONTOLOGY = "ontology";
 
   public static final String DBP_ONTOLOGY = "http://dbpedia.org/";
@@ -124,4 +124,29 @@ public class Utils {
     DB_NAME = dbName;
     return openDbConnection();
   }
+
+  // not needed?
+//  public <T> getProps(Map<String, Object> properties, String key, Class type) {
+//    properties.get(Utils.CL_VERTICES).getClass();
+//
+//    if (properties.containsKey(key)) {
+//      Object oldValue = properties.get(key);
+//      if (oldValue instanceof List) {
+//        List<Object> values = Lists.newArrayList((List<Object>) oldValue);
+//        values.add(value);
+//        properties.put(key, values);
+//      } else {
+//        properties.put(key, Lists.newArrayList(oldValue, value));
+//      }
+//    } else {
+//      properties.put(key, value);
+//    }
+//
+//
+//    return type.cast(result);
+//  }
+//
+//  public Class getPropertyClass(Map<String, Object> properties, String key) {
+//    return properties.get(key).getClass();
+//  }
 }

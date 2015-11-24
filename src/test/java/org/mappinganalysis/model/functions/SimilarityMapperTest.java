@@ -65,6 +65,24 @@ public class SimilarityMapperTest extends BasicTest {
   }
 
   @Test
+  public void geoExample() {
+    String one = "Brioni (Croatia)";
+    String two = "Brijuni";
+    StringMetric metric =
+        with(new CosineSimilarity<String>())
+            .tokenize(Tokenizers.qGram(3))
+            .build();
+    System.out.println(one + " ### " + two + " ### " + metric.compare(one, two));
+
+    one = "Saba";
+    two = "Saba (Netherlands Antilles)";
+    System.out.println(one + " ### " + two + " ### " + metric.compare(one, two));
+    one = "Hermanus";
+    two = "Hermanus (South Africa)";
+    System.out.println(one + " ### " + two + " ### " + metric.compare(one, two));
+  }
+
+  @Test
   /**
    * not rly a test
    */

@@ -9,6 +9,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.MySQLToFlink;
@@ -21,6 +22,35 @@ import java.util.Map;
  * Helper methods for Flink mapping analysis
  */
 public class Stats {
+
+  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, FlinkVertex>> clusters) throws Exception {
+    DataSet<Vertex<Long, FlinkVertex>> filteredClusters = clusters.filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
+      @Override
+      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
+        Object clusteredVerts = vertex.getValue().getProperties().get(Utils.CL_VERTICES);
+        return clusteredVerts instanceof List && ((List) clusteredVerts).size() > 3;
+      }
+    });
+
+    for (Vertex<Long, FlinkVertex> vertex : filteredClusters.collect()) {
+      System.out.println(vertex.getValue().toString());
+      Map<String, Object> properties = vertex.getValue().getProperties();
+
+//      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
+//      if (clusteredVerts instanceof List ) {
+//        System.out.println(vertex.getValue().toString());
+        List<FlinkVertex> values = Lists.newArrayList((List<FlinkVertex>) properties.get(Utils.CL_VERTICES));
+
+        for (FlinkVertex value : values) {
+          System.out.println(value.getProperties().get("label"));
+        }
+//      }
+//      else {
+//        FlinkVertex tmp = (FlinkVertex) clusteredVerts;
+//        System.out.println(tmp.getProperties().get("typeIntern"));
+//      }
+    }
+  }
 
   /**
    * Count resources per component for a given flink connected component result set.
@@ -51,6 +81,7 @@ public class Stats {
     int five = 0;
     int six = 0;
     int seven = 0;
+    int other = 0;
     for (Tuple2<Long, Long> tuple2 : ccGeoList) {
       if (tuple2.f1 == 1) {
         one++;
@@ -66,10 +97,12 @@ public class Stats {
         six++;
       } else if (tuple2.f1 == 7) {
         seven++;
+      } else if (tuple2.f1 > 7) {
+        other++;
       }
     }
     System.out.println("one: " + one + " two: " + two + " three: " + three +
-        " four: " + four + " five: " + five + " six: " + six + " seven: " + seven);
+        " four: " + four + " five: " + five + " six: " + six + " seven: " + seven + " more: " + other);
   }
 
   // duplicate methods in emptygeocodefilter
