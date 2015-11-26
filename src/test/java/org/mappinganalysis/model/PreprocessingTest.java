@@ -10,8 +10,6 @@ import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
-
 public class PreprocessingTest {
 
   @Test
@@ -22,7 +20,7 @@ public class PreprocessingTest {
   @Test
   public void testApplyTypePreprocessing() throws Exception {
 
-    Graph<Long, FlinkVertex, NullValue> graph = MySQLToFlink.getInputGraph();
+    Graph<Long, FlinkVertex, NullValue> graph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME);
 
     graph = Preprocessing.applyLinkFilterStrategy(graph);
     graph = Preprocessing.applyTypePreprocessing(graph);

@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.functions.VertexCreator;
+import org.mappinganalysis.utils.Utils;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,10 +28,13 @@ public class BasicTest {
     LocalEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
 
     JDBCDataLoader loader = new JDBCDataLoader(environment);
-    DataSet<Vertex<Long, FlinkVertex>> vertices = loader.getVertices().filter(new FilterFunction<FlinkVertex>() {
+    DataSet<Vertex<Long, FlinkVertex>> vertices = loader
+        .getVertices(Utils.GEO_FULL_NAME)
+        .filter(new FilterFunction<FlinkVertex>() {
       @Override
       public boolean filter(FlinkVertex vertex) throws Exception {
-        return vertex.getId() == 4795 || vertex.getId() == 5680 || vertex.getId() == 5984 || vertex.getId() == 5681;
+        return vertex.getId() == 4795 || vertex.getId() == 5680
+            || vertex.getId() == 5984 || vertex.getId() == 5681;
       }
     })
         .map(new VertexCreator());

@@ -107,7 +107,7 @@ public class Stats {
 
   // duplicate methods in emptygeocodefilter
   public static void countPrintGeoPointsPerOntology() throws Exception {
-    Graph<Long, FlinkVertex, NullValue> tgraph = MySQLToFlink.getInputGraph();
+    Graph<Long, FlinkVertex, NullValue> tgraph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME);
     tgraph.getVertices()
         .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
           @Override

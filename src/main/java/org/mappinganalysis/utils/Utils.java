@@ -21,6 +21,8 @@ public class Utils {
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
+  public static final String LL_FULL_NAME = "dbURLfullLinkLion";
+  public static final String GEO_FULL_NAME = "dbURLfull";
 
   public static final String MODE_LAT_LONG_TYPE = "modeLatLongType";
   public static final String MODE_LABEL = "modeLabel";
