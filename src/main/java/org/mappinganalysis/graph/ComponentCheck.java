@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -25,6 +26,7 @@ public class ComponentCheck {
   private static final Logger LOG = Logger.getLogger(ComponentCheck.class);
 
   private static final String STRATEGY_EXCLUDE = "strategy-exclude";
+  private ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
 
   private HashSet<Component> components;
   private HashMap<Integer, String> labels;
@@ -86,7 +88,7 @@ public class ComponentCheck {
       long startTime = System.nanoTime();
       int maxIterations = 1000;
       LOG.info("Compute Flink connected components ...");
-      FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
+      FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(environment);
       DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
       long endTime = System.nanoTime();
       long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.#
