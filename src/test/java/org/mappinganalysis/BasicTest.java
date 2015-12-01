@@ -32,45 +32,19 @@ import static org.junit.Assert.assertEquals;
 public class BasicTest {
 
 
-  @Test
-  public void simpleTest() throws Exception {
-    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
-
-    List<Tuple2<Long, Long>> input = Lists.newArrayList();
-    input.add(new Tuple2<>(3L, 1L));
-    input.add(new Tuple2<>(3L, 2L));
-    input.add(new Tuple2<>(3L, 4L));
-    input.add(new Tuple2<>(5L, 6L));
-    input.add(new Tuple2<>(5L, 7L));
-        DataSet<Tuple2<Long, Long>> testData = environment.fromCollection(input);
-
-    DataSet<Edge<Long, NullValue>> bla = testData.map(new MapFunction<Tuple2<Long, Long>, Edge<Long, NullValue>>() {
-      @Override
-      public Edge<Long, NullValue> map(Tuple2<Long, Long> tuple2) throws Exception {
-        return new Edge<Long, NullValue>(tuple2.f0, tuple2.f1, NullValue.getInstance());
-      }
-    });
-
-    Graph<Long, FlinkVertex, NullValue> graph = Graph.fromDataSet(bla, environment).mapVertices(new MapFunction<Vertex<Long, NullValue>, FlinkVertex>() {
-      @Override
-      public FlinkVertex map(Vertex<Long, NullValue> longNullValueVertex) throws Exception {
-        return new FlinkVertex(longNullValueVertex.getId(), Maps.<String, Object>newHashMap());
-      }
-    });
-
-//    Graph<Long, FlinkVertex, NullValue> newGraph
-//        =  graph.mapVertices(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, FlinkVertex>>() {
-//      @Override
-//      public Vertex<Long, FlinkVertex> map(Vertex<Long, NullValue> vertex) throws Exception {
-//        return new Vertex<>(vertex.getId(), new FlinkVertex(vertex.getId(), Maps.<String, Object>newHashMap()));
-//      }
-//    });
-
-    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> ds
-        = MySQLToFlink.simCompNotExistingEdges(environment, graph);
-
-    ds.print();
-  }
+//  @Test
+//  public void simpleTest() throws Exception {
+//    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
+//
+//    List<Tuple2<Long, Long>> input = Lists.newArrayList();
+//    input.add(new Tuple2<>(3L, 1L));
+//    input.add(new Tuple2<>(3L, 2L));
+//    input.add(new Tuple2<>(3L, 4L));
+//    input.add(new Tuple2<>(5L, 6L));
+//    input.add(new Tuple2<>(5L, 7L));
+//
+//    DataSet<Tuple2<Long, Long>> testData = environment.fromCollection(input);
+//  }
 
   @SuppressWarnings("unchecked")
   protected Graph<Long, FlinkVertex, NullValue> createSimpleGraph() throws Exception {

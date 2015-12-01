@@ -1,24 +1,45 @@
 package org.mappinganalysis.graph;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.functions.CcIdKeySelector;
 import org.mappinganalysis.model.functions.ExcludeInputDataJoinFunction;
 
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * from org.apache.flink.examples.java.graph.TransitiveClosureNaive - working for DataSet as input.
- *
- * input is assumed as directed edges, undirected edges are created automatically
- * result is filtered: no loops
- */
-public class TransitiveClosureNaive {
+public class ClusterComputation {
 
-  public static DataSet<Tuple2<Long, Long>> compute(DataSet<Tuple2<Long, Long>> edges, int maxIterations) {
+  public static DataSet<Edge<Long, NullValue>> computeComponentEdges(
+      DataSet<Vertex<Long, FlinkVertex>>  vertices) {
+    return vertices.coGroup(vertices)
+        .where(new CcIdKeySelector())
+        .equalTo(new CcIdKeySelector())
+        .with(new CoGroupFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>, Edge<Long, NullValue>>() {
+          @Override
+          public void coGroup(Iterable<Vertex<Long, FlinkVertex>> left,
+                              Iterable<Vertex<Long, FlinkVertex>> right,
+                              Collector<Edge<Long, NullValue>> collector) throws Exception {
+            HashSet<Vertex<Long, FlinkVertex>> rightSet = Sets.newHashSet(right);
+            for (Vertex<Long, FlinkVertex> vertexLeft : left) {
+              for (Vertex<Long, FlinkVertex> vertexRight : rightSet) {
+                collector.collect(new Edge<>(vertexLeft.getId(),
+                    vertexRight.getId(), NullValue.getInstance()));
+              }
+            }
+          }
+        });
+  }
+
+  public static DataSet<Tuple2<Long, Long>> computeComponentEdgesAsTuple2(DataSet<Tuple2<Long, Long>> edges, int maxIterations) {
     DataSet<Tuple2<Long, Long>> edgesReversed = edges.project(1, 0);
     DataSet<Tuple2<Long, Long>> edgesJoined = edges.union(edgesReversed);
 
@@ -64,14 +85,40 @@ public class TransitiveClosureNaive {
     return paths.closeWith(nextPaths, newPaths);
   }
 
+  public static DataSet<Edge<Long, NullValue>> restrictToNewEdges(DataSet<Edge<Long, NullValue>> input,
+                                                                  DataSet<Edge<Long, NullValue>> tmpResult) {
+    return tmpResult
+        .filter(new FilterFunction<Edge<Long, NullValue>>() {
+          @Override
+          public boolean filter(Edge<Long, NullValue> edge) throws Exception {
+            return (long) edge.getSource() != edge.getTarget();
+          }
+        })
+
+        .leftOuterJoin(input)
+        .where(0, 1).equalTo(0, 1)
+        .with(new ExcludeInputJoinFunction())
+
+        .leftOuterJoin(input)
+        .where(0, 1).equalTo(1, 0)
+        .with(new ExcludeInputJoinFunction())
+        .map(new MapFunction<Edge<Long, NullValue>, Edge<Long, NullValue>>() {
+          @Override
+          public Edge<Long, NullValue> map(Edge<Long, NullValue> edge) throws Exception {
+            return edge.getSource() < edge.getTarget() ? edge : edge.reverse();
+          }
+        })
+        .distinct();
+  }
+
   /**
    * Retrieve all new edges for all clusters. Only one edge per direction, no loops.
    * @param inputData input data set
    * @param tmpResult temp result
    * @return cleansed data set of edges
    */
-  public static DataSet<Tuple2<Long, Long>> restrictToNewEdges(DataSet<Tuple2<Long, Long>> inputData,
-                                                               DataSet<Tuple2<Long, Long>> tmpResult) {
+  public static DataSet<Tuple2<Long, Long>> restrictToNewTuples(DataSet<Tuple2<Long, Long>> inputData,
+                                                                DataSet<Tuple2<Long, Long>> tmpResult) {
     return tmpResult
         .filter(new FilterFunction<Tuple2<Long, Long>>() {
           @Override
@@ -92,5 +139,15 @@ public class TransitiveClosureNaive {
           }
         })
         .distinct();
+  }
+
+  private static class ExcludeInputJoinFunction implements FlatJoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>> {
+    @Override
+    public void join(Edge<Long, NullValue> left, Edge<Long, NullValue> right,
+                     Collector<Edge<Long, NullValue>> collector) throws Exception {
+      if (right == null) {
+        collector.collect(left);
+      }
+    }
   }
 }
