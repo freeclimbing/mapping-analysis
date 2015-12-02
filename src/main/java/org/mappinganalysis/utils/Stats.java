@@ -71,7 +71,7 @@ public class Stats {
             }
             out.collect(new Tuple2<>(id, count));
           }
-        })
+        })//.print();
         .collect();
 
     int one = 0;

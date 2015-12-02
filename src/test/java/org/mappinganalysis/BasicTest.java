@@ -1,12 +1,18 @@
 package org.mappinganalysis;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.LocalEnvironment;
+import org.apache.flink.api.java.operators.MapOperator;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
@@ -15,6 +21,9 @@ import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.functions.VertexCreator;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -22,6 +31,20 @@ import static org.junit.Assert.assertEquals;
  */
 public class BasicTest {
 
+
+//  @Test
+//  public void simpleTest() throws Exception {
+//    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
+//
+//    List<Tuple2<Long, Long>> input = Lists.newArrayList();
+//    input.add(new Tuple2<>(3L, 1L));
+//    input.add(new Tuple2<>(3L, 2L));
+//    input.add(new Tuple2<>(3L, 4L));
+//    input.add(new Tuple2<>(5L, 6L));
+//    input.add(new Tuple2<>(5L, 7L));
+//
+//    DataSet<Tuple2<Long, Long>> testData = environment.fromCollection(input);
+//  }
 
   @SuppressWarnings("unchecked")
   protected Graph<Long, FlinkVertex, NullValue> createSimpleGraph() throws Exception {

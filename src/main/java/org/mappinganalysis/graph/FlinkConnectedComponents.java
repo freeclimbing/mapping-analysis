@@ -17,6 +17,11 @@ import java.util.HashSet;
  * Compute Flink Connected Components.
  */
 public class FlinkConnectedComponents {
+  ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+
+  public FlinkConnectedComponents(ExecutionEnvironment environment) {
+    env = environment;
+  }
 
   /**
    * used in first version of component check, soon deprecated
@@ -27,8 +32,7 @@ public class FlinkConnectedComponents {
    */
   public DataSet<Tuple2<Long, Long>> compute(HashSet<Integer> vertexSet,
                                                    HashSet<Tuple2<Integer, Integer>> edgeSet,
-                                                   int maxIterations) {
-    ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+                                                   int maxIterations) throws Exception {
     DataSet<Long> vertices = env.fromCollection(vertexSet).map(new LongMapper());
     DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeSet)
         .map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Long, Long>>() {
@@ -50,7 +54,7 @@ public class FlinkConnectedComponents {
    */
   public DataSet<Tuple2<Long, Long>> compute(DataSet<Long> vertices,
                                                    DataSet<Tuple2<Long, Long>> inEdges,
-                                                   int maxIterations) {
+                                                   int maxIterations) throws Exception {
     DataSet<Tuple2<Long, Long>> edges = inEdges.flatMap(new UndirectedEdge());
     // assign the initial component IDs (equal to the vertex ID)
     DataSet<Tuple2<Long, Long>> verticesWithInitialId = vertices.map(new DuplicateValue<Long>());
