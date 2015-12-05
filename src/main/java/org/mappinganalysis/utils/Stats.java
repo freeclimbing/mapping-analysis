@@ -5,6 +5,7 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
@@ -17,6 +18,7 @@ import org.mappinganalysis.model.FlinkVertex;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Helper methods for Flink mapping analysis
@@ -106,8 +108,8 @@ public class Stats {
   }
 
   // duplicate methods in emptygeocodefilter
-  public static void countPrintGeoPointsPerOntology() throws Exception {
-    Graph<Long, FlinkVertex, NullValue> tgraph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME);
+  public static void countPrintGeoPointsPerOntology(ExecutionEnvironment environment) throws Exception {
+    Graph<Long, FlinkVertex, NullValue> tgraph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME, environment);
     tgraph.getVertices()
         .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
           @Override

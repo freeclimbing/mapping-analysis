@@ -51,7 +51,6 @@ public class Preprocessing {
   }
 
   public static Graph<Long, FlinkVertex, NullValue> applyTypePreprocessing(Graph<Long, FlinkVertex, NullValue> graph) {
-
     DataSet<org.apache.flink.graph.Vertex<Long, FlinkVertex>> vertices = graph.getVertices()
         .map(new MapFunction<org.apache.flink.graph.Vertex<Long, FlinkVertex>, org.apache.flink.graph.Vertex<Long, FlinkVertex>>() {
           @Override

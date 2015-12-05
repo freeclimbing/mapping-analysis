@@ -8,7 +8,6 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.LocalEnvironment;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -16,8 +15,12 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
+import org.mappinganalysis.graph.ClusterComputation;
+import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.functions.CcResultVerticesJoin;
+import org.mappinganalysis.model.functions.CcVerticesCreator;
 import org.mappinganalysis.model.functions.VertexCreator;
 import org.mappinganalysis.utils.Utils;
 
@@ -32,19 +35,60 @@ import static org.junit.Assert.assertEquals;
 public class BasicTest {
 
 
-//  @Test
-//  public void simpleTest() throws Exception {
-//    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
-//
-//    List<Tuple2<Long, Long>> input = Lists.newArrayList();
-//    input.add(new Tuple2<>(3L, 1L));
-//    input.add(new Tuple2<>(3L, 2L));
-//    input.add(new Tuple2<>(3L, 4L));
-//    input.add(new Tuple2<>(5L, 6L));
-//    input.add(new Tuple2<>(5L, 7L));
-//
-//    DataSet<Tuple2<Long, Long>> testData = environment.fromCollection(input);
-//  }
+  @Test
+  public void simpleTest() throws Exception {
+    ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+    List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
+    edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
+    edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
+    Graph<Long, NullValue, NullValue> tmpGraph = Graph.fromCollection(edgeList, env);
+
+    final DataSet<Vertex<Long, FlinkVertex>> baseVertices = tmpGraph.getVertices().map(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, FlinkVertex>>() {
+      @Override
+      public Vertex<Long, FlinkVertex> map(Vertex<Long, NullValue> vertex) throws Exception {
+        Map<String, Object> prop = Maps.newHashMap();
+        prop.put(Utils.LABEL, "foo");
+        return new Vertex<>(vertex.getId(), new FlinkVertex(vertex.getId(), prop));
+      }
+    });
+
+    Graph<Long, FlinkVertex, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
+
+    final DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> accumulatedSimValues
+        = MySQLToFlink.initialSimilarityComputation(graph.getTriplets());
+
+    // 1. time cc
+    final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
+    final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
+    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
+    final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
+        .compute(ccVertices, ccEdges, 1000);
+
+    ccResult.print();
+
+    DataSet<Vertex<Long, FlinkVertex>> ccResultVertices = baseVertices
+        .join(ccResult)
+        .where(0).equalTo(0)
+        .with(new CcResultVerticesJoin());
+
+    // get new edges in components
+    DataSet<Edge<Long, NullValue>> newEdges
+        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
+        ClusterComputation.computeComponentEdges(ccResultVertices));
+
+    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> newSimValues
+        = MySQLToFlink.initialSimilarityComputation(
+        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets());
+
+    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
+    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
+    newCcEdges.print();
+
+    // 2. time cc
+    DataSet<Tuple2<Long, Long>> newCcResult = connectedComponents
+        .compute(ccVertices, newCcEdges, 1000);
+    newCcResult.print();
+  }
 
   @SuppressWarnings("unchecked")
   protected Graph<Long, FlinkVertex, NullValue> createSimpleGraph() throws Exception {

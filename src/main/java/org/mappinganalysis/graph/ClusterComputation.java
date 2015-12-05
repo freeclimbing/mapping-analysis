@@ -94,11 +94,9 @@ public class ClusterComputation {
             return (long) edge.getSource() != edge.getTarget();
           }
         })
-
         .leftOuterJoin(input)
         .where(0, 1).equalTo(0, 1)
         .with(new ExcludeInputJoinFunction())
-
         .leftOuterJoin(input)
         .where(0, 1).equalTo(1, 0)
         .with(new ExcludeInputJoinFunction())

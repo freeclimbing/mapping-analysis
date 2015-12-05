@@ -82,7 +82,7 @@ public class ClusterComputationTest {
 
     // GEO OAEI dataset
     DataSet<Tuple2<Long, Long>> edges = MySQLToFlink
-        .getInputGraph(Utils.GEO_FULL_NAME)
+        .getInputGraph(Utils.GEO_FULL_NAME, environment)
         .getEdges()
         .project(0, 1);
     DataSet<Tuple2<Long, Long>> geoResult = ClusterComputation.computeComponentEdgesAsTuple2(edges, 10);

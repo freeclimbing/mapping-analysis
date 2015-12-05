@@ -1,8 +1,10 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.*;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.MySQLToFlink;
@@ -19,8 +21,8 @@ public class PreprocessingTest {
 
   @Test
   public void testApplyTypePreprocessing() throws Exception {
-
-    Graph<Long, FlinkVertex, NullValue> graph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME);
+    ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
+    Graph<Long, FlinkVertex, NullValue> graph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME, environment);
 
     graph = Preprocessing.applyLinkFilterStrategy(graph);
     graph = Preprocessing.applyTypePreprocessing(graph);
