@@ -14,7 +14,7 @@ import java.util.Map;
  * Merge properties of grouped entities based on "best data source" availability,
  * i.e., GeoNames > DBpedia > others
  */
-public class BestDataSourceGroupReduceFunction
+public class BestDataSourceAllLabelsGroupReduceFunction
     implements GroupReduceFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>> {
   @Override
   public void reduce(Iterable<Vertex<Long, FlinkVertex>> vertices,
@@ -30,6 +30,8 @@ public class BestDataSourceGroupReduceFunction
       }
       resultProps = PropertyHelper
           .addValueToProperties(resultProps, vertex.getValue(), "clusteredVertices");
+      resultProps = PropertyHelper
+          .addValueToProperties(resultProps, vertex.getValue().getProperties().get("label"), "label");
 
       createRepresentativeProperties(resultProps, vertex);
     }
@@ -43,8 +45,8 @@ public class BestDataSourceGroupReduceFunction
 
     boolean latLonGnFound = false;
     boolean latLonDbpFound = false;
-    boolean labelGnFound = false;
-    boolean labelDbpFound = false;
+//    boolean labelGnFound = false;
+//    boolean labelDbpFound = false;
     boolean typeGnFound = false;
     boolean typeDbpFound = false;
     if (properties.containsKey("ontology")) {
@@ -53,10 +55,10 @@ public class BestDataSourceGroupReduceFunction
           setLatLon(resultProps, properties);
           latLonGnFound = true;
         }
-        if (properties.containsKey(Utils.LABEL)) {
-          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-          labelGnFound = true;
-        }
+//        if (properties.containsKey(Utils.LABEL)) {
+//          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
+//          labelGnFound = true;
+//        }
         if (properties.containsKey(Utils.TYPE_INTERN)) {
           resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
           typeGnFound = true;
@@ -67,10 +69,10 @@ public class BestDataSourceGroupReduceFunction
           setLatLon(resultProps, properties);
           latLonDbpFound = true;
         }
-        if (properties.containsKey(Utils.LABEL) && !labelGnFound) {
-          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-          labelDbpFound = true;
-        }
+//        if (properties.containsKey(Utils.LABEL) && !labelGnFound) {
+//          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
+//          labelDbpFound = true;
+//        }
         if (properties.containsKey(Utils.TYPE_INTERN) && !typeGnFound) {
           resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
           typeDbpFound = true;
@@ -81,9 +83,9 @@ public class BestDataSourceGroupReduceFunction
         && !latLonDbpFound && !latLonGnFound) {
       setLatLon(resultProps, properties);
     }
-    if (properties.containsKey(Utils.LABEL) && !labelDbpFound && !labelGnFound) {
-      resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-    }
+//    if (properties.containsKey(Utils.LABEL) && !labelDbpFound && !labelGnFound) {
+//      resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
+//    }
     if (properties.containsKey(Utils.TYPE_INTERN) && !typeGnFound && !typeDbpFound) {
       resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
     }

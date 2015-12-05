@@ -25,32 +25,39 @@ import java.util.concurrent.ExecutionException;
  */
 public class Stats {
 
-  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, FlinkVertex>> clusters) throws Exception {
-    DataSet<Vertex<Long, FlinkVertex>> filteredClusters = clusters.filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
-      @Override
-      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
-        Object clusteredVerts = vertex.getValue().getProperties().get(Utils.CL_VERTICES);
-        return clusteredVerts instanceof List && ((List) clusteredVerts).size() > 3;
-      }
-    });
+  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, FlinkVertex>> clusters)
+      throws Exception {
+//    DataSet<Vertex<Long, FlinkVertex>> filteredClusters = clusters
+//        .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
+//      @Override
+//      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
+//        Object clusteredVerts = vertex.getValue().getProperties().get(Utils.CL_VERTICES);
+//        return clusteredVerts instanceof List && ((List) clusteredVerts).size() < 3;
+//      }
+//    });
 
-    for (Vertex<Long, FlinkVertex> vertex : filteredClusters.collect()) {
-      System.out.println(vertex.getValue().toString());
+    for (Vertex<Long, FlinkVertex> vertex : clusters.collect()) {
       Map<String, Object> properties = vertex.getValue().getProperties();
+      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
 
-//      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
-//      if (clusteredVerts instanceof List ) {
-//        System.out.println(vertex.getValue().toString());
+      if (clusteredVerts instanceof List) {
+        if (((List) clusteredVerts).size() > 2) {
+          continue;
+        }
+        System.out.println(vertex.getValue().toString());
+
         List<FlinkVertex> values = Lists.newArrayList((List<FlinkVertex>) properties.get(Utils.CL_VERTICES));
 
         for (FlinkVertex value : values) {
           System.out.println(value.getProperties().get("label"));
         }
-//      }
-//      else {
-//        FlinkVertex tmp = (FlinkVertex) clusteredVerts;
-//        System.out.println(tmp.getProperties().get("typeIntern"));
-//      }
+      }
+      else {
+        System.out.println(vertex.getValue().toString());
+
+        FlinkVertex tmp = (FlinkVertex) clusteredVerts;
+        System.out.println(tmp.getProperties().get("label"));
+      }
     }
   }
 
