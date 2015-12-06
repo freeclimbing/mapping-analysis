@@ -36,12 +36,18 @@ public class Stats {
 //      }
 //    });
 
+//    clusters.filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
+//      @Override
+//      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
+//        return !vertex.getValue().getProperties().containsKey(Utils.LAT) && !vertex.getValue().getProperties().containsKey(Utils.LON);
+//      }
+//    }).print();
     for (Vertex<Long, FlinkVertex> vertex : clusters.collect()) {
       Map<String, Object> properties = vertex.getValue().getProperties();
       Object clusteredVerts = properties.get(Utils.CL_VERTICES);
 
       if (clusteredVerts instanceof List) {
-        if (((List) clusteredVerts).size() > 2) {
+        if (((List) clusteredVerts).size() < 4) {
           continue;
         }
         System.out.println(vertex.getValue().toString());

@@ -45,8 +45,6 @@ public class BestDataSourceAllLabelsGroupReduceFunction
 
     boolean latLonGnFound = false;
     boolean latLonDbpFound = false;
-//    boolean labelGnFound = false;
-//    boolean labelDbpFound = false;
     boolean typeGnFound = false;
     boolean typeDbpFound = false;
     if (properties.containsKey("ontology")) {
@@ -55,11 +53,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
           setLatLon(resultProps, properties);
           latLonGnFound = true;
         }
-//        if (properties.containsKey(Utils.LABEL)) {
-//          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-//          labelGnFound = true;
-//        }
-        if (properties.containsKey(Utils.TYPE_INTERN)) {
+        if (properties.containsKey(Utils.TYPE_INTERN) && !properties.get(Utils.TYPE_INTERN).equals("-1")) {
           resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
           typeGnFound = true;
         }
@@ -69,11 +63,8 @@ public class BestDataSourceAllLabelsGroupReduceFunction
           setLatLon(resultProps, properties);
           latLonDbpFound = true;
         }
-//        if (properties.containsKey(Utils.LABEL) && !labelGnFound) {
-//          resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-//          labelDbpFound = true;
-//        }
-        if (properties.containsKey(Utils.TYPE_INTERN) && !typeGnFound) {
+        if (properties.containsKey(Utils.TYPE_INTERN)
+            && !properties.get(Utils.TYPE_INTERN).equals("-1") && !typeGnFound) {
           resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
           typeDbpFound = true;
         }
@@ -83,10 +74,8 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         && !latLonDbpFound && !latLonGnFound) {
       setLatLon(resultProps, properties);
     }
-//    if (properties.containsKey(Utils.LABEL) && !labelDbpFound && !labelGnFound) {
-//      resultProps.put(Utils.LABEL, properties.get(Utils.LABEL));
-//    }
-    if (properties.containsKey(Utils.TYPE_INTERN) && !typeGnFound && !typeDbpFound) {
+    if (properties.containsKey(Utils.TYPE_INTERN) && !properties.get(Utils.TYPE_INTERN).equals("-1")
+        && !typeGnFound && !typeDbpFound) {
       resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
     }
   }
