@@ -1,8 +1,13 @@
 package org.mappinganalysis.utils;
 
+import com.google.common.primitives.Doubles;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import org.apache.log4j.Logger;
+import org.simmetrics.StringMetric;
+import org.simmetrics.metrics.CosineSimilarity;
+import org.simmetrics.simplifiers.Simplifiers;
+import org.simmetrics.tokenizers.Tokenizers;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -12,6 +17,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.Set;
+
+import static org.simmetrics.builders.StringMetricBuilder.with;
 
 public class Utils {
 
@@ -125,5 +133,48 @@ public class Utils {
   public static Connection openDbConnection(String dbName) throws SQLException {
     DB_NAME = dbName;
     return openDbConnection();
+  }
+
+  public static String simplify(String value) {
+    value = Simplifiers.removeNonWord().simplify(value);
+    return Simplifiers.toLowerCase().simplify(value);
+  }
+
+  /**
+   * Get trigram string metric.
+   * @param simplify if true, non words are replaces and strings as lower case
+   * @return metric
+   */
+  public static StringMetric getTrigramMetric(boolean simplify) {
+    if (simplify) {
+      return getTrigramMetric();
+    } else {
+      return with(new CosineSimilarity<String>())
+          .tokenize(Tokenizers.qGram(3))
+          .build();
+    }
+  }
+
+  private static StringMetric getTrigramMetric() {
+    return with(new CosineSimilarity<String>())
+        .simplify(Simplifiers.replaceNonWord())
+        .simplify(Simplifiers.toLowerCase())
+        .tokenize(Tokenizers.qGram(3))
+        .build();
+  }
+
+  /**
+   * Geo coords helper function
+   * @param latlon one of the two geocoordinates
+   * @return single double value
+   */
+  public static Double getDouble(Object latlon) {
+    // TODO how to handle multiple values in lat/lon correctly?
+
+    if (latlon instanceof Set) {
+      return Doubles.tryParse(((Set) latlon).iterator().next().toString());
+    } else {
+      return Doubles.tryParse(latlon.toString());
+    }
   }
 }

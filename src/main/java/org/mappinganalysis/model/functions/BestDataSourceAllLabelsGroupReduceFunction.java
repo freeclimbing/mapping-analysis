@@ -7,8 +7,15 @@ import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
+import org.simmetrics.StringMetric;
+import org.simmetrics.metrics.CosineSimilarity;
+import org.simmetrics.simplifiers.Simplifier;
+import org.simmetrics.simplifiers.Simplifiers;
+import org.simmetrics.tokenizers.Tokenizers;
 
 import java.util.Map;
+
+import static org.simmetrics.builders.StringMetricBuilder.with;
 
 /**
  * Merge properties of grouped entities based on "best data source" availability,
@@ -30,8 +37,11 @@ public class BestDataSourceAllLabelsGroupReduceFunction
       }
       resultProps = PropertyHelper
           .addValueToProperties(resultProps, vertex.getValue(), "clusteredVertices");
-      resultProps = PropertyHelper
-          .addValueToProperties(resultProps, vertex.getValue().getProperties().get("label"), "label");
+
+      if (vertex.getValue().hasLabel()) {
+        resultProps = PropertyHelper
+            .addValueToProperties(resultProps, vertex.getValue().getLabel(), "label", true);
+      }
 
       createRepresentativeProperties(resultProps, vertex);
     }
@@ -49,7 +59,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
     boolean typeDbpFound = false;
     if (properties.containsKey("ontology")) {
       if (properties.get("ontology").equals(Utils.GN_ONTOLOGY)) {
-        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LAT)) {
+        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON)) {
           setLatLon(resultProps, properties);
           latLonGnFound = true;
         }
@@ -59,7 +69,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         }
       }
       if (properties.get("ontology").equals(Utils.DBP_ONTOLOGY)) {
-        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LAT) && !latLonGnFound) {
+        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON) && !latLonGnFound) {
           setLatLon(resultProps, properties);
           latLonDbpFound = true;
         }
@@ -70,7 +80,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         }
       }
     }
-    if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LAT)
+    if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON)
         && !latLonDbpFound && !latLonGnFound) {
       setLatLon(resultProps, properties);
     }

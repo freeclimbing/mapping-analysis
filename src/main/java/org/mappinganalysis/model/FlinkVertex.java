@@ -52,4 +52,8 @@ public class FlinkVertex extends Vertex<Long, Map<String, Object>> {
   public Object getLabel() {
     return f1.get(Utils.LABEL);
   }
+
+  public boolean hasType() {
+    return f1.containsKey(Utils.TYPE);
+  }
 }

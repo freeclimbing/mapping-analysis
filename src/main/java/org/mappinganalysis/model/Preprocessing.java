@@ -1,20 +1,22 @@
 package org.mappinganalysis.model;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.graph.*;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.functions.ExcludeOneToManyOntologiesFilter;
 import org.mappinganalysis.model.functions.NeighborOntologyFunction;
 import org.mappinganalysis.utils.TypeDictionary;
 import org.mappinganalysis.utils.Utils;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Preprocessing.
@@ -62,11 +64,11 @@ public class Preprocessing {
               // get relevant key and translate with custom dictionary for internal use
               Object oldValue = properties.get(Utils.TYPE);
               String resultType;
-              if (oldValue instanceof List) {
-                List<String> values = Lists.newArrayList((List<String>) oldValue);
+              if (oldValue instanceof Set) {
+                Set<String> values = Sets.newHashSet((Set<String>) oldValue);
                 resultType = getDictValue(values);
               } else {
-                resultType = getDictValue(Lists.newArrayList((String) oldValue));
+                resultType = getDictValue(Sets.newHashSet((String) oldValue));
               }
               properties.put(Utils.TYPE_INTERN, resultType);
               return vertex;
@@ -81,12 +83,8 @@ public class Preprocessing {
 
 
 
-  private static String getDictValue(List<String> values) {
+  private static String getDictValue(Set<String> values) {
     for (String value : values) {
-//      if (TypeDictionary.GN_TYPE.contains(value)) {
-//        value =
-//        //getGnType(value);
-//      }
       if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
         return TypeDictionary.PRIMARY_TYPE.get(value);
       }

@@ -1,6 +1,7 @@
 package org.mappinganalysis.utils;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
@@ -10,7 +11,6 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.MySQLToFlink;
@@ -18,7 +18,7 @@ import org.mappinganalysis.model.FlinkVertex;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
 
 /**
  * Helper methods for Flink mapping analysis
@@ -46,23 +46,23 @@ public class Stats {
       Map<String, Object> properties = vertex.getValue().getProperties();
       Object clusteredVerts = properties.get(Utils.CL_VERTICES);
 
-      if (clusteredVerts instanceof List) {
-        if (((List) clusteredVerts).size() < 4) {
+      if (clusteredVerts instanceof Set) {
+        if (((Set) clusteredVerts).size() < 4) {
           continue;
         }
         System.out.println(vertex.getValue().toString());
 
-        List<FlinkVertex> values = Lists.newArrayList((List<FlinkVertex>) properties.get(Utils.CL_VERTICES));
+        Set<FlinkVertex> values = Sets.newHashSet((Set<FlinkVertex>) properties.get(Utils.CL_VERTICES));
 
         for (FlinkVertex value : values) {
-          System.out.println(value.getProperties().get("label"));
+          System.out.println(value.getLabel());
         }
       }
       else {
         System.out.println(vertex.getValue().toString());
 
         FlinkVertex tmp = (FlinkVertex) clusteredVerts;
-        System.out.println(tmp.getProperties().get("label"));
+        System.out.println(tmp.getLabel());
       }
     }
   }

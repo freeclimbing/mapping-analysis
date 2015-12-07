@@ -1,16 +1,14 @@
 package org.mappinganalysis.model.functions;
 
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.utils.GeoDistance;
+import org.mappinganalysis.utils.Utils;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,10 +23,10 @@ public class GeoCodeSimFunction implements MapFunction<Triplet<Long, FlinkVertex
     Map<String, Object> source = triplet.getSrcVertex().getValue().getProperties();
     Map<String, Object> target = triplet.getTrgVertex().getValue().getProperties();
 
-    Double distance = GeoDistance.distance(getDouble(source.get("lat")),
-        getDouble(source.get("lon")),
-        getDouble(target.get("lat")),
-        getDouble(target.get("lon")));
+    Double distance = GeoDistance.distance(Utils.getDouble(source.get("lat")),
+        Utils.getDouble(source.get("lon")),
+        Utils.getDouble(target.get("lat")),
+        Utils.getDouble(target.get("lon")));
 
     Map<String, Object> property = Maps.newHashMap();
     property.put("distance", distance);
@@ -42,13 +40,5 @@ public class GeoCodeSimFunction implements MapFunction<Triplet<Long, FlinkVertex
             property));
   }
 
-  private Double getDouble(Object latlon) {
-    // TODO how to handle multiple values in lat/lon correctly?
 
-    if (latlon instanceof List) {
-      return Doubles.tryParse(((List) latlon).get(0).toString());
-    } else {
-      return Doubles.tryParse(latlon.toString());
-    }
-  }
 }
