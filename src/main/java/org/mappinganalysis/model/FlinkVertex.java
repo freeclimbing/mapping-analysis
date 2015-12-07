@@ -1,6 +1,7 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.graph.Vertex;
+import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
 
@@ -34,5 +35,21 @@ public class FlinkVertex extends Vertex<Long, Map<String, Object>> {
 
   public void setProperties(Map<String, Object> properties) {
     f1 = properties;
+  }
+
+  public boolean hasGeoCoords() {
+     return (f1.containsKey(Utils.LAT) && f1.containsKey(Utils.LON)) ? Boolean.TRUE : Boolean.FALSE;
+  }
+
+  public GeoCode getGeoCoords() {
+    return new GeoCode((double) f1.get(Utils.LAT), (double) f1.get(Utils.LON));
+  }
+
+  public boolean hasLabel() {
+    return f1.containsKey(Utils.LABEL) ? Boolean.TRUE : Boolean.FALSE;
+  }
+
+  public Object getLabel() {
+    return f1.get(Utils.LABEL);
   }
 }

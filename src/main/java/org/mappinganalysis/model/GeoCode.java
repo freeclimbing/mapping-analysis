@@ -3,11 +3,10 @@ package org.mappinganalysis.model;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 /**
- * Geo coordinate object.
+ * Geo coordinate Tuple2 object providing lat/lon as Double values.
  */
 public class GeoCode extends Tuple2<Double, Double> {
   public GeoCode() {
-
   }
 
   public GeoCode(double lat, double lon) {

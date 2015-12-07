@@ -126,29 +126,4 @@ public class Utils {
     DB_NAME = dbName;
     return openDbConnection();
   }
-
-  // not needed?
-//  public <T> getProps(Map<String, Object> properties, String key, Class type) {
-//    properties.get(Utils.CL_VERTICES).getClass();
-//
-//    if (properties.containsKey(key)) {
-//      Object oldValue = properties.get(key);
-//      if (oldValue instanceof List) {
-//        List<Object> values = Lists.newArrayList((List<Object>) oldValue);
-//        values.add(value);
-//        properties.put(key, values);
-//      } else {
-//        properties.put(key, Lists.newArrayList(oldValue, value));
-//      }
-//    } else {
-//      properties.put(key, value);
-//    }
-//
-//
-//    return type.cast(result);
-//  }
-//
-//  public Class getPropertyClass(Map<String, Object> properties, String key) {
-//    return properties.get(key).getClass();
-//  }
 }
