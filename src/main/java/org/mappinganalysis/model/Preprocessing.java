@@ -28,10 +28,12 @@ public class Preprocessing {
    *
    * First strategy: delete all links which are involved in 1:n mappings
    * @param graph input graph
+   * @param environment
    * @return output graph
    * @throws Exception
    */
-  public static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(Graph<Long, FlinkVertex, NullValue> graph)
+  public static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(
+      Graph<Long, FlinkVertex, NullValue> graph, ExecutionEnvironment environment)
       throws Exception {
     DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
         .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
@@ -48,11 +50,11 @@ public class Preprocessing {
         });
 
     return Graph.fromDataSet(graph.getVertices(),
-        edgesNoDuplicates,
-        ExecutionEnvironment.createLocalEnvironment());
+        edgesNoDuplicates, environment);
   }
 
-  public static Graph<Long, FlinkVertex, NullValue> applyTypePreprocessing(Graph<Long, FlinkVertex, NullValue> graph) {
+  public static Graph<Long, FlinkVertex, NullValue> applyTypePreprocessing(
+      Graph<Long, FlinkVertex, NullValue> graph, ExecutionEnvironment environment) {
     DataSet<org.apache.flink.graph.Vertex<Long, FlinkVertex>> vertices = graph.getVertices()
         .map(new MapFunction<org.apache.flink.graph.Vertex<Long, FlinkVertex>, org.apache.flink.graph.Vertex<Long, FlinkVertex>>() {
           @Override
@@ -77,8 +79,7 @@ public class Preprocessing {
           }
         });
 
-    return Graph.fromDataSet(vertices, graph.getEdges(),
-        ExecutionEnvironment.createLocalEnvironment());
+    return Graph.fromDataSet(vertices, graph.getEdges(), environment);
   }
 
 

@@ -4,10 +4,9 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.*;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-import org.mappinganalysis.MySQLToFlink;
+import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
@@ -22,10 +21,10 @@ public class PreprocessingTest {
   @Test
   public void testApplyTypePreprocessing() throws Exception {
     ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
-    Graph<Long, FlinkVertex, NullValue> graph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME, environment);
+    Graph<Long, FlinkVertex, NullValue> graph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
 
-    graph = Preprocessing.applyLinkFilterStrategy(graph);
-    graph = Preprocessing.applyTypePreprocessing(graph);
+    graph = Preprocessing.applyLinkFilterStrategy(graph, environment);
+    graph = Preprocessing.applyTypePreprocessing(graph, environment);
 
     graph.getVertices().map(new MapFunction<Vertex<Long, FlinkVertex>, Vertex<Long, String>>() {
       @Override

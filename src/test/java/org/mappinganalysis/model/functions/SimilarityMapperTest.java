@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions;
 
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
@@ -48,7 +49,7 @@ public class SimilarityMapperTest extends BasicTest {
   @Test
   public void typeSimilarityTest() throws Exception {
     Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
-    graph = Preprocessing.applyTypePreprocessing(graph);
+    graph = Preprocessing.applyTypePreprocessing(graph, ExecutionEnvironment.getExecutionEnvironment());
 
     final DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
 

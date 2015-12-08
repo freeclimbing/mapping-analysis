@@ -11,7 +11,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-import org.mappinganalysis.MySQLToFlink;
+import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.utils.Utils;
 
@@ -81,7 +81,7 @@ public class ClusterComputationTest {
     assertTrue(resultList.contains(new Tuple2<>(2L, 4L)));
 
     // GEO OAEI dataset
-    DataSet<Tuple2<Long, Long>> edges = MySQLToFlink
+    DataSet<Tuple2<Long, Long>> edges = MappingAnalysisExample
         .getInputGraph(Utils.GEO_FULL_NAME, environment)
         .getEdges()
         .project(0, 1);

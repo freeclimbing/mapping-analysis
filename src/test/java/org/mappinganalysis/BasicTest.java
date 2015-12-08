@@ -55,7 +55,7 @@ public class BasicTest {
     Graph<Long, FlinkVertex, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> accumulatedSimValues
-        = MySQLToFlink.initialSimilarityComputation(graph.getTriplets());
+        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets());
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
@@ -77,7 +77,7 @@ public class BasicTest {
         ClusterComputation.computeComponentEdges(ccResultVertices));
 
     DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> newSimValues
-        = MySQLToFlink.initialSimilarityComputation(
+        = MappingAnalysisExample.initialSimilarityComputation(
         Graph.fromDataSet(baseVertices, newEdges, env).getTriplets());
 
     DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);

@@ -13,7 +13,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
-import org.mappinganalysis.MySQLToFlink;
+import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.FlinkVertex;
 
 import java.util.List;
@@ -122,7 +122,7 @@ public class Stats {
 
   // duplicate methods in emptygeocodefilter
   public static void countPrintGeoPointsPerOntology(ExecutionEnvironment environment) throws Exception {
-    Graph<Long, FlinkVertex, NullValue> tgraph = MySQLToFlink.getInputGraph(Utils.GEO_FULL_NAME, environment);
+    Graph<Long, FlinkVertex, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
     tgraph.getVertices()
         .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
           @Override

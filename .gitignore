@@ -2,7 +2,6 @@
 target/
 output/
 db.properties
-*.pdf
 *.aux
 *.bbl
 *.blg

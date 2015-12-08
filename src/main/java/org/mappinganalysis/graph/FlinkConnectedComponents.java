@@ -17,7 +17,7 @@ import java.util.HashSet;
  * Compute Flink Connected Components.
  */
 public class FlinkConnectedComponents {
-  ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+  ExecutionEnvironment env = null;
 
   public FlinkConnectedComponents(ExecutionEnvironment environment) {
     env = environment;
