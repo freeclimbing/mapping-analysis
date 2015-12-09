@@ -38,7 +38,7 @@ public class ImportFlinkResults {
 		
 		//navigate to flink result directory 
 		String current = new File( "." ).getCanonicalPath().replace("\\", "/").replace(" ", "%20");
-        String dir = current+Utils.FLINK_RESULT_PATH;
+        String dir = current.concat("/data/flink_data/CCresult/");
         File flinkResultDir	= new File (dir);
 		File[] importFiles	= flinkResultDir.listFiles();
 		//import all files to table `connectedComponents`

@@ -7,6 +7,7 @@ import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkProperty;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.PropertyHelper;
+import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class PropertyCoGroupFunction implements CoGroupFunction<FlinkVertex,
     for (FlinkProperty property : properties) {
       Object value = property.getPropertyValue();
       String key = property.getPropertyKey();
-      if (latitudeAdded && key.equals("lat") || longitudeAdded && key.equals("lon")) {
+      if (latitudeAdded && key.equals(Utils.LAT) || longitudeAdded && key.equals(Utils.LON)) {
         continue;
       }
 
@@ -35,10 +36,10 @@ public class PropertyCoGroupFunction implements CoGroupFunction<FlinkVertex,
         value = value.toString();
       }
       vertexProperties = PropertyHelper.addValueToProperties(vertexProperties, value, key);
-      if (key.equals("lat")) {
+      if (key.equals(Utils.LAT)) {
         latitudeAdded = true;
       }
-      if (key.equals("lon")) {
+      if (key.equals(Utils.LON)) {
         longitudeAdded = true;
       }
     }

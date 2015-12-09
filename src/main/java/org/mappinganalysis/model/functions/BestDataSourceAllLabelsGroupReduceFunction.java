@@ -7,11 +7,6 @@ import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkVertex;
 import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
-import org.simmetrics.StringMetric;
-import org.simmetrics.metrics.CosineSimilarity;
-import org.simmetrics.simplifiers.Simplifier;
-import org.simmetrics.simplifiers.Simplifiers;
-import org.simmetrics.tokenizers.Tokenizers;
 
 import java.util.Map;
 
@@ -36,11 +31,11 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         isRepresentative = true;
       }
       resultProps = PropertyHelper
-          .addValueToProperties(resultProps, vertex.getValue(), "clusteredVertices");
+          .addValueToProperties(resultProps, vertex.getValue(), Utils.CL_VERTICES);
 
       if (vertex.getValue().hasLabel()) {
         resultProps = PropertyHelper
-            .addValueToProperties(resultProps, vertex.getValue().getLabel(), "label", true);
+            .addValueToProperties(resultProps, vertex.getValue().getLabel(), Utils.LABEL, true);
       }
 
       createRepresentativeProperties(resultProps, vertex);
@@ -57,8 +52,8 @@ public class BestDataSourceAllLabelsGroupReduceFunction
     boolean latLonDbpFound = false;
     boolean typeGnFound = false;
     boolean typeDbpFound = false;
-    if (properties.containsKey("ontology")) {
-      if (properties.get("ontology").equals(Utils.GN_ONTOLOGY)) {
+    if (properties.containsKey(Utils.ONTOLOGY)) {
+      if (properties.get(Utils.ONTOLOGY).equals(Utils.GN_NAMESPACE)) {
         if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON)) {
           setLatLon(resultProps, properties);
           latLonGnFound = true;
@@ -68,7 +63,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
           typeGnFound = true;
         }
       }
-      if (properties.get("ontology").equals(Utils.DBP_ONTOLOGY)) {
+      if (properties.get(Utils.ONTOLOGY).equals(Utils.DBP_NAMESPACE)) {
         if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON) && !latLonGnFound) {
           setLatLon(resultProps, properties);
           latLonDbpFound = true;

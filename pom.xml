@@ -38,13 +38,6 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>com.google.guava:guava</artifact>
-                                </filter>
-                            </filters>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -56,7 +49,7 @@
         <project.maven.version>3.0h.0</project.maven.version>
         <project.build.targetJdk>1.7</project.build.targetJdk>
 
-        <dep.flink.version>0.10.0</dep.flink.version>
+        <dep.flink.version>0.10.1</dep.flink.version>
         <dep.gradoop.version>0.0.3-SNAPSHOT</dep.gradoop.version>
         <dep.mysql.version>5.1.6</dep.mysql.version>
     </properties>
@@ -132,6 +125,12 @@
             <artifactId>guava</artifactId>
             <version>17.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava-primitives</artifactId>
+            <version>r03</version>
+        </dependency>
+
         <dependency>
             <groupId>org.jgrapht</groupId>
             <artifactId>jgrapht-core</artifactId>

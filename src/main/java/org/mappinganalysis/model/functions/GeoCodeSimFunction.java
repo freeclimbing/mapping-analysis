@@ -23,13 +23,13 @@ public class GeoCodeSimFunction implements MapFunction<Triplet<Long, FlinkVertex
     Map<String, Object> source = triplet.getSrcVertex().getValue().getProperties();
     Map<String, Object> target = triplet.getTrgVertex().getValue().getProperties();
 
-    Double distance = GeoDistance.distance(Utils.getDouble(source.get("lat")),
-        Utils.getDouble(source.get("lon")),
-        Utils.getDouble(target.get("lat")),
-        Utils.getDouble(target.get("lon")));
+    Double distance = GeoDistance.distance(Utils.getDouble(source.get(Utils.LAT)),
+        Utils.getDouble(source.get(Utils.LON)),
+        Utils.getDouble(target.get(Utils.LAT)),
+        Utils.getDouble(target.get(Utils.LON)));
 
     Map<String, Object> property = Maps.newHashMap();
-    property.put("distance", distance);
+    property.put(Utils.DISTANCE, distance);
 
     return new Triplet<>(
         triplet.getSrcVertex(),
