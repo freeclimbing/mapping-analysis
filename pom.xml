@@ -126,12 +126,6 @@
             <version>17.0</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava-primitives</artifactId>
-            <version>r03</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jgrapht</groupId>
             <artifactId>jgrapht-core</artifactId>
             <version>0.9.1</version>

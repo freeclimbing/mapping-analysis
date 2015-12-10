@@ -8,6 +8,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.utils.Utils;
 
 /**
  * Find neighbors with same ontology (to exclude or handle them later)
@@ -25,7 +26,7 @@ public class NeighborOntologyFunction
     for (Tuple2<Edge<Long, NullValue>, Vertex<Long, FlinkVertex>> neighbor : neighbors) {
       Edge<Long, NullValue> edge = neighbor.f0;
       Long neighborId = neighbor.f1.getId();
-      String ontology = neighbor.f1.getValue().getProperties().get("ontology").toString();
+      String ontology = neighbor.f1.getValue().getProperties().get(Utils.ONTOLOGY).toString();
 
       collector.collect(new Tuple4<>(edge, neighborId, ontology, 1));
     }

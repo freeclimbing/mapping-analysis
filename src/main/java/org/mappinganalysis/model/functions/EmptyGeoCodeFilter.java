@@ -5,6 +5,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,9 @@ public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, FlinkVer
   }
 
   private boolean isGeoPoint(Map<String, Object> props) {
-    if (props.containsKey("lat") && props.containsKey("lon")) {
-      Object lat = props.get("lat");
-      Object lon = props.get("lon");
+    if (props.containsKey(Utils.LAT) && props.containsKey(Utils.LON)) {
+      Object lat = props.get(Utils.LAT);
+      Object lon = props.get(Utils.LON);
       // TODO how to handle multiple values in lat/lon correctly?
       return ((getDouble(lat) == null) || (getDouble(lon) == null)) ? Boolean.FALSE : Boolean.TRUE;
     } else {

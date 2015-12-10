@@ -8,6 +8,7 @@ import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.functions.ExcludeOneToManyOntologiesFilter;
@@ -28,7 +29,6 @@ public class Preprocessing {
    *
    * First strategy: delete all links which are involved in 1:n mappings
    * @param graph input graph
-   * @param environment
    * @return output graph
    * @throws Exception
    */
@@ -55,10 +55,10 @@ public class Preprocessing {
 
   public static Graph<Long, FlinkVertex, NullValue> applyTypePreprocessing(
       Graph<Long, FlinkVertex, NullValue> graph, ExecutionEnvironment environment) {
-    DataSet<org.apache.flink.graph.Vertex<Long, FlinkVertex>> vertices = graph.getVertices()
-        .map(new MapFunction<org.apache.flink.graph.Vertex<Long, FlinkVertex>, org.apache.flink.graph.Vertex<Long, FlinkVertex>>() {
+    DataSet<Vertex<Long, FlinkVertex>> vertices = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>>() {
           @Override
-          public org.apache.flink.graph.Vertex<Long, FlinkVertex> map(org.apache.flink.graph.Vertex<Long, FlinkVertex> vertex) throws Exception {
+          public Vertex<Long, FlinkVertex> map(Vertex<Long, FlinkVertex> vertex) throws Exception {
             FlinkVertex flinkVertex = vertex.getValue();
 
             Map<String, Object> properties = flinkVertex.getProperties();
@@ -82,8 +82,6 @@ public class Preprocessing {
     return Graph.fromDataSet(vertices, graph.getEdges(), environment);
   }
 
-
-
   private static String getDictValue(Set<String> values) {
     for (String value : values) {
       if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
@@ -103,6 +101,6 @@ public class Preprocessing {
       }
     }
 
-    return "-1";
+    return Utils.MINUS_ONE;
   }
 }

@@ -27,21 +27,6 @@ public class Stats {
 
   public static void printLabelsForMergedClusters(DataSet<Vertex<Long, FlinkVertex>> clusters)
       throws Exception {
-//    DataSet<Vertex<Long, FlinkVertex>> filteredClusters = clusters
-//        .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
-//      @Override
-//      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
-//        Object clusteredVerts = vertex.getValue().getProperties().get(Utils.CL_VERTICES);
-//        return clusteredVerts instanceof List && ((List) clusteredVerts).size() < 3;
-//      }
-//    });
-
-//    clusters.filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
-//      @Override
-//      public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
-//        return !vertex.getValue().getProperties().containsKey(Utils.LAT) && !vertex.getValue().getProperties().containsKey(Utils.LON);
-//      }
-//    }).print();
     for (Vertex<Long, FlinkVertex> vertex : clusters.collect()) {
       Map<String, Object> properties = vertex.getValue().getProperties();
       Object clusteredVerts = properties.get(Utils.CL_VERTICES);
@@ -128,9 +113,9 @@ public class Stats {
           @Override
           public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
             Map<String, Object> props = vertex.getValue().getProperties();
-            if (props.containsKey("lat") && props.containsKey("lon")) {
-              Object lat = props.get("lat");
-              Object lon = props.get("lon");
+            if (props.containsKey(Utils.LAT) && props.containsKey(Utils.LON)) {
+              Object lat = props.get(Utils.LAT);
+              Object lon = props.get(Utils.LON);
               return ((getDouble(lat) == null) || (getDouble(lon) == null)) ? Boolean.FALSE : Boolean.TRUE;
             } else {
               return Boolean.FALSE;
