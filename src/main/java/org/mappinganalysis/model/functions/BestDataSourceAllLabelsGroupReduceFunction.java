@@ -28,7 +28,7 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         isRepresentative = true;
       }
       resultProps = PropertyHelper
-          .addValueToProperties(resultProps, vertex.getValue(), Utils.CL_VERTICES);
+          .addValueToProperties(resultProps, vertex, Utils.CL_VERTICES);
 
       if (vertex.getValue().containsKey(Utils.LABEL)) {
         resultProps = PropertyHelper

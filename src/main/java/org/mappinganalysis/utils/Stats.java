@@ -34,16 +34,16 @@ public class Stats {
         if (((Set) clusteredVerts).size() < 4) {
           continue;
         }
-        System.out.println(vertex.getValue().toString());
+        System.out.println(vertex.toString());
 
-        Set<Vertex<Long, ObjectMap>> values = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) properties.get(Utils.CL_VERTICES));
+        Set<Vertex<Long, ObjectMap>> values = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
 
         for (Vertex<Long, ObjectMap> value : values) {
           System.out.println(value.getValue().get(Utils.LABEL));
         }
       }
       else {
-        System.out.println(vertex.getValue().toString());
+        System.out.println(vertex.toString());
 
         Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
         System.out.println(tmp.getValue().get(Utils.LABEL));
