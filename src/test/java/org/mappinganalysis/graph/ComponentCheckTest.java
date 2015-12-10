@@ -3,7 +3,7 @@ package org.mappinganalysis.graph;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.junit.Test;
 import org.mappinganalysis.model.Component;
-import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.model.CompCheckVertex;
 import org.mappinganalysis.utils.Utils;
 
 import java.sql.Connection;
@@ -53,21 +53,21 @@ public class ComponentCheckTest {
    * @param tool tool
    */
   private void createTestVerticesAndEdges(ComponentCheck tool) {
-    HashSet<Vertex> vertices = new HashSet<>();
+    HashSet<CompCheckVertex> vertices = new HashSet<>();
 
-    Vertex nytNewfoundland = new Vertex(4794, "http://data.nytimes.com/10919831131783165001",
+    CompCheckVertex nytNewfoundland = new CompCheckVertex(4794, "http://data.nytimes.com/10919831131783165001",
         "http://data.nytimes.com/", "Newfoundland (Canada)");
-    Vertex gnNewfLabra = new Vertex(4795, "http://sws.geonames.org/6354959/",
+    CompCheckVertex gnNewfLabra = new CompCheckVertex(4795, "http://sws.geonames.org/6354959/",
         "http://sws.geonames.org/", "Newfoundland and Labrador");
-    Vertex nytLabrador = new Vertex(5680, "http://data.nytimes.com/66830295360330547131",
+    CompCheckVertex nytLabrador = new CompCheckVertex(5680, "http://data.nytimes.com/66830295360330547131",
         "http://data.nytimes.com/", "Labrador (Canada)");
-    Vertex dbpLabrador = new Vertex(5681, "http://dbpedia.org/resource/Labrador",
+    CompCheckVertex dbpLabrador = new CompCheckVertex(5681, "http://dbpedia.org/resource/Labrador",
         "http://dbpedia.org/", "Labrador");
-    Vertex fbLabrador = new Vertex(5984, "http://rdf.freebase.com/ns/en.labrador",
+    CompCheckVertex fbLabrador = new CompCheckVertex(5984, "http://rdf.freebase.com/ns/en.labrador",
         "http://rdf.freebase.com/", "labrador");
-    Vertex fbNewfoundland = new Vertex(6066, "http://rdf.freebase.com/ns/en.newfoundland",
+    CompCheckVertex fbNewfoundland = new CompCheckVertex(6066, "http://rdf.freebase.com/ns/en.newfoundland",
         "http://rdf.freebase.com/", "newfoundland");
-    Vertex dbpNewfIsland = new Vertex(6555, "http://dbpedia.org/resource/Newfoundland_%28island%29",
+    CompCheckVertex dbpNewfIsland = new CompCheckVertex(6555, "http://dbpedia.org/resource/Newfoundland_%28island%29",
         "http://dbpedia.org/", "Newfoundland (island)");
 
     vertices.add(gnNewfLabra);
@@ -75,7 +75,7 @@ public class ComponentCheckTest {
     vertices.add(dbpLabrador);
     vertices.add(fbLabrador);
 
-    for (Vertex vertex : vertices) { // fake correct component
+    for (CompCheckVertex vertex : vertices) { // fake correct component
       tool.addVertexToComponent(vertex, 4795);
     }
 
@@ -83,7 +83,7 @@ public class ComponentCheckTest {
     vertices.add(fbNewfoundland);
     vertices.add(dbpNewfIsland);
 
-    for (Vertex vertex : vertices) {
+    for (CompCheckVertex vertex : vertices) {
       tool.addVertexToComponent(vertex, 4794);
     }
 

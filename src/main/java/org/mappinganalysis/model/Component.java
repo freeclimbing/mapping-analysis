@@ -17,7 +17,7 @@ public class Component {
   /**
    *  Vertices of component
    */
-  private HashSet<Vertex> vertices = new HashSet<>();
+  private HashSet<CompCheckVertex> vertices = new HashSet<>();
   private int id;
 
   /**
@@ -32,7 +32,7 @@ public class Component {
    * Get set of vertices for a single component.
    * @return set of vertices
    */
-  public HashSet<Vertex> getVertices() {
+  public HashSet<CompCheckVertex> getVertices() {
     return vertices;
   }
 
@@ -43,7 +43,7 @@ public class Component {
   public Set<Integer> getVerticesAsInt() {
     Set<Integer> vertices = new HashSet<>();
 
-    for (Vertex vertex : getVertices()) {
+    for (CompCheckVertex vertex : getVertices()) {
       vertices.add(vertex.getId());
     }
 
@@ -62,7 +62,7 @@ public class Component {
    * Add a vertex object to the component.
    * @param vertex vertex
    */
-  public void addVertex(Vertex vertex) {
+  public void addVertex(CompCheckVertex vertex) {
     vertices.add(vertex);
   }
 
@@ -71,8 +71,8 @@ public class Component {
    * @param id vertex id
    * @return vertex
    */
-  public Vertex getVertex(int id) {
-    for (Vertex vertex : vertices) {
+  public CompCheckVertex getVertex(int id) {
+    for (CompCheckVertex vertex : vertices) {
       if (vertex.getId() == id) {
         return vertex;
       }
@@ -88,7 +88,7 @@ public class Component {
    * @param label vertex label
    */
   public void addVertex(int id, String url, String source, String label) {
-    Vertex vertex = new Vertex(id, url, source, label);
+    CompCheckVertex vertex = new CompCheckVertex(id, url, source, label);
     vertices.add(vertex);
   }
 }

@@ -21,16 +21,16 @@ public class PreprocessingTest {
   @Test
   public void testApplyTypePreprocessing() throws Exception {
     ExecutionEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
-    Graph<Long, FlinkVertex, NullValue> graph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
+    Graph<Long, ObjectMap, NullValue> graph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
 
     graph = Preprocessing.applyLinkFilterStrategy(graph, environment);
     graph = Preprocessing.applyTypePreprocessing(graph, environment);
 
-    graph.getVertices().map(new MapFunction<Vertex<Long, FlinkVertex>, Vertex<Long, String>>() {
+    graph.getVertices().map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, String>>() {
       @Override
-      public Vertex<Long, String> map(Vertex<Long, FlinkVertex> vertex) throws Exception {
+      public Vertex<Long, String> map(Vertex<Long, ObjectMap> vertex) throws Exception {
         String result = "";
-        Map<String, Object> properties = vertex.getValue().getProperties();
+        Map<String, Object> properties = vertex.getValue();
         if (properties.containsKey(Utils.TYPE_INTERN)) {
           result = result.concat("intern: ").concat(properties.get(Utils.TYPE_INTERN).toString());
         }

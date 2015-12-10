@@ -8,7 +8,7 @@ import java.util.HashSet;
 /**
  * Vertex
  */
-public class Vertex {
+public class CompCheckVertex {
 
   /**
    * source
@@ -54,7 +54,7 @@ public class Vertex {
    *
    * @param id id
    */
-  public Vertex(Integer id) {
+  public CompCheckVertex(Integer id) {
     this.edges = Sets.newHashSet();
     this.id = id;
   }
@@ -67,7 +67,7 @@ public class Vertex {
    * @param source data set where vertex comes from
    * @param label  vertex label
    */
-  public Vertex(int id, String url, String source, String label) {
+  public CompCheckVertex(int id, String url, String source, String label) {
     this.edges = Sets.newHashSet();
     this.id = id;
     this.url = url;

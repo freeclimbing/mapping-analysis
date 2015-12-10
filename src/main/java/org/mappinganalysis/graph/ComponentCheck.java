@@ -9,7 +9,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.Component;
-import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.model.CompCheckVertex;
 import org.mappinganalysis.utils.DbOps;
 import org.mappinganalysis.utils.Utils;
 
@@ -31,7 +31,7 @@ public class ComponentCheck {
   private HashSet<Component> components;
   private HashMap<Integer, String> labels;
   private HashSet<Pair> edges;
-  private HashSet<Vertex> vertices;
+  private HashSet<CompCheckVertex> vertices;
   private int edgeCount;
   private int verticesCount;
 
@@ -176,7 +176,7 @@ public class ComponentCheck {
       int id = resVertices.getInt(Utils.DB_ID_FIELD);
       String url = resVertices.getString(Utils.DB_URL_FIELD);
       String ontology = resVertices.getString(Utils.DB_ONTID_FIELD);
-      vertices.add(new Vertex(id, url, ontology, labels.get(id)));
+      vertices.add(new CompCheckVertex(id, url, ontology, labels.get(id)));
     }
     setVerticesCount(vertices.size());
   }
@@ -226,8 +226,8 @@ public class ComponentCheck {
    * @param id vertex id
    * @return vertex
    */
-  public Vertex getVertex(int id) {
-    for (Vertex vertex : vertices) {
+  public CompCheckVertex getVertex(int id) {
+    for (CompCheckVertex vertex : vertices) {
       if (vertex.getId() == id) {
         return vertex;
       }
@@ -245,7 +245,7 @@ public class ComponentCheck {
     int missingLatLonCount = 0;
     int missingBothCount = 0;
     for (Component component : check.components) {
-      for (Vertex vertex : component.getVertices()) {
+      for (CompCheckVertex vertex : component.getVertices()) {
         boolean isNyt = Boolean.FALSE;
         if (vertex.getOntology().equals("http://data.nytimes.com/")) {
           ++nytCount;
@@ -272,17 +272,17 @@ public class ComponentCheck {
     LOG.info("Missing both: " + missingBothCount);
   }
 
-  private boolean simpleCompare(HashSet<Vertex> compVertices) {
+  private boolean simpleCompare(HashSet<CompCheckVertex> compVertices) {
     double lat = 0;
     double lon = 0;
-    for (Vertex vertex : compVertices) {
+    for (CompCheckVertex vertex : compVertices) {
       if (vertex.getLat() == 0.0 || vertex.getLon() == 0.0) {
         return false;
       } else if (!vertex.getOntology().equals("http://data.nytimes.com/") && vertex.getTypeSet().isEmpty()) {
         return false;
       }
     }
-    for (Vertex vertex : compVertices) {
+    for (CompCheckVertex vertex : compVertices) {
 //      if (lat != 0) {
 //        double result = HaversineGeoDistance.distance(lat, lon, vertex.getLat(), vertex.getLon());
 //        System.out.println("##### distance to last vertex: " + result/1000 + " km");
@@ -304,7 +304,7 @@ public class ComponentCheck {
     for (Component component : components) {
       HashSet<String> uniqueOntologies = new HashSet<>();
       System.out.println("Component: " + component.getId());
-      traverse(component, uniqueOntologies, component.getVertices().iterator().next(), Sets.<Vertex>newLinkedHashSet());
+      traverse(component, uniqueOntologies, component.getVertices().iterator().next(), Sets.<CompCheckVertex>newLinkedHashSet());
 
 //      for (Vertex vertex : component.getVertices()) {
 //        LinkedHashSet<Vertex> processed = Sets.newLinkedHashSet();
@@ -323,7 +323,7 @@ public class ComponentCheck {
 
     for (Component component : components) {
       HashSet<String> uniqueOntologies = new HashSet<>();
-      for (Vertex vertex : component.getVertices()) {
+      for (CompCheckVertex vertex : component.getVertices()) {
         if (!uniqueOntologies.add(vertex.getOntology())) {
           excludedComponents.add(component);
           break;
@@ -344,7 +344,7 @@ public class ComponentCheck {
    * @param processed already processed vertices
    */
   public void traverse(Component component, HashSet<String> uniqueOntologies,
-    Vertex vertex, LinkedHashSet<Vertex> processed) {
+    CompCheckVertex vertex, LinkedHashSet<CompCheckVertex> processed) {
     HashSet<Integer> neighbors = getNeighbors(vertex.getId());
     System.out.println("--- next vertex: " + vertex.getId() + " " + vertex.getUrl());
 
@@ -364,7 +364,7 @@ public class ComponentCheck {
         System.out.println(vertex.getId() + ": neighbors: " + neighbors);
         for (Integer neighbor : neighbors) {
           System.out.println(vertex.getId() + ": -- is neighbor " + neighbor + " already contained in processed vertices?");
-          Vertex neighborVertex = component.getVertex(neighbor);
+          CompCheckVertex neighborVertex = component.getVertex(neighbor);
           System.out.println(neighborVertex.getUrl());
           if (processed.contains(neighborVertex)) {
             System.out.println(vertex.getId() + ": yes, neighbor already existing " + neighbor);
@@ -390,12 +390,12 @@ public class ComponentCheck {
    * @param resEdges result set
    * @throws SQLException
    */
-  private int addEdges(HashSet<Vertex> vertices, ResultSet resEdges) throws SQLException {
+  private int addEdges(HashSet<CompCheckVertex> vertices, ResultSet resEdges) throws SQLException {
     while (resEdges.next()) {
       int source = resEdges.getInt(1);
       int target = resEdges.getInt(2);
 
-      for (Vertex vertex : vertices) {
+      for (CompCheckVertex vertex : vertices) {
         if (vertex.getId() == source) {
           vertex.addEdge(target);
         }
@@ -434,9 +434,9 @@ public class ComponentCheck {
    * @param processed already processed vertices
    * @return return vertex where source is equal
    */
-  private Vertex findDuplicateOntologyVertex(Vertex vertex,
-    LinkedHashSet<Vertex> processed) {
-    for (Vertex checkVertex : processed) {
+  private CompCheckVertex findDuplicateOntologyVertex(CompCheckVertex vertex,
+    LinkedHashSet<CompCheckVertex> processed) {
+    for (CompCheckVertex checkVertex : processed) {
       if (checkVertex.getOntology().equals(vertex.getOntology())) {
         System.out.println(checkVertex.getId() + " same source like " + vertex.getId());
         return checkVertex;
@@ -473,7 +473,7 @@ public class ComponentCheck {
       String value = properties.getString(3);
 
       for (Component c : components) {
-        Vertex vertex = c.getVertex(id);
+        CompCheckVertex vertex = c.getVertex(id);
         if (vertex != null) {
           switch (key) {
             case "lat":
@@ -512,7 +512,7 @@ public class ComponentCheck {
       String ontology = resNodes.getString(3);
       int ccId = resNodes.getInt(4);
 
-      Vertex vertex = new Vertex(id, url, ontology, labels.get(id));
+      CompCheckVertex vertex = new CompCheckVertex(id, url, ontology, labels.get(id));
       addVertexToComponent(vertex, ccId);
     }
   }
@@ -522,7 +522,7 @@ public class ComponentCheck {
    * @param vertex vertex
    * @param ccId component id
    */
-  public void addVertexToComponent(Vertex vertex, int ccId) {
+  public void addVertexToComponent(CompCheckVertex vertex, int ccId) {
     if (!addToExistingComponent(vertex, ccId)) {
       Component newComponent = new Component(ccId);
       newComponent.addVertex(vertex);
@@ -536,7 +536,7 @@ public class ComponentCheck {
    * @param ccId component id
    * @return true if component already exists
    */
-  private boolean addToExistingComponent(Vertex vertex, int ccId) {
+  private boolean addToExistingComponent(CompCheckVertex vertex, int ccId) {
     for (Component tmp : components) {
       if (tmp.getId() == ccId) {
         tmp.addVertex(vertex);
@@ -552,9 +552,9 @@ public class ComponentCheck {
   private void printComponents() {
     for (Component component : components) {
       Set<Integer> verticesIntSet = component.getVerticesAsInt();
-      Set<Vertex> v = component.getVertices();
+      Set<CompCheckVertex> v = component.getVertices();
       String componentLabels = "";
-      for (Vertex vertex : v) {
+      for (CompCheckVertex vertex : v) {
         componentLabels += vertex.getLabel() + " ";
       }
       LOG.info(component.getId() + ": [" + verticesIntSet.toString() + "]");
@@ -695,11 +695,11 @@ public class ComponentCheck {
     this.edges = edges;
   }
 
-  public HashSet<Vertex> getVertices() {
+  public HashSet<CompCheckVertex> getVertices() {
     return vertices;
   }
 
-  public void setVertices(HashSet<Vertex> vertices) {
+  public void setVertices(HashSet<CompCheckVertex> vertices) {
     this.vertices = vertices;
   }
 

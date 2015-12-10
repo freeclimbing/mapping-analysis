@@ -4,7 +4,7 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
@@ -13,12 +13,12 @@ import java.util.Map;
 /**
  * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
  */
-public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, FlinkVertex, NullValue>> {
+public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, ObjectMap, NullValue>> {
   @Override
-  public boolean filter(Triplet<Long, FlinkVertex, NullValue> triplet) throws Exception {
+  public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
 
-    Map<String, Object> source = triplet.getSrcVertex().getValue().getProperties();
-    Map<String, Object> target = triplet.getTrgVertex().getValue().getProperties();
+    Map<String, Object> source = triplet.getSrcVertex().getValue();
+    Map<String, Object> target = triplet.getTrgVertex().getValue();
 
     return isGeoPoint(source) && isGeoPoint(target);
   }

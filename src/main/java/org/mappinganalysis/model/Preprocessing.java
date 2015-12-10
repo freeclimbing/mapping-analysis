@@ -32,8 +32,8 @@ public class Preprocessing {
    * @return output graph
    * @throws Exception
    */
-  public static Graph<Long, FlinkVertex, NullValue> applyLinkFilterStrategy(
-      Graph<Long, FlinkVertex, NullValue> graph, ExecutionEnvironment environment)
+  public static Graph<Long, ObjectMap, NullValue> applyLinkFilterStrategy(
+      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment environment)
       throws Exception {
     DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
         .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
@@ -53,15 +53,13 @@ public class Preprocessing {
         edgesNoDuplicates, environment);
   }
 
-  public static Graph<Long, FlinkVertex, NullValue> applyTypePreprocessing(
-      Graph<Long, FlinkVertex, NullValue> graph, ExecutionEnvironment environment) {
-    DataSet<Vertex<Long, FlinkVertex>> vertices = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>>() {
+  public static Graph<Long, ObjectMap, NullValue> applyTypePreprocessing(
+      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment environment) {
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
-          public Vertex<Long, FlinkVertex> map(Vertex<Long, FlinkVertex> vertex) throws Exception {
-            FlinkVertex flinkVertex = vertex.getValue();
-
-            Map<String, Object> properties = flinkVertex.getProperties();
+          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            Map<String, Object> properties = vertex.getValue();
             if (properties.containsKey(Utils.TYPE)) {
               // get relevant key and translate with custom dictionary for internal use
               Object oldValue = properties.get(Utils.TYPE);

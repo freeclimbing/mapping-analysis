@@ -7,14 +7,12 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.BasicTest;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.metrics.StringMetrics;
 import org.simmetrics.tokenizers.Tokenizers;
-
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,15 +25,15 @@ public class SimilarityMapperTest extends BasicTest {
 
   @Test
   public void trigramSimilarityTest() throws Exception {
-    Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
-    final DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
+    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
+    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
 
-    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> exactSim
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> exactSim
       = baseTriplets
       .map(new TrigramSimilarityMapper())
       .filter(new TrigramSimilarityFilter());
 
-    for (Triplet<Long, FlinkVertex, Map<String, Object>> triplet : exactSim.collect()) {
+    for (Triplet<Long, ObjectMap, ObjectMap> triplet : exactSim.collect()) {
       if (triplet.getSrcVertex().getId() == 5680) {
         if (triplet.getTrgVertex().getId() == 5984 || triplet.getTrgVertex().getId() == 5681) {
           assertEquals(0.6324555f, triplet.getEdge().getValue().get("trigramSim"));
@@ -48,19 +46,19 @@ public class SimilarityMapperTest extends BasicTest {
 
   @Test
   public void typeSimilarityTest() throws Exception {
-    Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
+    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
     graph = Preprocessing.applyTypePreprocessing(graph, ExecutionEnvironment.getExecutionEnvironment());
 
-    final DataSet<Triplet<Long, FlinkVertex, NullValue>> baseTriplets = graph.getTriplets();
+    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
 
     baseTriplets.print();
 
-    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> typeSim
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> typeSim
         = baseTriplets
         .map(new TypeSimilarityMapper())
         .filter(new TypeFilter());
 
-    for (Triplet<Long, FlinkVertex, Map<String, Object>> triplet : typeSim.collect()) {
+    for (Triplet<Long, ObjectMap, ObjectMap> triplet : typeSim.collect()) {
       System.out.println(triplet);
     }
   }

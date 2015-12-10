@@ -3,23 +3,22 @@ package org.mappinganalysis.io.functions;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.CoGroupFunction;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkProperty;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
-
-import java.util.Map;
 
 /**
  * Create vertex with accumulated properties from single entry database result rows.
  */
-public class PropertyCoGroupFunction implements CoGroupFunction<FlinkVertex,
-    FlinkProperty, FlinkVertex> {
-  public void coGroup(Iterable<FlinkVertex> vertices, Iterable<FlinkProperty> properties,
-                      Collector<FlinkVertex> out) throws Exception {
-    FlinkVertex vertex = Iterables.get(vertices, 0);
-    Map<String, Object> vertexProperties = vertex.getProperties();
+public class PropertyCoGroupFunction implements CoGroupFunction<Vertex<Long, ObjectMap>,
+    FlinkProperty, Vertex<Long, ObjectMap>> {
+  public void coGroup(Iterable<Vertex<Long, ObjectMap>> vertices, Iterable<FlinkProperty> properties,
+                      Collector<Vertex<Long, ObjectMap>> out) throws Exception {
+    Vertex<Long, ObjectMap> vertex = Iterables.get(vertices, 0);
+    ObjectMap vertexProperties = vertex.getValue();
     boolean latitudeAdded = false;
     boolean longitudeAdded = false;
 
@@ -43,7 +42,7 @@ public class PropertyCoGroupFunction implements CoGroupFunction<FlinkVertex,
         longitudeAdded = true;
       }
     }
-    vertex.setProperties(vertexProperties);
+    vertex.setValue(vertexProperties);
     out.collect(vertex);
   }
 }

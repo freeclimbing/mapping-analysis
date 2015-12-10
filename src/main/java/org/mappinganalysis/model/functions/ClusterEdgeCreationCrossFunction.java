@@ -4,7 +4,7 @@ import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.CrossFunction;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.GeoDistance;
 import org.mappinganalysis.utils.Utils;
 import org.simmetrics.StringMetric;
@@ -15,14 +15,13 @@ import java.util.Set;
 /**
  * Compute intensive cluster link cross function.
  */
-public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Long, FlinkVertex>,
-    Vertex<Long, FlinkVertex>, Edge<Long, Double>> {
+public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Long, ObjectMap>,
+    Vertex<Long, ObjectMap>, Edge<Long, Double>> {
   @Override
-  public Edge<Long, Double> cross(Vertex<Long, FlinkVertex> left,
-                                  Vertex<Long, FlinkVertex> right) throws Exception {
+  public Edge<Long, Double> cross(Vertex<Long, ObjectMap> left,
+                                  Vertex<Long, ObjectMap> right) throws Exception {
     double similarity;
-    if ((long) left.getId() == right.getId()
-        || left.getId() > right.getId()) {
+    if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
       similarity = 0;
     } else {
       similarity = labelSim(left, right) * 0.4
@@ -32,10 +31,9 @@ public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Lo
     return new Edge<>(left.getId(), right.getId(), similarity);
   }
 
-  private Double typeSim(Vertex<Long, FlinkVertex> left, Vertex<Long, FlinkVertex> right) {
-    if (left.getValue().hasType() && right.getValue().hasType()) {
-      if (left.getValue().getProperties().get(Utils.TYPE)
-          .equals(right.getValue().getProperties().get(Utils.TYPE))) {
+  private Double typeSim(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right) {
+    if (left.getValue().containsKey(Utils.TYPE) && right.getValue().containsKey(Utils.TYPE)) {
+      if (left.getValue().get(Utils.TYPE).equals(right.getValue().get(Utils.TYPE))) {
         return 1.0;
       }
     }
@@ -50,10 +48,11 @@ public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Lo
    * @param maxDist max distance (in km) which is used for normalization
    * @return normalized distance value
    */
-  private Double geoSim(Vertex<Long, FlinkVertex> left, Vertex<Long, FlinkVertex> right, int maxDist) {
-    if (left.getValue().hasGeoCoords() && right.getValue().hasGeoCoords()) {
-      Map<String, Object> source = left.getValue().getProperties();
-      Map<String, Object> target = right.getValue().getProperties();
+  private Double geoSim(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right, int maxDist) {
+    if (left.getValue().containsKey(Utils.LON) && left.getValue().containsKey(Utils.LAT)
+        && right.getValue().containsKey(Utils.LON) && right.getValue().containsKey(Utils.LAT)) {
+      Map<String, Object> source = left.getValue();
+      Map<String, Object> target = right.getValue();
 
       Double distance = GeoDistance.distance(Utils.getDouble(source.get(Utils.LAT)),
           Utils.getDouble(source.get(Utils.LON)),
@@ -71,14 +70,14 @@ public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Lo
    * @param right right vertex
    * @return trigram similarity value
    */
-  private Double labelSim(Vertex<Long, FlinkVertex> left, Vertex<Long, FlinkVertex> right) {
+  private Double labelSim(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right) {
     StringMetric metric = Utils.getTrigramMetric(false);
     double sim = 0;
 
-    if (left.getValue().hasLabel() && right.getValue().hasLabel()) {
-      Object leftLabel = left.getValue().getLabel();
+    if (left.getValue().containsKey(Utils.LABEL) && right.getValue().containsKey(Utils.LABEL)) {
+      Object leftLabel = left.getValue().get(Utils.LABEL);
       Set<String> leftValues = null;
-      Object rightLabel = right.getValue().getLabel();
+      Object rightLabel = right.getValue().get(Utils.LABEL);
       Set<String> rightValues = null;
       if (leftLabel instanceof Set) {
         leftValues = Sets.newHashSet((Set<String>) leftLabel);

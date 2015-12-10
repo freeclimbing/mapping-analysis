@@ -1,7 +1,6 @@
 package org.mappinganalysis;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -18,14 +17,12 @@ import org.junit.Test;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcResultVerticesJoin;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
-import org.mappinganalysis.model.functions.VertexCreator;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,18 +40,19 @@ public class BasicTest {
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
     Graph<Long, NullValue, NullValue> tmpGraph = Graph.fromCollection(edgeList, env);
 
-    final DataSet<Vertex<Long, FlinkVertex>> baseVertices = tmpGraph.getVertices().map(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, FlinkVertex>>() {
-      @Override
-      public Vertex<Long, FlinkVertex> map(Vertex<Long, NullValue> vertex) throws Exception {
-        Map<String, Object> prop = Maps.newHashMap();
-        prop.put(Utils.LABEL, "foo");
-        return new Vertex<>(vertex.getId(), new FlinkVertex(vertex.getId(), prop));
-      }
-    });
+    final DataSet<Vertex<Long, ObjectMap>> baseVertices = tmpGraph.getVertices()
+        .map(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public Vertex<Long, ObjectMap> map(Vertex<Long, NullValue> vertex) throws Exception {
+            ObjectMap prop = new ObjectMap();
+            prop.put(Utils.LABEL, "foo");
+            return new Vertex<>(vertex.getId(), prop);
+          }
+        });
 
-    Graph<Long, FlinkVertex, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
+    Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
-    final DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> accumulatedSimValues
+    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
         = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets());
 
     // 1. time cc
@@ -66,7 +64,7 @@ public class BasicTest {
 
     ccResult.print();
 
-    DataSet<Vertex<Long, FlinkVertex>> ccResultVertices = baseVertices
+    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
         .join(ccResult)
         .where(0).equalTo(0)
         .with(new CcResultVerticesJoin());
@@ -76,7 +74,7 @@ public class BasicTest {
         = ClusterComputation.restrictToNewEdges(graph.getEdges(),
         ClusterComputation.computeComponentEdges(ccResultVertices));
 
-    DataSet<Triplet<Long, FlinkVertex, Map<String, Object>>> newSimValues
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
         = MappingAnalysisExample.initialSimilarityComputation(
         Graph.fromDataSet(baseVertices, newEdges, env).getTriplets());
 
@@ -91,20 +89,19 @@ public class BasicTest {
   }
 
   @SuppressWarnings("unchecked")
-  protected Graph<Long, FlinkVertex, NullValue> createSimpleGraph() throws Exception {
+  protected Graph<Long, ObjectMap, NullValue> createSimpleGraph() throws Exception {
     LocalEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
 
     JDBCDataLoader loader = new JDBCDataLoader(environment);
-    DataSet<Vertex<Long, FlinkVertex>> vertices = loader
+    DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVertices(Utils.GEO_FULL_NAME)
-        .filter(new FilterFunction<FlinkVertex>() {
-      @Override
-      public boolean filter(FlinkVertex vertex) throws Exception {
-        return vertex.getId() == 4795 || vertex.getId() == 5680
-            || vertex.getId() == 5984 || vertex.getId() == 5681;
-      }
-    })
-        .map(new VertexCreator());
+        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+          @Override
+          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex.getId() == 4795 || vertex.getId() == 5680
+                || vertex.getId() == 5984 || vertex.getId() == 5681;
+          }
+        });
 
     Edge<Long, NullValue> correctEdge1 = new Edge<>(5680L, 5681L, NullValue.getInstance());
     Edge<Long, NullValue> correctEdge2 = new Edge<>(5680L, 5984L, NullValue.getInstance());
@@ -150,7 +147,7 @@ public class BasicTest {
 
   @Test
   public void basicGraphTest() throws Exception {
-    Graph<Long, FlinkVertex, NullValue> graph = createSimpleGraph();
+    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
     assertEquals(4, graph.getVertices().count());
     assertEquals(3, graph.getEdges().count());
     graph.getVertices().print();

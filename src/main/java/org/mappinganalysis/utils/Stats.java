@@ -1,6 +1,5 @@
 package org.mappinganalysis.utils;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -14,7 +13,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.MappingAnalysisExample;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,10 @@ import java.util.Set;
  */
 public class Stats {
 
-  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, FlinkVertex>> clusters)
+  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
       throws Exception {
-    for (Vertex<Long, FlinkVertex> vertex : clusters.collect()) {
-      Map<String, Object> properties = vertex.getValue().getProperties();
+    for (Vertex<Long, ObjectMap> vertex : clusters.collect()) {
+      Map<String, Object> properties = vertex.getValue();
       Object clusteredVerts = properties.get(Utils.CL_VERTICES);
 
       if (clusteredVerts instanceof Set) {
@@ -37,17 +36,17 @@ public class Stats {
         }
         System.out.println(vertex.getValue().toString());
 
-        Set<FlinkVertex> values = Sets.newHashSet((Set<FlinkVertex>) properties.get(Utils.CL_VERTICES));
+        Set<Vertex<Long, ObjectMap>> values = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) properties.get(Utils.CL_VERTICES));
 
-        for (FlinkVertex value : values) {
-          System.out.println(value.getLabel());
+        for (Vertex<Long, ObjectMap> value : values) {
+          System.out.println(value.getValue().get(Utils.LABEL));
         }
       }
       else {
         System.out.println(vertex.getValue().toString());
 
-        FlinkVertex tmp = (FlinkVertex) clusteredVerts;
-        System.out.println(tmp.getLabel());
+        Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
+        System.out.println(tmp.getValue().get(Utils.LABEL));
       }
     }
   }
@@ -107,12 +106,12 @@ public class Stats {
 
   // duplicate methods in emptygeocodefilter
   public static void countPrintGeoPointsPerOntology(ExecutionEnvironment environment) throws Exception {
-    Graph<Long, FlinkVertex, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
+    Graph<Long, ObjectMap, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
     tgraph.getVertices()
-        .filter(new FilterFunction<Vertex<Long, FlinkVertex>>() {
+        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
           @Override
-          public boolean filter(Vertex<Long, FlinkVertex> vertex) throws Exception {
-            Map<String, Object> props = vertex.getValue().getProperties();
+          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+            Map<String, Object> props = vertex.getValue();
             if (props.containsKey(Utils.LAT) && props.containsKey(Utils.LON)) {
               Object lat = props.get(Utils.LAT);
               Object lon = props.get(Utils.LON);
@@ -130,31 +129,31 @@ public class Stats {
             }
           }
         })
-        .groupBy(new KeySelector<Vertex<Long, FlinkVertex>, String>() {
+        .groupBy(new KeySelector<Vertex<Long, ObjectMap>, String>() {
           @Override
-          public String getKey(Vertex<Long, FlinkVertex> vertex) throws Exception {
-            return (String) vertex.getValue().getProperties().get(Utils.ONTOLOGY);
+          public String getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return (String) vertex.getValue().get(Utils.ONTOLOGY);
           }
         })
-        .reduceGroup(new GroupReduceFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>>() {
+        .reduceGroup(new GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
-          public void reduce(Iterable<Vertex<Long, FlinkVertex>> iterable, Collector<Vertex<Long, FlinkVertex>> collector) throws Exception {
+          public void reduce(Iterable<Vertex<Long, ObjectMap>> iterable, Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
             long count = 0;
-            FlinkVertex result = new FlinkVertex();
-            Map<String, Object> resultProps = Maps.newHashMap();
+            Vertex<Long, ObjectMap> result = new Vertex<>();
+            ObjectMap resultProps = new ObjectMap();
             boolean isVertexPrepared = false;
 
-            for (Vertex<Long, FlinkVertex> vertex : iterable) {
+            for (Vertex<Long, ObjectMap> vertex : iterable) {
               count++;
               if (!isVertexPrepared) {
-                resultProps = vertex.getValue().getProperties();
+                resultProps = vertex.getValue();
                 result.setId(vertex.getId());
                 isVertexPrepared = true;
               }
             }
             resultProps.put("count", count);
-            result.setProperties(resultProps);
-            collector.collect(new Vertex<>(result.getId(), result));
+            result.setValue(resultProps);
+            collector.collect(new Vertex<>(result.getId(), result.getValue()));
           }
         })
         .print();

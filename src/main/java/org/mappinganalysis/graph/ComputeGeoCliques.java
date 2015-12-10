@@ -1,18 +1,12 @@
 package org.mappinganalysis.graph;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.apache.log4j.Logger;
 import org.bson.BsonValue;
-import org.bson.Document;
-import org.jgrapht.Graph;
-import org.jgrapht.alg.BronKerboschCliqueFinder;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
 import org.mappinganalysis.model.Component;
-import org.mappinganalysis.model.Vertex;
+import org.mappinganalysis.model.CompCheckVertex;
 import org.mappinganalysis.utils.Utils;
 
 import java.io.FileNotFoundException;
@@ -103,7 +97,7 @@ public class ComputeGeoCliques {
 //      // stackoverflow on component 4615 New Jersey
     Set<Integer> nodes = component.getVerticesAsInt();
     HashMap<Integer, List<Integer>> edges = new HashMap<>();
-    for (Vertex vertex : component.getVertices()) {
+    for (CompCheckVertex vertex : component.getVertices()) {
       List<Integer> list = new ArrayList<>(vertex.getEdges());
       edges.put(vertex.getId(), list);
     }
@@ -117,7 +111,7 @@ public class ComputeGeoCliques {
       for (int c : clique) {
         String url = "";
         String label = "";
-        for (Vertex vertex : component.getVertices()) {
+        for (CompCheckVertex vertex : component.getVertices()) {
           if (vertex.getId() == c) {
             url = vertex.getUrl();
             label = vertex.getLabel();

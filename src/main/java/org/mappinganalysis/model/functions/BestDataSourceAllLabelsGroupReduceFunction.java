@@ -1,31 +1,28 @@
 package org.mappinganalysis.model.functions;
 
-import com.google.common.collect.Maps;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
-import org.mappinganalysis.model.FlinkVertex;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
-
-import static org.simmetrics.builders.StringMetricBuilder.with;
 
 /**
  * Merge properties of grouped entities based on "best data source" availability,
  * i.e., GeoNames > DBpedia > others
  */
 public class BestDataSourceAllLabelsGroupReduceFunction
-    implements GroupReduceFunction<Vertex<Long, FlinkVertex>, Vertex<Long, FlinkVertex>> {
+    implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   @Override
-  public void reduce(Iterable<Vertex<Long, FlinkVertex>> vertices,
-                     Collector<Vertex<Long, FlinkVertex>> collector) throws Exception {
-    FlinkVertex result = new FlinkVertex();
-    Map<String, Object> resultProps = Maps.newHashMap();
+  public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
+                     Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
+    Vertex<Long, ObjectMap> result = new Vertex<>();
+    ObjectMap resultProps = new ObjectMap();
     boolean isRepresentative = false;
 
-    for (Vertex<Long, FlinkVertex> vertex : vertices) {
+    for (Vertex<Long, ObjectMap> vertex : vertices) {
       if (!isRepresentative) {
         result.setId(vertex.getId());
         isRepresentative = true;
@@ -33,20 +30,20 @@ public class BestDataSourceAllLabelsGroupReduceFunction
       resultProps = PropertyHelper
           .addValueToProperties(resultProps, vertex.getValue(), Utils.CL_VERTICES);
 
-      if (vertex.getValue().hasLabel()) {
+      if (vertex.getValue().containsKey(Utils.LABEL)) {
         resultProps = PropertyHelper
-            .addValueToProperties(resultProps, vertex.getValue().getLabel(), Utils.LABEL, true);
+            .addValueToProperties(resultProps, vertex.getValue().get(Utils.LABEL), Utils.LABEL, true);
       }
 
       createRepresentativeProperties(resultProps, vertex);
     }
-    result.setProperties(resultProps);
-    collector.collect(new Vertex<>(result.getId(), result));
+    result.setValue(resultProps);
+    collector.collect(new Vertex<>(result.getId(), result.getValue()));
   }
 
-  private void createRepresentativeProperties(Map<String, Object> resultProps,
-                                              Vertex<Long, FlinkVertex> vertex) {
-    Map<String, Object> properties = vertex.getValue().getProperties();
+  private void createRepresentativeProperties(ObjectMap resultProps,
+                                              Vertex<Long, ObjectMap> vertex) {
+    ObjectMap properties = vertex.getValue();
 
     boolean latLonGnFound = false;
     boolean latLonDbpFound = false;
