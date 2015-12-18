@@ -222,7 +222,7 @@ public class DbOps {
    * @throws SQLException
    */
   public ResultSet getAllFreebaseNodes() throws SQLException {
-    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com/ns%' and id > 658135 order by id;";
+    String sql = "SELECT DISTINCT id, url FROM concept WHERE url like 'http://rdf.freebase.com/ns%';"; // and id > 1659967 order by id;";
     PreparedStatement s = con.prepareStatement(sql);
 
     return s.executeQuery();

@@ -63,9 +63,13 @@ public class Utils {
    */
   public static final Double GEO_COORD_INITIAL_THRESHOLD = 50000.0;
   /**
-   * DB column name for 'rdf:type'/... field.
+   * DB att name for 'rdf:type'/... field.
    */
   public static final String TYPE = "type";
+  /**
+   * DB attName for gn type detail information
+   */
+  public static final String TYPE_DETAIL = "typeDetail";
   /**
    * DB column name for 'geo:lat' field.
    */

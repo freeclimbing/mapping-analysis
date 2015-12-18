@@ -30,23 +30,29 @@ public class Stats {
       Map<String, Object> properties = vertex.getValue();
       Object clusteredVerts = properties.get(Utils.CL_VERTICES);
 
+      if (vertex.getValue().get(Utils.TYPE_INTERN) != null &&
+          vertex.getValue().get(Utils.TYPE_INTERN).equals("Settlement")) {
+        continue;
+      }
+
       if (clusteredVerts instanceof Set) {
         if (((Set) clusteredVerts).size() < 4) {
           continue;
         }
-        System.out.println(vertex.toString());
+        System.out.println("---------------------------");
+        System.out.println(vertex.toString() + "\n");
+        Set<Vertex<Long, ObjectMap>> vertices = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
 
-        Set<Vertex<Long, ObjectMap>> values = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
-
-        for (Vertex<Long, ObjectMap> value : values) {
-          System.out.println(value.getValue().get(Utils.LABEL));
+        for (Vertex<Long, ObjectMap> clVertex : vertices) {
+          System.out.println(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
         }
       }
       else {
-        System.out.println(vertex.toString());
+        System.out.println("---------------------------");
+        System.out.println(vertex.toString() + "\n");
 
         Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
-        System.out.println(tmp.getValue().get(Utils.LABEL));
+        System.out.println(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
       }
     }
   }

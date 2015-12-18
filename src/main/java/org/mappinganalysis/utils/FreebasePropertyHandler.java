@@ -31,6 +31,14 @@ public class FreebasePropertyHandler {
   private static final String LONGITUDE = "ns:location.geocode.longitude";
   private static final String LOCATION_START = "ns:location";
   private static final String GEOGRAPHY_START = "ns:geography";
+  private static final String EDUCATION = "ns:education";
+  private static final String ARCHITECTURE = "ns:architecture";
+  private static final String AVIATION = "ns:aviation";
+  private static final String TRANSPORTATION = "ns:transportation";
+  private static final String PROTECTED_SITES = "ns:protected_sites";
+  private static final String ZOOS = "ns:zoos";
+  private static final String AMUSEMENT_PARKS = "ns:amusement_parks";
+
   private static final String FREEBASE_NS = "http://rdf.freebase.com/ns/";
   private static final String FB_SERVICE_URL = "https://www.googleapis.com/freebase/v1/rdf/";
 
@@ -112,8 +120,15 @@ public class FreebasePropertyHandler {
         }
       }
       if (!isGeoLocation) {
-        if (key.equals(TYPE) && (value.startsWith(GEOGRAPHY_START))) {
-//            || value.startsWith(LOCATION_START))) {
+        if (key.equals(TYPE) && (value.startsWith(EDUCATION)
+            || value.startsWith(ARCHITECTURE)
+            || value.startsWith(TRANSPORTATION)
+            || value.startsWith(PROTECTED_SITES)
+            || value.startsWith(AVIATION)
+            || value.startsWith(ZOOS)
+            || value.startsWith(AMUSEMENT_PARKS)
+            || value.startsWith(GEOGRAPHY_START)
+            || value.startsWith(LOCATION_START))) {
           value = FREEBASE_NS.concat(value.substring(value.indexOf(":") + 1));
           properties.add(new String[]{key, value});
         } else if (key.equals(GEO_LOCATION) && (mode.equals(Utils.MODE_LAT_LONG_TYPE)

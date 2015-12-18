@@ -60,15 +60,22 @@ public class Preprocessing {
           @Override
           public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
             Map<String, Object> properties = vertex.getValue();
+            String resultType;
+            if (properties.containsKey(Utils.TYPE_DETAIL)) {
+              resultType = getDictValue(properties.get(Utils.TYPE_DETAIL).toString());
+              if (!resultType.equals(Utils.MINUS_ONE)) {
+                properties.put(Utils.TYPE_INTERN, resultType);
+                return vertex;
+              }
+            }
             if (properties.containsKey(Utils.TYPE)) {
               // get relevant key and translate with custom dictionary for internal use
               Object oldValue = properties.get(Utils.TYPE);
-              String resultType;
               if (oldValue instanceof Set) {
                 Set<String> values = Sets.newHashSet((Set<String>) oldValue);
                 resultType = getDictValue(values);
               } else {
-                resultType = getDictValue(Sets.newHashSet((String) oldValue));
+                resultType = getDictValue(oldValue.toString());
               }
               properties.put(Utils.TYPE_INTERN, resultType);
               return vertex;
@@ -78,6 +85,10 @@ public class Preprocessing {
         });
 
     return Graph.fromDataSet(vertices, graph.getEdges(), environment);
+  }
+
+  private static String getDictValue(String value) {
+    return getDictValue(Sets.newHashSet((String) value));
   }
 
   private static String getDictValue(Set<String> values) {

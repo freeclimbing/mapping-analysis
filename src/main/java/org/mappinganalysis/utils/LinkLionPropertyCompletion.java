@@ -105,9 +105,9 @@ public class LinkLionPropertyCompletion {
 //    ResultSet vertices = ll.dbOps.getAllNodesBiggerThan();
 //    ResultSet vertices = ll.dbOps.getResourcesWithoutProperties();
 //    ResultSet vertices = ll.dbOps.getAllFreebaseNodes();
+//    ll.processResult(vertices);
 
     System.out.println("Process nodes one by one ..");
-//    ll.processResult(vertices);
 
     // TODO 4. LAST STEP
     // add type to concept attributes LAST Step
@@ -168,35 +168,35 @@ public class LinkLionPropertyCompletion {
       String endpoint = "";
       com.hp.hpl.jena.query.ResultSet properties = null;
 
-      if (repairMode) {
-        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
-        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
-      }
-//      // TODO rethink if this is always correct here (especially for the linklion dataset)
+//      if (repairMode) {
+//        url = url.replaceAll("(.*)(%2C)(.*)", "$1,$3");
+//        dbOps.updateDbProperty(id, Utils.DB_URL_FIELD, url);
+//      }
+      // TODO rethink if this is always correct here (especially for the linklion dataset)
       if (url.startsWith(FB_NS)) { // || url.startsWith(LGD_NS)) {
         if (!writeFbOrLgdProperties(id, url)) {
           retryMap.put(id, url);
         }
-      } else {
-        if (url.startsWith(DBP_NS)) {
-          endpoint = DBP_ENDPOINT;
-        } else {
-          endpoint = LL_ENDPOINT;
-        }
-        if (dbName.equals(Utils.LL_DB_NAME)) {
-          properties = getPropertiesFromSparql(endpoint, id, url);
-        } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
-          properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
-        }
-      }
+      } //else {
+//        if (url.startsWith(DBP_NS)) {
+//          endpoint = DBP_ENDPOINT;
+//        } else {
+//          endpoint = LL_ENDPOINT;
+//        }
+//        if (dbName.equals(Utils.LL_DB_NAME)) {
+//          properties = getPropertiesFromSparql(endpoint, id, url);
+//        } else if (dbName.equals(Utils.GEO_PERFECT_DB_NAME)) {
+//          properties = getPropertiesFromSparqlGraph(endpoint, id, url, graph);
+//        }
+//      }
 
-      if (properties != null) {
-        HashMap<String, Boolean> propsMap = getPropertyErrorMap();
-        while (properties.hasNext()) {
-          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
-        }
-        reportErrors(url, id, endpoint, propsMap);
-      }
+//      if (properties != null) {
+//        HashMap<String, Boolean> propsMap = getPropertyErrorMap();
+//        while (properties.hasNext()) {
+//          propsMap = parseSolutionLineAndWriteToDb(properties.next(), id, propsMap);
+//        }
+//        reportErrors(url, id, endpoint, propsMap);
+//      }
     }
     System.out.println("Processed " + count + " vertices.");
 //    retryMissingVertices(retryMap);
