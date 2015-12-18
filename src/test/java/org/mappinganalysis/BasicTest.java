@@ -6,7 +6,6 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -34,7 +33,7 @@ public class BasicTest {
 
   @Test
   public void simpleTest() throws Exception {
-    ExecutionEnvironment env = ExecutionEnvironment.createLocalEnvironment();
+    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
     List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
     edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
@@ -53,12 +52,12 @@ public class BasicTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets());
+        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets(), );
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
     final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
+    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
     final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
         .compute(ccVertices, ccEdges, 1000);
 
@@ -76,7 +75,7 @@ public class BasicTest {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
         = MappingAnalysisExample.initialSimilarityComputation(
-        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets());
+        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), );
 
     DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
     DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
@@ -90,9 +89,9 @@ public class BasicTest {
 
   @SuppressWarnings("unchecked")
   protected Graph<Long, ObjectMap, NullValue> createSimpleGraph() throws Exception {
-    LocalEnvironment environment = ExecutionEnvironment.createLocalEnvironment();
+    ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
 
-    JDBCDataLoader loader = new JDBCDataLoader(environment);
+    JDBCDataLoader loader = new JDBCDataLoader();
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVertices(Utils.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {

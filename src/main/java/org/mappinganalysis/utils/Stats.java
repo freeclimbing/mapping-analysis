@@ -111,8 +111,8 @@ public class Stats {
   }
 
   // duplicate methods in emptygeocodefilter
-  public static void countPrintGeoPointsPerOntology(ExecutionEnvironment environment) throws Exception {
-    Graph<Long, ObjectMap, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME, environment);
+  public static void countPrintGeoPointsPerOntology() throws Exception {
+    Graph<Long, ObjectMap, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME);
     tgraph.getVertices()
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
           @Override

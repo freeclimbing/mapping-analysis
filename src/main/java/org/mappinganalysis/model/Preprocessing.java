@@ -33,8 +33,7 @@ public class Preprocessing {
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, NullValue> applyLinkFilterStrategy(
-      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment environment)
-      throws Exception {
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
         .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
         .groupBy(1, 2)
@@ -49,12 +48,12 @@ public class Preprocessing {
           }
         });
 
-    return Graph.fromDataSet(graph.getVertices(),
-        edgesNoDuplicates, environment);
+    return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates,
+        ExecutionEnvironment.getExecutionEnvironment());
   }
 
   public static Graph<Long, ObjectMap, NullValue> applyTypePreprocessing(
-      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment environment) {
+      Graph<Long, ObjectMap, NullValue> graph) {
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
@@ -84,7 +83,8 @@ public class Preprocessing {
           }
         });
 
-    return Graph.fromDataSet(vertices, graph.getEdges(), environment);
+    return Graph.fromDataSet(vertices, graph.getEdges(),
+        ExecutionEnvironment.getExecutionEnvironment());
   }
 
   private static String getDictValue(String value) {

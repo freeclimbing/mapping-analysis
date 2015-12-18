@@ -47,7 +47,7 @@ public class SimilarityMapperTest extends BasicTest {
   @Test
   public void typeSimilarityTest() throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-    graph = Preprocessing.applyTypePreprocessing(graph, ExecutionEnvironment.getExecutionEnvironment());
+    graph = Preprocessing.applyTypePreprocessing(graph);
 
     final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
 

@@ -24,7 +24,7 @@ public class ClusterComputationTest {
     List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
     edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
-    Graph<Long, NullValue, NullValue> graph = Graph.fromCollection(edgeList, ExecutionEnvironment.createLocalEnvironment());
+    Graph<Long, NullValue, NullValue> graph = Graph.fromCollection(edgeList, ExecutionEnvironment.getExecutionEnvironment());
 
     DataSet<Vertex<Long, ObjectMap>> inputVertices = graph
         .getVertices()
