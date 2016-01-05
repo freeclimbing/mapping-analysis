@@ -29,11 +29,12 @@ public class Preprocessing {
    *
    * First strategy: delete all links which are involved in 1:n mappings
    * @param graph input graph
+   * @param env environment
    * @return output graph
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, NullValue> applyLinkFilterStrategy(
-      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) throws Exception {
     DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
         .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
         .groupBy(1, 2)
@@ -48,12 +49,11 @@ public class Preprocessing {
           }
         });
 
-    return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates,
-        ExecutionEnvironment.getExecutionEnvironment());
+    return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates, env);
   }
 
   public static Graph<Long, ObjectMap, NullValue> applyTypePreprocessing(
-      Graph<Long, ObjectMap, NullValue> graph) {
+      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
@@ -83,8 +83,7 @@ public class Preprocessing {
           }
         });
 
-    return Graph.fromDataSet(vertices, graph.getEdges(),
-        ExecutionEnvironment.getExecutionEnvironment());
+    return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }
 
   private static String getDictValue(String value) {

@@ -25,10 +25,10 @@ import java.util.List;
  */
 public class MappingAnalysisExampleTest {
 
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void analysisTest() throws Exception {
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
     List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
     edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
@@ -52,7 +52,7 @@ public class MappingAnalysisExampleTest {
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
     final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
+    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
     final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
         .compute(ccVertices, ccEdges, 1000);
 

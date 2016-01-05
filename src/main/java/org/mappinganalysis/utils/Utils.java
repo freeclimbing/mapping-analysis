@@ -24,6 +24,9 @@ import static org.simmetrics.builders.StringMetricBuilder.with;
 public class Utils {
   private static final Logger LOG = Logger.getLogger(Utils.class);
 
+  /**
+   * Database property names.
+   */
   private static String DB_NAME = "";
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
@@ -31,6 +34,9 @@ public class Utils {
   public static final String LL_FULL_NAME = "dbURLfullLinkLion";
   public static final String GEO_FULL_NAME = "dbURLfull";
 
+  /**
+   * Modes restricting entity enrichment.
+   */
   public static final String MODE_LAT_LONG_TYPE = "modeLatLongType";
   public static final String MODE_LABEL = "modeLabel";
   public static final String MODE_TYPE = "modeType";
@@ -42,6 +48,14 @@ public class Utils {
   public static final String DB_ID_FIELD = "id";
   public static final String DB_ATT_VALUE_TYPE = "attValueType";
   public static final String DB_ONTID_FIELD = "ontID_fk";
+  /**
+   * Command line option names.
+   */
+  public static final  String CMD_LL = "linklion";
+  public static final  String CMD_GEO = "geo";
+  public static final  String CMD_COMBINED = "combined";
+
+  public static final String LINK_FILTER_ACCUMULATOR = "link-filter";
   /**
    * DB connected components ID field
    */

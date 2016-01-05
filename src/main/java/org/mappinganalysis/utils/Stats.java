@@ -5,13 +5,13 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.ObjectMap;
 
@@ -23,6 +23,8 @@ import java.util.Set;
  * Helper methods for Flink mapping analysis
  */
 public class Stats {
+  private static final Logger LOG = Logger.getLogger(Stats.class);
+
 
   public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
       throws Exception {
@@ -39,20 +41,20 @@ public class Stats {
         if (((Set) clusteredVerts).size() < 4) {
           continue;
         }
-        System.out.println("---------------------------");
-        System.out.println(vertex.toString() + "\n");
+        LOG.info("---------------------------");
+        LOG.info(vertex.toString() + "\n");
         Set<Vertex<Long, ObjectMap>> vertices = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
 
         for (Vertex<Long, ObjectMap> clVertex : vertices) {
-          System.out.println(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
+          LOG.info(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
         }
       }
       else {
-        System.out.println("---------------------------");
-        System.out.println(vertex.toString() + "\n");
+        LOG.info("---------------------------");
+        LOG.info(vertex.toString() + "\n");
 
         Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
-        System.out.println(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
+        LOG.info(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
       }
     }
   }
@@ -76,7 +78,7 @@ public class Stats {
             }
             out.collect(new Tuple2<>(id, count));
           }
-        })//.print();
+        })
         .collect();
 
     int one = 0;
@@ -106,7 +108,7 @@ public class Stats {
         other++;
       }
     }
-    System.out.println("one: " + one + " two: " + two + " three: " + three +
+    LOG.info("one: " + one + " two: " + two + " three: " + three +
         " four: " + four + " five: " + five + " six: " + six + " seven: " + seven + " more: " + other);
   }
 

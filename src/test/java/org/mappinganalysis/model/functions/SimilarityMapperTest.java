@@ -22,6 +22,7 @@ import static org.simmetrics.builders.StringMetricBuilder.with;
  * similarity test
  */
 public class SimilarityMapperTest extends BasicTest {
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void trigramSimilarityTest() throws Exception {
@@ -47,7 +48,7 @@ public class SimilarityMapperTest extends BasicTest {
   @Test
   public void typeSimilarityTest() throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-    graph = Preprocessing.applyTypePreprocessing(graph);
+    graph = Preprocessing.applyTypePreprocessing(graph, env);
 
     final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
 

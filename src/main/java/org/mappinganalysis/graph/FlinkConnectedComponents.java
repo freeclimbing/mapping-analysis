@@ -17,7 +17,11 @@ import java.util.HashSet;
  * Compute Flink Connected Components.
  */
 public class FlinkConnectedComponents {
-  private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private ExecutionEnvironment env;
+
+  public FlinkConnectedComponents(ExecutionEnvironment env) {
+    this.env = env;
+  }
 
   /**
    * used in first version of component check, soon deprecated

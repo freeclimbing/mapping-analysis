@@ -1,6 +1,7 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -11,18 +12,19 @@ import org.mappinganalysis.utils.Utils;
 import java.util.Map;
 
 public class PreprocessingTest {
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  @Test
-  public void testApplyLinkFilterStrategy() throws Exception {
-
-  }
+//  @Test
+//  public void testApplyLinkFilterStrategy() throws Exception {
+//
+//  }
 
   @Test
   public void testApplyTypePreprocessing() throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME);
 
-    graph = Preprocessing.applyLinkFilterStrategy(graph);
-    graph = Preprocessing.applyTypePreprocessing(graph);
+    graph = Preprocessing.applyLinkFilterStrategy(graph, env);
+    graph = Preprocessing.applyTypePreprocessing(graph, env);
 
     graph.getVertices().map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, String>>() {
       @Override

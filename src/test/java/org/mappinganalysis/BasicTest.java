@@ -30,10 +30,10 @@ import static org.junit.Assert.assertEquals;
  */
 public class BasicTest {
 
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void simpleTest() throws Exception {
-    ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
     List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
     edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
@@ -52,12 +52,12 @@ public class BasicTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets(), );
+        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets(), "combined");
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
     final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents();
+    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
     final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
         .compute(ccVertices, ccEdges, 1000);
 
@@ -75,7 +75,7 @@ public class BasicTest {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
         = MappingAnalysisExample.initialSimilarityComputation(
-        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), );
+        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), "combined");
 
     DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
     DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
@@ -89,9 +89,8 @@ public class BasicTest {
 
   @SuppressWarnings("unchecked")
   protected Graph<Long, ObjectMap, NullValue> createSimpleGraph() throws Exception {
-    ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
 
-    JDBCDataLoader loader = new JDBCDataLoader();
+    JDBCDataLoader loader = new JDBCDataLoader(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVertices(Utils.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
@@ -107,10 +106,10 @@ public class BasicTest {
     Edge<Long, NullValue> wrongEdge = new Edge<>(5680L, 4795L, NullValue.getInstance());
 
     DataSet<Edge<Long, NullValue>> edges
-        = environment.fromCollection(Sets.newHashSet(correctEdge1, correctEdge2, wrongEdge));
+        = env.fromCollection(Sets.newHashSet(correctEdge1, correctEdge2, wrongEdge));
     edges.print();
 
-    return Graph.fromDataSet(vertices, edges, environment);
+    return Graph.fromDataSet(vertices, edges, env);
 
 //    Map<String, Object> properties = Maps.newHashMap();
 //    properties.put("label", "Leipzig");
