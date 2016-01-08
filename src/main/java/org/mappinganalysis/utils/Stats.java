@@ -4,9 +4,11 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -65,51 +67,17 @@ public class Stats {
    * @throws Exception
    */
   public static void countPrintResourcesPerCc(DataSet<Tuple2<Long, Long>> ccResult) throws Exception {
-    List<Tuple2<Long, Long>> ccGeoList = ccResult
+    DataSet<Tuple2<Long, Long>> tmpResult = ccResult
+        .map(new FrequencyMapFunction())
         .groupBy(1)
-        .reduceGroup(new GroupReduceFunction<Tuple2<Long, Long>, Tuple2<Long, Long>>() {
-          @Override
-          public void reduce(Iterable<Tuple2<Long, Long>> component, Collector<Tuple2<Long, Long>> out) throws Exception {
-            long count = 0;
-            long id = 0;
-            for (Tuple2<Long, Long> vertex : component) {
-              count++;
-              id = vertex.f1;
-            }
-            out.collect(new Tuple2<>(id, count));
-          }
-        })
-        .collect();
+        .sum(2)
+        .project(1, 2);
+    DataSet<Tuple3<Long, Long, Long>> result = tmpResult
+        .map(new FrequencyMapFunction()).groupBy(1).sum(2);
 
-    int one = 0;
-    int two = 0;
-    int three = 0;
-    int four = 0;
-    int five = 0;
-    int six = 0;
-    int seven = 0;
-    int other = 0;
-    for (Tuple2<Long, Long> tuple2 : ccGeoList) {
-      if (tuple2.f1 == 1) {
-        one++;
-      } else if (tuple2.f1 == 2) {
-        two++;
-      } else if (tuple2.f1 == 3) {
-        three++;
-      } else if (tuple2.f1 == 4) {
-        four++;
-      } else if (tuple2.f1 == 5) {
-        five++;
-      } else if (tuple2.f1 == 6) {
-        six++;
-      } else if (tuple2.f1 == 7) {
-        seven++;
-      } else if (tuple2.f1 > 7) {
-        other++;
-      }
+    for (Tuple3<Long, Long, Long> tuple : result.collect()) {
+      LOG.info("Component size: " + tuple.f1 + ": " + tuple.f2);
     }
-    LOG.info("one: " + one + " two: " + two + " three: " + three +
-        " four: " + four + " five: " + five + " six: " + six + " seven: " + seven + " more: " + other);
   }
 
   // duplicate methods in emptygeocodefilter
@@ -167,4 +135,10 @@ public class Stats {
         .print();
   }
 
+  private static class FrequencyMapFunction implements MapFunction<Tuple2<Long, Long>, Tuple3<Long, Long, Long>> {
+    @Override
+    public Tuple3<Long, Long, Long> map(Tuple2<Long, Long> tuple) throws Exception {
+      return new Tuple3<>(tuple.f0, tuple.f1, 1L);
+    }
+  }
 }

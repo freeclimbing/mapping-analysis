@@ -1,6 +1,5 @@
 package org.mappinganalysis.model;
 
-import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -11,18 +10,16 @@ import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.functions.ExcludeOneToManyOntologiesFilter;
+import org.mappinganalysis.model.functions.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.NeighborOntologyFunction;
-import org.mappinganalysis.utils.TypeDictionary;
-import org.mappinganalysis.utils.Utils;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Preprocessing.
  */
 public class Preprocessing {
+  private static final Logger LOG = Logger.getLogger(Preprocessing.class);
 
   /**
    * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.
@@ -30,85 +27,53 @@ public class Preprocessing {
    * First strategy: delete all links which are involved in 1:n mappings
    * @param graph input graph
    * @param env environment
+   * @param isLinkFilterActive boolean if filter should be used
    * @return output graph
-   * @throws Exception
    */
   public static Graph<Long, ObjectMap, NullValue> applyLinkFilterStrategy(
-      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) throws Exception {
-    DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
-        .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
-        .groupBy(1, 2)
-        .aggregate(Aggregations.SUM, 3)
-        .filter(new ExcludeOneToManyOntologiesFilter())
-        .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>,
-            Edge<Long, NullValue>>() {
-          @Override
-          public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple)
-              throws Exception {
-            return tuple.f0;
-          }
-        });
+      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env,
+      boolean isLinkFilterActive) {
+    if (isLinkFilterActive) {
+      LOG.info("Applying basic link filter strategy...");
 
-    return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates, env);
+      DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
+          .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
+          .groupBy(1, 2)
+          .aggregate(Aggregations.SUM, 3)
+          .filter(new ExcludeOneToManyOntologiesFilter())
+          .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>,
+              Edge<Long, NullValue>>() {
+            @Override
+            public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple)
+                throws Exception {
+              return tuple.f0;
+            }
+          });
+
+      LOG.info("Done.");
+
+      return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates, env);
+    } else {
+      return graph;
+    }
   }
 
+  /**
+   * Harmonize available type information with a common dictionary.
+   * @param graph input graph
+   * @param env environment
+   * @return graph with additional internal type property
+   */
   public static Graph<Long, ObjectMap, NullValue> applyTypePreprocessing(
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
-          @Override
-          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            Map<String, Object> properties = vertex.getValue();
-            String resultType;
-            if (properties.containsKey(Utils.TYPE_DETAIL)) {
-              resultType = getDictValue(properties.get(Utils.TYPE_DETAIL).toString());
-              if (!resultType.equals(Utils.MINUS_ONE)) {
-                properties.put(Utils.TYPE_INTERN, resultType);
-                return vertex;
-              }
-            }
-            if (properties.containsKey(Utils.TYPE)) {
-              // get relevant key and translate with custom dictionary for internal use
-              Object oldValue = properties.get(Utils.TYPE);
-              if (oldValue instanceof Set) {
-                Set<String> values = Sets.newHashSet((Set<String>) oldValue);
-                resultType = getDictValue(values);
-              } else {
-                resultType = getDictValue(oldValue.toString());
-              }
-              properties.put(Utils.TYPE_INTERN, resultType);
-              return vertex;
-            }
-            return vertex;
-          }
-        });
+    LOG.info("Applying type preprocessing...");
 
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph
+        .getVertices()
+        .map(new InternalTypeMapFunction());
+
+    LOG.info("Done.");
     return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }
 
-  private static String getDictValue(String value) {
-    return getDictValue(Sets.newHashSet((String) value));
-  }
-
-  private static String getDictValue(Set<String> values) {
-    for (String value : values) {
-      if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
-        return TypeDictionary.PRIMARY_TYPE.get(value);
-      }
-    }
-
-    for (String value : values) {
-      if (TypeDictionary.SECONDARY_TYPE.containsKey(value)) {
-        return TypeDictionary.SECONDARY_TYPE.get(value);
-      }
-    }
-
-    for (String value : values) {
-      if (TypeDictionary.TERTIARY_TYPE.containsKey(value)) {
-        return TypeDictionary.TERTIARY_TYPE.get(value);
-      }
-    }
-
-    return Utils.MINUS_ONE;
-  }
 }

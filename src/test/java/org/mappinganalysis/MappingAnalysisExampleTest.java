@@ -47,7 +47,7 @@ public class MappingAnalysisExampleTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = MappingAnalysisExample.initialSimilarityComputation(graph.getTriplets(), "combined");
+        = MappingAnalysisExample.computeSimilarities(graph.getTriplets(), "combined");
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
@@ -70,7 +70,7 @@ public class MappingAnalysisExampleTest {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
         = MappingAnalysisExample
-        .initialSimilarityComputation(Graph.fromDataSet(baseVertices, newEdges, env)
+        .computeSimilarities(Graph.fromDataSet(baseVertices, newEdges, env)
             .getTriplets(), "combined");
 
     DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);

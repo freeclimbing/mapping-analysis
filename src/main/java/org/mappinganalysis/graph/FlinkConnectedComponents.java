@@ -10,6 +10,7 @@ import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 
 import java.util.HashSet;
 
@@ -18,6 +19,7 @@ import java.util.HashSet;
  */
 public class FlinkConnectedComponents {
   private ExecutionEnvironment env;
+  private static final Logger LOG = Logger.getLogger(FlinkConnectedComponents.class);
 
   public FlinkConnectedComponents(ExecutionEnvironment env) {
     this.env = env;
@@ -55,6 +57,7 @@ public class FlinkConnectedComponents {
   public DataSet<Tuple2<Long, Long>> compute(DataSet<Long> vertices,
                                                    DataSet<Tuple2<Long, Long>> inEdges,
                                                    int maxIterations) throws Exception {
+    LOG.info("Started connected components computation...");
     DataSet<Tuple2<Long, Long>> edges = inEdges.flatMap(new UndirectedEdge());
     // assign the initial component IDs (equal to the vertex ID)
     DataSet<Tuple2<Long, Long>> verticesWithInitialId = vertices.map(new DuplicateValue<Long>());
@@ -73,8 +76,11 @@ public class FlinkConnectedComponents {
         .join(iteration.getSolutionSet()).where(0).equalTo(0)
         .flatMap(new ComponentIdFilter());
 
-// close the delta iteration (delta and new workset are identical)
-    return iteration.closeWith(changes, changes);
+    // close the delta iteration (delta and new workset are identical)
+    DataSet<Tuple2<Long, Long>> result = iteration.closeWith(changes, changes);
+    LOG.info("Done.");
+
+    return result;
   }
 
   private static final class DuplicateValue<T> implements MapFunction<T, Tuple2<T, T>> {

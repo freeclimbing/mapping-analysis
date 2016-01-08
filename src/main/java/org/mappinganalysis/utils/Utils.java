@@ -55,7 +55,17 @@ public class Utils {
   public static final  String CMD_GEO = "geo";
   public static final  String CMD_COMBINED = "combined";
 
+  /**
+   * Accumulators
+   */
   public static final String LINK_FILTER_ACCUMULATOR = "link-filter";
+  public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
+  public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
+  public static final String ALL_EDGE_COUNT_ACCUMULATOR = "all-edges-count";
+  public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
+  public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
+  public static final String EDGE2_COUNT_ACCUMULATOR = "edges2-count";
+
   /**
    * DB connected components ID field
    */
@@ -83,7 +93,7 @@ public class Utils {
   /**
    * DB attName for gn type detail information
    */
-  public static final String TYPE_DETAIL = "typeDetail";
+  public static final String GN_TYPE_DETAIL = "typeDetail";
   /**
    * DB column name for 'geo:lat' field.
    */
@@ -105,13 +115,11 @@ public class Utils {
    */
   public static final String DISTANCE = "distance";
   /**
-   * Temp value for no label, should not be present in result.
+   * temp values for missing values
    */
   public static final String NO_VALUE = "no value found";
-  /**
-   * Temp value for no type, should not be in result.
-   */
-  public static final String MINUS_ONE = "-1";
+  public static final String TYPE_NOT_FOUND = "type not found";
+  public static final String NO_TYPE_AVAILABLE = "no type available";
   /**
    * Field name for type match
    */
@@ -161,7 +169,8 @@ public class Utils {
 
 	public static Connection openDbConnection() throws SQLException {
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    ResourceBundle prop = ResourceBundle.getBundle("db", Locale.getDefault(), loader);
+    ResourceBundle prop = ResourceBundle.getBundle(Utils.DB_PROPERY_FILE_NAME,
+        Locale.getDefault(), loader);
 
     Connection con;
     String url = prop.getString("dbURL");
@@ -181,7 +190,8 @@ public class Utils {
    */
   public static String getGoogleApiKey() {
     ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    ResourceBundle prop = ResourceBundle.getBundle("db", Locale.getDefault(), loader);
+    ResourceBundle prop = ResourceBundle.getBundle(Utils.DB_PROPERY_FILE_NAME,
+        Locale.getDefault(), loader);
 
     return prop.getString("apiKey");
   }

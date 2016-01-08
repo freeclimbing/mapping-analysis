@@ -23,7 +23,7 @@ public class PreprocessingTest {
   public void testApplyTypePreprocessing() throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME);
 
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env);
+    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
     graph = Preprocessing.applyTypePreprocessing(graph, env);
 
     graph.getVertices().map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, String>>() {

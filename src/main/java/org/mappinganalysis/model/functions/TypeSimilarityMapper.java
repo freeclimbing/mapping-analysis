@@ -21,7 +21,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
 
     boolean isSimilar = false;
     if (!srcType.equals(Utils.NO_VALUE) && !trgType.equals(Utils.NO_VALUE)
-        && !srcType.equals(Utils.MINUS_ONE) && !trgType.equals(Utils.MINUS_ONE)) {
+        && !srcType.equals(Utils.TYPE_NOT_FOUND) && !trgType.equals(Utils.TYPE_NOT_FOUND)) {
       isSimilar = srcType.toLowerCase().equals(trgType.toLowerCase());
     }
 
