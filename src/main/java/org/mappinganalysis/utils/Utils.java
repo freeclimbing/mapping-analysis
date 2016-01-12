@@ -61,10 +61,10 @@ public class Utils {
   public static final String LINK_FILTER_ACCUMULATOR = "link-filter";
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
-  public static final String ALL_EDGE_COUNT_ACCUMULATOR = "all-edges-count";
+  public static final String TMP_ALL_EDGES_COUNT_ACCUMULATOR = "all-edges-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
-  public static final String EDGE2_COUNT_ACCUMULATOR = "edges2-count";
+  public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
 
   /**
    * DB connected components ID field
@@ -247,6 +247,7 @@ public class Utils {
 
   private static StringMetric getTrigramMetric() {
     return with(new CosineSimilarity<String>())
+        .simplify(Simplifiers.removeAll("[\\(|,].*"))
         .simplify(Simplifiers.replaceNonWord())
         .simplify(Simplifiers.toLowerCase())
         .tokenize(Tokenizers.qGram(3))

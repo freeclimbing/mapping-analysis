@@ -57,9 +57,7 @@ public class BasicTest {
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
     final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
-    final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
-        .compute(ccVertices, ccEdges, 1000);
+    final DataSet<Tuple2<Long, Long>> ccResult = FlinkConnectedComponents.compute(ccVertices, ccEdges, 1000);
 
     ccResult.print();
 
@@ -82,8 +80,7 @@ public class BasicTest {
     newCcEdges.print();
 
     // 2. time cc
-    DataSet<Tuple2<Long, Long>> newCcResult = connectedComponents
-        .compute(ccVertices, newCcEdges, 1000);
+    DataSet<Tuple2<Long, Long>> newCcResult = FlinkConnectedComponents.compute(ccVertices, newCcEdges, 1000);
     newCcResult.print();
   }
 

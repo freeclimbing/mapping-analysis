@@ -18,12 +18,7 @@ import java.util.HashSet;
  * Compute Flink Connected Components.
  */
 public class FlinkConnectedComponents {
-  private ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(FlinkConnectedComponents.class);
-
-  public FlinkConnectedComponents(ExecutionEnvironment env) {
-    this.env = env;
-  }
 
   /**
    * used in first version of component check, soon deprecated
@@ -32,9 +27,8 @@ public class FlinkConnectedComponents {
    * @param maxIterations max iterations for cc
    * @return flink dataset
    */
-  public DataSet<Tuple2<Long, Long>> compute(HashSet<Integer> vertexSet,
-                                                   HashSet<Tuple2<Integer, Integer>> edgeSet,
-                                                   int maxIterations) throws Exception {
+  public static DataSet<Tuple2<Long, Long>> compute(HashSet<Integer> vertexSet, HashSet<Tuple2<Integer, Integer>> edgeSet,
+                                                    int maxIterations, ExecutionEnvironment env) throws Exception {
     DataSet<Long> vertices = env.fromCollection(vertexSet).map(new LongMapper());
     DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeSet)
         .map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Long, Long>>() {
@@ -54,9 +48,8 @@ public class FlinkConnectedComponents {
    * @param maxIterations max iterations for cc
    * @return flink dataset
    */
-  public DataSet<Tuple2<Long, Long>> compute(DataSet<Long> vertices,
-                                                   DataSet<Tuple2<Long, Long>> inEdges,
-                                                   int maxIterations) throws Exception {
+  public static DataSet<Tuple2<Long, Long>> compute(DataSet<Long> vertices, DataSet<Tuple2<Long, Long>> inEdges,
+                                                    int maxIterations) throws Exception {
     LOG.info("Started connected components computation...");
     DataSet<Tuple2<Long, Long>> edges = inEdges.flatMap(new UndirectedEdge());
     // assign the initial component IDs (equal to the vertex ID)
@@ -126,7 +119,7 @@ public class FlinkConnectedComponents {
     }
   }
 
-  private class LongMapper implements MapFunction<Integer, Long> {
+  private static class LongMapper implements MapFunction<Integer, Long> {
     @Override
     public Long map(Integer value) throws Exception {
       return (long) value;

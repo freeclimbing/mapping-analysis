@@ -29,6 +29,47 @@ public class MappingAnalysisExampleTest {
 
   @Test
   public void analysisTest() throws Exception {
+    MappingAnalysisExample mappingAnalysisExample = new MappingAnalysisExample();
+    Graph<Long, ObjectMap, NullValue> graph = createTestGraph();
+
+//    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
+//        = MappingAnalysisExample.computeSimilarities(graph.getTriplets(), "combined");
+//
+//    // 1. time cc
+//    final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
+//    final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
+//    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
+//    final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
+//        .compute(ccVertices, ccEdges, 1000);
+//
+//    ccResult.print();
+//
+//    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
+//        .join(ccResult)
+//        .where(0).equalTo(0)
+//        .with(new CcResultVerticesJoin());
+//
+//    // get new edges in components
+//    DataSet<Edge<Long, NullValue>> newEdges
+//        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
+//        ClusterComputation.computeComponentEdges(ccResultVertices));
+//
+//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
+//        = MappingAnalysisExample
+//        .computeSimilarities(Graph.fromDataSet(baseVertices, newEdges, env)
+//            .getTriplets(), "combined");
+//
+//    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
+//    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
+//    newCcEdges.print();
+//
+//    // 2. time cc
+//    DataSet<Tuple2<Long, Long>> newCcResult = connectedComponents
+//        .compute(ccVertices, newCcEdges, 1000);
+//    newCcResult.print();
+  }
+
+  private Graph<Long, ObjectMap, NullValue> createTestGraph() {
     List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
     edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
@@ -44,42 +85,6 @@ public class MappingAnalysisExampleTest {
           }
         });
 
-    Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
-
-    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = MappingAnalysisExample.computeSimilarities(graph.getTriplets(), "combined");
-
-    // 1. time cc
-    final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
-    final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
-    final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
-        .compute(ccVertices, ccEdges, 1000);
-
-    ccResult.print();
-
-    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
-        .join(ccResult)
-        .where(0).equalTo(0)
-        .with(new CcResultVerticesJoin());
-
-    // get new edges in components
-    DataSet<Edge<Long, NullValue>> newEdges
-        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
-        ClusterComputation.computeComponentEdges(ccResultVertices));
-
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
-        = MappingAnalysisExample
-        .computeSimilarities(Graph.fromDataSet(baseVertices, newEdges, env)
-            .getTriplets(), "combined");
-
-    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
-    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
-    newCcEdges.print();
-
-    // 2. time cc
-    DataSet<Tuple2<Long, Long>> newCcResult = connectedComponents
-        .compute(ccVertices, newCcEdges, 1000);
-    newCcResult.print();
+    return Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
   }
 }

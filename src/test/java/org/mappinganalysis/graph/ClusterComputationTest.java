@@ -23,12 +23,42 @@ public class ClusterComputationTest {
 
   @Test
   public void computeMissingEdgesTest() throws Exception {
-    List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
-    edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
-    edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
-    Graph<Long, NullValue, NullValue> graph = Graph.fromCollection(edgeList, env);
+    Graph<Long, NullValue, NullValue> graph = createTestGraph();
+    DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
+    DataSet<Edge<Long, NullValue>> allEdges
+        = ClusterComputation.computeComponentEdges(inputVertices);
 
-    DataSet<Vertex<Long, ObjectMap>> inputVertices = graph
+    assertEquals(9, allEdges.count());
+
+    DataSet<Edge<Long, NullValue>> newEdges
+        = ClusterComputation.restrictToNewEdges(graph.getEdges(), allEdges);
+    assertEquals(1, newEdges.count());
+    assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+  }
+
+  @Test
+  public void getAllEdgesInGraphTest() throws Exception {
+    final Graph<Long, NullValue, NullValue> graph = createTestGraph();
+    final DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
+    final DataSet<Edge<Long, NullValue>> tooMuchEdges
+        = ClusterComputation.computeComponentEdges(inputVertices);
+
+    assertEquals(9, tooMuchEdges.count());
+
+    final DataSet<Edge<Long, NullValue>> simpleAllEdges
+        = ClusterComputation.getDistinctSimpleEdges(tooMuchEdges);
+
+    assertEquals(3, simpleAllEdges.count());
+    assertTrue(simpleAllEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+
+    final DataSet<Edge<Long, NullValue>> secondMethod
+        = ClusterComputation.computeComponentEdges(inputVertices, true);
+    assertEquals(3, secondMethod.count());
+  }
+
+
+  private DataSet<Vertex<Long, ObjectMap>> arrangeVertices(Graph<Long, NullValue, NullValue> graph) {
+    return graph
         .getVertices()
         .map(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, ObjectMap>>() {
           @Override
@@ -39,15 +69,12 @@ public class ClusterComputationTest {
             return new Vertex<>(vertex.getId(), prop);
           }
         });
+  }
 
-    DataSet<Edge<Long, NullValue>> allEdges
-        = ClusterComputation.computeComponentEdges(inputVertices);
-
-    assertEquals(9, allEdges.count());
-
-    DataSet<Edge<Long, NullValue>> newEdges
-        = ClusterComputation.restrictToNewEdges(graph.getEdges(), allEdges);
-    assertEquals(1, newEdges.count());
-    assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+  private Graph<Long, NullValue, NullValue> createTestGraph() {
+    List<Edge<Long, NullValue>> edgeList = Lists.newArrayList();
+    edgeList.add(new Edge<>(5680L, 5681L, NullValue.getInstance()));
+    edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
+    return Graph.fromCollection(edgeList, env);
   }
 }

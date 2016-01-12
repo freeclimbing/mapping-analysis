@@ -88,8 +88,8 @@ public class ComponentCheck {
       long startTime = System.nanoTime();
       int maxIterations = 1000;
       LOG.info("Compute Flink connected components ...");
-      FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
-      DataSet<Tuple2<Long, Long>> flinkResult = connectedComponents.compute(flinkVertices, flinkEdges, maxIterations);
+      DataSet<Tuple2<Long, Long>> flinkResult = FlinkConnectedComponents
+          .compute(flinkVertices, flinkEdges, maxIterations, env);
       long endTime = System.nanoTime();
       long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.#
       long distinctComps = flinkResult.project(1).distinct().count();

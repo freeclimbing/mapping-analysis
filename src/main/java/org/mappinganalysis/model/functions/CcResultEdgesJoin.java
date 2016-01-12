@@ -14,8 +14,8 @@ public class CcResultEdgesJoin implements JoinFunction<Edge<Long, NullValue>,
     Triplet<Long, Vertex<Long, ObjectMap>, ObjectMap>, Edge<Long, ObjectMap>> {
   @Override
   public Edge<Long, ObjectMap> join(Edge<Long, NullValue> edge,
-                                    Triplet<Long, Vertex<Long, ObjectMap>, ObjectMap> triplet)
-      throws Exception {
-    return new Edge<>(edge.getSource(), edge.getTarget(), triplet.f4);
+                                    Triplet<Long, Vertex<Long, ObjectMap>, ObjectMap> triplet) throws Exception {
+
+    return new Edge<>(edge.getSource(), edge.getTarget(), triplet.getEdge().getValue());
   }
 }

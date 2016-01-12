@@ -76,4 +76,16 @@ public class Preprocessing {
     return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }
 
+//  public static Graph<Long, ObjectMap, NullValue> applyLabelPreprocessing(Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
+//    DataSet<Vertex<Long, ObjectMap>> vertices = graph
+//        .getVertices()
+//        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+//          @Override
+//          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+//            vertex
+//          }
+//        });
+//
+//    return Graph.fromDataSet(vertices, graph.getEdges(), env);
+//  }
 }

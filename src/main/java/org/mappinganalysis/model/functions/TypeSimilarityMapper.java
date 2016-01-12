@@ -15,9 +15,11 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
     ObjectMap srcProps = triplet.getSrcVertex().getValue();
-    String srcType = srcProps.containsKey(Utils.TYPE) ? srcProps.get(Utils.TYPE).toString() : Utils.NO_VALUE;
+    String srcType = srcProps.containsKey(Utils.TYPE_INTERN) ?
+        srcProps.get(Utils.TYPE_INTERN).toString() : Utils.NO_VALUE;
     ObjectMap trgProps = triplet.getTrgVertex().getValue();
-    String trgType = trgProps.containsKey(Utils.TYPE) ? trgProps.get(Utils.TYPE).toString() : Utils.NO_VALUE;
+    String trgType = trgProps.containsKey(Utils.TYPE_INTERN) ?
+        trgProps.get(Utils.TYPE_INTERN).toString() : Utils.NO_VALUE;
 
     boolean isSimilar = false;
     if (!srcType.equals(Utils.NO_VALUE) && !trgType.equals(Utils.NO_VALUE)

@@ -2,10 +2,12 @@ package org.mappinganalysis.utils;
 
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -133,6 +135,36 @@ public class Stats {
           }
         })
         .print();
+  }
+
+  public static void printAccumulatorValues(ExecutionEnvironment env) throws Exception {
+    //vertices needs to be computed already
+    JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
+    LOG.info("Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
+    LOG.info("Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
+    LOG.info("Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
+
+    LOG.info("TMP all edges count: " + jobExecResult.getAccumulatorResult(Utils.TMP_ALL_EDGES_COUNT_ACCUMULATOR));
+    LOG.info("Restricted all edges count: " + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
+
+//    Map<String, Long> typeStats = Maps.newHashMap();
+//    List<String> typesList = vertexJobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
+//    for (String s : typesList) {
+//      if (typeStats.containsKey(s)) {
+//        typeStats.put(s, typeStats.get(s) + 1L);
+//      } else {
+//        typeStats.put(s, 1L);
+//      }
+//    }
+//    LOG.info("### --- Type counts parsed to internal type in preprocessing:");
+//    for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
+//      LOG.info(entry.getKey() + ": " + entry.getValue());
+//    }
+//    LOG.info("### type count end");
+
+//    graph.getEdgeIds().collect(); // how to get rid of this collect job TODO
+    LOG.info("Number of incorrect links: "
+        + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
   }
 
   private static class FrequencyMapFunction implements MapFunction<Tuple2<Long, Long>, Tuple3<Long, Long, Long>> {
