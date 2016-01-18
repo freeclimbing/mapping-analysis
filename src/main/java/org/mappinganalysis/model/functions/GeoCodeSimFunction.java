@@ -28,7 +28,15 @@ public class GeoCodeSimFunction implements MapFunction<Triplet<Long, ObjectMap, 
         Utils.getDouble(target.get(Utils.LON)));
 
     ObjectMap property = new ObjectMap();
-    property.put(Utils.DISTANCE, distance);
+
+    double maxDistInMeter = 100000.0;
+    if (distance >= maxDistInMeter) {
+      property.put(Utils.DISTANCE, 0.0);
+    } else {
+      double result = 1.0 - (distance / maxDistInMeter);
+      property.put(Utils.DISTANCE, result);
+    }
+//    System.out.println(distance + "     " + property.get(Utils.DISTANCE));
 
     return new Triplet<>(
         triplet.getSrcVertex(),

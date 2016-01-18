@@ -1,6 +1,5 @@
 package org.mappinganalysis.utils;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.mongodb.MongoClient;
@@ -126,6 +125,9 @@ public class Utils {
   public static final String TYPE_MATCH = "typeMatch";
   public static final String TRIGRAM = "trigramSim";
   public static final String DISTANCE = "distance";
+  public static final String AGGREGATED_SIM_VALUE = "aggSimValue";
+  public static final String VERTEX_AGG_SIM_VALUE = "vertexAggSimValue";
+
   /**
    * field name for connected component ID
    */
