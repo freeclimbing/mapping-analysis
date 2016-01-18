@@ -34,7 +34,7 @@ public class Preprocessing {
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env,
       boolean isLinkFilterActive) {
     if (isLinkFilterActive) {
-      LOG.info("Applying basic link filter strategy...");
+      LOG.info("[1] Preproccessing: Applying basic link filter strategy...");
 
       DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)

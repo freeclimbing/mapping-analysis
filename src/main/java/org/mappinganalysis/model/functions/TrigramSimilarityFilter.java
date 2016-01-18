@@ -6,7 +6,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 /**
- * Exact match triplet filter, soon deprecated!?
+ * similarity filter function - filter values below threshold
  */
 public class TrigramSimilarityFilter implements FilterFunction<Triplet<Long, ObjectMap, ObjectMap>> {
   @Override

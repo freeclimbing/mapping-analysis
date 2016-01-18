@@ -118,16 +118,7 @@ public class ClusterComputation {
     }
   }
 
-  private static class EdgeExtractCoGroupFunction extends RichCoGroupFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
-
-    private LongCounter allEdgesCounter = new LongCounter();
-
-    @Override
-    public void open(final Configuration parameters) throws Exception {
-      super.open(parameters);
-      getRuntimeContext().addAccumulator(Utils.TMP_ALL_EDGES_COUNT_ACCUMULATOR, allEdgesCounter);
-    }
-
+  private static class EdgeExtractCoGroupFunction implements CoGroupFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
     @Override
     public void coGroup(Iterable<Vertex<Long, ObjectMap>> left,
                         Iterable<Vertex<Long, ObjectMap>> right,
@@ -135,7 +126,6 @@ public class ClusterComputation {
       HashSet<Vertex<Long, ObjectMap>> rightSet = Sets.newHashSet(right);
       for (Vertex<Long, ObjectMap> vertexLeft : left) {
         for (Vertex<Long, ObjectMap> vertexRight : rightSet) {
-          allEdgesCounter.add(1L);
           collector.collect(new Edge<>(vertexLeft.getId(),
               vertexRight.getId(), NullValue.getInstance()));
         }

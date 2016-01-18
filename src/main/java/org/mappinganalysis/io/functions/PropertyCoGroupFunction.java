@@ -3,7 +3,6 @@ package org.mappinganalysis.io.functions;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;

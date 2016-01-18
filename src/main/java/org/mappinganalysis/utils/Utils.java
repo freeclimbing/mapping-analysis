@@ -1,5 +1,7 @@
 package org.mappinganalysis.utils;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
@@ -15,6 +17,7 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -61,10 +64,11 @@ public class Utils {
   public static final String LINK_FILTER_ACCUMULATOR = "link-filter";
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
-  public static final String TMP_ALL_EDGES_COUNT_ACCUMULATOR = "all-edges-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
+
+  public static final String AGG_PREFIX = "aggregated-";
 
   /**
    * DB connected components ID field
@@ -111,23 +115,17 @@ public class Utils {
    */
   public static final String TYPE_INTERN = "typeIntern";
   /**
-   * Field name for distance between two geo points.
-   */
-  public static final String DISTANCE = "distance";
-  /**
    * temp values for missing values
    */
   public static final String NO_VALUE = "no value found";
   public static final String TYPE_NOT_FOUND = "type not found";
   public static final String NO_TYPE_AVAILABLE = "no type available";
   /**
-   * Field name for type match
+   * Field name for sim value names
    */
   public static final String TYPE_MATCH = "typeMatch";
-  /**
-   * Field name for trigram similarity
-   */
   public static final String TRIGRAM = "trigramSim";
+  public static final String DISTANCE = "distance";
   /**
    * field name for connected component ID
    */
@@ -267,5 +265,18 @@ public class Utils {
     } else {
       return Doubles.tryParse(latlon.toString());
     }
+  }
+
+  /**
+   * Split a string to each of the contained long elements and return as a list.
+   * @param input string
+   * @return long list
+   */
+  public static List<Long> convertWsSparatedString(String[] input) {
+    List<Long> result = Lists.newArrayList();
+    for (String value : input) {
+      result.add(Long.valueOf(value));
+    }
+    return result;
   }
 }

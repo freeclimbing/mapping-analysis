@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * InternalTypeMapFunction
+ * Map types of imported resources to an internal dictionary of harmonized type values.
  */
 public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private ListAccumulator<String> statsCounter = new ListAccumulator<>();

@@ -14,6 +14,10 @@ import java.util.Set;
 public class ObjectMap implements Map<String, Object> {
   Map<String, Object> map = null;
 
+  public ObjectMap(ObjectMap map) {
+    this.map = map;
+  }
+
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
   }

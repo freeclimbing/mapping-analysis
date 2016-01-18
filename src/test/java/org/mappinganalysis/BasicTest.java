@@ -64,7 +64,7 @@ public class BasicTest {
     DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
         .join(ccResult)
         .where(0).equalTo(0)
-        .with(new CcResultVerticesJoin());
+        .with(new CcResultVerticesJoin()); // deprecated
 
     // get new edges in components
     DataSet<Edge<Long, NullValue>> newEdges

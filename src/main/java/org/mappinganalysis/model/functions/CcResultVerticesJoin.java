@@ -7,6 +7,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 /**
+ * DEPRECATED
  * INITIAL CLUSTERING: add cluster identifier (e.g., cc id) to vertices
  */
 public class CcResultVerticesJoin implements JoinFunction<Vertex<Long, ObjectMap>,

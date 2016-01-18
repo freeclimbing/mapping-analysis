@@ -1,5 +1,6 @@
 package org.mappinganalysis.utils;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.JobExecutionResult;
@@ -144,11 +145,10 @@ public class Stats {
     LOG.info("Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
     LOG.info("Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
 
-    LOG.info("TMP all edges count: " + jobExecResult.getAccumulatorResult(Utils.TMP_ALL_EDGES_COUNT_ACCUMULATOR));
     LOG.info("Restricted all edges count: " + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
 
 //    Map<String, Long> typeStats = Maps.newHashMap();
-//    List<String> typesList = vertexJobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
+//    List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
 //    for (String s : typesList) {
 //      if (typeStats.containsKey(s)) {
 //        typeStats.put(s, typeStats.get(s) + 1L);
