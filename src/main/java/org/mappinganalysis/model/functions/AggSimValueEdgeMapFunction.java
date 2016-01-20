@@ -2,6 +2,7 @@ package org.mappinganalysis.model.functions;
 
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Edge;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;

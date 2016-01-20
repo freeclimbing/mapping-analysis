@@ -68,6 +68,7 @@ public class Utils {
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
 
   public static final String AGG_PREFIX = "aggregated-";
+  public static final String AGG_VALUE_COUNT = "aggValueCount";
 
   /**
    * DB connected components ID field
@@ -127,6 +128,9 @@ public class Utils {
   public static final String DISTANCE = "distance";
   public static final String AGGREGATED_SIM_VALUE = "aggSimValue";
   public static final String VERTEX_AGG_SIM_VALUE = "vertexAggSimValue";
+  public static final String VERTEX_STATUS = "vertexStatus";
+  public static final boolean VERTEX_STATUS_ACTIVE = Boolean.TRUE;
+
 
   /**
    * field name for connected component ID
