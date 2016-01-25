@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
@@ -8,7 +8,7 @@ import org.mappinganalysis.utils.Utils;
 /**
  * GeoCode threshold in meter.
  */
-public class GeoCodeThreshold
+public class GeoCodeThresholdFilterFunction
     implements FilterFunction<Triplet<Long, ObjectMap, ObjectMap>> {
   @Override
   public boolean filter(Triplet<Long, ObjectMap, ObjectMap> distanceThreshold) throws Exception {

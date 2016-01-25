@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.representative;
 
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;

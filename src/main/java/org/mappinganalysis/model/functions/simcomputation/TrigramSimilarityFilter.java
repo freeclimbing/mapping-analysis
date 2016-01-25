@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;

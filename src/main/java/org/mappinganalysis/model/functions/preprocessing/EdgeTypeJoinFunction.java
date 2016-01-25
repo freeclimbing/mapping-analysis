@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.tuple.Tuple2;

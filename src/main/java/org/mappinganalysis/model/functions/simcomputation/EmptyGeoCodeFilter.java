@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;

@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcResultVerticesJoin;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
 import org.mappinganalysis.utils.Utils;
 
@@ -43,11 +42,7 @@ public class MappingAnalysisExampleTest {
 //        .compute(ccVertices, ccEdges, 1000);
 //
 //    ccResult.print();
-//
-//    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
-//        .join(ccResult)
-//        .where(0).equalTo(0)
-//        .with(new CcResultVerticesJoin());
+    // [deleted]
 //
 //    // get new edges in components
 //    DataSet<Edge<Long, NullValue>> newEdges

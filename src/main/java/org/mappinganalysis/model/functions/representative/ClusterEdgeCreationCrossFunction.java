@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.representative;
 
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.CrossFunction;

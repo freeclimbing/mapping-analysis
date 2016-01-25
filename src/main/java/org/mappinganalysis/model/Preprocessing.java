@@ -12,7 +12,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.functions.*;
+import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.utils.Utils;
 
 /**

@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.preprocessing;
 
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.accumulators.ListAccumulator;

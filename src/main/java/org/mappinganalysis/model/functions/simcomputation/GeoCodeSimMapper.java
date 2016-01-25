@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Return triple including the distance between 2 geo points as edge value.
  */
-public class GeoCodeSimFunction implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
+public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> {
 
   @Override

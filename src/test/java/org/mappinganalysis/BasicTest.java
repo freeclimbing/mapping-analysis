@@ -17,7 +17,6 @@ import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcResultVerticesJoin;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
 import org.mappinganalysis.utils.Utils;
 
@@ -61,27 +60,27 @@ public class BasicTest {
 
     ccResult.print();
 
-    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
-        .join(ccResult)
-        .where(0).equalTo(0)
-        .with(new CcResultVerticesJoin()); // deprecated
+//    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
+//        .join(ccResult)
+//        .where(0).equalTo(0)
+//        .with(new CcResultVerticesJoin()); // deprecated
 
     // get new edges in components
-    DataSet<Edge<Long, NullValue>> newEdges
-        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
-        ClusterComputation.computeComponentEdges(ccResultVertices));
+//    DataSet<Edge<Long, NullValue>> newEdges
+//        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
+//        ClusterComputation.computeComponentEdges(ccResultVertices));
 
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
-        = MappingAnalysisExample.computeSimilarities(
-        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), "combined");
+//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
+//        = MappingAnalysisExample.computeSimilarities(
+//        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), "combined");
 
-    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
-    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
-    newCcEdges.print();
+//    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
+//    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
+//    newCcEdges.print();
 
     // 2. time cc
-    DataSet<Tuple2<Long, Long>> newCcResult = FlinkConnectedComponents.compute(ccVertices, newCcEdges, 1000);
-    newCcResult.print();
+//    DataSet<Tuple2<Long, Long>> newCcResult = FlinkConnectedComponents.compute(ccVertices, newCcEdges, 1000);
+//    newCcResult.print();
   }
 
   @SuppressWarnings("unchecked")

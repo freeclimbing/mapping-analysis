@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
