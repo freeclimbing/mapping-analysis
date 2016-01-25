@@ -138,7 +138,7 @@ public class Stats {
         .print();
   }
 
-  public static void printAccumulatorValues(ExecutionEnvironment env) throws Exception {
+  public static void printAccumulatorValues(ExecutionEnvironment env, DataSet<Tuple2<Long, Long>> edgeIds) throws Exception {
     //vertices needs to be computed already
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
     LOG.info("Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
@@ -162,7 +162,7 @@ public class Stats {
 //    }
 //    LOG.info("### type count end");
 
-//    graph.getEdgeIds().collect(); // how to get rid of this collect job TODO
+    edgeIds.collect(); // how to get rid of this collect job TODO
     LOG.info("Number of incorrect links: "
         + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
   }
