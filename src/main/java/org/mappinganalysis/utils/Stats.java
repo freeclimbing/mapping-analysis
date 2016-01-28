@@ -79,7 +79,7 @@ public class Stats {
         .map(new FrequencyMapFunction()).groupBy(1).sum(2);
 
     for (Tuple3<Long, Long, Long> tuple : result.collect()) {
-      LOG.info("Component size: " + tuple.f1 + ": " + tuple.f2);
+      LOG.info("Component size: " + tuple.f1 + ": " + tuple.f2 +  " " + tuple.f0);
     }
   }
 

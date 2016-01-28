@@ -1,10 +1,15 @@
 package org.mappinganalysis.utils;
 
 import com.google.common.collect.Lists;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.ObjectMap;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.simplifiers.Simplifiers;
@@ -66,6 +71,7 @@ public class Utils {
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
+  public static final String VERTEX_OPTIONS = "vertex-options";
 
   public static final String AGG_PREFIX = "aggregated-";
   public static final String AGG_VALUE_COUNT = "aggValueCount";
@@ -114,12 +120,14 @@ public class Utils {
    * DB column name for GeoNames second type value field.
    */
   public static final String TYPE_INTERN = "typeIntern";
+  public static final String TMP_TYPE = "tmpType" ;
   /**
    * temp values for missing values
    */
   public static final String NO_VALUE = "no value found";
   public static final String TYPE_NOT_FOUND = "type not found";
   public static final String NO_TYPE_AVAILABLE = "no type available";
+
   /**
    * Field name for sim value names
    */
@@ -136,6 +144,9 @@ public class Utils {
    * field name for connected component ID
    */
   public static final String CC_ID = "ccId";
+  public static final String VERTEX_ID = "vertexId";
+  public static final String HASH_CC = "hashCc";
+
   /**
    * property name in cluster representative where clustered vertivces are put into.
    */
@@ -154,6 +165,7 @@ public class Utils {
   public static final String GN_NAMESPACE = "http://sws.geonames.org/";
 
   private static boolean DB_UTF8_MODE = false;
+  private static final HashFunction HF = Hashing.md5();
 
   public static HttpURLConnection openUrlConnection(URL url) {
 		HttpURLConnection conn = null;
@@ -284,5 +296,36 @@ public class Utils {
       result.add(Long.valueOf(value));
     }
     return result;
+  }
+
+  public static Long getHash(String input) {
+    return HF.hashBytes(input.getBytes()).asLong();
+  }
+
+  public static String toLog(Vertex<Long, ObjectMap> vertex) {
+    String type = "";
+    if (vertex.getValue().containsKey(TMP_TYPE)) {
+      type = "TMP-".concat(vertex.getValue().get(TMP_TYPE).toString());
+    } else {
+      if (type.equals("")) {
+        type = vertex.getValue().get(Utils.TYPE_INTERN).toString();
+      } else {
+        LOG.info("TMP Type + Type Intern found!");
+      }
+    }
+
+    return vertex.getId().toString()
+        .concat(": hash=")
+        .concat(vertex.getValue().get(Utils.HASH_CC).toString())
+        .concat(" type=")
+        .concat(type)
+        .concat(" label=")
+        .concat(vertex.getValue().get(Utils.LABEL).toString());
+  }
+
+  public static String toLog(Edge<Long, ObjectMap> edge) {
+    return edge.getSource().toString()
+        .concat("<->").concat(edge.getTarget().toString())
+        .concat(": ").concat(edge.getValue().get(Utils.AGGREGATED_SIM_VALUE).toString());
   }
 }

@@ -13,7 +13,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.functions.preprocessing.*;
-import org.mappinganalysis.utils.Utils;
 
 /**
  * Preprocessing.
@@ -78,12 +77,7 @@ public class Preprocessing {
 
   public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, String>>() {
-          @Override
-          public Tuple2<Long, String> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple2<>(vertex.getId(), vertex.getValue().get(Utils.TYPE_INTERN).toString());
-          }
-        });
+        .map(new VertexIdTypeTupleMapper());
 
     DataSet<Edge<Long, NullValue>> edgesEqualType = graph.getEdges()
         .map(new MapFunction<Edge<Long, NullValue>, Tuple4<Long, Long, String, String>>() {
@@ -113,4 +107,5 @@ public class Preprocessing {
     }
     return graph;
   }
+
 }
