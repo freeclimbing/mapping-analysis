@@ -1,6 +1,5 @@
 package org.mappinganalysis.graph;
 
-import com.google.common.collect.Sets;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
@@ -8,12 +7,11 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdKeySelector;
+import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
+import org.mappinganalysis.model.functions.clustering.ExcludeInputJoinFunction;
 import org.mappinganalysis.utils.Utils;
-
-import java.util.HashSet;
 
 public class ClusterComputation {
 
@@ -25,7 +23,7 @@ public class ClusterComputation {
    */
   public static DataSet<Edge<Long, NullValue>> computeComponentEdges(
       DataSet<Vertex<Long, ObjectMap>> vertices, boolean isResultSimpleEdgeSet) {
-    if (isResultSimpleEdgeSet) {
+    if (isResultSimpleEdgeSet) { // should be default
       DataSet<Edge<Long, NullValue>> edgeSet = computeComponentEdges(vertices);
       return getDistinctSimpleEdges(edgeSet);
     } else {
@@ -34,7 +32,7 @@ public class ClusterComputation {
   }
 
   /**
-   * [deprecated] Within a set of vertices, compute all edges for each contained component.
+   * [deprecated?] Within a set of vertices, compute all edges for each contained component.
    * @param vertices vertices set
    * @return edge set
    */
@@ -105,31 +103,5 @@ public class ClusterComputation {
           }
         })
         .distinct();
-  }
-
-  private static class ExcludeInputJoinFunction implements FlatJoinFunction<Edge<Long, NullValue>,
-      Edge<Long, NullValue>, Edge<Long, NullValue>> {
-    @Override
-    public void join(Edge<Long, NullValue> left, Edge<Long, NullValue> right,
-                     Collector<Edge<Long, NullValue>> collector) throws Exception {
-      if (right == null) {
-        collector.collect(left);
-      }
-    }
-  }
-
-  private static class EdgeExtractCoGroupFunction implements CoGroupFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
-    @Override
-    public void coGroup(Iterable<Vertex<Long, ObjectMap>> left,
-                        Iterable<Vertex<Long, ObjectMap>> right,
-                        Collector<Edge<Long, NullValue>> collector) throws Exception {
-      HashSet<Vertex<Long, ObjectMap>> rightSet = Sets.newHashSet(right);
-      for (Vertex<Long, ObjectMap> vertexLeft : left) {
-        for (Vertex<Long, ObjectMap> vertexRight : rightSet) {
-          collector.collect(new Edge<>(vertexLeft.getId(),
-              vertexRight.getId(), NullValue.getInstance()));
-        }
-      }
-    }
   }
 }

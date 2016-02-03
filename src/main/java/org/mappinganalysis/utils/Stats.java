@@ -4,15 +4,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
@@ -84,9 +84,8 @@ public class Stats {
   }
 
   // duplicate methods in emptygeocodefilter
-  public static void countPrintGeoPointsPerOntology() throws Exception {
-    Graph<Long, ObjectMap, NullValue> tgraph = MappingAnalysisExample.getInputGraph(Utils.GEO_FULL_NAME);
-    tgraph.getVertices()
+  public static void countPrintGeoPointsPerOntology(Graph<Long, ObjectMap, NullValue> preprocGraph) throws Exception {
+    preprocGraph.getVertices()
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
           @Override
           public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -165,6 +164,55 @@ public class Stats {
     edgeIds.collect(); // how to get rid of this collect job TODO
     LOG.info("Number of incorrect links: "
         + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
+  }
+
+  /**
+   * optional stats method
+   */
+  public static void printEdgesSimValueBelowThreshold(Graph<Long, ObjectMap, NullValue> allGraph,
+                                                       DataSet<Triplet<Long, ObjectMap, ObjectMap>>
+                                                           accumulatedSimValues) throws Exception {
+    LOG.info("accum sim values: " + accumulatedSimValues.count());
+
+    DataSet<Edge<Long, NullValue>> edgesNoSimValue = allGraph.getEdges()
+        .leftOuterJoin(accumulatedSimValues)
+        .where(0, 1).equalTo(0, 1)
+        .with(new FlatJoinFunction<Edge<Long, NullValue>, Triplet<Long, ObjectMap, ObjectMap>,
+            Edge<Long, NullValue>>() {
+          @Override
+          public void join(Edge<Long, NullValue> edge, Triplet<Long, ObjectMap, ObjectMap> triplet,
+                           Collector<Edge<Long, NullValue>> collector) throws Exception {
+            if (triplet == null) {
+              collector.collect(edge);
+            }
+          }
+        });
+
+    // print vertex information for start and target vertex
+    edgesNoSimValue
+        .leftOuterJoin(allGraph.getVertices())
+        .where(0).equalTo(0)
+        .with(new JoinFunction<Edge<Long, NullValue>, Vertex<Long, ObjectMap>,
+            Triplet<Long, ObjectMap, NullValue>>() {
+          @Override
+          public Triplet<Long, ObjectMap, NullValue> join(Edge<Long, NullValue> edge,
+                                                          Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Triplet<>(edge.getSource(), edge.getTarget(), vertex.getValue(), new ObjectMap(),
+                NullValue.getInstance());
+          }
+        })
+        .leftOuterJoin(allGraph.getVertices())
+        .where(1).equalTo(0)
+        .with(new JoinFunction<Triplet<Long, ObjectMap, NullValue>, Vertex<Long, ObjectMap>, Triplet<Long, ObjectMap,
+            NullValue>>() {
+          @Override
+          public Triplet<Long, ObjectMap, NullValue> join(Triplet<Long, ObjectMap, NullValue> triplet,
+                                                          Vertex<Long, ObjectMap> vertex) throws Exception {
+            triplet.f3 = vertex.getValue();
+            return triplet;
+          }
+        })
+        .print();
   }
 
   private static class FrequencyMapFunction implements MapFunction<Tuple2<Long, Long>, Tuple3<Long, Long, Long>> {

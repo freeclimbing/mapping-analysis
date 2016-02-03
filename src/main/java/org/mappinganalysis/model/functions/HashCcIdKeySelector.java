@@ -6,11 +6,11 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 /**
- * Key Selector connected component id
+ * Key Selector hash connected component id
  */
-public class CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
+public class HashCcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
   @Override
   public Long getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
-    return (long) vertex.getValue().get(Utils.CC_ID);
+    return (long) vertex.getValue().get(Utils.HASH_CC);
   }
 }

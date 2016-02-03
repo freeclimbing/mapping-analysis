@@ -137,6 +137,8 @@ public class Utils {
   public static final String AGGREGATED_SIM_VALUE = "aggSimValue";
   public static final String VERTEX_AGG_SIM_VALUE = "vertexAggSimValue";
   public static final String VERTEX_STATUS = "vertexStatus";
+  public static final Double DEFAULT_VERTEX_SIM = -1D;
+  public static final Double DEACTIVATE_VERTEX = -2D;
   public static final boolean VERTEX_STATUS_ACTIVE = Boolean.TRUE;
 
 
