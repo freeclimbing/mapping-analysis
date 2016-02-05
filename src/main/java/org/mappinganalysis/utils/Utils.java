@@ -124,9 +124,9 @@ public class Utils {
   /**
    * temp values for missing values
    */
-  public static final String NO_VALUE = "no value found";
-  public static final String TYPE_NOT_FOUND = "type not found";
-  public static final String NO_TYPE_AVAILABLE = "no type available";
+  public static final String NO_VALUE = "no_value_found";
+  public static final String TYPE_NOT_FOUND = "type_not_found";
+  public static final String NO_TYPE_AVAILABLE = "no_type_available";
 
   /**
    * Field name for sim value names

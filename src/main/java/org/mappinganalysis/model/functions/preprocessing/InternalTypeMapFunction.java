@@ -66,16 +66,9 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
         return TypeDictionary.PRIMARY_TYPE.get(value);
       }
     }
-
     for (String value : values) {
       if (TypeDictionary.SECONDARY_TYPE.containsKey(value)) {
         return TypeDictionary.SECONDARY_TYPE.get(value);
-      }
-    }
-
-    for (String value : values) {
-      if (TypeDictionary.TERTIARY_TYPE.containsKey(value)) {
-        return TypeDictionary.TERTIARY_TYPE.get(value);
       }
     }
 
