@@ -13,13 +13,7 @@ public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap,
   public void sendMessages(Vertex<Long, ObjectMap> vertex) throws Exception {
     double vertexAggSim = (double) vertex.getValue().get(Utils.VERTEX_AGG_SIM_VALUE);
     if (Doubles.compare(vertexAggSim, Utils.DEACTIVATE_VERTEX) != 0) {
-//            double vertSim = (double) vertex.getValue().get(Utils.VERTEX_AGG_SIM_VALUE);
-//            if (vertSim != Utils.DEACTIVATE_VERTEX || (vertSim < 0 && vertSim >= 0.6)) {
       for (Edge<Long, ObjectMap> edge : getEdges()) {
-
-//                if (!vertex.getValue().containsKey(Utils.VERTEX_AGG_SIM_VALUE) ||
-//                    !edge.getValue().containsKey(Utils.AGGREGATED_SIM_VALUE)) {
-//                }
         AggSimValueTuple message = new AggSimValueTuple(vertexAggSim,
             (double) edge.getValue().get(Utils.AGGREGATED_SIM_VALUE));
         if ((long) vertex.getId() == edge.getSource()) {
@@ -28,7 +22,6 @@ public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap,
           sendMessageTo(edge.getSource(), message);
         }
       }
-
     }
   }
 }

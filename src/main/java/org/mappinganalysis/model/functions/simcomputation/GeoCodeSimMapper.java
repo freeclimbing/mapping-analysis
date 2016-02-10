@@ -15,6 +15,11 @@ import java.util.Map;
  */
 public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> {
+  private final double maxDistInMeter;
+
+  public GeoCodeSimMapper(double maxDistInMeter) {
+    this.maxDistInMeter = maxDistInMeter;
+  }
 
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long,
@@ -29,14 +34,12 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
 
     ObjectMap property = new ObjectMap();
 
-    double maxDistInMeter = 100000.0;
     if (distance >= maxDistInMeter) {
       property.put(Utils.DISTANCE, 0.0);
     } else {
       double result = 1.0 - (distance / maxDistInMeter);
       property.put(Utils.DISTANCE, result);
     }
-//    System.out.println(distance + "     " + property.get(Utils.DISTANCE));
 
     return new Triplet<>(
         triplet.getSrcVertex(),
