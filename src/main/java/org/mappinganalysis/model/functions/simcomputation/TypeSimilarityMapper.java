@@ -41,7 +41,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
     }
 
     ObjectMap propertyMap = new ObjectMap();
-    propertyMap.put(Utils.TYPE_MATCH, similarity);
+    propertyMap.put(Utils.SIM_TYPE, similarity);
 
     return new Triplet<>(
         triplet.getSrcVertex(),

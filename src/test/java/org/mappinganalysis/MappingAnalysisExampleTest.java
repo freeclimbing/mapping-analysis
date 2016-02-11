@@ -10,12 +10,15 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
+import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
 import org.mappinganalysis.utils.Utils;
+import org.s1ck.gdl.GDLHandler;
 
 import java.util.List;
 
@@ -23,45 +26,49 @@ import java.util.List;
  * basic test class
  */
 public class MappingAnalysisExampleTest {
-
+  private static final Logger LOG = Logger.getLogger(MappingAnalysisExample.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void analysisTest() throws Exception {
-    MappingAnalysisExample mappingAnalysisExample = new MappingAnalysisExample();
-    Graph<Long, ObjectMap, NullValue> graph = createTestGraph();
+    GDLHandler handler = new GDLHandler.Builder().buildFromString("g[" +
+        "(v1 {typeIntern = \"Settlement\", hashCc = 12L})" +
+        "(v2 {typeIntern = \"no_type_available\", hashCc = 21L})" +
+        "(v3 {typeIntern = \"no_type_available\", hashCc = 33L})" +
+        "(v4 {typeIntern = \"no_type_available\", hashCc = 42L})" +
+        "(v5 {typeIntern = \"School\", hashCc = 51L})]" +
+        "(v1)-[e1:sameAs {aggSimValue = .9D}]->(v2)" +
+        "(v2)-[e2:sameAs {aggSimValue = .6D}]->(v3)" +
+        "(v3)-[e3:sameAs {aggSimValue = .7D}]->(v4)" +
+        "(v4)-[e4:sameAs {aggSimValue = .4D}]->(v5)");
 
-//    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-//        = MappingAnalysisExample.computeSimilarities(graph.getTriplets(), "combined");
-//
-//    // 1. time cc
-//    final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
-//    final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
-//    FlinkConnectedComponents connectedComponents = new FlinkConnectedComponents(env);
-//    final DataSet<Tuple2<Long, Long>> ccResult = connectedComponents
-//        .compute(ccVertices, ccEdges, 1000);
-//
-//    ccResult.print();
-    // [deleted]
-//
-//    // get new edges in components
-//    DataSet<Edge<Long, NullValue>> newEdges
-//        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
-//        ClusterComputation.computeComponentEdges(ccResultVertices));
-//
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
-//        = MappingAnalysisExample
-//        .computeSimilarities(Graph.fromDataSet(baseVertices, newEdges, env)
-//            .getTriplets(), "combined");
-//
-//    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
-//    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
-//    newCcEdges.print();
-//
-//    // 2. time cc
-//    DataSet<Tuple2<Long, Long>> newCcResult = connectedComponents
-//        .compute(ccVertices, newCcEdges, 1000);
-//    newCcResult.print();
+    List<Edge<Long, ObjectMap>> edgeList = Lists.newArrayList();
+    List<Vertex<Long, ObjectMap>> vertexList = Lists.newArrayList();
+
+    for (org.s1ck.gdl.model.Vertex v : handler.getVertices()) {
+      LOG.info(v.toString());
+      vertexList.add(new Vertex<>(v.getId(), new ObjectMap(v.getProperties())));
+    }
+
+    for (org.s1ck.gdl.model.Edge edge : handler.getEdges()) {
+      edgeList.add(new Edge<>(edge.getSourceVertexId(),
+          edge.getTargetVertexId(),
+          new ObjectMap(edge.getProperties())));
+    }
+
+    Graph<Long, ObjectMap, ObjectMap> input = Graph.fromCollection(vertexList, edgeList, env);
+
+
+
+    Graph<Long, ObjectMap, ObjectMap> iterationGraph = new TypeGroupBy().execute(input, 100);
+
+    for (Vertex<Long, ObjectMap> vertex : iterationGraph.getVertices().collect()) {
+      LOG.info(vertex);
+    }
+
+    for (Edge<Long, ObjectMap> edge : iterationGraph.getEdges().collect()) {
+      LOG.info(edge);
+    }
   }
 
   private Graph<Long, ObjectMap, NullValue> createTestGraph() {

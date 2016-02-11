@@ -43,15 +43,15 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
   private double getAggSim(ObjectMap value) {
     double aggregatedSim = 0;
     int propCount = 0;
-    if (value.containsKey(Utils.TRIGRAM)) {
+    if (value.containsKey(Utils.SIM_TRIGRAM)) {
       ++propCount;
-      aggregatedSim = (float) value.get(Utils.TRIGRAM);
+      aggregatedSim = (float) value.get(Utils.SIM_TRIGRAM);
     }
-    if (value.containsKey(Utils.TYPE_MATCH)) {
+    if (value.containsKey(Utils.SIM_TYPE)) {
       ++propCount;
-      aggregatedSim += (float) value.get(Utils.TYPE_MATCH);
+      aggregatedSim += (float) value.get(Utils.SIM_TYPE);
     }
-    if (value.containsKey(Utils.DISTANCE)) {
+    if (value.containsKey(Utils.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(value);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += distanceSim;
@@ -72,15 +72,15 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
     double typeWeight = 0.25;
     double geoWeight = 0.3;
     double aggregatedSim;
-    if (value.containsKey(Utils.TRIGRAM)) {
-      aggregatedSim = trigramWeight * (float) value.get(Utils.TRIGRAM);
+    if (value.containsKey(Utils.SIM_TRIGRAM)) {
+      aggregatedSim = trigramWeight * (float) value.get(Utils.SIM_TRIGRAM);
     } else {
       aggregatedSim = 0;
     }
-    if (value.containsKey(Utils.TYPE_MATCH)) {
-      aggregatedSim += typeWeight * (float) value.get(Utils.TYPE_MATCH);
+    if (value.containsKey(Utils.SIM_TYPE)) {
+      aggregatedSim += typeWeight * (float) value.get(Utils.SIM_TYPE);
     }
-    if (value.containsKey(Utils.DISTANCE)) {
+    if (value.containsKey(Utils.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(value);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += geoWeight * distanceSim;
@@ -95,13 +95,13 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
    * @return distance
    */
   private double getDistanceValue(ObjectMap value) {
-    Object object = value.get(Utils.DISTANCE);
+    Object object = value.get(Utils.SIM_DISTANCE);
     if (object instanceof Double) {
       return (Double) object;
     } else {
       LOG.info("Error (should not occur)" + object.getClass().toString());
       return -1;
     }
-    //      aggregatedSim += geoWeight * (Double) value.get(Utils.DISTANCE); // TODO why is this not working?
+    //      aggregatedSim += geoWeight * (Double) value.get(Utils.SIM_DISTANCE); // TODO why is this not working?
   }
 }

@@ -18,6 +18,10 @@ public class ObjectMap implements Map<String, Object> {
     this.map = map;
   }
 
+  public ObjectMap(Map<String, Object> map) {
+    this.map = map;
+  }
+
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
   }

@@ -12,6 +12,6 @@ public class TypeFilter implements FilterFunction<Triplet<Long, ObjectMap, Objec
   @Override
   public boolean filter(Triplet<Long, ObjectMap, ObjectMap> weightedTriplet) throws Exception {
     ObjectMap props = weightedTriplet.getEdge().getValue();
-    return props.containsKey(Utils.TYPE_MATCH) && (float) props.get(Utils.TYPE_MATCH) == 1f;
+    return props.containsKey(Utils.SIM_TYPE) && (float) props.get(Utils.SIM_TYPE) == 1f;
   }
 }

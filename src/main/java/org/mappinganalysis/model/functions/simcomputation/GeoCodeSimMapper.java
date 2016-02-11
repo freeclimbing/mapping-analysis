@@ -35,10 +35,10 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
     ObjectMap property = new ObjectMap();
 
     if (distance >= maxDistInMeter) {
-      property.put(Utils.DISTANCE, 0.0);
+      property.put(Utils.SIM_DISTANCE, 0.0);
     } else {
       double result = 1.0 - (distance / maxDistInMeter);
-      property.put(Utils.DISTANCE, result);
+      property.put(Utils.SIM_DISTANCE, result);
     }
 
     return new Triplet<>(

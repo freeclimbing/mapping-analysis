@@ -16,6 +16,17 @@
             <releases><enabled>false</enabled></releases>
             <snapshots><enabled>true</enabled></snapshots>
         </repository>
+        <repository>
+            <id>dbleipzig</id>
+            <name>Database Group Leipzig University</name>
+            <url>https://wdiserv1.informatik.uni-leipzig.de:443/archiva/repository/dbleipzig/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <build>
@@ -50,7 +61,7 @@
         <project.build.targetJdk>1.7</project.build.targetJdk>
 
         <dep.flink.version>0.10.1</dep.flink.version>
-        <dep.gradoop.version>0.0.3-SNAPSHOT</dep.gradoop.version>
+        <dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>
         <dep.mysql.version>5.1.6</dep.mysql.version>
     </properties>
 
@@ -60,6 +71,12 @@
             <groupId>com.github.mpkorstanje</groupId>
             <artifactId>simmetrics-example</artifactId>
             <version>4.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.s1ck</groupId>
+            <artifactId>gdl</artifactId>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
 
         <dependency>
