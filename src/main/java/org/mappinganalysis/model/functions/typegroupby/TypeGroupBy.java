@@ -7,10 +7,6 @@ import org.mappinganalysis.model.ObjectMap;
 
 public class TypeGroupBy {
 
-//  public TypeGroupBy(Graph<Long, ObjectMap, ObjectMap> graph, Integer maxIterations) {
-//    execute(graph, maxIterations);
-//  }
-
   public Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph, Integer maxIterations) {
     VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
     tbcParams.setName("Type-based Cluster Generation Iteration");

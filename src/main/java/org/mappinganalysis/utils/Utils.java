@@ -35,6 +35,9 @@ public class Utils {
    * Database property names.
    */
   private static String DB_NAME = "";
+  public static boolean IGNORE_MISSING_PROPERTIES;
+  public static String PRE_CLUSTER_STRATEGY;
+
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
   public static final String GEO_PERFECT_DB_NAME = "hartung_perfect_geo_links";
@@ -121,6 +124,7 @@ public class Utils {
    */
   public static final String TYPE_INTERN = "typeIntern";
   public static final String TMP_TYPE = "tmpType" ;
+  public static final String COMP_TYPE = "compType";
   /**
    * temp values for missing values
    */

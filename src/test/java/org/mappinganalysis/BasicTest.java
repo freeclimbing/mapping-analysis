@@ -18,6 +18,7 @@ import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
+import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class BasicTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = MappingAnalysisExample.computeSimilarities(graph.getTriplets(), "combined");
+        = SimCompUtility.computeSimilarities(graph.getTriplets(), "combined");
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);

@@ -9,10 +9,10 @@ import org.mappinganalysis.utils.Utils;
 /**
  * Key Selector to filter by component id and resource type.
  */
-public class CcIdAndTypeKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Tuple2<Long, String>> {
+public class CcIdAndCompTypeKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Tuple2<Long, String>> {
   @Override
   public Tuple2<Long, String> getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
     return new Tuple2<>((long) vertex.getValue().get(Utils.CC_ID),
-        vertex.getValue().get(Utils.TYPE_INTERN).toString());
+        vertex.getValue().get(Utils.COMP_TYPE).toString());
   }
 }

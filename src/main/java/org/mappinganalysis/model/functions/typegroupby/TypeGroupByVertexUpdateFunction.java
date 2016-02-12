@@ -64,8 +64,8 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
         if (newBestValue.containsKey(Utils.TMP_TYPE)) {
           vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.TMP_TYPE));
         }
-        if (newBestValue.containsKey(Utils.TYPE_INTERN) && !hasNoType(newBestValue)) {
-          vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.TYPE_INTERN));
+        if (newBestValue.containsKey(Utils.COMP_TYPE) && !hasNoType(newBestValue)) {
+          vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.COMP_TYPE));
         }
         LOG.info("### set new vert value: " + vertex.getValue());
         setNewVertexValue(vertex.getValue());
@@ -97,7 +97,7 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
   }
 
   private boolean hasNoType(ObjectMap map) {
-    return map.get(Utils.TYPE_INTERN).equals(Utils.NO_TYPE_AVAILABLE)
-        || map.get(Utils.TYPE_INTERN).equals(Utils.NO_VALUE);
+    return map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_AVAILABLE)
+        || map.get(Utils.COMP_TYPE).equals(Utils.NO_VALUE);
   }
 }
