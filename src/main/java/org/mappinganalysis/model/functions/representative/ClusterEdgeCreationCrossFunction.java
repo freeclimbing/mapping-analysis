@@ -71,7 +71,8 @@ public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Lo
    * @return trigram similarity value
    */
   private Double labelSim(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right) {
-    StringMetric metric = Utils.getTrigramMetric(false);
+    // TODO check if basic trigram metric is enough here
+    StringMetric metric = Utils.getBasicTrigramMetric();
     double sim = 0;
 
     if (left.getValue().containsKey(Utils.LABEL) && right.getValue().containsKey(Utils.LABEL)) {

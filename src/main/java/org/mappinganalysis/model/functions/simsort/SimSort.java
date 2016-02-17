@@ -11,6 +11,7 @@ import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.CcIdKeySelector;
 import org.mappinganalysis.model.functions.HashCcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
@@ -26,18 +27,16 @@ public class SimSort {
    */
   public static Graph<Long, ObjectMap, ObjectMap> prepare(
       Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) {
-
-    // use hash cc to compute all edges TODO fix in cluster computation
     DataSet<Edge<Long, NullValue>> allEdges = graph.getVertices()
         .coGroup(graph.getVertices())
-        .where(new HashCcIdKeySelector())
-        .equalTo(new HashCcIdKeySelector())
+        .where(new CcIdKeySelector())
+        .equalTo(new CcIdKeySelector())
         .with(new EdgeExtractCoGroupFunction());
 
     Graph<Long, ObjectMap, NullValue> distinctEdgesGraph = Graph
         .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
 
-    // TODO eliminate duplicate sim computation
+    // TODO eliminate partly duplicate sim computation
     DataSet<Edge<Long, ObjectMap>> simEdges = SimCompUtility.computeEdgeSimWithVertices(distinctEdgesGraph);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)

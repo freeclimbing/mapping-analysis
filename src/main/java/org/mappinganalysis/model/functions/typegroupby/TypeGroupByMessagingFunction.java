@@ -16,12 +16,8 @@ public class TypeGroupByMessagingFunction extends MessagingFunction<Long, Object
       vertex.getValue().put(Utils.AGGREGATED_SIM_VALUE, edge.getValue().get(Utils.AGGREGATED_SIM_VALUE));
       vertex.getValue().put(Utils.VERTEX_ID, vertex.getId());
       if ((long) vertex.getId() == edge.getSource()) {
-        LOG.info("Send msg: " + vertex.getValue() + " to " + edge.getTarget());
-
         sendMessageTo(edge.getTarget(), vertex.getValue());
       } else {
-        LOG.info("Send msg: " + vertex.getValue() + " to " + edge.getSource());
-
         sendMessageTo(edge.getSource(), vertex.getValue());
       }
     }

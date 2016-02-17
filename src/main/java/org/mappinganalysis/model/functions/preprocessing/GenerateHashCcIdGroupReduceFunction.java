@@ -31,6 +31,6 @@ public class GenerateHashCcIdGroupReduceFunction implements GroupReduceFunction<
 
   private boolean hasNoType(Vertex<Long, ObjectMap> vertex) {
     return vertex.getValue().get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_AVAILABLE)
-        || vertex.getValue().get(Utils.COMP_TYPE).equals(Utils.NO_VALUE);
+        || vertex.getValue().get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_FOUND);
   }
 }

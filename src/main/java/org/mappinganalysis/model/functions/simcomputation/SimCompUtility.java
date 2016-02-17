@@ -15,9 +15,14 @@ import org.mappinganalysis.utils.Utils;
 public class SimCompUtility {
   private static final Logger LOG = Logger.getLogger(SimCompUtility.class);
 
-  public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(DataSet<Triplet<Long, ObjectMap,
-      NullValue>> triplets, String filter) {
-    LOG.info("Started: compute similarities...");
+  /**
+   * Decide which similarities should be computed based on filter
+   * @param triplets graph triplets
+   * @param filter strategy: geo, label, type, [empty, combined] -> all 3 combined
+   * @return triplets with sim values
+   */
+  public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(
+      DataSet<Triplet<Long, ObjectMap, NullValue>> triplets, String filter) {
     switch (filter) {
       case "geo":
         return basicGeoSimilarity(triplets);
@@ -38,12 +43,8 @@ public class SimCompUtility {
    * @return graph with edge similarities
    */
   public static DataSet<Edge<Long, ObjectMap>> computeEdgeSimWithVertices(Graph<Long, ObjectMap, NullValue> graph) {
-    LOG.info("Start computing edge similarities...");
-    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValueTriplets
-        = computeSimilarities(graph.getTriplets(), Utils.PRE_CLUSTER_STRATEGY);
-    LOG.info("Done.");
-
-    return accumulatedSimValueTriplets
+    LOG.info("Compute Edge similarities based on vertex values.");
+    return computeSimilarities(graph.getTriplets(), Utils.PRE_CLUSTER_STRATEGY)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Utils.IGNORE_MISSING_PROPERTIES));
   }
@@ -76,20 +77,32 @@ public class SimCompUtility {
 
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTypeSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets
-        .map(new TypeSimilarityMapper());
+    return triplets.map(new TypeSimilarityMapper());
   }
 
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTrigramSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets
-        .map(new TrigramSimilarityMapper());
+    return triplets.map(new TrigramSimilarityMapper());
   }
 
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicGeoSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets
-        .filter(new EmptyGeoCodeFilter())
-        .map(new GeoCodeSimMapper(100000));
+    return triplets.filter(new EmptyGeoCodeFilter())
+        .map(new GeoCodeSimMapper(Utils.MAXIMAL_GEO_DISTANCE));
+  }
+
+  /**
+   * Get a new triplet with an empty ObjectMap as edge value.
+   * @param triplet triplet where edge value is NullValue
+   * @return result triplet
+   */
+  public static Triplet<Long, ObjectMap, ObjectMap> initResultTriplet(Triplet<Long, ObjectMap, NullValue> triplet) {
+    return new Triplet<>(
+        triplet.getSrcVertex(),
+        triplet.getTrgVertex(),
+        new Edge<>(
+            triplet.getSrcVertex().getId(),
+            triplet.getTrgVertex().getId(),
+            new ObjectMap()));
   }
 }

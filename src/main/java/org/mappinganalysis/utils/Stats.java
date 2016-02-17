@@ -19,6 +19,9 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.stats.ResultComponentSelectionFilter;
+import org.mappinganalysis.model.functions.stats.ResultEdgesSelectionFilter;
+import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
 
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,23 @@ import java.util.Set;
 public class Stats {
   private static final Logger LOG = Logger.getLogger(Stats.class);
 
+  public static void writeEdgesToLog(Graph<Long, ObjectMap, ObjectMap> oneIterationGraph,
+                                      List<Long> clusterStats) throws Exception {
+    oneIterationGraph.filterOnEdges(new ResultEdgesSelectionFilter(clusterStats))
+        .getEdges().collect();
+  }
+
+  public static void writeVerticesToLog(Graph<Long, ObjectMap, ObjectMap> graph,
+                                         List<Long> clusterList) throws Exception {
+    graph.filterOnVertices(new ResultVerticesSelectionFilter(clusterList))
+        .getVertices().collect();
+  }
+
+  public static void writeCcToLog(Graph<Long, ObjectMap, ObjectMap> graph,
+                                   List<Long> clusterList, String ccType) throws Exception {
+    graph.filterOnVertices(new ResultComponentSelectionFilter(clusterList, ccType))
+        .getVertices().collect();
+  }
 
   public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
       throws Exception {

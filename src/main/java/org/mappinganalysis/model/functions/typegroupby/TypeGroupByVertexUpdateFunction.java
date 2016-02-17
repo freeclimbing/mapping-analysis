@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Doubles;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.MessageIterator;
 import org.apache.flink.graph.spargel.VertexUpdateFunction;
@@ -18,33 +19,9 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
   public void updateVertex(Vertex<Long, ObjectMap> vertex, MessageIterator<ObjectMap> inMessages)
       throws Exception {
     if (!vertex.getValue().containsKey(Utils.TMP_TYPE) && hasNoType(vertex.getValue())) {
-      ObjectMap newBestValue = null;
       HashMap<Long, Double> options = initOptions(vertex);
-      long vertexCcId = (long) vertex.getValue().get(Utils.HASH_CC);
-      LOG.info("Working on vertex: " + vertexCcId);
 
-      // get max sim from neighbors + vertex
-      double bestSim = 0.0;
-      for (ObjectMap msg : inMessages) {
-        long neighborCcId = (long) msg.get(Utils.HASH_CC);
-        LOG.info("Got message from: " + msg.get(Utils.VERTEX_ID));
-        if (vertexCcId != neighborCcId) {
-          double newSim = (double) msg.get(Utils.AGGREGATED_SIM_VALUE);
-          options.put((long) msg.get(Utils.VERTEX_ID), newSim);
-
-          if (newSim > bestSim) {
-            bestSim = newSim;
-            if (msg.containsKey(Utils.TMP_TYPE) || !hasNoType(msg)) {
-              newBestValue = msg;
-            } else if (hasNoType(msg)) {
-              newBestValue = neighborCcId < vertexCcId ? msg : vertex.getValue();
-            }
-          }
-        } else {
-          // cc is equal, neighbor options could have better similarity ...
-          addNeighborOptions(vertex, options, msg);
-        }
-      }
+      ObjectMap newBestValue = findNewBestValue(vertex, inMessages, options);
 
       // if neighbor is already in cc, neighbors of neighbors may be interesting
       for (Long key : options.keySet()) {
@@ -58,18 +35,59 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
       }
 
       // save new cc_id on vertex
-      if (newBestValue != null) {
-        vertex.getValue().put(Utils.HASH_CC, newBestValue.get(Utils.HASH_CC));
-        vertex.getValue().put(Utils.VERTEX_OPTIONS, options);
-        if (newBestValue.containsKey(Utils.TMP_TYPE)) {
-          vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.TMP_TYPE));
-        }
-        if (newBestValue.containsKey(Utils.COMP_TYPE) && !hasNoType(newBestValue)) {
-          vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.COMP_TYPE));
-        }
-        LOG.info("### set new vert value: " + vertex.getValue());
+      if (!newBestValue.isEmpty()) {
+        updateVertexValue(vertex, newBestValue, options);
+//          LOG.info("### set vert value to: " + vertex.getValue());
         setNewVertexValue(vertex.getValue());
       }
+    }
+  }
+
+  private ObjectMap findNewBestValue(Vertex<Long, ObjectMap> vertex,
+                                     MessageIterator<ObjectMap> inMessages, HashMap<Long, Double> options) {
+    ObjectMap newBestValue = new ObjectMap();
+    long vertexCcId = (long) vertex.getValue().get(Utils.HASH_CC);
+//    LOG.info("Working on vertexCCid: " + vertexCcId + " (vertex: " + vertex.getId());
+    double bestSim = 0D;
+    // get max sim from neighbors + vertex
+    for (ObjectMap msg : inMessages) {
+      long neighborCcId = (long) msg.get(Utils.HASH_CC);
+//        LOG.info("Got message from: " + msg.get(Utils.VERTEX_ID));
+
+      if (vertexCcId != neighborCcId) {
+        double newSim = (double) msg.get(Utils.AGGREGATED_SIM_VALUE);
+        options.put((long) msg.get(Utils.VERTEX_ID), newSim);
+
+        // if newSim equals bestSim, we always want to choose the same result (lowest cc id), not the first msg cc id
+        // if no type is given, the lowest cc id of msg and vertex is chosen
+        if (Doubles.compare(newSim, bestSim) > 0 || (hasNoType(newBestValue)
+            && Doubles.compare(bestSim, 0D) != 0 && Doubles.compare(newSim, bestSim) == 0)) {
+          bestSim = newSim;
+          if (msg.containsKey(Utils.TMP_TYPE) || !hasNoType(msg)) {
+//              LOG.info("tmp type or has type: " + msg);
+            newBestValue = msg;
+          } else if (hasNoType(msg)) {
+//            LOG.info("has no type: " + msg);
+            newBestValue = neighborCcId < vertexCcId ? msg : vertex.getValue();
+          }
+        }
+      } else {
+        // cc is equal, neighbor options could have better similarity ...
+        addNeighborOptions(vertex, options, msg);
+      }
+    }
+    return newBestValue;
+  }
+
+  private void updateVertexValue(Vertex<Long, ObjectMap> vertex,
+                                 ObjectMap newBestValue, HashMap<Long, Double> options) {
+    vertex.getValue().put(Utils.HASH_CC, newBestValue.get(Utils.HASH_CC));
+    vertex.getValue().put(Utils.VERTEX_OPTIONS, options);
+    if (newBestValue.containsKey(Utils.TMP_TYPE)) {
+      vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.TMP_TYPE));
+    }
+    if (newBestValue.containsKey(Utils.COMP_TYPE) && !hasNoType(newBestValue)) {
+      vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.COMP_TYPE));
     }
   }
 
@@ -90,14 +108,13 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
         options.put(key, tmp.get(key));
       }
     }
-
     // ... but both values cannot be next option, because already in same cc
     options.remove(vertex.getId());
     options.remove(msg.get(Utils.VERTEX_ID));
   }
 
   private boolean hasNoType(ObjectMap map) {
-    return map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_AVAILABLE)
-        || map.get(Utils.COMP_TYPE).equals(Utils.NO_VALUE);
+    return map.containsKey(Utils.COMP_TYPE) && map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_AVAILABLE)
+        || map.containsKey(Utils.COMP_TYPE) && map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_FOUND);
   }
 }

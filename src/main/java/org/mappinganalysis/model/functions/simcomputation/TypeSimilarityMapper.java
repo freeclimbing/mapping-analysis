@@ -2,7 +2,6 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.primitives.Floats;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
@@ -19,36 +18,38 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
 
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-    ObjectMap srcProps = triplet.getSrcVertex().getValue();
-    String srcType = srcProps.containsKey(Utils.TYPE_INTERN) ?
-        srcProps.get(Utils.TYPE_INTERN).toString() : Utils.NO_VALUE;
-    ObjectMap trgProps = triplet.getTrgVertex().getValue();
-    String trgType = trgProps.containsKey(Utils.TYPE_INTERN) ?
-        trgProps.get(Utils.TYPE_INTERN).toString() : Utils.NO_VALUE;
+    String srcType = triplet.getSrcVertex().getValue().containsKey(Utils.TYPE_INTERN) ?
+        triplet.getSrcVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
+    String trgType = triplet.getTrgVertex().getValue().containsKey(Utils.TYPE_INTERN) ?
+        triplet.getTrgVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
+    Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimCompUtility.initResultTriplet(triplet);
 
-    float similarity = 0f;
-    if (!srcType.equals(Utils.NO_VALUE) && !trgType.equals(Utils.NO_VALUE)
-        && !srcType.equals(Utils.TYPE_NOT_FOUND) && !trgType.equals(Utils.TYPE_NOT_FOUND)) {
-      similarity = srcType.toLowerCase().equals(trgType.toLowerCase()) ? 1f : 0f;
-    }
-    if (Floats.compare(similarity, 0f) == 0) {
-      if (TypeDictionary.TYPE_SHADINGS.containsKey(srcType)
-        && TypeDictionary.TYPE_SHADINGS.get(srcType).equals(trgType)
-        || TypeDictionary.TYPE_SHADINGS.containsKey(trgType)
-        && TypeDictionary.TYPE_SHADINGS.get(trgType).equals(srcType)) {
-        similarity = 0.8f;
+    if (isNoTypeEmpty(srcType, trgType)) {
+      float similarity = srcType.toLowerCase().equals(trgType.toLowerCase()) ? 1f : 0f;
+      if (Floats.compare(similarity, 0f) == 0) {
+        similarity = checkTypeShadingSimilarity(srcType, trgType);
       }
+      resultTriplet.getEdge().getValue().put(Utils.SIM_TYPE, similarity);
+
+      return resultTriplet;
+    } else {
+      return resultTriplet;
     }
+  }
 
-    ObjectMap propertyMap = new ObjectMap();
-    propertyMap.put(Utils.SIM_TYPE, similarity);
+  private boolean isNoTypeEmpty(String srcType, String trgType) {
+    return !srcType.equals(Utils.NO_TYPE_AVAILABLE) && !trgType.equals(Utils.NO_TYPE_AVAILABLE)
+        && !srcType.equals(Utils.NO_TYPE_FOUND) && !trgType.equals(Utils.NO_TYPE_FOUND);
+  }
 
-    return new Triplet<>(
-        triplet.getSrcVertex(),
-        triplet.getTrgVertex(),
-        new Edge<>(
-            triplet.getSrcVertex().getId(),
-            triplet.getTrgVertex().getId(),
-            propertyMap));
+  private float checkTypeShadingSimilarity(String srcType, String trgType) {
+    if (TypeDictionary.TYPE_SHADINGS.containsKey(srcType)
+      && TypeDictionary.TYPE_SHADINGS.get(srcType).equals(trgType)
+      || TypeDictionary.TYPE_SHADINGS.containsKey(trgType)
+      && TypeDictionary.TYPE_SHADINGS.get(trgType).equals(srcType)) {
+      return Utils.SHADING_TYPE_SIM;
+    } else {
+      return 0f;
+    }
   }
 }

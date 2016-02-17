@@ -70,10 +70,7 @@ public class FlinkConnectedComponents {
         .flatMap(new ComponentIdFilter());
 
     // close the delta iteration (delta and new workset are identical)
-    DataSet<Tuple2<Long, Long>> result = iteration.closeWith(changes, changes);
-    LOG.info("Done.");
-
-    return result;
+    return iteration.closeWith(changes, changes);
   }
 
   private static final class DuplicateValue<T> implements MapFunction<T, Tuple2<T, T>> {

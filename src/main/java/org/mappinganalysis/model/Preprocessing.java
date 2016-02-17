@@ -34,7 +34,6 @@ public class Preprocessing {
       boolean isLinkFilterActive) {
     if (isLinkFilterActive) {
       LOG.info("[1] Preprocessing: Apply basic link filter strategy...");
-
       DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
           .groupBy(1, 2)
@@ -48,8 +47,6 @@ public class Preprocessing {
               return tuple.f0;
             }
           });
-
-      LOG.info("Done.");
 
       return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates, env);
     } else {
@@ -66,12 +63,10 @@ public class Preprocessing {
   public static Graph<Long, ObjectMap, NullValue> applyTypeToInternalTypeMapping(
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
     LOG.info("Apply type preprocessing...");
-
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .getVertices()
         .map(new InternalTypeMapFunction());
 
-    LOG.info("Done.");
     return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }
 

@@ -31,7 +31,7 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
     if (properties.containsKey(Utils.GN_TYPE_DETAIL)) {
       resultType = getDictValue(properties.get(Utils.GN_TYPE_DETAIL).toString());
     }
-    if (properties.containsKey(Utils.TYPE) && (resultType == null || resultType.equals(Utils.TYPE_NOT_FOUND))) {
+    if (properties.containsKey(Utils.TYPE) && (resultType == null || resultType.equals(Utils.NO_TYPE_FOUND))) {
       resultType = getInternalType(properties.get(Utils.TYPE));
     }
     if (resultType == null) {
@@ -72,6 +72,6 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
       }
     }
 
-    return Utils.TYPE_NOT_FOUND;
+    return Utils.NO_TYPE_FOUND;
   }
 }

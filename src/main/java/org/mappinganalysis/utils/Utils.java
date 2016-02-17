@@ -92,32 +92,21 @@ public class Utils {
    */
   public static final String DB_CC_TABLE = "connectedComponents";
   /**
-   * Minimum trigram similarity which is needed to keep link for further processing.
+   * similarity default values.
    */
   public static final Float TRIGRAM_INITIAL_THRESHOLD = 0.6f;
-  /**
-   * Maximal distance (in meter) between two resources where link is kept for further processing.
-   */
-  public static final Double GEO_COORD_INITIAL_THRESHOLD = 50000.0;
-  /**
-   * DB att name for 'rdf:type'/... field.
-   */
-  public static final String TYPE = "type";
+  public static final Double MAXIMAL_GEO_DISTANCE = 100000D;
+  public static final Float SHADING_TYPE_SIM = 0.8f;
   /**
    * DB attName for gn type detail information
    */
   public static final String GN_TYPE_DETAIL = "typeDetail";
   /**
-   * DB column name for 'geo:lat' field.
+   * DB column name for 'rdf:type'/..., 'geo:lat/lon', 'rdfs:label'/'gn:name'/... field.
    */
+  public static final String TYPE = "type";
   public static final String LAT = "lat";
-  /**
-   * DB column name for 'geo:lon' field.
-   */
   public static final String LON = "lon";
-  /**
-   * DB column name for 'rdfs:label'/'gn:name'/... field.
-   */
   public static final String LABEL = "label";
   /**
    * DB column name for GeoNames second type value field.
@@ -128,10 +117,9 @@ public class Utils {
   /**
    * temp values for missing values
    */
-  public static final String NO_VALUE = "no_value_found";
-  public static final String TYPE_NOT_FOUND = "type_not_found";
+  public static final String NO_LABEL_FOUND = "no_label_found";
+  public static final String NO_TYPE_FOUND = "no_type_found";
   public static final String NO_TYPE_AVAILABLE = "no_type_available";
-
   /**
    * Field name for sim value names
    */
@@ -144,7 +132,6 @@ public class Utils {
   public static final Double DEFAULT_VERTEX_SIM = -1D;
   public static final Double DEACTIVATE_VERTEX = -2D;
   public static final boolean VERTEX_STATUS_ACTIVE = Boolean.TRUE;
-
   /**
    * field name for connected component ID
    */
@@ -252,21 +239,16 @@ public class Utils {
   }
 
   /**
-   * Get trigram string metric.
-   * @param simplify if true, non words are replaces and strings as lower case
+   * Get basic trigram string metric.
    * @return metric
    */
-  public static StringMetric getTrigramMetric(boolean simplify) {
-    if (simplify) {
-      return getTrigramMetric();
-    } else {
-      return with(new CosineSimilarity<String>())
-          .tokenize(Tokenizers.qGram(3))
-          .build();
-    }
+  public static StringMetric getBasicTrigramMetric() {
+    return with(new CosineSimilarity<String>())
+        .tokenize(Tokenizers.qGram(3))
+        .build();
   }
 
-  private static StringMetric getTrigramMetric() {
+  public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<String>())
         .simplify(Simplifiers.removeAll("[\\(|,].*"))
         .simplify(Simplifiers.replaceNonWord())
@@ -319,9 +301,12 @@ public class Utils {
       }
     }
 
+    String cc = vertex.getValue().containsKey(Utils.HASH_CC)
+        ? vertex.getValue().get(Utils.HASH_CC).toString() : vertex.getValue().get(Utils.CC_ID).toString();
+
     return vertex.getId().toString()
-        .concat(": hash=")
-        .concat(vertex.getValue().get(Utils.HASH_CC).toString())
+        .concat(": hash/cc=")
+        .concat(cc)
         .concat(" type=")
         .concat(type)
         .concat(" label=")
