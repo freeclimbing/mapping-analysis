@@ -24,7 +24,8 @@ public class ResultComponentSelectionFilter implements FilterFunction<Vertex<Lon
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
     if (vertex.getValue().containsKey(cc)
         && clusterList.contains((long) vertex.getValue().get(cc))) {
-      LOG.info(Utils.toLog(vertex));
+      LOG.info(vertex);
+//      LOG.info(Utils.toLog(vertex));
       return true;
     } else {
       return false;

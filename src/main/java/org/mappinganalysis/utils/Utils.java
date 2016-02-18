@@ -37,6 +37,8 @@ public class Utils {
   private static String DB_NAME = "";
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static String PRE_CLUSTER_STRATEGY;
+  public static boolean PRINT_STATS;
+  public static boolean IS_LINK_FILTER_ACTIVE;
 
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
@@ -63,12 +65,13 @@ public class Utils {
    */
   public static final  String CMD_LL = "linklion";
   public static final  String CMD_GEO = "geo";
-  public static final  String CMD_COMBINED = "combined";
+  public static final  String DEFAULT_VALUE = "default";
 
   /**
    * Accumulators
    */
-  public static final String LINK_FILTER_ACCUMULATOR = "link-filter";
+  public static final String LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
+  public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";

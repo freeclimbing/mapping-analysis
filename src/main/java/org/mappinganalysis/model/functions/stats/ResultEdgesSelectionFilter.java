@@ -21,6 +21,7 @@ public class ResultEdgesSelectionFilter implements FilterFunction<Edge<Long, Obj
   @Override
   public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
     if (clusterList.contains(edge.getSource()) || clusterList.contains(edge.getTarget())) {
+      LOG.info(edge);
       LOG.info(Utils.toLog(edge));
       return true;
     } else {

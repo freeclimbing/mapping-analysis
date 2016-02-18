@@ -157,33 +157,44 @@ public class Stats {
         .print();
   }
 
-  public static void printAccumulatorValues(ExecutionEnvironment env, DataSet<Tuple2<Long, Long>> edgeIds) throws Exception {
+  public static void printAccumulatorValues(ExecutionEnvironment env, DataSet<Tuple2<Long, Long>> edgeIds)
+      throws Exception {
     //vertices needs to be computed already
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
-    LOG.info("Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
-    LOG.info("Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
-    LOG.info("Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
-
-    LOG.info("Restricted all edges count: " + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
-
-//    Map<String, Long> typeStats = Maps.newHashMap();
-//    List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
-//    for (String s : typesList) {
-//      if (typeStats.containsKey(s)) {
-//        typeStats.put(s, typeStats.get(s) + 1L);
-//      } else {
-//        typeStats.put(s, 1L);
-//      }
-//    }
-//    LOG.info("### --- Type counts parsed to internal type in preprocessing:");
-//    for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
-//      LOG.info(entry.getKey() + ": " + entry.getValue());
-//    }
-//    LOG.info("### type count end");
+    LOG.info("[0] Statistics: Get Data");
+    LOG.info("[0] Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
+    LOG.info("[0] Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
+    LOG.info("[0] Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
 
     edgeIds.collect(); // how to get rid of this collect job TODO
-    LOG.info("Number of incorrect links: "
-        + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
+    LOG.info("[1] Statistics: Preprocessing");
+    Map<String, Long> typeStats = Maps.newHashMap();
+    List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
+    for (String s : typesList) {
+      if (typeStats.containsKey(s)) {
+        typeStats.put(s, typeStats.get(s) + 1L);
+      } else {
+        typeStats.put(s, 1L);
+      }
+    }
+
+    LOG.info("[1] Types parsed to internal type: ");
+    for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
+      LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
+    }
+
+    if (Utils.IS_LINK_FILTER_ACTIVE) {
+      LOG.info("[1] Links filtered (strategy: delete 1:n links): "
+          + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
+      List<Edge<Long, NullValue>> filteredLinksList
+          = jobExecResult.getAccumulatorResult(Utils.FILTERED_LINKS_ACCUMULATOR);
+      for (Edge<Long, NullValue> edge : filteredLinksList) {
+        LOG.info("[1] Link filtered: (" + edge.getSource() + ", " + edge.getTarget() + ")");
+      }
+    }
+
+    LOG.info("[3] Clustering: Compute all edges within clusters: "
+        + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
   }
 
   /**

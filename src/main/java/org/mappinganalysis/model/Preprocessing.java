@@ -33,7 +33,7 @@ public class Preprocessing {
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env,
       boolean isLinkFilterActive) {
     if (isLinkFilterActive) {
-      LOG.info("[1] Preprocessing: Apply basic link filter strategy...");
+      LOG.info("[1] Apply basic link filter strategy");
       DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
           .groupBy(1, 2)
@@ -62,7 +62,7 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> applyTypeToInternalTypeMapping(
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
-    LOG.info("Apply type preprocessing...");
+    LOG.info("[1] Apply type preprocessing");
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .getVertices()
         .map(new InternalTypeMapFunction());
@@ -70,35 +70,46 @@ public class Preprocessing {
     return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }
 
-  public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(Graph<Long, ObjectMap, NullValue> graph) throws Exception {
-    DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
-        .map(new VertexIdTypeTupleMapper());
+  /**
+   * Exclude edges where directly connected source and target vertices have different type property values.
+   * @param graph input graph
+   * @param isTypeMissMatchCorrectionActive can be disabled in options
+   * @return corrected graph
+   * @throws Exception
+   */
+  public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(Graph<Long, ObjectMap, NullValue> graph,
+      boolean isTypeMissMatchCorrectionActive) throws Exception {
+    if (isTypeMissMatchCorrectionActive) {
+      DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
+          .map(new VertexIdTypeTupleMapper());
 
-    DataSet<Edge<Long, NullValue>> edgesEqualType = graph.getEdges()
-        .map(new MapFunction<Edge<Long, NullValue>, Tuple4<Long, Long, String, String>>() {
-          @Override
-          public Tuple4<Long, Long, String, String> map(Edge<Long, NullValue> edge) throws Exception {
-            return new Tuple4<>(edge.getSource(), edge.getTarget(), "", "");
-          }
-        })
-        .join(vertexIdAndTypeList)
-        .where(0).equalTo(0)
-        .with(new EdgeTypeJoinFunction(0))
-        .join(vertexIdAndTypeList).where(1).equalTo(0)
-        .with(new EdgeTypeJoinFunction(1))
-        .filter(new FilterNotEqualTypeEdges())
-        .map(new MapFunction<Tuple4<Long, Long, String, String>, Edge<Long, NullValue>>() {
-          @Override
-          public Edge<Long, NullValue> map(Tuple4<Long, Long, String, String> tuple) throws Exception {
-            return new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance());
-          }
-        });
+      DataSet<Edge<Long, NullValue>> edgesEqualType = graph.getEdges()
+          .map(new MapFunction<Edge<Long, NullValue>, Tuple4<Long, Long, String, String>>() {
+            @Override
+            public Tuple4<Long, Long, String, String> map(Edge<Long, NullValue> edge) throws Exception {
+              return new Tuple4<>(edge.getSource(), edge.getTarget(), "", "");
+            }
+          })
+          .join(vertexIdAndTypeList)
+          .where(0).equalTo(0)
+          .with(new EdgeTypeJoinFunction(0))
+          .join(vertexIdAndTypeList).where(1).equalTo(0)
+          .with(new EdgeTypeJoinFunction(1))
+          .filter(new FilterNotEqualTypeEdges())
+          .map(new MapFunction<Tuple4<Long, Long, String, String>, Edge<Long, NullValue>>() {
+            @Override
+            public Edge<Long, NullValue> map(Tuple4<Long, Long, String, String> tuple) throws Exception {
+              return new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance());
+            }
+          });
 
-    if (edgesEqualType.collect().isEmpty()) {
-      LOG.info("No edge with equal type on source and target.");
-    } else {
-      graph = graph.removeEdges(edgesEqualType.collect());
-      LOG.info(edgesEqualType.count() + " edges with equal type on source and target deleted.");
+      if (edgesEqualType.collect().isEmpty()) {
+        LOG.info("[1] Type miss match correction: No edge with equal type on source and target");
+      } else {
+        graph = graph.removeEdges(edgesEqualType.collect());
+        LOG.info("[1] Type miss match correction: " + edgesEqualType.count()
+            + " edges with equal type on source and target deleted");
+      }
     }
     return graph;
   }

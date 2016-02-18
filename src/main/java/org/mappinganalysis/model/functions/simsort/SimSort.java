@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.simsort;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
@@ -11,8 +12,6 @@ import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcIdKeySelector;
-import org.mappinganalysis.model.functions.HashCcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
@@ -22,15 +21,16 @@ public class SimSort {
   /**
    * create all missing edges, add default vertex sim values
    * @param graph input graph
+   * @param simSortKeySelector cc id or hash cc id
    * @param env execution environment
    * @return preprocessed graph
    */
-  public static Graph<Long, ObjectMap, ObjectMap> prepare(
-      Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) {
+  public static Graph<Long, ObjectMap, ObjectMap> prepare( Graph<Long, ObjectMap, ObjectMap> graph,
+      KeySelector<Vertex<Long, ObjectMap>, Long> simSortKeySelector, ExecutionEnvironment env) {
     DataSet<Edge<Long, NullValue>> allEdges = graph.getVertices()
         .coGroup(graph.getVertices())
-        .where(new CcIdKeySelector())
-        .equalTo(new CcIdKeySelector())
+        .where(simSortKeySelector)
+        .equalTo(simSortKeySelector)
         .with(new EdgeExtractCoGroupFunction());
 
     Graph<Long, ObjectMap, NullValue> distinctEdgesGraph = Graph

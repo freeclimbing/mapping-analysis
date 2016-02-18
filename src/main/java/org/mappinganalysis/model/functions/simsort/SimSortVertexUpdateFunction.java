@@ -5,7 +5,6 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.MessageIterator;
 import org.apache.flink.graph.spargel.VertexUpdateFunction;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
@@ -13,8 +12,6 @@ import org.mappinganalysis.utils.Utils;
 import java.util.List;
 
 public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, AggSimValueTuple> {
-  private static final Logger LOG = Logger.getLogger(SimSortVertexUpdateFunction.class);
-
   private final double threshold;
 
   public SimSortVertexUpdateFunction(double threshold) {
