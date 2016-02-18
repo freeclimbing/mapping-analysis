@@ -9,7 +9,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
@@ -17,8 +16,8 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.stats.FrequencyMapFunction;
 import org.mappinganalysis.model.functions.stats.ResultComponentSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultEdgesSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
@@ -86,20 +85,19 @@ public class Stats {
 
   /**
    * Count resources per component for a given flink connected component result set.
-   * @param ccResult dataset to be analyzed
+   * @param ccResult Tuple2 with VertexId, ComponentId
    * @throws Exception
    */
   public static void countPrintResourcesPerCc(DataSet<Tuple2<Long, Long>> ccResult) throws Exception {
     DataSet<Tuple2<Long, Long>> tmpResult = ccResult
-        .map(new FrequencyMapFunction())
-        .groupBy(1)
-        .sum(2)
-        .project(1, 2);
-    DataSet<Tuple3<Long, Long, Long>> result = tmpResult
-        .map(new FrequencyMapFunction()).groupBy(1).sum(2);
+        .map(new FrequencyMapFunction()) // VertexId, ComponentId, 1L
+        .groupBy(0)
+        .sum(1); // ComponentId, Sum(1L)
+    DataSet<Tuple2<Long, Long>> result = tmpResult
+        .map(new FrequencyMapFunction()).groupBy(0).sum(1);
 
-    for (Tuple3<Long, Long, Long> tuple : result.collect()) {
-      LOG.info("Component size: " + tuple.f1 + ": " + tuple.f2 +  " " + tuple.f0);
+    for (Tuple2<Long, Long> tuple : result.collect()) {
+      LOG.info("Component size: " + tuple.f1 + ": " + tuple.f0);
     }
   }
 
@@ -246,10 +244,4 @@ public class Stats {
         .print();
   }
 
-  private static class FrequencyMapFunction implements MapFunction<Tuple2<Long, Long>, Tuple3<Long, Long, Long>> {
-    @Override
-    public Tuple3<Long, Long, Long> map(Tuple2<Long, Long> tuple) throws Exception {
-      return new Tuple3<>(tuple.f0, tuple.f1, 1L);
-    }
-  }
 }
