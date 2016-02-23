@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.representative;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.CrossFunction;
 import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.GeoDistance;

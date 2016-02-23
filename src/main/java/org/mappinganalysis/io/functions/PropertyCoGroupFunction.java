@@ -9,7 +9,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkProperty;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
 
 /**
@@ -44,7 +43,7 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
       } else if (property.getPropertyType().equals("string")) {
         value = value.toString();
       }
-      vertexProperties = PropertyHelper.addValueToProperties(vertexProperties, value, key);
+      vertexProperties.addProperty(key, value);
       if (key.equals(Utils.LAT)) {
         latitudeAdded = true;
       }

@@ -4,7 +4,6 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.PropertyHelper;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.Map;
@@ -27,12 +26,12 @@ public class BestDataSourceAllLabelsGroupReduceFunction
         result.setId(vertex.getId());
         isRepresentative = true;
       }
-      resultProps = PropertyHelper
-          .addValueToProperties(resultProps, vertex, Utils.CL_VERTICES);
+      resultProps.addProperty(Utils.CL_VERTICES, vertex.getId());
 
+
+      // only one vertex should be representative!?
       if (vertex.getValue().containsKey(Utils.LABEL)) {
-        resultProps = PropertyHelper
-            .addValueToProperties(resultProps, vertex.getValue().get(Utils.LABEL), Utils.LABEL, true);
+        resultProps.addPropertyToRepresentative(Utils.LABEL, vertex.getValue().get(Utils.LABEL));
       }
 
       createRepresentativeProperties(resultProps, vertex);
@@ -42,43 +41,43 @@ public class BestDataSourceAllLabelsGroupReduceFunction
   }
 
   private void createRepresentativeProperties(ObjectMap resultProps,
-                                              Vertex<Long, ObjectMap> vertex) {
-    ObjectMap properties = vertex.getValue();
+                                              Vertex<Long, ObjectMap> currentVertex) {
+    ObjectMap singleVertProps = currentVertex.getValue();
 
     boolean latLonGnFound = false;
     boolean latLonDbpFound = false;
     boolean typeGnFound = false;
     boolean typeDbpFound = false;
-    if (properties.containsKey(Utils.ONTOLOGY)) {
-      if (properties.get(Utils.ONTOLOGY).equals(Utils.GN_NAMESPACE)) {
-        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON)) {
-          setLatLon(resultProps, properties);
+    if (singleVertProps.containsKey(Utils.ONTOLOGY)) {
+      if (singleVertProps.get(Utils.ONTOLOGY).equals(Utils.GN_NAMESPACE)) {
+        if (singleVertProps.containsKey(Utils.LAT) && singleVertProps.containsKey(Utils.LON)) {
+          setLatLon(resultProps, singleVertProps);
           latLonGnFound = true;
         }
-        if (properties.containsKey(Utils.TYPE_INTERN) && !properties.get(Utils.TYPE_INTERN).equals("-1")) {
-          resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
+        if (singleVertProps.containsKey(Utils.TYPE_INTERN) && !singleVertProps.get(Utils.TYPE_INTERN).equals("-1")) {
+          resultProps.put(Utils.TYPE_INTERN, singleVertProps.get(Utils.TYPE_INTERN));
           typeGnFound = true;
         }
       }
-      if (properties.get(Utils.ONTOLOGY).equals(Utils.DBP_NAMESPACE)) {
-        if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON) && !latLonGnFound) {
-          setLatLon(resultProps, properties);
+      if (singleVertProps.get(Utils.ONTOLOGY).equals(Utils.DBP_NAMESPACE)) {
+        if (singleVertProps.containsKey(Utils.LAT) && singleVertProps.containsKey(Utils.LON) && !latLonGnFound) {
+          setLatLon(resultProps, singleVertProps);
           latLonDbpFound = true;
         }
-        if (properties.containsKey(Utils.TYPE_INTERN)
-            && !properties.get(Utils.TYPE_INTERN).equals("-1") && !typeGnFound) {
-          resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
+        if (singleVertProps.containsKey(Utils.TYPE_INTERN) && !singleVertProps.get(Utils.TYPE_INTERN).equals("-1")
+            && !typeGnFound) {
+          resultProps.put(Utils.TYPE_INTERN, singleVertProps.get(Utils.TYPE_INTERN));
           typeDbpFound = true;
         }
       }
     }
-    if (properties.containsKey(Utils.LAT) && properties.containsKey(Utils.LON)
+    if (singleVertProps.containsKey(Utils.LAT) && singleVertProps.containsKey(Utils.LON)
         && !latLonDbpFound && !latLonGnFound) {
-      setLatLon(resultProps, properties);
+      setLatLon(resultProps, singleVertProps);
     }
-    if (properties.containsKey(Utils.TYPE_INTERN) && !properties.get(Utils.TYPE_INTERN).equals("-1")
+    if (singleVertProps.containsKey(Utils.TYPE_INTERN) && !singleVertProps.get(Utils.TYPE_INTERN).equals("-1")
         && !typeGnFound && !typeDbpFound) {
-      resultProps.put(Utils.TYPE_INTERN, properties.get(Utils.TYPE_INTERN));
+      resultProps.put(Utils.TYPE_INTERN, singleVertProps.get(Utils.TYPE_INTERN));
     }
   }
 

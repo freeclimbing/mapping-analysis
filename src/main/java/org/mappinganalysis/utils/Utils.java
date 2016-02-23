@@ -77,6 +77,7 @@ public class Utils {
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
+  public static final String EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
 
   public static final String AGG_PREFIX = "aggregated-";
@@ -98,7 +99,7 @@ public class Utils {
    * similarity default values.
    */
   public static final Float TRIGRAM_INITIAL_THRESHOLD = 0.6f;
-  public static final Double MAXIMAL_GEO_DISTANCE = 100000D;
+  public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Float SHADING_TYPE_SIM = 0.8f;
   /**
    * DB attName for gn type detail information
@@ -236,6 +237,11 @@ public class Utils {
     return openDbConnection();
   }
 
+  /**
+   * Remove non-words and write the value as lower case to the new object.
+   * @param value input string
+   * @return simplified value
+   */
   public static String simplify(String value) {
     value = Simplifiers.removeNonWord().simplify(value);
     return Simplifiers.toLowerCase().simplify(value);

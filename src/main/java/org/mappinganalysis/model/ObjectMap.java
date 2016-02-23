@@ -1,8 +1,11 @@
 package org.mappinganalysis.model;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.flink.util.StringUtils;
+import org.mappinganalysis.utils.Utils;
 
+import java.security.Key;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -12,7 +15,15 @@ import java.util.Set;
  * because a Flink Vertex can only have POJOs as value.
  */
 public class ObjectMap implements Map<String, Object> {
-  Map<String, Object> map = null;
+  public ObjectMap getMap() {
+    return (ObjectMap) map;
+  }
+
+  public void setMap(ObjectMap map) {
+    this.map = map;
+  }
+
+  private Map<String, Object> map = null;
 
   public ObjectMap(ObjectMap map) {
     this.map = map;
@@ -22,12 +33,44 @@ public class ObjectMap implements Map<String, Object> {
     this.map = map;
   }
 
+  public ObjectMap() {
+    map = Maps.newHashMap();
+  }
+
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
   }
 
-  public ObjectMap() {
-    map = Maps.newHashMap();
+  /**
+   * todo check if needed like this
+   * @param key
+   * @param value
+   */
+  public void addPropertyToRepresentative(String key, Object value) {
+    if (key.equals(Utils.LABEL)) {
+      value = Utils.simplify((String) value);
+    }
+    addProperty(key, value);
+  }
+
+  /**
+   * Add a key value pair, if key already exists, a set of values is created or extended.
+   * @param key property name
+   * @param value property value
+   */
+  public void addProperty(String key, Object value) {
+    if (map.containsKey(key)) {
+      Object oldValue = map.get(key);
+      if (oldValue instanceof Set) {
+        Set<Object> values = Sets.newHashSet((Set<Object>) oldValue);
+        values.add(value);
+        map.put(key, values);
+      } else {
+        map.put(key, Sets.newHashSet(oldValue, value));
+      }
+    } else {
+      map.put(key, value);
+    }
   }
 
   @Override

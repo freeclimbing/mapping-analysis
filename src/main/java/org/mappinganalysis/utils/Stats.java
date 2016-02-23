@@ -1,7 +1,6 @@
 package org.mappinganalysis.utils;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.*;
@@ -24,7 +23,6 @@ import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Helper methods for Flink mapping analysis
@@ -53,37 +51,39 @@ public class Stats {
   public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
       throws Exception {
     for (Vertex<Long, ObjectMap> vertex : clusters.collect()) {
-      Map<String, Object> properties = vertex.getValue();
-      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
-
-      if (vertex.getValue().get(Utils.TYPE_INTERN) != null &&
-          vertex.getValue().get(Utils.TYPE_INTERN).equals("Settlement")) {
-        continue;
-      }
-
-      if (clusteredVerts instanceof Set) {
-        if (((Set) clusteredVerts).size() < 4) {
-          continue;
-        }
-        LOG.info("---------------------------");
-        LOG.info(vertex.toString() + "\n");
-        Set<Vertex<Long, ObjectMap>> vertices = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
-
-        for (Vertex<Long, ObjectMap> clVertex : vertices) {
-          LOG.info(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
-        }
-      }
-      else {
-        LOG.info("---------------------------");
-        LOG.info(vertex.toString() + "\n");
-
-        Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
-        LOG.info(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
-      }
+      LOG.info(vertex);
+//      Map<String, Object> properties = vertex.getValue();
+//      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
+//
+//      if (vertex.getValue().get(Utils.TYPE_INTERN) != null &&
+//          vertex.getValue().get(Utils.TYPE_INTERN).equals("Settlement")) {
+//        continue;
+//      }
+//
+//      if (clusteredVerts instanceof Set) {
+//        if (((Set) clusteredVerts).size() < 4) {
+//          continue;
+//        }
+//        LOG.info("---------------------------");
+//        LOG.info(vertex.toString() + "\n");
+//        Set<Vertex<Long, ObjectMap>> vertices = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
+//
+//        for (Vertex<Long, ObjectMap> clVertex : vertices) {
+//          LOG.info(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
+//        }
+//      }
+//      else {
+//        LOG.info("---------------------------");
+//        LOG.info(vertex.toString() + "\n");
+//
+//        Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
+//        LOG.info(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
+//      }
     }
   }
 
   /**
+   * [deprecated]?
    * Count resources per component for a given flink connected component result set.
    * @param ccResult Tuple2 with VertexId, ComponentId
    * @throws Exception
@@ -155,17 +155,23 @@ public class Stats {
         .print();
   }
 
-  public static void printAccumulatorValues(ExecutionEnvironment env, DataSet<Tuple2<Long, Long>> edgeIds)
-      throws Exception {
+  public static void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, ObjectMap> graph,
+                                            KeySelector<Vertex<Long, ObjectMap>, Long> simSortKeySelector) throws Exception {
     //vertices needs to be computed already
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
-    LOG.info("[0] Statistics: Get Data");
+    LOG.info("[0] ### Statistics: Get Data");
     LOG.info("[0] Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
     LOG.info("[0] Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
     LOG.info("[0] Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
 
-    edgeIds.collect(); // how to get rid of this collect job TODO
-    LOG.info("[1] Statistics: Preprocessing");
+    // todo fix
+    LOG.info("[3] ### Clustering: Compute all edges within clusters: "
+        + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
+    LOG.info("[3] ### Exclude vertices from their component and create new component: "
+        + jobExecResult.getAccumulatorResult(Utils.EXCLUDE_FROM_COMPONENT_ACCUMULATOR));
+
+    graph.getEdgeIds().collect(); // how to get rid of this collect job TODO
+    LOG.info("[1] ### Statistics: Preprocessing");
     Map<String, Long> typeStats = Maps.newHashMap();
     List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
     for (String s : typesList) {
@@ -176,13 +182,13 @@ public class Stats {
       }
     }
 
-    LOG.info("[1] Types parsed to internal type: ");
+    LOG.info("[1] ### Types parsed to internal type: ");
     for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
       LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
     }
 
     if (Utils.IS_LINK_FILTER_ACTIVE) {
-      LOG.info("[1] Links filtered (strategy: delete 1:n links): "
+      LOG.info("[1] ### Links filtered (strategy: delete 1:n links): "
           + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
       List<Edge<Long, NullValue>> filteredLinksList
           = jobExecResult.getAccumulatorResult(Utils.FILTERED_LINKS_ACCUMULATOR);
@@ -191,8 +197,8 @@ public class Stats {
       }
     }
 
-    LOG.info("[3] Clustering: Compute all edges within clusters: "
-        + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
+    // fix this todo
+    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
   }
 
   /**
@@ -242,6 +248,18 @@ public class Stats {
           }
         })
         .print();
+  }
+
+  public static void printComponentSizeAndCount(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+    DataSet<Tuple2<Long, Long>> result = graph.getVertices()
+        .map(new MapVertexToPropertyLongFunction(Utils.HASH_CC))
+        .groupBy(0).sum(1)
+        .map(new FrequencyMapFunction())
+        .groupBy(0).sum(1);
+    LOG.info("[3] ### Component sizes and count of components with the size after clustering: ");
+    for (Tuple2<Long, Long> tuple : result.collect()) {
+      LOG.info("[3] size, count: " + tuple);
+    }
   }
 
 }
