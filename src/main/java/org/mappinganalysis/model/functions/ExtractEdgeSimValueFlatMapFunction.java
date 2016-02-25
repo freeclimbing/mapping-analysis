@@ -9,6 +9,7 @@ import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+// TODO deprecated?
 public class ExtractEdgeSimValueFlatMapFunction implements FlatMapFunction<Edge<Long, ObjectMap>, Tuple3<Long, Double, Integer>> {
   @Override
   public void flatMap(Edge<Long, ObjectMap> edge, Collector<Tuple3<Long, Double, Integer>> collector) throws Exception {

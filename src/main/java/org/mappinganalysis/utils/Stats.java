@@ -7,6 +7,7 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -36,16 +37,30 @@ public class Stats {
         .getEdges().collect();
   }
 
-  public static void writeVerticesToLog(Graph<Long, ObjectMap, ObjectMap> graph,
+  public static void writeVerticesToLog(DataSet<Vertex<Long, ObjectMap>> vertices,
                                          List<Long> clusterList) throws Exception {
-    graph.filterOnVertices(new ResultVerticesSelectionFilter(clusterList))
-        .getVertices().collect();
+    vertices.filter(new ResultVerticesSelectionFilter(clusterList)).collect();
   }
 
-  public static void writeCcToLog(Graph<Long, ObjectMap, ObjectMap> graph,
+  public static void writeCcToLog(DataSet<Vertex<Long, ObjectMap>> vertices,
                                    List<Long> clusterList, String ccType) throws Exception {
-    graph.filterOnVertices(new ResultComponentSelectionFilter(clusterList, ccType))
-        .getVertices().collect();
+    DataSet<Vertex<Long, ObjectMap>> filteredVertices = vertices
+        .filter(new ResultComponentSelectionFilter(clusterList, ccType))
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            vertex.getValue().remove(Utils.TYPE);
+            vertex.getValue().remove(Utils.TMP_TYPE);
+            vertex.getValue().remove(Utils.DB_URL_FIELD);
+            vertex.getValue().remove(Utils.VERTEX_OPTIONS);
+            return null;
+          }
+        });
+
+    for (Vertex<Long, ObjectMap> vertex : filteredVertices.collect()) {
+      LOG.info(vertex);
+    }
+
   }
 
   public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
@@ -159,12 +174,15 @@ public class Stats {
                                             KeySelector<Vertex<Long, ObjectMap>, Long> simSortKeySelector) throws Exception {
     //vertices needs to be computed already
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
+    if (jobExecResult == null) {
+      graph.getVertexIds().collect();
+      jobExecResult = env.getLastJobExecutionResult();
+    }
     LOG.info("[0] ### Statistics: Get Data");
     LOG.info("[0] Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
     LOG.info("[0] Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
     LOG.info("[0] Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
 
-    // todo fix
     LOG.info("[3] ### Clustering: Compute all edges within clusters: "
         + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
     LOG.info("[3] ### Exclude vertices from their component and create new component: "
@@ -250,8 +268,8 @@ public class Stats {
         .print();
   }
 
-  public static void printComponentSizeAndCount(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-    DataSet<Tuple2<Long, Long>> result = graph.getVertices()
+  public static void printComponentSizeAndCount(DataSet<Vertex<Long, ObjectMap>> vertices) throws Exception {
+    DataSet<Tuple2<Long, Long>> result = vertices
         .map(new MapVertexToPropertyLongFunction(Utils.HASH_CC))
         .groupBy(0).sum(1)
         .map(new FrequencyMapFunction())

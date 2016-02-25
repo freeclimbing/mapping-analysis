@@ -1,5 +1,6 @@
 package org.mappinganalysis.model;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.util.StringUtils;
@@ -39,6 +40,53 @@ public class ObjectMap implements Map<String, Object> {
 
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
+  }
+
+  /**
+   * Check if a specific type is empty.
+   * @param type specific type
+   * @return true if type has value not available or not found
+   */
+  public boolean hasNoType(String type) {
+    return map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE_AVAILABLE)
+        || map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE_FOUND);
+  }
+
+  public boolean hasGeoProperties() {
+    if (map.containsKey(Utils.LAT) && map.containsKey(Utils.LON)) {
+      return Boolean.TRUE;
+    } else {
+      return Boolean.FALSE;
+    }
+  }
+
+  public Double getLatitude() {
+    return getGeoValue(Utils.LAT);
+  }
+
+  public Double getLongitude() {
+    return getGeoValue(Utils.LON);
+  }
+
+  private Double getGeoValue(String latOrLon) {
+    // TODO how to handle multiple values in lat/lon correctly?
+    Object geoValue = map.get(latOrLon);
+    if (geoValue instanceof Set) {
+      return (Double) Iterables.get((Set) geoValue, 0);
+    } else {
+      return (Double) geoValue;
+//      return Doubles.tryParse(latOrLon.toString());
+    }
+  }
+
+  public Set<Long> getVerticesList() {
+    Object clusteredVertices = map.get(Utils.CL_VERTICES);
+
+    if (clusteredVertices instanceof Set) {
+      return (Set<Long>) clusteredVertices;
+    } else {
+      return Sets.newHashSet((long) clusteredVertices);
+    }
   }
 
   /**

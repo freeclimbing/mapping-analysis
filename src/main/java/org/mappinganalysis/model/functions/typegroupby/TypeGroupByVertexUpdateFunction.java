@@ -18,7 +18,7 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex, MessageIterator<ObjectMap> inMessages)
       throws Exception {
-    if (!vertex.getValue().containsKey(Utils.TMP_TYPE) && hasNoType(vertex.getValue())) {
+    if (!vertex.getValue().containsKey(Utils.TMP_TYPE) && vertex.getValue().hasNoType(Utils.COMP_TYPE)) {
       HashMap<Long, Double> options = initOptions(vertex);
 
       ObjectMap newBestValue = findNewBestValue(vertex, inMessages, options);
@@ -60,13 +60,13 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
 
         // if newSim equals bestSim, we always want to choose the same result (lowest cc id), not the first msg cc id
         // if no type is given, the lowest cc id of msg and vertex is chosen
-        if (Doubles.compare(newSim, bestSim) > 0 || (hasNoType(newBestValue)
+        if (Doubles.compare(newSim, bestSim) > 0 || (newBestValue.hasNoType(Utils.COMP_TYPE)
             && Doubles.compare(bestSim, 0D) != 0 && Doubles.compare(newSim, bestSim) == 0)) {
           bestSim = newSim;
-          if (msg.containsKey(Utils.TMP_TYPE) || !hasNoType(msg)) {
+          if (msg.containsKey(Utils.TMP_TYPE) || !msg.hasNoType(Utils.COMP_TYPE)) {
 //              LOG.info("tmp type or has type: " + msg);
             newBestValue = msg;
-          } else if (hasNoType(msg)) {
+          } else if (msg.hasNoType(Utils.COMP_TYPE)) {
 //            LOG.info("has no type: " + msg);
             newBestValue = neighborCcId < vertexCcId ? msg : vertex.getValue();
           }
@@ -86,7 +86,7 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
     if (newBestValue.containsKey(Utils.TMP_TYPE)) {
       vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.TMP_TYPE));
     }
-    if (newBestValue.containsKey(Utils.COMP_TYPE) && !hasNoType(newBestValue)) {
+    if (newBestValue.containsKey(Utils.COMP_TYPE) && !newBestValue.hasNoType(Utils.COMP_TYPE)) {
       vertex.getValue().put(Utils.TMP_TYPE, newBestValue.get(Utils.COMP_TYPE));
     }
   }
@@ -111,10 +111,5 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
     // ... but both values cannot be next option, because already in same cc
     options.remove(vertex.getId());
     options.remove(msg.get(Utils.VERTEX_ID));
-  }
-
-  private boolean hasNoType(ObjectMap map) {
-    return map.containsKey(Utils.COMP_TYPE) && map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_AVAILABLE)
-        || map.containsKey(Utils.COMP_TYPE) && map.get(Utils.COMP_TYPE).equals(Utils.NO_TYPE_FOUND);
   }
 }

@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -8,7 +9,6 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
-import org.mappinganalysis.model.functions.simsort.AggSimValueEdgeMapFunction;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.utils.Utils;
 
@@ -104,5 +104,75 @@ public class SimCompUtility {
             triplet.getSrcVertex().getId(),
             triplet.getTrgVertex().getId(),
             new ObjectMap()));
+  }
+
+  /**
+   * Compose similarity values based on existence: if property is missing, its not considered at all.
+   * @param value property map
+   * @return mean similarity value
+   */
+  public static double getMeanSimilarity(ObjectMap value) {
+    double aggregatedSim = 0;
+    int propCount = 0;
+    if (value.containsKey(Utils.SIM_TRIGRAM)) {
+      ++propCount;
+      aggregatedSim = (float) value.get(Utils.SIM_TRIGRAM);
+    }
+    if (value.containsKey(Utils.SIM_TYPE)) {
+      ++propCount;
+      aggregatedSim += (float) value.get(Utils.SIM_TYPE);
+    }
+    if (value.containsKey(Utils.SIM_DISTANCE)) {
+      double distanceSim = getDistanceValue(value);
+      if (Doubles.compare(distanceSim, -1) > 0) {
+        aggregatedSim += distanceSim;
+        ++propCount;
+      }
+    }
+
+    return aggregatedSim / propCount;
+  }
+
+  /**
+   * Compose similarity values based on weights for each of the properties, missing values are counted as zero.
+   * @param values property map
+   * @return aggregated similarity value
+   */
+  public static double getWeightedAggSim(ObjectMap values) {
+    double trigramWeight = 0.45;
+    double typeWeight = 0.25;
+    double geoWeight = 0.3;
+    double aggregatedSim;
+    if (values.containsKey(Utils.SIM_TRIGRAM)) {
+      aggregatedSim = trigramWeight * (float) values.get(Utils.SIM_TRIGRAM);
+    } else {
+      aggregatedSim = 0;
+    }
+    if (values.containsKey(Utils.SIM_TYPE)) {
+      aggregatedSim += typeWeight * (float) values.get(Utils.SIM_TYPE);
+    }
+    if (values.containsKey(Utils.SIM_DISTANCE)) {
+      double distanceSim = getDistanceValue(values);
+      if (Doubles.compare(distanceSim, -1) > 0) {
+        aggregatedSim += geoWeight * distanceSim;
+      }
+    }
+    return aggregatedSim;
+  }
+
+  /**
+   * get distance property from object map TODO check if needed
+   * @param value object map
+   * @return distance
+   */
+  private static double getDistanceValue(ObjectMap value) {
+    Object object = value.get(Utils.SIM_DISTANCE);
+    if (object instanceof Double) {
+      return (Double) object;
+    } else {
+      LOG.info("Error (should not occur)" + object.getClass().toString());
+      return -1;
+    }
+    //      aggregatedSim += geoWeight * (Double) value.get(Utils.SIM_DISTANCE); // TODO why is this not working?
   }
 }

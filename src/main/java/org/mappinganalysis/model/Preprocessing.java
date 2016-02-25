@@ -12,6 +12,12 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.FlinkConnectedComponents;
+import org.mappinganalysis.io.JDBCDataLoader;
+import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
+import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
+import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
+import org.mappinganalysis.model.functions.CcVerticesCreator;
 import org.mappinganalysis.model.functions.preprocessing.*;
 
 /**
@@ -19,6 +25,57 @@ import org.mappinganalysis.model.functions.preprocessing.*;
  */
 public class Preprocessing {
   private static final Logger LOG = Logger.getLogger(Preprocessing.class);
+
+  /**
+   * Create the input graph for further analysis,
+   * restrict to edges where source and target are in vertices set.
+   * @return graph with vertices and edges.
+   * @throws Exception
+   * @param fullDbString complete server+port+db string
+   */
+  public static Graph<Long, ObjectMap, NullValue> getInputGraph(String fullDbString, ExecutionEnvironment env)
+      throws Exception {
+    JDBCDataLoader loader = new JDBCDataLoader(env);
+    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVertices(fullDbString);
+
+    // restrict edges to these where source and target are vertices
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdges(fullDbString)
+        .leftOuterJoin(vertices)
+        .where(0).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction())
+        .leftOuterJoin(vertices)
+        .where(1).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction());
+
+    // delete vertices without any edges due to restriction
+    DataSet<Vertex<Long, ObjectMap>> left = vertices
+        .leftOuterJoin(edges)
+        .where(0).equalTo(0)
+        .with(new VertexRestrictFlatJoinFunction()).distinct(0);
+    DataSet<Vertex<Long, ObjectMap>> finalVertices = vertices
+        .leftOuterJoin(edges)
+        .where(0).equalTo(1)
+        .with(new VertexRestrictFlatJoinFunction()).distinct(0)
+        .union(left);
+
+    return Graph.fromDataSet(finalVertices, edges, env);
+  }
+
+  /**
+   * Add initial component ids to vertices based on flink connected components.
+   * @param graph input graph
+   * @return graph containing vertices with additional property
+   * @throws Exception
+   */
+  public static Graph<Long, ObjectMap, NullValue> addCcIdsToGraph(
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+    final DataSet<Long> ccInputVertices = graph.getVertices()
+        .map(new CcVerticesCreator());
+    final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
+        .compute(ccInputVertices, graph.getEdgeIds(), 1000);
+
+    return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
+  }
 
   /**
    * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.

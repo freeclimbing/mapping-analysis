@@ -1,6 +1,8 @@
 package org.mappinganalysis.model.functions.representative;
 
-import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.functions.RichGroupReduceFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
@@ -12,8 +14,16 @@ import java.util.Map;
  * Merge properties of grouped entities based on "best data source" availability,
  * i.e., GeoNames > DBpedia > others
  */
-public class BestDataSourceAllLabelsGroupReduceFunction
-    implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+public class BestDataSourceAllLabelsGroupReduceFunction extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
+    Vertex<Long, ObjectMap>> {
+  private LongCounter representativeCount = new LongCounter();
+
+  @Override
+  public void open(final Configuration parameters) throws Exception {
+    super.open(parameters);
+    getRuntimeContext().addAccumulator(Utils.REPRESENTATIVE_ACCUMULATOR, representativeCount);
+  }
+
   @Override
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
@@ -37,6 +47,8 @@ public class BestDataSourceAllLabelsGroupReduceFunction
       createRepresentativeProperties(resultProps, vertex);
     }
     result.setValue(resultProps);
+    representativeCount.add(1L);
+
     collector.collect(new Vertex<>(result.getId(), result.getValue()));
   }
 

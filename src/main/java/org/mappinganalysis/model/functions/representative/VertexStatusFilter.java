@@ -28,7 +28,7 @@ public class VertexStatusFilter extends RichFilterFunction<Vertex<Long, ObjectMa
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
     boolean isVertexStatusActive = !vertex.getValue().containsKey(Utils.VERTEX_STATUS)
         || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
-    if (isVertexStatusActive) {
+    if (isVertexStatusActive && !wantActiveVertices) {
       filterMatches.add(1L);
     }
 

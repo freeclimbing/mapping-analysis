@@ -3,7 +3,6 @@ package org.mappinganalysis.model.functions.representative;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.CrossFunction;
 import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.GeoDistance;
@@ -55,10 +54,10 @@ public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Lo
       Map<String, Object> source = left.getValue();
       Map<String, Object> target = right.getValue();
 
-      Double distance = GeoDistance.distance(Utils.getDouble(source.get(Utils.LAT)),
-          Utils.getDouble(source.get(Utils.LON)),
-          Utils.getDouble(target.get(Utils.LAT)),
-          Utils.getDouble(target.get(Utils.LON)));
+      Double distance = GeoDistance.distance(Utils.getGeoDouble(source.get(Utils.LAT)),
+          Utils.getGeoDouble(source.get(Utils.LON)),
+          Utils.getGeoDouble(target.get(Utils.LAT)),
+          Utils.getGeoDouble(target.get(Utils.LON)));
       return distance > maxDist * 1000 ? 0 : (maxDist - distance) / maxDist;
     }
     return 0.0;

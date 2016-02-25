@@ -10,13 +10,16 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
+import org.mappinganalysis.model.functions.representative.VertexStatusFilter;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
 
 public class SimSort {
+  private static final Logger LOG = Logger.getLogger(SimSort.class);
 
   /**
    * create all missing edges, add default vertex sim values
@@ -67,4 +70,15 @@ public class SimSort {
         new SimSortMessagingFunction(), maxIterations, aggParameters);
   }
 
+  public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
+                                                                        ExecutionEnvironment env) throws Exception {
+    DataSet<Vertex<Long, ObjectMap>> excludedVertices = graph.getVertices().filter(new VertexStatusFilter(false));
+    LOG.info("Vertices being excluded from their component: " + excludedVertices.count());
+
+    Graph<Long, ObjectMap, ObjectMap> componentGraph = graph.filterOnVertices(new VertexStatusFilter(true));
+    //    LOG.info("true " + componentGraph.getVertexIds().count());
+
+    return Graph.fromDataSet(componentGraph.getVertices().union(excludedVertices),
+        componentGraph.getEdges(), env);
+  }
 }

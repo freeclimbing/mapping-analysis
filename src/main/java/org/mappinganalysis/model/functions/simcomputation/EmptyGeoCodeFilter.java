@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
@@ -9,6 +10,7 @@ import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
@@ -16,29 +18,32 @@ import java.util.Map;
 public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, ObjectMap, NullValue>> {
   @Override
   public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-
-    Map<String, Object> source = triplet.getSrcVertex().getValue();
-    Map<String, Object> target = triplet.getTrgVertex().getValue();
+    ObjectMap source = triplet.getSrcVertex().getValue();
+    ObjectMap target = triplet.getTrgVertex().getValue();
 
     return isGeoPoint(source) && isGeoPoint(target);
   }
 
-  private boolean isGeoPoint(Map<String, Object> props) {
+  private boolean isGeoPoint(ObjectMap props) {
     if (props.containsKey(Utils.LAT) && props.containsKey(Utils.LON)) {
-      Object lat = props.get(Utils.LAT);
-      Object lon = props.get(Utils.LON);
       // TODO how to handle multiple values in lat/lon correctly?
-      return ((getDouble(lat) == null) || (getDouble(lon) == null)) ? Boolean.FALSE : Boolean.TRUE;
+      return ((getDouble(props.getLatitude()) == null)
+          || (getDouble(props.getLongitude()) == null)) ? Boolean.FALSE : Boolean.TRUE;
     } else {
       return Boolean.FALSE;
     }
   }
 
-  private Double getDouble(Object latlon) {
-    if (latlon instanceof List) {
-      return Doubles.tryParse(((List) latlon).get(0).toString());
+  /**
+   * deprecated? when bug lat/Lon fixed -its never a set because of input process
+   * @param latOrLon
+   * @return
+   */
+  private Double getDouble(Object latOrLon) {
+    if (latOrLon instanceof Set) {
+      return Doubles.tryParse(Iterables.get((Set) latOrLon, 0).toString());
     } else {
-      return Doubles.tryParse(latlon.toString());
+      return Doubles.tryParse(latOrLon.toString());
     }
   }
 }

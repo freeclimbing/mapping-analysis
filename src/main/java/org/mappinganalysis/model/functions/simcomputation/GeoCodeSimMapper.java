@@ -24,16 +24,13 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long,
       ObjectMap, NullValue> triplet) throws Exception {
-    Map<String, Object> source = triplet.getSrcVertex().getValue();
-    Map<String, Object> target = triplet.getTrgVertex().getValue();
+    ObjectMap source = triplet.getSrcVertex().getValue();
+    ObjectMap target = triplet.getTrgVertex().getValue();
 
-    Double distance = GeoDistance.distance(Utils.getDouble(source.get(Utils.LAT)),
-        Utils.getDouble(source.get(Utils.LON)),
-        Utils.getDouble(target.get(Utils.LAT)),
-        Utils.getDouble(target.get(Utils.LON)));
+    Double distance = GeoDistance.distance(source.getLatitude(),
+        source.getLongitude(), target.getLatitude(), target.getLongitude());
 
     ObjectMap property = new ObjectMap();
-
     if (distance >= maxDistInMeter) {
       property.put(Utils.SIM_DISTANCE, 0.0);
     } else {

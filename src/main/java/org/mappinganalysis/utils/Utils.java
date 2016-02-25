@@ -1,5 +1,6 @@
 package org.mappinganalysis.utils;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -70,14 +71,18 @@ public class Utils {
   /**
    * Accumulators
    */
-  public static final String LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
-  public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
+
+  public static final String LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
+  public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
+
   public static final String EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
+  public static final String REFINEMENT_MERGE_ACCUMULATOR = "merged-cluster-counter";
+  public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
 
   public static final String AGG_PREFIX = "aggregated-";
@@ -268,16 +273,16 @@ public class Utils {
 
   /**
    * Geo coords helper function
-   * @param latlon one of the two geocoordinates
+   * @param latOrLon one of the two geocoordinates
    * @return single double value
    */
-  public static Double getDouble(Object latlon) {
+  public static Double getGeoDouble(Object latOrLon) {
     // TODO how to handle multiple values in lat/lon correctly?
-
-    if (latlon instanceof Set) {
-      return Doubles.tryParse(((Set) latlon).iterator().next().toString());
+    if (latOrLon instanceof Set) {
+      return (Double) Iterables.get((Set) latOrLon, 0);
     } else {
-      return Doubles.tryParse(latlon.toString());
+      return (Double) latOrLon;
+//      return Doubles.tryParse(latOrLon.toString());
     }
   }
 
@@ -299,27 +304,14 @@ public class Utils {
   }
 
   public static String toLog(Vertex<Long, ObjectMap> vertex) {
-    String type = "";
-    if (vertex.getValue().containsKey(TMP_TYPE)) {
-      type = "TMP-".concat(vertex.getValue().get(TMP_TYPE).toString());
-    } else {
-      if (type.equals("")) {
-        type = vertex.getValue().get(Utils.TYPE_INTERN).toString();
-      } else {
-        LOG.info("TMP Type + Type Intern found!");
-      }
-    }
+    ObjectMap values = vertex.getValue();
+    values.remove(Utils.TYPE);
+    values.remove(Utils.DB_URL_FIELD);
+    values.remove(Utils.COMP_TYPE);
+    values.remove(Utils.TMP_TYPE);
+    values.remove(Utils.VERTEX_OPTIONS);
 
-    String cc = vertex.getValue().containsKey(Utils.HASH_CC)
-        ? vertex.getValue().get(Utils.HASH_CC).toString() : vertex.getValue().get(Utils.CC_ID).toString();
-
-    return vertex.getId().toString()
-        .concat(": hash/cc=")
-        .concat(cc)
-        .concat(" type=")
-        .concat(type)
-        .concat(" label=")
-        .concat(vertex.getValue().get(Utils.LABEL).toString());
+    return vertex.toString();
   }
 
   public static String toLog(Edge<Long, ObjectMap> edge) {
