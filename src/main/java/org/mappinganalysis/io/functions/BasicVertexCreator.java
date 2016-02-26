@@ -9,7 +9,6 @@ import org.mappinganalysis.model.ObjectMap;
  * Create FlinkVertex object from raw database result set.
  */
 public class BasicVertexCreator implements MapFunction<Tuple3<Integer, String, String>, Vertex<Long, ObjectMap>> {
-
   private final Vertex<Long, ObjectMap> reuseVertex;
 
   public BasicVertexCreator() {

@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
+import org.simmetrics.simplifiers.Simplifier;
 import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
@@ -248,6 +249,7 @@ public class Utils {
    * @return simplified value
    */
   public static String simplify(String value) {
+    value = Simplifiers.removeAll("[\\(|,].*").simplify(value);
     value = Simplifiers.removeNonWord().simplify(value);
     return Simplifiers.toLowerCase().simplify(value);
   }
@@ -265,7 +267,7 @@ public class Utils {
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<String>())
         .simplify(Simplifiers.removeAll("[\\(|,].*"))
-        .simplify(Simplifiers.replaceNonWord())
+        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
         .simplify(Simplifiers.toLowerCase())
         .tokenize(Tokenizers.qGram(3))
         .build();

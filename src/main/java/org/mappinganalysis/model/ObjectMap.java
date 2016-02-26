@@ -79,6 +79,33 @@ public class ObjectMap implements Map<String, Object> {
     }
   }
 
+  /**
+   * Set geo lat/lon based on source of checked vertex, geonames and dbpedia are ranked higher.
+   * @param checkProps property map of vertex
+   */
+  public void setGeoProperties(ObjectMap checkProps) {
+    boolean latLonGnFound = false;
+    boolean latLonDbpFound = false;
+    if (checkProps.containsKey(Utils.ONTOLOGY)) {
+      if (checkProps.get(Utils.ONTOLOGY).equals(Utils.GN_NAMESPACE) && checkProps.hasGeoProperties()) {
+        setLatLon(checkProps);
+        latLonGnFound = true;
+      }
+      if (checkProps.get(Utils.ONTOLOGY).equals(Utils.DBP_NAMESPACE) && checkProps.hasGeoProperties() && !latLonGnFound) {
+        setLatLon(checkProps);
+        latLonDbpFound = true;
+      }
+    }
+    if (checkProps.hasGeoProperties() && !latLonDbpFound && !latLonGnFound) {
+      setLatLon(checkProps);
+    }
+  }
+
+  private void setLatLon(ObjectMap properties) {
+    map.put(Utils.LAT, properties.get(Utils.LAT));
+    map.put(Utils.LON, properties.get(Utils.LON));
+  }
+
   public Set<Long> getVerticesList() {
     Object clusteredVertices = map.get(Utils.CL_VERTICES);
 
@@ -87,18 +114,6 @@ public class ObjectMap implements Map<String, Object> {
     } else {
       return Sets.newHashSet((long) clusteredVertices);
     }
-  }
-
-  /**
-   * todo check if needed like this
-   * @param key
-   * @param value
-   */
-  public void addPropertyToRepresentative(String key, Object value) {
-    if (key.equals(Utils.LABEL)) {
-      value = Utils.simplify((String) value);
-    }
-    addProperty(key, value);
   }
 
   /**
