@@ -83,6 +83,7 @@ public class Utils {
 
   public static final String EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String REFINEMENT_MERGE_ACCUMULATOR = "merged-cluster-counter";
+  public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
 
@@ -148,6 +149,7 @@ public class Utils {
   public static final String CC_ID = "ccId";
   public static final String VERTEX_ID = "vertexId";
   public static final String HASH_CC = "hashCc";
+  public static final String OLD_HASH_CC = "oldHashCc";
 
   /**
    * property name in cluster representative where clustered vertivces are put into.
@@ -157,6 +159,8 @@ public class Utils {
    * source name of resource. internal name for db field ontID_fk
    */
   public static final String ONTOLOGY = "ontology";
+  public static final String ONTOLOGIES = "ontologies";
+
   /**
    * DBpedia namespace
    */

@@ -40,7 +40,7 @@ public class SimSort {
         .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
 
     // TODO eliminate partly duplicate sim computation
-    DataSet<Edge<Long, ObjectMap>> simEdges = SimCompUtility.computeEdgeSimWithVertices(distinctEdgesGraph);
+    DataSet<Edge<Long, ObjectMap>> simEdges = SimCompUtility.computeEdgeSimFromGraph(distinctEdgesGraph);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
         .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
@@ -72,13 +72,16 @@ public class SimSort {
 
   public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                         ExecutionEnvironment env) throws Exception {
-    DataSet<Vertex<Long, ObjectMap>> excludedVertices = graph.getVertices().filter(new VertexStatusFilter(false));
-    LOG.info("Vertices being excluded from their component: " + excludedVertices.count());
+//    DataSet<Vertex<Long, ObjectMap>> excludedVertices = graph.getVertices()
+//        .filter(new VertexStatusFilter(false)); // EXCLUDE_FROM_COMPONENT_ACCUMULATOR count
 
-    Graph<Long, ObjectMap, ObjectMap> componentGraph = graph.filterOnVertices(new VertexStatusFilter(true));
-    //    LOG.info("true " + componentGraph.getVertexIds().count());
+    Graph<Long, ObjectMap, ObjectMap> componentGraph = graph
+        .filterOnVertices(new VertexStatusFilter(true));
 
-    return Graph.fromDataSet(componentGraph.getVertices().union(excludedVertices),
+    // TODO check result, only graph.getVertices needed
+//    return Graph.fromDataSet(componentGraph.getVertices().union(excludedVertices),
+//        componentGraph.getEdges(), env);
+    return Graph.fromDataSet(graph.getVertices(),
         componentGraph.getEdges(), env);
   }
 }

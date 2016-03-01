@@ -42,7 +42,7 @@ public class SimCompUtility {
    * @param graph input graph
    * @return graph with edge similarities
    */
-  public static DataSet<Edge<Long, ObjectMap>> computeEdgeSimWithVertices(Graph<Long, ObjectMap, NullValue> graph) {
+  public static DataSet<Edge<Long, ObjectMap>> computeEdgeSimFromGraph(Graph<Long, ObjectMap, NullValue> graph) {
     LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: " + Utils.IGNORE_MISSING_PROPERTIES);
     return computeSimilarities(graph.getTriplets(), Utils.PRE_CLUSTER_STRATEGY)
         .map(new TripletToEdgeMapFunction())

@@ -54,7 +54,9 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 //        }
         if (iterationAggSim < threshold) {
           vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.FALSE);
+          vertex.getValue().put(Utils.OLD_HASH_CC, vertex.getValue().get(Utils.HASH_CC));
           vertex.getValue().put(Utils.HASH_CC, Utils.getHash(vertex.getId().toString()));
+
         } else {
           vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.TRUE);
         }

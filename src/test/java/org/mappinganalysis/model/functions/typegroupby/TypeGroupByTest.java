@@ -43,13 +43,6 @@ public class TypeGroupByTest {
       "(v3)-[e3:sameAs {aggSimValue = .7D}]->(v4)" +
       "(v4)-[e4:sameAs {aggSimValue = .4D}]->(v5)";
 
-//  @Test
-//  public void geoDatasetTest() throws Exception {
-//    Graph<Long, ObjectMap, ObjectMap> typeGroupByGraph
-//        = new TypeGroupBy().execute(graph, 5);
-//
-//  }
-
   /**
    * Error occured only sometimes, therefore 5 graphs are computed and asserted.
    * @throws Exception

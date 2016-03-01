@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,18 +21,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Merge properties of grouped entities based on "best data source" availability,
- * i.e., GeoNames > DBpedia > others
+ * i.e., GeoNames > DBpedia > others //Todo
  */
 public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MajorityPropertiesGroupReduceFunction.class);
-
   private LongCounter representativeCount = new LongCounter();
-  private final Vertex<Long, ObjectMap> reuseVertex;
-
-  public MajorityPropertiesGroupReduceFunction() {
-    reuseVertex = new Vertex<>();
-  }
 
   @Override
   public void open(final Configuration parameters) throws Exception {
@@ -42,14 +37,17 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   @Override
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
+    Vertex<Long, ObjectMap> resultVertex = new Vertex<>();
+//    LOG.info("result vert without values: " + resultVertex.toString());
     ObjectMap resultProps = new ObjectMap();
     Set<Long> clusterVertices = Sets.newHashSet();
+    Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
     HashMap<String, Integer> typeMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> currentVertex : vertices) {
-      if (reuseVertex.getId() == null || currentVertex.getId() < reuseVertex.getId()) {
-        reuseVertex.setId(currentVertex.getId());
+      if (resultVertex.getId() == null || currentVertex.getId() < resultVertex.getId()) {
+        resultVertex.setId(currentVertex.getId());
       }
       clusterVertices.add(currentVertex.getId());
 
@@ -63,9 +61,6 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
           labelMap.put(label, 1);
         }
       }
-//      else {
-//        LOG.info("NO LABEL #### " + currentVertex);
-//      }
 
       // TYPE
       if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN) && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
@@ -77,12 +72,21 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
           typeMap.put(type, 1);
         }
       }
-//      else if (currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)){
-//        LOG.info("no type: " + currentVertex);
-//      }
 
       // GEO
       resultProps.setGeoProperties(currentVertex.getValue());
+
+      if (currentVertex.getValue().containsKey(Utils.ONTOLOGY)) {
+        clusterOntologies.add(currentVertex.getValue().get(Utils.ONTOLOGY).toString());
+      }
+      if (currentVertex.getValue().containsKey(Utils.ONTOLOGIES)) {
+        clusterOntologies.addAll((Set<String>) currentVertex.getValue().get(Utils.ONTOLOGIES));
+      }
+
+        // OLD HASH
+      if (currentVertex.getValue().containsKey(Utils.OLD_HASH_CC)) {
+        resultProps.put(Utils.OLD_HASH_CC, currentVertex.getValue().get(Utils.OLD_HASH_CC));
+      }
     }
 
     if (!labelMap.isEmpty()) {
@@ -91,18 +95,18 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     if (!typeMap.isEmpty()) {
       resultProps.put(Utils.TYPE_INTERN, getFinalValue(typeMap));
     }
+    resultProps.put(Utils.ONTOLOGIES, clusterOntologies);
     resultProps.put(Utils.CL_VERTICES, clusterVertices);
 
-    reuseVertex.setValue(resultProps);
+    resultVertex.setValue(resultProps);
     representativeCount.add(1L);
 
-    collector.collect(reuseVertex);
+    collector.collect(resultVertex);
   }
 
   private String getFinalValue(HashMap<String, Integer> map) {
     Map.Entry<String, Integer> finalEntry = null;
     for (Map.Entry<String, Integer> entry : map.entrySet()) {
-      LOG.info(entry.toString());
       if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
         finalEntry = entry;
       }
