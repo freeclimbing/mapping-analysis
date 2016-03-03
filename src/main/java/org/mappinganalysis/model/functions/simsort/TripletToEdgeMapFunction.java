@@ -6,8 +6,14 @@ import org.apache.flink.graph.Triplet;
 import org.mappinganalysis.model.ObjectMap;
 
 public class TripletToEdgeMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Edge<Long, ObjectMap>> {
+  Edge<Long, ObjectMap> reuseEdge;
+  public TripletToEdgeMapFunction() {
+    reuseEdge = new Edge<>();
+  }
+
   @Override
   public Edge<Long, ObjectMap> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
-    return new Edge<>(triplet.f0, triplet.f1, triplet.f4);
+    reuseEdge.setFields(triplet.f0, triplet.f1, triplet.f4);
+    return reuseEdge;
   }
 }

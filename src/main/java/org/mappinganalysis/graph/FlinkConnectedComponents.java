@@ -74,10 +74,16 @@ public class FlinkConnectedComponents {
   }
 
   private static final class DuplicateValue<T> implements MapFunction<T, Tuple2<T, T>> {
+    Tuple2<T, T> reuseTuple;
+
+    public DuplicateValue() {
+      this.reuseTuple = new Tuple2<>();
+    }
 
     @Override
     public Tuple2<T, T> map(T vertex) {
-      return new Tuple2<>(vertex, vertex);
+      reuseTuple.setFields(vertex, vertex);
+      return reuseTuple;
     }
   }
 
@@ -96,16 +102,21 @@ public class FlinkConnectedComponents {
 
   private static final class NeighborWithComponentIDJoin
       implements JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>> {
+    Tuple2<Long, Long> reuseTuple;
+
+    public NeighborWithComponentIDJoin() {
+      reuseTuple = new Tuple2<>();
+    }
 
     @Override
     public Tuple2<Long, Long> join(Tuple2<Long, Long> vertexWithComponent, Tuple2<Long, Long> edge) {
-      return new Tuple2<>(edge.f1, vertexWithComponent.f1);
+      reuseTuple.setFields(edge.f1, vertexWithComponent.f1);
+      return reuseTuple;
     }
   }
 
   private static final class ComponentIdFilter
-      implements FlatMapFunction<Tuple2<Tuple2<Long, Long>, Tuple2<Long, Long>>,
-      Tuple2<Long, Long>> {
+      implements FlatMapFunction<Tuple2<Tuple2<Long, Long>, Tuple2<Long, Long>>, Tuple2<Long, Long>> {
 
     @Override
     public void flatMap(Tuple2<Tuple2<Long, Long>, Tuple2<Long, Long>> value,

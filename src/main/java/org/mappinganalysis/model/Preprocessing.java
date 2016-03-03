@@ -69,10 +69,8 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> addCcIdsToGraph(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
-    final DataSet<Long> ccInputVertices = graph.getVertices()
-        .map(new CcVerticesCreator());
     final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(ccInputVertices, graph.getEdgeIds(), 1000);
+        .compute(graph.getVertices().map(new CcVerticesCreator()), graph.getEdgeIds(), 1000);
 
     return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
   }

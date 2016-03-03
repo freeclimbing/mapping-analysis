@@ -17,7 +17,12 @@ import java.util.Set;
  */
 public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long, ObjectMap, ObjectMap>,
     Vertex<Long, ObjectMap>> {
+  Vertex<Long, ObjectMap> reuseVertex;
   private LongCounter mergedClusterCount = new LongCounter();
+
+  public SimilarClusterMergeMapFunction() {
+    reuseVertex = new Vertex<>();
+  }
 
   @Override
   public void open(final Configuration parameters) throws Exception {
@@ -32,17 +37,21 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
     Set<Long> trgVertices = trgVal.getVerticesList();
     Set<Long> srcVertices = srcVal.getVerticesList();
 
-    Vertex<Long, ObjectMap> resultVertex;
     if (srcVertices.size() >= trgVertices.size()) {
-      resultVertex = new Vertex<>(triplet.getSrcVertex().getId(), compareAndReturnBest(srcVal, trgVal));
+      reuseVertex.setFields(triplet.getSrcVertex().getId(), compareAndReturnBest(srcVal, trgVal));
     } else {
-      resultVertex = new Vertex<>(triplet.getSrcVertex().getId(), compareAndReturnBest(trgVal, srcVal));
+      reuseVertex.setFields(triplet.getSrcVertex().getId(), compareAndReturnBest(trgVal, srcVal));
     }
     srcVertices.addAll(trgVertices);
-    resultVertex.getValue().put(Utils.CL_VERTICES, srcVertices);
+    reuseVertex.getValue().put(Utils.CL_VERTICES, srcVertices);
+
+    Set<String> resultOnts = Sets.newHashSet();
+    resultOnts.addAll((Set<String>) srcVal.get(Utils.ONTOLOGIES));
+    resultOnts.addAll((Set<String>) trgVal.get(Utils.ONTOLOGIES));
+    reuseVertex.getValue().put(Utils.ONTOLOGIES, resultOnts);
     mergedClusterCount.add(1L);
 
-    return resultVertex;
+    return reuseVertex;
   }
 
 
