@@ -10,11 +10,11 @@ import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, AggSimValueTuple> {
   private static final Logger LOG = Logger.getLogger(SimSortVertexUpdateFunction.class);
-
   private final double threshold;
 
   public SimSortVertexUpdateFunction(double threshold) {
@@ -29,7 +29,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
     if (hasNoVertexState || Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) == 0) {
-//      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//      if (vertexList.contains((long) vertex.getId())) {
 //        LOG.info(" working on vertex: " + vertex.getId());
 //      }
       double iterationAggSim = 0;
@@ -37,7 +37,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       List<Double> neighborList = Lists.newArrayList();
 
       for (AggSimValueTuple message : inMessages) {
-//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//        if (vertexList.contains((long) vertex.getId())) {
 //          LOG.info(" msg: " + message);
 //        }
         ++messageCount;
@@ -49,7 +49,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 
       if (Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
-//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//        if (vertexList.contains((long) vertex.getId())) {
 //          LOG.info(" deactivating: " + vertex.getId());
 //        }
         if (iterationAggSim < threshold) {
@@ -62,7 +62,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       }
 
 //      if (iterationAggSim < threshold) { // last value is not saved on the first vertex which fulfills this criteria
-//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//      if (vertexList.contains((long) vertex.getId())) {
 //          LOG.info(" setting new value: " + vertex.getId() + "   " + iterationAggSim);
 //        }
       setNewVertexValue(vertex.getValue());

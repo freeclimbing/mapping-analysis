@@ -3,7 +3,6 @@ package org.mappinganalysis.model.functions.simcomputation;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
 
 /**

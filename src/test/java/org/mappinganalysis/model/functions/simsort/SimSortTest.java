@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simsort;
 
+import com.google.common.collect.Lists;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;

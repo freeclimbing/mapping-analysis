@@ -12,6 +12,8 @@ import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.utils.Utils;
 
+import java.math.BigDecimal;
+
 public class SimCompUtility {
   private static final Logger LOG = Logger.getLogger(SimCompUtility.class);
 
@@ -116,11 +118,11 @@ public class SimCompUtility {
     int propCount = 0;
     if (value.containsKey(Utils.SIM_TRIGRAM)) {
       ++propCount;
-      aggregatedSim = (float) value.get(Utils.SIM_TRIGRAM);
+      aggregatedSim = (double) value.get(Utils.SIM_TRIGRAM);
     }
     if (value.containsKey(Utils.SIM_TYPE)) {
       ++propCount;
-      aggregatedSim += (float) value.get(Utils.SIM_TYPE);
+      aggregatedSim += (double) value.get(Utils.SIM_TYPE);
     }
     if (value.containsKey(Utils.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(value);
@@ -130,7 +132,10 @@ public class SimCompUtility {
       }
     }
 
-    return aggregatedSim / propCount;
+    BigDecimal result = new BigDecimal(aggregatedSim / propCount);
+    result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
+
+    return result.doubleValue();
   }
 
   /**
@@ -144,12 +149,12 @@ public class SimCompUtility {
     double geoWeight = 0.3;
     double aggregatedSim;
     if (values.containsKey(Utils.SIM_TRIGRAM)) {
-      aggregatedSim = trigramWeight * (float) values.get(Utils.SIM_TRIGRAM);
+      aggregatedSim = trigramWeight * (double) values.get(Utils.SIM_TRIGRAM);
     } else {
       aggregatedSim = 0;
     }
     if (values.containsKey(Utils.SIM_TYPE)) {
-      aggregatedSim += typeWeight * (float) values.get(Utils.SIM_TYPE);
+      aggregatedSim += typeWeight * (double) values.get(Utils.SIM_TYPE);
     }
     if (values.containsKey(Utils.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(values);
@@ -157,7 +162,11 @@ public class SimCompUtility {
         aggregatedSim += geoWeight * distanceSim;
       }
     }
-    return aggregatedSim;
+
+    BigDecimal result = new BigDecimal(aggregatedSim);
+    result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
+
+    return result.doubleValue();
   }
 
   /**

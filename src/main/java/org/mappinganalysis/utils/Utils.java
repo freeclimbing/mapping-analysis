@@ -105,9 +105,9 @@ public class Utils {
   /**
    * similarity default values.
    */
-  public static final Float TRIGRAM_INITIAL_THRESHOLD = 0.6f;
+  public static final Double TRIGRAM_INITIAL_THRESHOLD = 0.6d;
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
-  public static final Float SHADING_TYPE_SIM = 0.8f;
+  public static final Double SHADING_TYPE_SIM = 0.8d;
   /**
    * DB attName for gn type detail information
    */

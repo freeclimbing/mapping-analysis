@@ -12,6 +12,6 @@ public class TrigramSimilarityFilter implements FilterFunction<Triplet<Long, Obj
   @Override
   public boolean filter(Triplet<Long, ObjectMap, ObjectMap> weightedTriplet) throws Exception {
     ObjectMap props = weightedTriplet.getEdge().getValue();
-    return props.containsKey(Utils.SIM_TRIGRAM) && (float) props.get(Utils.SIM_TRIGRAM) > Utils.TRIGRAM_INITIAL_THRESHOLD;
+    return props.containsKey(Utils.SIM_TRIGRAM) && (double) props.get(Utils.SIM_TRIGRAM) > Utils.TRIGRAM_INITIAL_THRESHOLD;
   }
 }

@@ -18,6 +18,8 @@ import org.mappinganalysis.model.functions.representative.VertexStatusFilter;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.ArrayList;
+
 public class SimSort {
   private static final Logger LOG = Logger.getLogger(SimSort.class);
 
@@ -60,7 +62,7 @@ public class SimSort {
    * @return resulting graph with new clusters
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                   Integer maxIterations, Double minimumSimilarity) {
+                                                          Integer maxIterations, Double minimumSimilarity) {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("TypeGroupBy");
     aggParameters.setDirection(EdgeDirection.ALL);

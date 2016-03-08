@@ -7,7 +7,6 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -17,7 +16,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.stats.FrequencyMapFunction;
+import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.model.functions.stats.ResultComponentSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultEdgesSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
@@ -105,11 +104,11 @@ public class Stats {
    */
   public static void countPrintResourcesPerCc(DataSet<Tuple2<Long, Long>> ccResult) throws Exception {
     DataSet<Tuple2<Long, Long>> tmpResult = ccResult
-        .map(new FrequencyMapFunction()) // VertexId, ComponentId, 1L
+        .map(new FrequencyMapByFunction(1)) // VertexId, ComponentId, 1L
         .groupBy(0)
         .sum(1); // ComponentId, Sum(1L)
     DataSet<Tuple2<Long, Long>> result = tmpResult
-        .map(new FrequencyMapFunction()).groupBy(0).sum(1);
+        .map(new FrequencyMapByFunction(1)).groupBy(0).sum(1);
 
     for (Tuple2<Long, Long> tuple : result.collect()) {
       LOG.info("Component size: " + tuple.f1 + ": " + tuple.f0);
@@ -217,6 +216,11 @@ public class Stats {
 
     // fix this todo
     LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+
   }
 
   /**
@@ -272,7 +276,7 @@ public class Stats {
     DataSet<Tuple2<Long, Long>> result = vertices
         .map(new MapVertexToPropertyLongFunction(Utils.HASH_CC))
         .groupBy(0).sum(1)
-        .map(new FrequencyMapFunction())
+        .map(new FrequencyMapByFunction(1))
         .groupBy(0).sum(1);
     LOG.info("[3] ### Component sizes and count of components with the size after clustering: ");
     for (Tuple2<Long, Long> tuple : result.collect()) {
