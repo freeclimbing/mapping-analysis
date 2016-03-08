@@ -102,16 +102,10 @@ public class FlinkConnectedComponents {
 
   private static final class NeighborWithComponentIDJoin
       implements JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>> {
-    Tuple2<Long, Long> reuseTuple;
-
-    public NeighborWithComponentIDJoin() {
-      reuseTuple = new Tuple2<>();
-    }
 
     @Override
     public Tuple2<Long, Long> join(Tuple2<Long, Long> vertexWithComponent, Tuple2<Long, Long> edge) {
-      reuseTuple.setFields(edge.f1, vertexWithComponent.f1);
-      return reuseTuple;
+      return new Tuple2<>(edge.f1, vertexWithComponent.f1);
     }
   }
 
