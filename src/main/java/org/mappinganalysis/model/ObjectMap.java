@@ -6,8 +6,8 @@ import com.google.common.collect.Sets;
 import org.apache.flink.util.StringUtils;
 import org.mappinganalysis.utils.Utils;
 
-import java.security.Key;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,29 +81,29 @@ public class ObjectMap implements Map<String, Object> {
 
   /**
    * Set geo lat/lon based on source of checked vertex, geonames and dbpedia are ranked higher.
-   * @param checkProps property map of vertex
+   * @param geoMap property map of vertex
    */
-  public void setGeoProperties(ObjectMap checkProps) {
-    boolean latLonGnFound = false;
-    boolean latLonDbpFound = false;
-    if (checkProps.containsKey(Utils.ONTOLOGY)) {
-      if (checkProps.get(Utils.ONTOLOGY).equals(Utils.GN_NAMESPACE) && checkProps.hasGeoProperties()) {
-        setLatLon(checkProps);
-        latLonGnFound = true;
+  public void setGeoProperties(HashMap<String, GeoCode> geoMap) {
+      if (geoMap.containsKey(Utils.GN_NAMESPACE)) {
+        setLatLon(geoMap.get(Utils.GN_NAMESPACE));
+      } else if (geoMap.containsKey(Utils.DBP_NAMESPACE)) {
+        setLatLon(geoMap.get(Utils.DBP_NAMESPACE));
+      } else {
+        GeoCode result = null;
+        int smallest = Integer.MAX_VALUE;
+        for (Entry<String, GeoCode> entry : geoMap.entrySet()) {
+          if (smallest > entry.hashCode()) {
+            smallest = entry.hashCode();
+            result = entry.getValue();
+          }
+        }
+        setLatLon(result);
       }
-      if (checkProps.get(Utils.ONTOLOGY).equals(Utils.DBP_NAMESPACE) && checkProps.hasGeoProperties() && !latLonGnFound) {
-        setLatLon(checkProps);
-        latLonDbpFound = true;
-      }
-    }
-    if (checkProps.hasGeoProperties() && !latLonDbpFound && !latLonGnFound) {
-      setLatLon(checkProps);
-    }
   }
 
-  private void setLatLon(ObjectMap properties) {
-    map.put(Utils.LAT, properties.get(Utils.LAT));
-    map.put(Utils.LON, properties.get(Utils.LON));
+  private void setLatLon(GeoCode geocode) {
+    map.put(Utils.LAT, geocode.getLat());
+    map.put(Utils.LON, geocode.getLon());
   }
 
   public Set<Long> getVerticesList() {

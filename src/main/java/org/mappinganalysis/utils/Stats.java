@@ -62,40 +62,6 @@ public class Stats {
 
   }
 
-  public static void printLabelsForMergedClusters(DataSet<Vertex<Long, ObjectMap>> clusters)
-      throws Exception {
-    for (Vertex<Long, ObjectMap> vertex : clusters.collect()) {
-      LOG.info(vertex);
-//      Map<String, Object> properties = vertex.getValue();
-//      Object clusteredVerts = properties.get(Utils.CL_VERTICES);
-//
-//      if (vertex.getValue().get(Utils.TYPE_INTERN) != null &&
-//          vertex.getValue().get(Utils.TYPE_INTERN).equals("Settlement")) {
-//        continue;
-//      }
-//
-//      if (clusteredVerts instanceof Set) {
-//        if (((Set) clusteredVerts).size() < 4) {
-//          continue;
-//        }
-//        LOG.info("---------------------------");
-//        LOG.info(vertex.toString() + "\n");
-//        Set<Vertex<Long, ObjectMap>> vertices = Sets.newHashSet((Set<Vertex<Long, ObjectMap>>) clusteredVerts);
-//
-//        for (Vertex<Long, ObjectMap> clVertex : vertices) {
-//          LOG.info(clVertex.getValue().get(Utils.LABEL) + "### " + clVertex.getValue().get(Utils.TYPE_INTERN));
-//        }
-//      }
-//      else {
-//        LOG.info("---------------------------");
-//        LOG.info(vertex.toString() + "\n");
-//
-//        Vertex<Long, ObjectMap> tmp = (Vertex<Long, ObjectMap>) clusteredVerts;
-//        LOG.info(tmp.getValue().get(Utils.LABEL) + "### " + tmp.getValue().get(Utils.TYPE_INTERN) + "\n");
-//      }
-    }
-  }
-
   /**
    * [deprecated]?
    * Count resources per component for a given flink connected component result set.
@@ -216,11 +182,6 @@ public class Stats {
 
     // fix this todo
     LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
-    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
-    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
-    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
-    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
-
   }
 
   /**

@@ -9,16 +9,18 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * Merge properties of grouped entities based on "best data source" availability,
- * i.e., GeoNames > DBpedia > others //Todo
+ * Merge properties
  */
 public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>> {
@@ -35,12 +37,12 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
     Vertex<Long, ObjectMap> resultVertex = new Vertex<>();
-//    LOG.info("result vert without values: " + resultVertex.toString());
     ObjectMap resultProps = new ObjectMap();
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
     HashMap<String, Integer> typeMap = Maps.newHashMap();
+    HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> currentVertex : vertices) {
       if (resultVertex.getId() == null || currentVertex.getId() < resultVertex.getId()) {
@@ -48,30 +50,9 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
       }
       clusterVertices.add(currentVertex.getId());
 
-      //LABEL
-      if (currentVertex.getValue().containsKey(Utils.LABEL)) {
-        String label = Utils.simplify(currentVertex.getValue().get(Utils.LABEL).toString());
-        if (labelMap.containsKey(label)) {
-          int labelCount = labelMap.get(label);
-          labelMap.put(label, labelCount + 1);
-        } else {
-          labelMap.put(label, 1);
-        }
-      }
-
-      // TYPE
-      if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN) && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
-        String type = currentVertex.getValue().get(Utils.TYPE_INTERN).toString();
-        if (typeMap.containsKey(type)) {
-          int labelCount = typeMap.get(type);
-          typeMap.put(type, labelCount + 1);
-        } else {
-          typeMap.put(type, 1);
-        }
-      }
-
-      // GEO
-      resultProps.setGeoProperties(currentVertex.getValue());
+      addLabelToMap(labelMap, currentVertex);
+      addTypeToMap(typeMap, currentVertex);
+      addGeoToMap(geoMap, currentVertex);
 
       if (currentVertex.getValue().containsKey(Utils.ONTOLOGY)) {
         clusterOntologies.add(currentVertex.getValue().get(Utils.ONTOLOGY).toString());
@@ -80,12 +61,14 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
         clusterOntologies.addAll((Set<String>) currentVertex.getValue().get(Utils.ONTOLOGIES));
       }
 
-        // OLD HASH
       if (currentVertex.getValue().containsKey(Utils.OLD_HASH_CC)) {
         resultProps.put(Utils.OLD_HASH_CC, currentVertex.getValue().get(Utils.OLD_HASH_CC));
       }
     }
 
+    if (!geoMap.isEmpty()) {
+      resultProps.setGeoProperties(geoMap);
+    }
     if (!labelMap.isEmpty()) {
       resultProps.put(Utils.LABEL, getFinalValue(labelMap));
     }
@@ -99,6 +82,47 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     representativeCount.add(1L);
 
     collector.collect(resultVertex);
+  }
+
+  private void addGeoToMap(HashMap<String, GeoCode> geoMap, Vertex<Long, ObjectMap> vertex) {
+    if (vertex.getValue().hasGeoProperties()) {
+      if (!vertex.getValue().containsKey(Utils.ONTOLOGY) && !vertex.getValue().containsKey(Utils.ONTOLOGIES)) {
+        LOG.info("no/more ont but geo: " + vertex);
+      }
+
+      if (vertex.getValue().containsKey(Utils.ONTOLOGY)) {
+        geoMap.put(vertex.getValue().get(Utils.ONTOLOGY).toString(),
+            new GeoCode(vertex.getValue().getLatitude(), vertex.getValue().getLongitude()));
+      } else if (vertex.getValue().containsKey(Utils.ONTOLOGIES)) {
+        for (String value : (Set<String>) vertex.getValue().get(Utils.ONTOLOGIES)) {
+          geoMap.put(value, new GeoCode(vertex.getValue().getLatitude(), vertex.getValue().getLongitude()));
+        }
+      }
+    }
+  }
+
+  private void addLabelToMap(HashMap<String, Integer> labelMap, Vertex<Long, ObjectMap> currentVertex) {
+    if (currentVertex.getValue().containsKey(Utils.LABEL)) {
+      String label = Utils.simplify(currentVertex.getValue().get(Utils.LABEL).toString());
+      if (labelMap.containsKey(label)) {
+        int labelCount = labelMap.get(label);
+        labelMap.put(label, labelCount + 1);
+      } else {
+        labelMap.put(label, 1);
+      }
+    }
+  }
+
+  private void addTypeToMap(HashMap<String, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
+    if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN) && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
+      String type = currentVertex.getValue().get(Utils.TYPE_INTERN).toString();
+      if (typeMap.containsKey(type)) {
+        int labelCount = typeMap.get(type);
+        typeMap.put(type, labelCount + 1);
+      } else {
+        typeMap.put(type, 1);
+      }
+    }
   }
 
   private String getFinalValue(HashMap<String, Integer> map) {
