@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.mappinganalysis.BasicTest;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
-import org.mappinganalysis.model.functions.simcomputation.TrigramSimilarityFilter;
 import org.mappinganalysis.model.functions.simcomputation.TrigramSimilarityMapper;
 import org.mappinganalysis.model.functions.simcomputation.TypeFilter;
 import org.mappinganalysis.model.functions.simcomputation.TypeSimilarityMapper;
@@ -35,8 +34,7 @@ public class SimilarityMapperTest extends BasicTest {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> exactSim
       = baseTriplets
-      .map(new TrigramSimilarityMapper())
-      .filter(new TrigramSimilarityFilter());
+      .map(new TrigramSimilarityMapper()); // filter deleted, maybe test no longer working?
 
     for (Triplet<Long, ObjectMap, ObjectMap> triplet : exactSim.collect()) {
       if (triplet.getSrcVertex().getId() == 5680) {

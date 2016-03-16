@@ -49,6 +49,9 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
         resultVertex.setId(currentVertex.getId());
       }
       clusterVertices.add(currentVertex.getId());
+      if (currentVertex.getValue().containsKey(Utils.CL_VERTICES)) {
+        clusterVertices.addAll((Set<Long>) currentVertex.getValue().get(Utils.CL_VERTICES));
+      }
 
       addLabelToMap(labelMap, currentVertex);
       addTypeToMap(typeMap, currentVertex);

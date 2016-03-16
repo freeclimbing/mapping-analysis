@@ -19,36 +19,35 @@ import java.util.Set;
 public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>, Triplet<Long, ObjectMap, NullValue>> {
   private static final Logger LOG = Logger.getLogger(TripletCreateCrossFunction.class);
-//  private final Triplet<Long, ObjectMap, NullValue> reuseTriplet;
-//
-//  public TripletCreateCrossFunction() {
-//    reuseTriplet = new Triplet<>();
-//  }
+  private final Triplet<Long, ObjectMap, NullValue> reuseTriplet;
+
+  public TripletCreateCrossFunction() {
+    reuseTriplet = new Triplet<>();
+  }
 
   @Override
   public Triplet<Long, ObjectMap, NullValue> cross(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right)
       throws Exception {
-    Triplet<Long, ObjectMap, NullValue> reuseTriplet;
     // exclude if right and left contains same ontology somewhere
     Set<String> srcOnts = (Set<String>) left.getValue().get(Utils.ONTOLOGIES);
     Set<String> trgOnts = (Set<String>) right.getValue().get(Utils.ONTOLOGIES);
     for (String srcValue : srcOnts) {
       if (trgOnts.contains(srcValue)) {
-        reuseTriplet = new Triplet<>(0L, 0L, null, null, null);
+        reuseTriplet.setFields(0L, 0L, null, null, null);
         return reuseTriplet;
       }
     }
 
     // exclude equal id and one of (1, 2) >>(2,1)<<
     if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
-      reuseTriplet = new Triplet<>(0L, 0L, null, null, null);
+      reuseTriplet.setFields(0L, 0L, null, null, null);
       return reuseTriplet;
     } else if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= 4) {
-      reuseTriplet = new Triplet<>(left.getId(), right.getId(), left.getValue(), right.getValue(), NullValue.getInstance());
+      reuseTriplet.setFields(left.getId(), right.getId(), left.getValue(), right.getValue(), NullValue.getInstance());
       return reuseTriplet;
     } else {
       LOG.error("triplet size too high, skipped: " + left.getId() + " ### " + right.getId());
-      reuseTriplet = new Triplet<>(0L, 0L, null, null, null);
+      reuseTriplet.setFields(0L, 0L, null, null, null);
       return reuseTriplet;
     }
   }

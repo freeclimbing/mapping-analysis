@@ -181,7 +181,7 @@ public class Stats {
     }
 
     // fix this todo
-    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+//    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
   }
 
   /**

@@ -4,7 +4,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.common.primitives.Doubles;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import org.apache.flink.graph.Edge;
@@ -13,7 +12,6 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
-import org.simmetrics.simplifiers.Simplifier;
 import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
@@ -105,7 +103,6 @@ public class Utils {
   /**
    * similarity default values.
    */
-  public static final Double TRIGRAM_INITIAL_THRESHOLD = 0.6d;
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 0.8d;
   /**
@@ -150,6 +147,7 @@ public class Utils {
   public static final String VERTEX_ID = "vertexId";
   public static final String HASH_CC = "hashCc";
   public static final String OLD_HASH_CC = "oldHashCc";
+  public static final String REFINE_ID = "refineId";
 
   /**
    * property name in cluster representative where clustered vertivces are put into.
