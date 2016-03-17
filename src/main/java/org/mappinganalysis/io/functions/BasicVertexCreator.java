@@ -13,14 +13,14 @@ public class BasicVertexCreator implements MapFunction<Tuple3<Integer, String, S
 
   public BasicVertexCreator() {
     reuseVertex = new Vertex<>();
+    reuseVertex.setValue(new ObjectMap());
   }
 
   public Vertex<Long, ObjectMap> map(Tuple3<Integer, String, String> tuple) throws Exception {
     reuseVertex.setId((long) tuple.f0);
-    ObjectMap propMap = new ObjectMap();
-    propMap.put("url", tuple.f1);
-    propMap.put("ontology", tuple.f2);
-    reuseVertex.setValue(propMap);
+    reuseVertex.getValue().put("url", tuple.f1);
+    reuseVertex.getValue().put("ontology", tuple.f2);
+
     return reuseVertex;
   }
 }

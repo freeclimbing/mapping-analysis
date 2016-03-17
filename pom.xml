@@ -60,7 +60,9 @@
         <project.maven.version>3.0h.0</project.maven.version>
         <project.build.targetJdk>1.7</project.build.targetJdk>
 
-        <dep.flink.version>0.10.1</dep.flink.version>
+        <!--<dep.flink.version>0.10.2</dep.flink.version>-->
+        <dep.flink.version>1.0.0</dep.flink.version>
+        <dep.flinkSnapshot.version>1.0-SNAPSHOT</dep.flinkSnapshot.version>
         <!--<dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>-->
         <dep.mysql.version>5.1.6</dep.mysql.version>
     </properties>
@@ -78,22 +80,6 @@
             <version>0.2-SNAPSHOT</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
-            <version>${dep.flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-gelly</artifactId>
-            <version>${dep.flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-jdbc</artifactId>
-            <version>${dep.flink.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-java</artifactId>
@@ -101,8 +87,18 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-java-examples</artifactId>
+            <artifactId>flink-clients_2.10</artifactId>
             <version>${dep.flink.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-gelly</artifactId>
+            <version>${dep.flinkSnapshot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-jdbc</artifactId>
+            <version>${dep.flinkSnapshot.version}</version>
         </dependency>
 
         <dependency>

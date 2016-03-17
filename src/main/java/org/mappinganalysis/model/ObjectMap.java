@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import org.apache.flink.util.StringUtils;
 import org.mappinganalysis.utils.Utils;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +16,9 @@ import java.util.Set;
  * Custom map for representing properties for vertices. This is needed
  * because a Flink Vertex can only have POJOs as value.
  */
-public class ObjectMap implements Map<String, Object> {
+public class ObjectMap implements Map<String, Object>, Serializable {
+  private static final long serialVersionUID = 1L;
+
   public ObjectMap getMap() {
     return (ObjectMap) map;
   }

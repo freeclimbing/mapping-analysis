@@ -7,7 +7,6 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
-import sun.text.normalizer.UTF16;
 
 import java.util.Set;
 
