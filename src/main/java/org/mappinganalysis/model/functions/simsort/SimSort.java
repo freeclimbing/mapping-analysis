@@ -13,29 +13,34 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.CcIdKeySelector;
+import org.mappinganalysis.model.functions.HashCcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.representative.VertexStatusFilter;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
 import org.mappinganalysis.utils.Utils;
 
-import java.util.ArrayList;
-
 public class SimSort {
   private static final Logger LOG = Logger.getLogger(SimSort.class);
 
   /**
-   * create all missing edges, add default vertex sim values
+   * create all missing edges, addGraph default vertex sim values
    * @param graph input graph
-   * @param simSortKeySelector cc id or hash cc id
+   * @param processingMode cc id or hash cc id
    * @param env execution environment
    * @return preprocessed graph
    */
-  public static Graph<Long, ObjectMap, ObjectMap> prepare( Graph<Long, ObjectMap, ObjectMap> graph,
-      KeySelector<Vertex<Long, ObjectMap>, Long> simSortKeySelector, ExecutionEnvironment env) {
+  public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
+                                                          String processingMode, ExecutionEnvironment env) {
+    KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new CcIdKeySelector();
+    if (processingMode.equals(Utils.DEFAULT_VALUE)) {
+      keySelector = new HashCcIdKeySelector();
+    }
+
     DataSet<Edge<Long, NullValue>> allEdges = graph.getVertices()
         .coGroup(graph.getVertices())
-        .where(simSortKeySelector)
-        .equalTo(simSortKeySelector)
+        .where(keySelector)
+        .equalTo(keySelector)
         .with(new EdgeExtractCoGroupFunction());
 
     Graph<Long, ObjectMap, NullValue> distinctEdgesGraph = Graph

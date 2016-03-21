@@ -45,7 +45,7 @@ public class SimSortTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = SimSort.prepare(firstGraph, new HashCcIdKeySelector(), env);
+    firstGraph = SimSort.prepare(firstGraph, Utils.DEFAULT_VALUE, env);
 
     double minClusterSim = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200, minClusterSim);
@@ -70,7 +70,7 @@ public class SimSortTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_CANAIMA);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = SimSort.prepare(firstGraph, new CcIdKeySelector(), env);
+    firstGraph = SimSort.prepare(firstGraph, "onlySimSort", env);
     double minClusterSim = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200, minClusterSim);
 

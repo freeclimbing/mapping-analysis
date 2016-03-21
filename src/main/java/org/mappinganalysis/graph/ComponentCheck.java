@@ -142,7 +142,7 @@ public class ComponentCheck {
 //      Vertex vertex = getVertex(from);
 //      vertices.remove(vertex);
 //      vertex.addEdge(to);
-//      vertices.add(vertex);
+//      vertices.addGraph(vertex);
     }
     return flinkEdges;
   }
@@ -531,7 +531,7 @@ public class ComponentCheck {
   }
 
   /**
-   * Try to add a single node to a component.
+   * Try to addGraph a single node to a component.
    * @param vertex vertex
    * @param ccId component id
    * @return true if component already exists

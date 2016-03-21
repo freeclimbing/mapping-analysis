@@ -33,7 +33,7 @@ public class ComputeCliques {
 
 		boolean printWithLabels = true; //load metadata for all concepts takes about 20-30 sec (for bioportal dataset)
 		boolean runAll = true;
-		//add CC IDs of interest to array, if  runAll = false
+		//addGraph CC IDs of interest to array, if  runAll = false
 		List<Integer> ccList = Arrays.asList(124, 1); //18126, 1, 2, 3, 4
 
 		//true: run clique computation either for all available CCs in DB 

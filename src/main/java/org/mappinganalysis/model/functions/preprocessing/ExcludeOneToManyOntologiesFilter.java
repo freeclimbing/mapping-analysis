@@ -13,13 +13,11 @@ import org.mappinganalysis.utils.Utils;
  * Preprocessing strategy for cleaning link set.
  */
 public class ExcludeOneToManyOntologiesFilter extends RichFilterFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>> {
-  private LongCounter filterMatches = new LongCounter();
   private ListAccumulator<Edge<Long, NullValue>> filteredLinks = new ListAccumulator<>();
 
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.LINK_FILTER_ACCUMULATOR, filterMatches);
     getRuntimeContext().addAccumulator(Utils.FILTERED_LINKS_ACCUMULATOR, filteredLinks);
   }
 
@@ -30,7 +28,6 @@ public class ExcludeOneToManyOntologiesFilter extends RichFilterFunction<Tuple4<
     }
     else {
       filteredLinks.add(tuple.f0);
-      filterMatches.add(1L);
       return false;
     }
   }

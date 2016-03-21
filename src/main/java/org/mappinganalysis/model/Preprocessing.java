@@ -19,6 +19,7 @@ import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
 import org.mappinganalysis.model.functions.preprocessing.*;
+import org.mappinganalysis.utils.Utils;
 
 /**
  * Preprocessing.
@@ -169,4 +170,20 @@ public class Preprocessing {
     return graph;
   }
 
+  /**
+   * Execute all preprocessing steps with the given options
+   * @param graph input graph
+   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
+   * @param env execution environment
+   * @return graph
+   * @throws Exception
+   */
+  public static Graph<Long, ObjectMap, NullValue> execute(Graph<Long, ObjectMap, NullValue> graph,
+                                                          boolean isLinkFilterActive,
+                                                          ExecutionEnvironment env) throws Exception {
+    graph = applyTypeToInternalTypeMapping(graph, env);
+    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
+//    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
+    return addCcIdsToGraph(graph);
+  }
 }

@@ -2,14 +2,24 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.CcIdKeySelector;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
+import org.mappinganalysis.model.functions.HashCcIdKeySelector;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
+import org.mappinganalysis.model.functions.preprocessing.CcIdAndCompTypeKeySelector;
+import org.mappinganalysis.model.functions.preprocessing.GenerateHashCcIdGroupReduceFunction;
+import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
+import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
 import org.mappinganalysis.utils.Utils;
 
 import java.math.BigDecimal;
@@ -183,5 +193,49 @@ public class SimCompUtility {
       return -1;
     }
     //      aggregatedSim += geoWeight * (Double) value.get(Utils.SIM_DISTANCE); // TODO why is this not working?
+  }
+
+  /**
+   * Create the graph needed for any further computation. Compute similarities on edges.
+   * @param graph preprocessed graph
+   * @param env env
+   * @return result
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> init(Graph<Long, ObjectMap, NullValue> graph,
+                                                       ExecutionEnvironment env) {
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
+        .map(new AddShadingTypeMapFunction())
+        .groupBy(new CcIdAndCompTypeKeySelector())
+        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
+
+    DataSet<Edge<Long, ObjectMap>> edges = computeEdgeSimFromGraph(graph);
+
+    return Graph.fromDataSet(vertices, edges, env);
+  }
+
+  /**
+   * Executes TypeGroupBy and SimSort method and returns the resulting graph.
+   * @param graph graph with similarities already computed
+   * @param processingMode if 'default', both methods are executed
+   * @param minClusterSim minimal aggregated similarty to create a cluster
+   *@param env env  @return result
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
+                                                          String processingMode, double minClusterSim, ExecutionEnvironment env) throws Exception {
+    LOG.info("\n*** [3] INITIAL CLUSTERING ***\n");
+
+    // TypeGroupBy
+    // internally compType is used, afterwards typeIntern is used again
+    graph = new TypeGroupBy().execute(graph, processingMode, 1000);
+
+//      LOG.info("##################### After TypeGroupBy");
+//      Stats.writeVerticesToLog(graph.getVertices(), vertexList);
+
+    /* SimSort */
+    graph = SimSort.prepare(graph, processingMode, env);
+    graph = SimSort.execute(graph, 1000, minClusterSim);
+
+    return SimSort.excludeLowSimVertices(graph, env);
+
   }
 }

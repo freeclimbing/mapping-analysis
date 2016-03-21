@@ -110,7 +110,7 @@ public class LinkLionPropertyCompletion {
     System.out.println("Process nodes one by one ..");
 
     // TODO 4. LAST STEP
-    // add type to concept attributes LAST Step
+    // addGraph type to concept attributes LAST Step
      ResultSet properties = ll.dbOps.getProperties();
      ll.processProperties(properties);
 

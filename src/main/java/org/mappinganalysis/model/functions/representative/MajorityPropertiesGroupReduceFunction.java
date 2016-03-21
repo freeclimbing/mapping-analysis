@@ -20,7 +20,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * Merge properties
+ * Merge properties for representative.
  */
 public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>> {
@@ -36,7 +36,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   @Override
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
-    Vertex<Long, ObjectMap> resultVertex = new Vertex<>();
+    Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here
     ObjectMap resultProps = new ObjectMap();
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
@@ -45,24 +45,13 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> currentVertex : vertices) {
-      if (resultVertex.getId() == null || currentVertex.getId() < resultVertex.getId()) {
-        resultVertex.setId(currentVertex.getId());
-      }
-      clusterVertices.add(currentVertex.getId());
-      if (currentVertex.getValue().containsKey(Utils.CL_VERTICES)) {
-        clusterVertices.addAll((Set<Long>) currentVertex.getValue().get(Utils.CL_VERTICES));
-      }
+      updateVertexId(resultVertex, currentVertex);
+      updateClusterVertexIds(clusterVertices, currentVertex);
+      updateClusterOntologies(clusterOntologies, currentVertex);
 
       addLabelToMap(labelMap, currentVertex);
       addTypeToMap(typeMap, currentVertex);
       addGeoToMap(geoMap, currentVertex);
-
-      if (currentVertex.getValue().containsKey(Utils.ONTOLOGY)) {
-        clusterOntologies.add(currentVertex.getValue().get(Utils.ONTOLOGY).toString());
-      }
-      if (currentVertex.getValue().containsKey(Utils.ONTOLOGIES)) {
-        clusterOntologies.addAll((Set<String>) currentVertex.getValue().get(Utils.ONTOLOGIES));
-      }
 
       if (currentVertex.getValue().containsKey(Utils.OLD_HASH_CC)) {
         resultProps.put(Utils.OLD_HASH_CC, currentVertex.getValue().get(Utils.OLD_HASH_CC));
@@ -83,8 +72,29 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
 
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
-
     collector.collect(resultVertex);
+  }
+
+  private void updateClusterOntologies(Set<String> clusterOntologies, Vertex<Long, ObjectMap> currentVertex) {
+    if (currentVertex.getValue().containsKey(Utils.ONTOLOGY)) {
+      clusterOntologies.add(currentVertex.getValue().get(Utils.ONTOLOGY).toString());
+    }
+    if (currentVertex.getValue().containsKey(Utils.ONTOLOGIES)) {
+      clusterOntologies.addAll((Set<String>) currentVertex.getValue().get(Utils.ONTOLOGIES));
+    }
+  }
+
+  private void updateClusterVertexIds(Set<Long> clusterVertices, Vertex<Long, ObjectMap> currentVertex) {
+    clusterVertices.add(currentVertex.getId());
+    if (currentVertex.getValue().containsKey(Utils.CL_VERTICES)) {
+      clusterVertices.addAll((Set<Long>) currentVertex.getValue().get(Utils.CL_VERTICES));
+    }
+  }
+
+  private void updateVertexId(Vertex<Long, ObjectMap> resultVertex, Vertex<Long, ObjectMap> currentVertex) {
+    if (resultVertex.getId() == null || currentVertex.getId() < resultVertex.getId()) {
+      resultVertex.setId(currentVertex.getId());
+    }
   }
 
   private void addGeoToMap(HashMap<String, GeoCode> geoMap, Vertex<Long, ObjectMap> vertex) {
