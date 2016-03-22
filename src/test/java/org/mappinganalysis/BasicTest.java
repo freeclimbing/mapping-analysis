@@ -13,12 +13,11 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcVerticesCreator;
-import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.List;
@@ -52,7 +51,7 @@ public class BasicTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
 
     final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-        = SimCompUtility.computeSimilarities(graph.getTriplets(), "combined");
+        = SimilarityComputation.computeSimilarities(graph.getTriplets(), "combined");
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);

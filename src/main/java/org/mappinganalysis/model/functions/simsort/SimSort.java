@@ -13,11 +13,10 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcIdKeySelector;
-import org.mappinganalysis.model.functions.HashCcIdKeySelector;
+import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
-import org.mappinganalysis.model.functions.representative.VertexStatusFilter;
-import org.mappinganalysis.model.functions.simcomputation.SimCompUtility;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 
 public class SimSort {
@@ -47,7 +46,7 @@ public class SimSort {
         .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
 
     // TODO eliminate partly duplicate sim computation
-    DataSet<Edge<Long, ObjectMap>> simEdges = SimCompUtility.computeEdgeSimFromGraph(distinctEdgesGraph);
+    DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation.computeEdgeSimFromGraph(distinctEdgesGraph);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
         .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {

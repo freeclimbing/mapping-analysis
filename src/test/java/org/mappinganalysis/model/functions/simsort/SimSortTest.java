@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.simsort;
 
-import com.google.common.collect.Lists;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -9,8 +8,6 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcIdKeySelector;
-import org.mappinganalysis.model.functions.HashCcIdKeySelector;
 import org.mappinganalysis.utils.Utils;
 import org.s1ck.gdl.GDLHandler;
 

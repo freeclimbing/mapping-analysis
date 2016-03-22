@@ -1,7 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Floats;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
@@ -20,7 +19,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
         triplet.getSrcVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
     String trgType = triplet.getTrgVertex().getValue().containsKey(Utils.TYPE_INTERN) ?
         triplet.getTrgVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
-    Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimCompUtility.initResultTriplet(triplet);
+    Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimilarityComputation.initResultTriplet(triplet);
 
     if (isNoTypeEmpty(srcType, trgType)) {
       double similarity = srcType.toLowerCase().equals(trgType.toLowerCase()) ? 1d : 0d;

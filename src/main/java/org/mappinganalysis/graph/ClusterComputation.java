@@ -8,7 +8,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcIdKeySelector;
+import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.clustering.ExcludeInputJoinFunction;
 import org.mappinganalysis.utils.Utils;

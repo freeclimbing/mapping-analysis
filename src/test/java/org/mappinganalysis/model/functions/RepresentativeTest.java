@@ -1,7 +1,5 @@
 package org.mappinganalysis.model.functions;
 
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableScheduledFuture;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -10,6 +8,7 @@ import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.representative.MajorityPropertiesGroupReduceFunction;
+import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
 import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.assertEquals;

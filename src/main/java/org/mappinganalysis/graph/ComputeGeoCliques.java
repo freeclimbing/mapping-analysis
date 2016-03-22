@@ -5,6 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.apache.log4j.Logger;
 import org.bson.BsonValue;
+import org.mappinganalysis.graph.old.CliqueIdentification;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.CompCheckVertex;
 import org.mappinganalysis.utils.Utils;

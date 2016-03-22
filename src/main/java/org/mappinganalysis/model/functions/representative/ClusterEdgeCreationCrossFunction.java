@@ -15,6 +15,7 @@ import java.util.Set;
 /**
  * Compute intensive cluster link cross function.
  */
+@Deprecated
 public class ClusterEdgeCreationCrossFunction implements CrossFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>, Edge<Long, Double>> {
   @Override

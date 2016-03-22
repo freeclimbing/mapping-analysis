@@ -21,9 +21,9 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      aggregatedSim = SimCompUtility.getMeanSimilarity(value);
+      aggregatedSim = SimilarityComputation.getMeanSimilarity(value);
     } else {
-      aggregatedSim = SimCompUtility.getWeightedAggSim(value);
+      aggregatedSim = SimilarityComputation.getWeightedAggSim(value);
     }
 
     value.put(Utils.AGGREGATED_SIM_VALUE, aggregatedSim);
