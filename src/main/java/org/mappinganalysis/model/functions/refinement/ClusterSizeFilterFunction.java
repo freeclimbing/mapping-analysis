@@ -7,7 +7,7 @@ import org.mappinganalysis.model.ObjectMap;
 
 public class ClusterSizeFilterFunction extends RichFilterFunction<Vertex<Long, ObjectMap>> {
   private Integer maxClusterSize = null;
-  private int superstep;
+  private Integer superstep = null;
 
   @Override
   public void open(Configuration parameters) throws Exception {

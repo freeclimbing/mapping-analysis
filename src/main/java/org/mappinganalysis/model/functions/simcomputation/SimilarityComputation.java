@@ -218,7 +218,8 @@ public class SimilarityComputation {
    *@param env env  @return result
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          String processingMode, double minClusterSim, ExecutionEnvironment env) throws Exception {
+                                                          String processingMode, double minClusterSim,
+                                                          ExecutionEnvironment env) throws Exception {
     LOG.info("\n*** [3] INITIAL CLUSTERING ***\n");
 
     // TypeGroupBy

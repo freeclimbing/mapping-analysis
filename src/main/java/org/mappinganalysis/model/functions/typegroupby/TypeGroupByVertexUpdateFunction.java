@@ -1,19 +1,25 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.MessageIterator;
 import org.apache.flink.graph.spargel.VertexUpdateFunction;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
 public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(TypeGroupByVertexUpdateFunction.class);
+  private ArrayList<Long> vertexList = Lists.newArrayList(3420L, 5586L, 3490L, 3419L);
 
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex, MessageIterator<ObjectMap> inMessages)
@@ -37,7 +43,8 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
       // save new cc_id on vertex
       if (!newBestValue.isEmpty()) {
         updateVertexValue(vertex, newBestValue, options);
-//          LOG.info("### set vert value to: " + vertex.getValue());
+        if (vertexList.contains(vertex.getId()))
+          LOG.info("### set vert value to: " + vertex.getValue());
         setNewVertexValue(vertex.getValue());
       }
     }
@@ -47,12 +54,16 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
                                      MessageIterator<ObjectMap> inMessages, HashMap<Long, Double> options) {
     ObjectMap newBestValue = new ObjectMap();
     long vertexCcId = (long) vertex.getValue().get(Utils.HASH_CC);
-//    LOG.info("Working on vertexCCid: " + vertexCcId + " (vertex: " + vertex.getId());
+
+    if (vertexList.contains(vertex.getId()))
+      LOG.info("Working on vertexCCid: " + vertexCcId + " (vertex: " + vertex.getId());
+
     double bestSim = 0D;
     // get max sim from neighbors + vertex
     for (ObjectMap msg : inMessages) {
       long neighborCcId = (long) msg.get(Utils.HASH_CC);
-//        LOG.info("Got message from: " + msg.get(Utils.VERTEX_ID));
+      if (vertexList.contains(vertex.getId()))
+        LOG.info("Got message from: " + msg.get(Utils.VERTEX_ID));
 
       if (vertexCcId != neighborCcId) {
         double newSim = (double) msg.get(Utils.AGGREGATED_SIM_VALUE);
@@ -64,10 +75,12 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
             && Doubles.compare(bestSim, 0D) != 0 && Doubles.compare(newSim, bestSim) == 0)) {
           bestSim = newSim;
           if (msg.containsKey(Utils.TMP_TYPE) || !msg.hasNoType(Utils.COMP_TYPE)) {
-//              LOG.info("tmp type or has type: " + msg);
+            if (vertexList.contains(vertex.getId()))
+              LOG.info("tmp type or has type: " + msg);
             newBestValue = msg;
           } else if (msg.hasNoType(Utils.COMP_TYPE)) {
-//            LOG.info("has no type: " + msg);
+            if (vertexList.contains(vertex.getId()))
+              LOG.info("has no type: " + msg);
             newBestValue = neighborCcId < vertexCcId ? msg : vertex.getValue();
           }
         }

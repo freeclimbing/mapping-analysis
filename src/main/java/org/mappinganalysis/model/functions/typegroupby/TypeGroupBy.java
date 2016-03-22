@@ -12,10 +12,10 @@ public class TypeGroupBy {
    * For a given graph, assign all vertices with no type to the component where the best similarity can be found.
    * @param graph input graph
    * @param processingMode if default, typeGroupBy is executed
-   *@param maxIterations maximal count vertex centric iterations  @return graph where non-type vertices are assigned to best matching component
+   * @param maxIterations maximal count vertex centric iterations  @return graph where non-type vertices are assigned to best matching component
    */
   public Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                   String processingMode, Integer maxIterations) {
+                                                   String processingMode, Integer maxIterations) throws Exception {
     if (processingMode.equals(Utils.DEFAULT_VALUE)) {
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");

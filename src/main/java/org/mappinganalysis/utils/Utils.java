@@ -16,6 +16,7 @@ import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
@@ -224,6 +225,26 @@ public class Utils {
     MongoClient client = new MongoClient("localhost", 27017);
 
     return client.getDatabase(dbName);
+  }
+
+  public static String toString(Vertex<Long, ObjectMap> vertex) {
+//    String hash = vertex.getValue().containsKey(HASH_CC) ? vertex.getValue().get(HASH_CC).toString() : "";
+    String cc = vertex.getValue().containsKey(CC_ID) ? vertex.getValue().get(CC_ID).toString() : "";
+    String type = vertex.getValue().containsKey(TYPE_INTERN) ? vertex.getValue().get(TYPE_INTERN).toString() : "";
+    String label = Simplifiers.toLowerCase().simplify(vertex.getValue().get(LABEL).toString());
+
+    Double latitude = vertex.getValue().getLatitude();
+    Double longitude = vertex.getValue().getLongitude();
+    if (latitude == null || longitude == null) {
+      return "##  (" + label + ": id(" + vertex.getId() + "), cc(" + cc + "), type(" + type + "), NO geo)";
+    } else {
+      BigDecimal lat = new BigDecimal(latitude);
+      lat = lat.setScale(2, BigDecimal.ROUND_HALF_UP);
+      BigDecimal lon = new BigDecimal(longitude);
+      lon = lon.setScale(2, BigDecimal.ROUND_HALF_UP);
+
+      return "##  (" + label + ": id(" + vertex.getId() + "), cc(" + cc + "), type(" + type + "), geo(" + lat + "|" + lon + "))";
+    }
   }
 
   /**

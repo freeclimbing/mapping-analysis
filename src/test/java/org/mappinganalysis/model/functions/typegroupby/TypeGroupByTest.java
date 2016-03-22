@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -15,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeGroupByTest {
   private static final Logger LOG = Logger.getLogger(TypeGroupByTest.class);
-
   private static final String TGB_EQUAL_SIM_NO_TYPE_LOW_CCID = "g[" +
       "(v1 {compType = \"no_type_available\", hashCc = -4832605177143139923L})" +
       "(v2 {compType = \"no_type_available\", hashCc = 6500562624977345488L})" +
