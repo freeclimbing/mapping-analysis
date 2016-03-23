@@ -227,24 +227,52 @@ public class Utils {
     return client.getDatabase(dbName);
   }
 
+  /**
+   * Create a string representation of a vertex for evaluation output.
+   * @param vertex input vertex
+   * @return resulting string
+   */
   public static String toString(Vertex<Long, ObjectMap> vertex) {
-//    String hash = vertex.getValue().containsKey(HASH_CC) ? vertex.getValue().get(HASH_CC).toString() : "";
-    String cc = vertex.getValue().containsKey(CC_ID) ? vertex.getValue().get(CC_ID).toString() : "";
-    String type = vertex.getValue().containsKey(TYPE_INTERN) ? vertex.getValue().get(TYPE_INTERN).toString() : "";
-    String label = Simplifiers.toLowerCase().simplify(vertex.getValue().get(LABEL).toString());
+    return toString(vertex, null);
+  }
+
+
+  /**
+   * Create a string representation of a vertex for evaluation output.
+   * @param vertex input vertex
+   * @param newCc needed if base vertices are observed
+   * @return resulting string
+   */
+  public static String toString(Vertex<Long, ObjectMap> vertex, Long newCc) {
+    String cc;
+    if (newCc == null) {
+      cc = vertex.getValue().containsKey(CC_ID)
+          ? vertex.getValue().get(CC_ID).toString() : "";
+    } else {
+      cc = newCc.toString();
+    }
+
+    String type = vertex.getValue().containsKey(TYPE_INTERN)
+        ? vertex.getValue().get(TYPE_INTERN).toString() : "";
+    String label = Simplifiers
+        .toLowerCase()
+        .simplify(vertex.getValue().get(LABEL).toString());
 
     Double latitude = vertex.getValue().getLatitude();
     Double longitude = vertex.getValue().getLongitude();
+    String latlon;
     if (latitude == null || longitude == null) {
-      return "##  (" + label + ": id(" + vertex.getId() + "), cc(" + cc + "), type(" + type + "), NO geo)";
+      latlon = "NO geo";
     } else {
       BigDecimal lat = new BigDecimal(latitude);
       lat = lat.setScale(2, BigDecimal.ROUND_HALF_UP);
       BigDecimal lon = new BigDecimal(longitude);
       lon = lon.setScale(2, BigDecimal.ROUND_HALF_UP);
 
-      return "##  (" + label + ": id(" + vertex.getId() + "), cc(" + cc + "), type(" + type + "), geo(" + lat + "|" + lon + "))";
+      latlon = "geo(" + lat + "|" + lon + ")";
     }
+    return "##  (" + label + ": id(" + vertex.getId() + "), cc("
+        + cc + "), type(" + type + "), " + latlon + ")";
   }
 
   /**

@@ -8,7 +8,7 @@ import org.mappinganalysis.utils.Utils;
 /**
  * Key Selector connected component id
  */
-public class CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
+public class  CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
   @Override
   public Long getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
     return (long) vertex.getValue().get(Utils.CC_ID);
