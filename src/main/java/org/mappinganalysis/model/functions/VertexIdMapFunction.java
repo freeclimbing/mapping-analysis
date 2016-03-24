@@ -7,7 +7,7 @@ import org.mappinganalysis.model.ObjectMap;
 /**
  * Extract CC Id from Vertex.
  */
-public class CcVerticesCreator implements MapFunction<Vertex<Long, ObjectMap>, Long> {
+public class VertexIdMapFunction implements MapFunction<Vertex<Long, ObjectMap>, Long> {
   @Override
   public Long map(Vertex<Long, ObjectMap> vertex) throws Exception {
     return vertex.getId();

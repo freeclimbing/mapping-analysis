@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CcVerticesCreator;
+import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 
@@ -55,7 +55,7 @@ public class BasicTest {
 
     // 1. time cc
     final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
-    final DataSet<Long> ccVertices = baseVertices.map(new CcVerticesCreator());
+    final DataSet<Long> ccVertices = baseVertices.map(new VertexIdMapFunction());
     final DataSet<Tuple2<Long, Long>> ccResult = FlinkConnectedComponents.compute(ccVertices, ccEdges, 1000);
 
     ccResult.print();

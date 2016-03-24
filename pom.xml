@@ -33,22 +33,32 @@
         <finalName>Mapping-Analysis</finalName>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${plugin.maven-compiler.version}</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${project.build.targetJdk}</source>
+                    <target>${project.build.targetJdk}</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.2</version>
+                <version>${plugin.maven-shade.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.google.common</pattern>
+                                    <shadedPattern>org.shaded.google.common</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -60,7 +70,12 @@
         <project.maven.version>3.0h.0</project.maven.version>
         <project.build.targetJdk>1.7</project.build.targetJdk>
 
-        <!--<dep.flink.version>0.10.2</dep.flink.version>-->
+        <plugin.maven-shade-plugin.version>2.4.2</plugin.maven-shade-plugin.version>
+        <plugin.maven-compiler.version>3.0</plugin.maven-compiler.version>
+        <plugin.maven-shade.version>2.4.2</plugin.maven-shade.version>
+
+        <project.build.targetJdk>1.7</project.build.targetJdk>
+
         <dep.flink.version>1.0.0</dep.flink.version>
         <dep.flinkSnapshot.version>1.0-SNAPSHOT</dep.flinkSnapshot.version>
         <!--<dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>-->
@@ -70,7 +85,7 @@
     <dependencies>
         <dependency>
             <groupId>com.github.mpkorstanje</groupId>
-            <artifactId>simmetrics-example</artifactId>
+            <artifactId>simmetrics-core</artifactId>
             <version>4.0.1</version>
         </dependency>
 
@@ -84,11 +99,13 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-java</artifactId>
             <version>${dep.flink.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-clients_2.10</artifactId>
             <version>${dep.flink.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -107,15 +124,10 @@
             <version>${dep.mysql.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derbyclient</artifactId>
-            <version>10.12.1.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -123,10 +135,9 @@
             <version>4.11</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.jena</groupId>
-            <artifactId>apache-jena-libs</artifactId>
-            <type>pom</type>
-            <version>2.10.0</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
@@ -134,24 +145,15 @@
             <version>3.0.3</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>17.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.jgrapht</groupId>
             <artifactId>jgrapht-core</artifactId>
             <version>0.9.1</version>
         </dependency>
         <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.8.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.eclipsesource.minimal-json</groupId>
-            <artifactId>minimal-json</artifactId>
-            <version>0.9.1</version>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>apache-jena-libs</artifactId>
+            <type>pom</type>
+            <version>2.10.0</version>
         </dependency>
     </dependencies>
 </project>

@@ -17,15 +17,31 @@ import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.model.functions.CcVerticesCreator;
+import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
-import org.mappinganalysis.utils.Utils;
 
 /**
  * Preprocessing.
  */
 public class Preprocessing {
   private static final Logger LOG = Logger.getLogger(Preprocessing.class);
+
+  /**
+   * Execute all preprocessing steps with the given options
+   * @param graph input graph
+   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
+   * @param env execution environment
+   * @return graph
+   * @throws Exception
+   */
+  public static Graph<Long, ObjectMap, NullValue> execute(Graph<Long, ObjectMap, NullValue> graph,
+                                                          boolean isLinkFilterActive,
+                                                          ExecutionEnvironment env) throws Exception {
+    graph = applyTypeToInternalTypeMapping(graph, env);
+    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
+//    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
+    return addCcIdsToGraph(graph);
+  }
 
   /**
    * Create the input graph for further analysis,
@@ -70,8 +86,9 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> addCcIdsToGraph(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+
     final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(graph.getVertices().map(new CcVerticesCreator()), graph.getEdgeIds(), 1000);
+        .compute(graph.getVertices().map(new VertexIdMapFunction()), graph.getEdgeIds(), 1000);
 
     return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
   }
@@ -168,22 +185,5 @@ public class Preprocessing {
       }
     }
     return graph;
-  }
-
-  /**
-   * Execute all preprocessing steps with the given options
-   * @param graph input graph
-   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
-   * @param env execution environment
-   * @return graph
-   * @throws Exception
-   */
-  public static Graph<Long, ObjectMap, NullValue> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          boolean isLinkFilterActive,
-                                                          ExecutionEnvironment env) throws Exception {
-    graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
-//    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
-    return addCcIdsToGraph(graph);
   }
 }
