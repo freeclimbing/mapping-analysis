@@ -28,14 +28,12 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
                       Collector<Vertex<Long, ObjectMap>> out) throws Exception {
     Vertex<Long, ObjectMap> vertex = Iterables.get(vertices, 0);
     ObjectMap vertexProperties = vertex.getValue();
-    boolean latitudeAdded = false;
-    boolean longitudeAdded = false;
 
     for (FlinkProperty property : properties) {
       Object value = property.getPropertyValue();
       String key = property.getPropertyKey();
-      if (latitudeAdded && key.equals(Utils.LAT) || longitudeAdded && key.equals(Utils.LON)) {
-        continue;
+      if (vertexProperties.containsKey(Utils.LAT) || vertexProperties.containsKey(Utils.LON)) {
+       continue;
       }
 
       if (property.getPropertyType().equals("double")) {
@@ -43,16 +41,15 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
       } else if (property.getPropertyType().equals("string")) {
         value = value.toString();
       }
+
       vertexProperties.addProperty(key, value);
-      if (key.equals(Utils.LAT)) {
-        latitudeAdded = true;
-      }
-      if (key.equals(Utils.LON)) {
-        longitudeAdded = true;
-      }
     }
-    vertex.setValue(vertexProperties);
-    vertexCounter.add(1L);
-    out.collect(vertex);
+
+    if (vertexProperties.containsKey(Utils.LABEL)) {
+      vertex.setValue(vertexProperties);
+
+      vertexCounter.add(1L);
+      out.collect(vertex);
+    }
   }
 }

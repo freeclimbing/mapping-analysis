@@ -105,7 +105,7 @@ public class Utils {
    * similarity default values.
    */
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
-  public static final Double SHADING_TYPE_SIM = 0.8d;
+  public static final Double SHADING_TYPE_SIM = 1D;
   /**
    * DB attName for gn type detail information
    */
@@ -261,6 +261,12 @@ public class Utils {
     Double latitude = vertex.getValue().getLatitude();
     Double longitude = vertex.getValue().getLongitude();
     String latlon;
+
+    String clusterVertices = "";
+    if (vertex.getValue().containsKey(CL_VERTICES)) {
+      clusterVertices = "clusterVertices: " + vertex.getValue().getVerticesList().toString();
+    }
+
     if (latitude == null || longitude == null) {
       latlon = "NO geo";
     } else {
@@ -272,7 +278,7 @@ public class Utils {
       latlon = "geo(" + lat + "|" + lon + ")";
     }
     return "##  (" + label + ": id(" + vertex.getId() + "), cc("
-        + cc + "), type(" + type + "), " + latlon + ")";
+        + cc + "), type(" + type + "), " + latlon + clusterVertices + ")";
   }
 
   /**

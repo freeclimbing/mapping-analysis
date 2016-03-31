@@ -38,7 +38,7 @@ public class Preprocessing {
                                                           boolean isLinkFilterActive,
                                                           ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
+//    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
 //    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
     return addCcIdsToGraph(graph);
   }
