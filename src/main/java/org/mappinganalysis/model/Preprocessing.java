@@ -16,6 +16,7 @@ import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
@@ -42,6 +43,52 @@ public class Preprocessing {
 //    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
     return addCcIdsToGraph(graph);
   }
+
+  /**
+   * CSV Reader todo fix duplicate code
+   * @return graph with vertices and edges.
+   * @throws Exception
+   * @param inputDir
+   */
+  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(String inputDir, ExecutionEnvironment env)
+      throws Exception {
+
+    ExampleOutput foo = new ExampleOutput(env);
+
+    JDBCDataLoader loader = new JDBCDataLoader(env);
+    final String vertexFile = "concept.csv";
+    final String edgeFile = "linksWithIDs.csv";
+    final String propertyFile = "concept_attributes.csv";
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile);
+
+    foo.addVertices("vertices input", vertices);
+
+    foo.print();
+    // restrict edges to these where source and target are vertices
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(inputDir + edgeFile)
+        .leftOuterJoin(vertices)
+        .where(0).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction())
+        .leftOuterJoin(vertices)
+        .where(1).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction());
+
+    // delete vertices without any edges due to restriction
+    DataSet<Vertex<Long, ObjectMap>> left = vertices
+        .leftOuterJoin(edges)
+        .where(0).equalTo(0)
+        .with(new VertexRestrictFlatJoinFunction()).distinct(0);
+
+    DataSet<Vertex<Long, ObjectMap>> finalVertices = vertices
+        .leftOuterJoin(edges)
+        .where(0).equalTo(1)
+        .with(new VertexRestrictFlatJoinFunction()).distinct(0)
+        .union(left);
+
+    return Graph.fromDataSet(finalVertices, edges, env);
+  }
+
 
   /**
    * Create the input graph for further analysis,

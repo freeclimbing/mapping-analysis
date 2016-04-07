@@ -20,6 +20,7 @@ public class TypeGroupBy {
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
       tbcParams.setDirection(EdgeDirection.ALL);
+      tbcParams.setSolutionSetUnmanagedMemory(true);
 
       return graph.runVertexCentricIteration(
           new TypeGroupByVertexUpdateFunction(),

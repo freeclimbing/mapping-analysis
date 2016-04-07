@@ -59,6 +59,8 @@ public class FlinkConnectedComponents {
     DeltaIteration<Tuple2<Long, Long>, Tuple2<Long, Long>> iteration =
         verticesWithInitialId.iterateDelta(verticesWithInitialId, maxIterations, 0);
 
+    iteration.setSolutionSetUnManaged(true);
+
     // apply the step logic:
     DataSet<Tuple2<Long, Long>> changes = iteration.getWorkset()
         // join with the edges
