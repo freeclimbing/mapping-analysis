@@ -30,21 +30,21 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
     ObjectMap vertexProperties = vertex.getValue();
 
     for (FlinkProperty property : properties) {
-      Object value = property.getPropertyValue();
+      String value = property.getPropertyValue();
       String key = property.getPropertyKey();
-      if (vertexProperties.containsKey(Utils.LAT) || vertexProperties.containsKey(Utils.LON)) {
-       continue;
+      if (vertexProperties.containsKey(Utils.LAT) && key.equals(Utils.LAT)
+          || vertexProperties.containsKey(Utils.LON) && key.equals(Utils.LON)) {
+        continue;
       }
 
       if (property.getPropertyType().equals("double")) {
-        value = Doubles.tryParse(value.toString());
+        vertexProperties.addProperty(key, Doubles.tryParse(value));
       } else if (property.getPropertyType().equals("string")) {
-        value = value.toString();
+        vertexProperties.addProperty(key, value);
       }
-
-      vertexProperties.addProperty(key, value);
     }
 
+    // skip no label vertices
     if (vertexProperties.containsKey(Utils.LABEL)) {
       vertex.setValue(vertexProperties);
 

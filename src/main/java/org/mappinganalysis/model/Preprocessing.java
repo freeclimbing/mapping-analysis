@@ -52,19 +52,13 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(String inputDir, ExecutionEnvironment env)
       throws Exception {
-
-    ExampleOutput foo = new ExampleOutput(env);
-
     JDBCDataLoader loader = new JDBCDataLoader(env);
     final String vertexFile = "concept.csv";
     final String edgeFile = "linksWithIDs.csv";
     final String propertyFile = "concept_attributes.csv";
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile);
+    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile, inputDir);
 
-    foo.addVertices("vertices input", vertices);
-
-    foo.print();
     // restrict edges to these where source and target are vertices
     DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(inputDir + edgeFile)
         .leftOuterJoin(vertices)

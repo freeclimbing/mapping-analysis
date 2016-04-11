@@ -74,6 +74,7 @@ public class Utils {
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
+  public static final String BASE_VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
 
   public static final String LINK_FILTER_ACCUMULATOR = "links-filtered-counter";

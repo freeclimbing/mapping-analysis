@@ -1,7 +1,9 @@
 package org.mappinganalysis.io.functions;
 
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
@@ -9,8 +11,15 @@ import org.mappinganalysis.utils.Utils;
 /**
  * Create FlinkVertex object from raw database result set.
  */
-public class BasicVertexCreator implements MapFunction<Tuple3<Integer, String, String>, Vertex<Long, ObjectMap>> {
+public class BasicVertexCreator extends RichMapFunction<Tuple3<Integer, String, String>, Vertex<Long, ObjectMap>> {
   private final Vertex<Long, ObjectMap> reuseVertex;
+  private LongCounter vertexCounter = new LongCounter();
+
+  @Override
+  public void open(final Configuration parameters) throws Exception {
+    super.open(parameters);
+    getRuntimeContext().addAccumulator(Utils.BASE_VERTEX_COUNT_ACCUMULATOR, vertexCounter);
+  }
 
   public BasicVertexCreator() {
     reuseVertex = new Vertex<>();
@@ -22,6 +31,7 @@ public class BasicVertexCreator implements MapFunction<Tuple3<Integer, String, S
     reuseVertex.getValue().put(Utils.DB_URL_FIELD, tuple.f1);
     reuseVertex.getValue().put(Utils.ONTOLOGY, tuple.f2);
 
+    vertexCounter.add(1L);
     return reuseVertex;
   }
 }

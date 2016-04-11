@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -139,6 +140,8 @@ public class SimilarityComputation {
       }
     }
 
+    Preconditions.checkArgument(propCount != 0, "prop count 0 for objectmap: " + value.toString());
+
     BigDecimal result = new BigDecimal(aggregatedSim / propCount);
     result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
 
@@ -220,14 +223,9 @@ public class SimilarityComputation {
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
                                                           String processingMode, double minClusterSim,
                                                           ExecutionEnvironment env) throws Exception {
-    LOG.info("\n*** [3] INITIAL CLUSTERING ***\n");
-
     // TypeGroupBy
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
-
-//      LOG.info("##################### After TypeGroupBy");
-//      Stats.writeVerticesToLog(graph.getVertices(), vertexList);
 
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);

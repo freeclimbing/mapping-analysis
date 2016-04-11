@@ -29,6 +29,14 @@ import static org.junit.Assert.assertEquals;
  */
 public class BasicTest {
 
+  // todo  test for objectmap not twice lat or lon
+//  public void addProperty(String key, Object value) {
+//
+//    Preconditions.checkArgument(!(key.equals(Utils.LAT) && map.containsKey(Utils.LAT))
+//            || !(key.equals(Utils.LON) && map.containsKey(Utils.LON)),
+//        map.get(Utils.LAT) + " - " + map.get(Utils.LON) + " LAT or LON already there, new: "
+//            + key + ": " + value.toString());
+
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test

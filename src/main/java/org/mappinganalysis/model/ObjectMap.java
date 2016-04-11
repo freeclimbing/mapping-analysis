@@ -1,16 +1,14 @@
 package org.mappinganalysis.model;
 
-import com.google.common.collect.Iterables;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
 import org.mappinganalysis.utils.Utils;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Custom map for representing properties for vertices. This is needed
@@ -72,14 +70,17 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   private Double getGeoValue(String latOrLon) {
-    // TODO how to handle multiple values in lat/lon correctly?
+
+    // todo check preconditions, write test
     Object geoValue = map.get(latOrLon);
-    if (geoValue instanceof Set) {
-      return (Double) Iterables.get((Set) geoValue, 0);
-    } else {
-      return (Double) geoValue;
-//      return Doubles.tryParse(latOrLon.toString());
+    if (geoValue == null) {
+      return null;
     }
+    Preconditions.checkArgument(!(geoValue instanceof Set)
+        && !(geoValue instanceof List), "lat or lon instance of Set or List: " + geoValue);
+    Preconditions.checkArgument(geoValue instanceof Double, "not double value: " + geoValue);
+
+    return Doubles.tryParse(geoValue.toString());
   }
 
   /**
@@ -125,6 +126,16 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @param value property value
    */
   public void addProperty(String key, Object value) {
+
+    Preconditions.checkNotNull(value, "new lat or lon null: " + map.toString());
+
+    //Todo here rly needed? write test
+    Preconditions.checkArgument(!(key.equals(Utils.LAT) && map.containsKey(Utils.LAT))
+        || !(key.equals(Utils.LON) && map.containsKey(Utils.LON)),
+        map.get(Utils.LAT) + " - " + map.get(Utils.LON) + " LAT or LON already there, new: "
+        + key + ": " + value.toString());
+
+
     if (map.containsKey(key)) {
       Object oldValue = map.get(key);
       if (oldValue instanceof Set) {
