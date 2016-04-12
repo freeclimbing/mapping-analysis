@@ -36,6 +36,9 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
           || vertexProperties.containsKey(Utils.LON) && key.equals(Utils.LON)) {
         continue;
       }
+      if (vertexProperties.containsKey(Utils.LABEL) && key.equals(Utils.LABEL)) {
+        continue;
+      }
 
       if (property.getPropertyType().equals("double")) {
         vertexProperties.addProperty(key, Doubles.tryParse(value));

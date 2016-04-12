@@ -265,7 +265,15 @@ public class Utils {
 
     String clusterVertices = "";
     if (vertex.getValue().containsKey(CL_VERTICES)) {
-      clusterVertices = "clusterVertices: " + vertex.getValue().getVerticesList().toString();
+      clusterVertices = " clusterVertices: " + vertex.getValue().getVerticesList().toString();
+    }
+
+    String ontology = "";
+    if (vertex.getValue().containsKey(ONTOLOGY)) {
+      ontology = " ontology: " + vertex.getValue().get(ONTOLOGY).toString();
+    }
+    if (vertex.getValue().containsKey(ONTOLOGIES)) {
+      ontology = " ontologies: " + vertex.getValue().get(ONTOLOGIES).toString();
     }
 
     if (latitude == null || longitude == null) {
@@ -279,7 +287,7 @@ public class Utils {
       latlon = "geo(" + lat + "|" + lon + ")";
     }
     return "##  (" + label + ": id(" + vertex.getId() + "), cc("
-        + cc + "), type(" + type + "), " + latlon + clusterVertices + ")";
+        + cc + "), type(" + type + "), " + latlon + clusterVertices + ontology + ")";
   }
 
   /**
@@ -308,7 +316,7 @@ public class Utils {
    */
   public static String simplify(String value) {
     value = Simplifiers.removeAll("[\\(|,].*").simplify(value);
-    value = Simplifiers.removeNonWord().simplify(value);
+//    value = Simplifiers.removeNonWord().simplify(value);
     return Simplifiers.toLowerCase().simplify(value);
   }
 
@@ -325,7 +333,7 @@ public class Utils {
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<String>())
         .simplify(Simplifiers.removeAll("[\\(|,].*"))
-        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
+//        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
         .simplify(Simplifiers.toLowerCase())
         .tokenize(Tokenizers.qGram(3))
         .build();

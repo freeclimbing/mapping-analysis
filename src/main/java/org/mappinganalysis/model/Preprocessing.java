@@ -57,7 +57,8 @@ public class Preprocessing {
     final String edgeFile = "linksWithIDs.csv";
     final String propertyFile = "concept_attributes.csv";
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile, inputDir);
+    DataSet<Vertex<Long, ObjectMap>> vertices = loader
+        .getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile);
 
     // restrict edges to these where source and target are vertices
     DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(inputDir + edgeFile)

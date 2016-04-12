@@ -62,10 +62,10 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
       resultProps.setGeoProperties(geoMap);
     }
     if (!labelMap.isEmpty()) {
-      resultProps.put(Utils.LABEL, getFinalValue(labelMap));
+      resultProps.put(Utils.LABEL, getFinalValue(labelMap, Utils.LABEL));
     }
     if (!typeMap.isEmpty()) {
-      resultProps.put(Utils.TYPE_INTERN, getFinalValue(typeMap));
+      resultProps.put(Utils.TYPE_INTERN, getFinalValue(typeMap, Utils.TYPE_INTERN));
     }
     resultProps.put(Utils.ONTOLOGIES, clusterOntologies);
     resultProps.put(Utils.CL_VERTICES, clusterVertices);
@@ -127,7 +127,8 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   }
 
   private void addTypeToMap(HashMap<String, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
-    if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN) && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
+    if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN)
+        && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
       String type = currentVertex.getValue().get(Utils.TYPE_INTERN).toString();
       if (typeMap.containsKey(type)) {
         int labelCount = typeMap.get(type);
@@ -138,15 +139,24 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     }
   }
 
-  private String getFinalValue(HashMap<String, Integer> map) {
+  /**
+   * Get the hash map value having the highest count of occurrence.
+   * For label property, if count is equal, a longer string is preferred.
+   * @param map containing value options with count of occurrence
+   * @param property special behavior if label
+   * @return resulting value
+   */
+  private String getFinalValue(HashMap<String, Integer> map, String property) {
     Map.Entry<String, Integer> finalEntry = null;
     for (Map.Entry<String, Integer> entry : map.entrySet()) {
       if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
         finalEntry = entry;
+      } else if (entry.getKey().length() > finalEntry.getKey().length() && property.equals(Utils.LABEL)) {
+        finalEntry = entry;
       }
     }
 
-    checkArgument( finalEntry != null, "Entry must not be null" );
+    checkArgument(finalEntry != null, "Entry must not be null");
     return finalEntry.getKey();
   }
 }
