@@ -8,15 +8,14 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
-import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
@@ -40,7 +39,8 @@ public class Preprocessing {
                                                           ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
 //    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
-//    graph = applyTypeMissMatchCorrection(graph, IS_TYPE_MISS_MATCH_CORRECTION_ACTIVE);
+    graph = applyTypeMissMatchCorrection(graph, true, env);
+
     return addCcIdsToGraph(graph);
   }
 
@@ -69,19 +69,28 @@ public class Preprocessing {
         .where(1).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction());
 
-    // delete vertices without any edges due to restriction
+    return Graph.fromDataSet(deleteVerticesWithoutAnyEdges(vertices, edges), edges, env);
+  }
+
+  /**
+   * delete vertices without any edges
+   * @param vertices input vertices
+   * @param edges edge set
+   * @return vertices
+   */
+  private static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
+      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Edge<Long, NullValue>> edges) {
+
     DataSet<Vertex<Long, ObjectMap>> left = vertices
         .leftOuterJoin(edges)
         .where(0).equalTo(0)
         .with(new VertexRestrictFlatJoinFunction()).distinct(0);
 
-    DataSet<Vertex<Long, ObjectMap>> finalVertices = vertices
+    return vertices
         .leftOuterJoin(edges)
         .where(0).equalTo(1)
         .with(new VertexRestrictFlatJoinFunction()).distinct(0)
         .union(left);
-
-    return Graph.fromDataSet(finalVertices, edges, env);
   }
 
 
@@ -106,18 +115,7 @@ public class Preprocessing {
         .where(1).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction());
 
-    // delete vertices without any edges due to restriction
-    DataSet<Vertex<Long, ObjectMap>> left = vertices
-        .leftOuterJoin(edges)
-        .where(0).equalTo(0)
-        .with(new VertexRestrictFlatJoinFunction()).distinct(0);
-    DataSet<Vertex<Long, ObjectMap>> finalVertices = vertices
-        .leftOuterJoin(edges)
-        .where(0).equalTo(1)
-        .with(new VertexRestrictFlatJoinFunction()).distinct(0)
-        .union(left);
-
-    return Graph.fromDataSet(finalVertices, edges, env);
+    return Graph.fromDataSet(deleteVerticesWithoutAnyEdges(vertices, edges), edges, env);
   }
 
   /**
@@ -193,7 +191,7 @@ public class Preprocessing {
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(Graph<Long, ObjectMap, NullValue> graph,
-      boolean isTypeMissMatchCorrectionActive) throws Exception {
+      boolean isTypeMissMatchCorrectionActive, ExecutionEnvironment env) throws Exception {
     if (isTypeMissMatchCorrectionActive) {
       DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
           .map(new VertexIdTypeTupleMapper());
@@ -210,7 +208,7 @@ public class Preprocessing {
           .with(new EdgeTypeJoinFunction(0))
           .join(vertexIdAndTypeList).where(1).equalTo(0)
           .with(new EdgeTypeJoinFunction(1))
-          .filter(new FilterNotEqualTypeEdges())
+          .filter(new FilterEqualTypeEdges())
           .map(new MapFunction<Tuple4<Long, Long, String, String>, Edge<Long, NullValue>>() {
             @Override
             public Edge<Long, NullValue> map(Tuple4<Long, Long, String, String> tuple) throws Exception {
@@ -218,14 +216,14 @@ public class Preprocessing {
             }
           });
 
-      if (edgesEqualType.collect().isEmpty()) {
-        LOG.info("[1] Type miss match correction: No edge with equal type on source and target");
-      } else {
-        graph = graph.removeEdges(edgesEqualType.collect());
-        LOG.info("[1] Type miss match correction: " + edgesEqualType.count()
-            + " edges with equal type on source and target deleted");
-      }
+      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(graph.getVertices(),
+          edgesEqualType);
+
+      return Graph.fromDataSet(resultVertices, edgesEqualType, env);
+
     }
+
+
     return graph;
   }
 }

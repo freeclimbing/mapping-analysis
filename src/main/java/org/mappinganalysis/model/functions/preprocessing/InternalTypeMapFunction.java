@@ -1,9 +1,7 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.accumulators.ListAccumulator;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.TypeDictionary;
@@ -15,14 +13,7 @@ import java.util.Set;
 /**
  * Map types of imported resources to an internal dictionary of harmonized type values.
  */
-public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
-  private ListAccumulator<String> statsCounter = new ListAccumulator<>();
-
-  @Override
-  public void open(final Configuration parameters) throws Exception {
-    super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.TYPES_COUNT_ACCUMULATOR, statsCounter);
-  }
+public class InternalTypeMapFunction implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
 
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -37,7 +28,6 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
     if (resultType == null) {
       resultType = Utils.NO_TYPE_AVAILABLE;
     }
-    statsCounter.add(resultType);
     properties.put(Utils.TYPE_INTERN, resultType);
     return vertex;
   }

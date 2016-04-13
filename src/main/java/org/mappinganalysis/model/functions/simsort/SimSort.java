@@ -68,7 +68,7 @@ public class SimSort {
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
                                                           Integer maxIterations, Double minimumSimilarity) {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
-    aggParameters.setName("TypeGroupBy");
+    aggParameters.setName("SimSort");
     aggParameters.setDirection(EdgeDirection.ALL);
     aggParameters.setSolutionSetUnmanagedMemory(true);
 

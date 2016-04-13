@@ -82,6 +82,7 @@ public class Utils {
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
 
   public static final String EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
+  public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
   public static final String REFINEMENT_MERGE_ACCUMULATOR = "merged-cluster-counter";
   public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
@@ -307,6 +308,31 @@ public class Utils {
   public static Connection openDbConnection(String dbName) throws SQLException {
     DB_NAME = dbName;
     return openDbConnection();
+  }
+
+  /**
+   * For unclear types, generalize to the most common ancestor
+   * @param vertexType input string
+   * @return generalized type
+   */
+  public static String getShadingType(String vertexType) {
+    if (TypeDictionary.TYPE_SHADINGS.containsKey(vertexType)
+        || TypeDictionary.TYPE_SHADINGS.containsValue(vertexType)) {
+      switch (vertexType) {
+        case "School":
+          vertexType = "ArchitecturalStructure";
+          break;
+        case "Mountain":
+          vertexType = "Island";
+          break;
+        case "Settlement":
+        case "Country":
+          vertexType = "AdministrativeRegion";
+          break;
+      }
+    }
+
+    return vertexType;
   }
 
   /**

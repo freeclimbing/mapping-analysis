@@ -10,23 +10,7 @@ public class AddShadingTypeMapFunction implements MapFunction<Vertex<Long, Objec
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
     String vertexType = vertex.getValue().get(Utils.TYPE_INTERN).toString();
-
-    if (TypeDictionary.TYPE_SHADINGS.containsKey(vertexType)
-        || TypeDictionary.TYPE_SHADINGS.containsValue(vertexType)) {
-      switch (vertexType) {
-        case "School":
-          vertexType = "ArchitecturalStructure";
-          break;
-        case "Mountain":
-          vertexType = "Island";
-          break;
-        case "Settlement":
-        case "Country":
-          vertexType = "AdministrativeRegion";
-          break;
-      }
-    }
-    vertex.getValue().put(Utils.COMP_TYPE, vertexType);
+    vertex.getValue().put(Utils.COMP_TYPE, Utils.getShadingType(vertexType));
 
     return vertex;
   }
