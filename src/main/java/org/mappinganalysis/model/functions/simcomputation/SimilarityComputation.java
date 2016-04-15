@@ -53,7 +53,9 @@ public class SimilarityComputation {
    * @return graph with edge similarities
    */
   public static DataSet<Edge<Long, ObjectMap>> computeEdgeSimFromGraph(Graph<Long, ObjectMap, NullValue> graph) {
-    LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: " + Utils.IGNORE_MISSING_PROPERTIES);
+    LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: "
+        + Utils.IGNORE_MISSING_PROPERTIES);
+
     return computeSimilarities(graph.getTriplets(), Utils.PRE_CLUSTER_STRATEGY)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Utils.IGNORE_MISSING_PROPERTIES));
@@ -201,16 +203,12 @@ public class SimilarityComputation {
    * @param env env
    * @return result
    */
-  public static Graph<Long, ObjectMap, ObjectMap> init(Graph<Long, ObjectMap, NullValue> graph,
-                                                       ExecutionEnvironment env) {
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-        .map(new AddShadingTypeMapFunction())
-        .groupBy(new CcIdAndCompTypeKeySelector())
-        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
-
-    DataSet<Edge<Long, ObjectMap>> edges = computeEdgeSimFromGraph(graph);
-
-    return Graph.fromDataSet(vertices, edges, env);
+  public static Graph<Long, ObjectMap, ObjectMap> initSimilarity(Graph<Long, ObjectMap, NullValue> graph,
+                                                                 ExecutionEnvironment env) {
+    return Graph.fromDataSet(
+        graph.getVertices(),
+        computeEdgeSimFromGraph(graph),
+        env);
   }
 
   /**
@@ -220,9 +218,9 @@ public class SimilarityComputation {
    * @param minClusterSim minimal aggregated similarty to create a cluster
    *@param env env  @return result
    */
-  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          String processingMode, double minClusterSim,
-                                                          ExecutionEnvironment env) throws Exception {
+  public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
+                                                                  String processingMode, double minClusterSim,
+                                                                  ExecutionEnvironment env) throws Exception {
     // TypeGroupBy
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);

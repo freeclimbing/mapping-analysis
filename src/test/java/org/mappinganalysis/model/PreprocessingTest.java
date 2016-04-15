@@ -35,7 +35,7 @@ public class PreprocessingTest {
         });
 
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
+//    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true); TODO
     graph = Preprocessing.applyTypeToInternalTypeMapping(graph, env);
 
     graph.getVertices().map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, String>>() {

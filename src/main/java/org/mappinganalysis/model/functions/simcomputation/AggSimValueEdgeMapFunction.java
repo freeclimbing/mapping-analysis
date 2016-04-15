@@ -19,19 +19,19 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
 
   @Override
   public Edge<Long, ObjectMap> map(Edge<Long, ObjectMap> edge) throws Exception {
-    ObjectMap value = edge.getValue();
+    ObjectMap edgeValue = edge.getValue();
 
-    Preconditions.checkArgument(!value.isEmpty(), "edge value empty: " + edge.getSource() + ", "
-    + edge.getTarget());
+    Preconditions.checkArgument(!edgeValue.isEmpty(), "edge value empty: "
+        + edge.getSource() + ", " + edge.getTarget());
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      aggregatedSim = SimilarityComputation.getMeanSimilarity(value);
+      aggregatedSim = SimilarityComputation.getMeanSimilarity(edgeValue);
     } else {
-      aggregatedSim = SimilarityComputation.getWeightedAggSim(value);
+      aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
     }
 
-    value.put(Utils.AGGREGATED_SIM_VALUE, aggregatedSim);
+    edgeValue.put(Utils.AGGREGATED_SIM_VALUE, aggregatedSim);
     return edge;
   }
 }

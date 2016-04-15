@@ -1,16 +1,22 @@
 package org.mappinganalysis.model;
 
+import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.tuple.Tuple5;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
@@ -19,6 +25,9 @@ import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
 
 /**
  * Preprocessing.
@@ -34,14 +43,23 @@ public class Preprocessing {
    * @return graph
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, NullValue> execute(Graph<Long, ObjectMap, NullValue> graph,
+  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           boolean isLinkFilterActive,
                                                           ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-//    graph = applyLinkFilterStrategy(graph, env, isLinkFilterActive);
     graph = applyTypeMissMatchCorrection(graph, true, env);
+    graph = addCcIdsToBaseGraph(graph);
 
-    return addCcIdsToGraph(graph);
+    Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
+    simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
+    simGraph = addCcIdsToGraph(simGraph, env);
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
+        .map(new AddShadingTypeMapFunction())
+        .groupBy(new CcIdAndCompTypeKeySelector())
+        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
+
+    return Graph.fromDataSet(vertices, simGraph.getEdges(), env);
   }
 
   /**
@@ -69,7 +87,10 @@ public class Preprocessing {
         .where(1).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction());
 
-    return Graph.fromDataSet(deleteVerticesWithoutAnyEdges(vertices, edges), edges, env);
+    return Graph.fromDataSet(
+        deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
+        edges,
+        env);
   }
 
   /**
@@ -79,7 +100,7 @@ public class Preprocessing {
    * @return vertices
    */
   private static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Edge<Long, NullValue>> edges) {
+      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
 
     DataSet<Vertex<Long, ObjectMap>> left = vertices
         .leftOuterJoin(edges)
@@ -92,7 +113,6 @@ public class Preprocessing {
         .with(new VertexRestrictFlatJoinFunction()).distinct(0)
         .union(left);
   }
-
 
   /**
    * Create the input graph for further analysis,
@@ -115,24 +135,40 @@ public class Preprocessing {
         .where(1).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction());
 
-    return Graph.fromDataSet(deleteVerticesWithoutAnyEdges(vertices, edges), edges, env);
+    return Graph.fromDataSet(
+        deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
+        edges,
+        env);
   }
 
   /**
    * Add initial component ids to vertices based on flink connected components.
    * @param graph input graph
+   * @param env
    * @return graph containing vertices with additional property
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, NullValue> addCcIdsToGraph(
-      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+  public static Graph<Long, ObjectMap, ObjectMap> addCcIdsToGraph(
+      Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) throws Exception {
 
     final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(graph.getVertices().map(new VertexIdMapFunction()), graph.getEdgeIds(), 1000);
+        .compute(graph.getVertices().map(new VertexIdMapFunction()),
+            graph.getEdgeIds(),
+            1000);
 
     return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
   }
 
+  public static Graph<Long, ObjectMap, NullValue> addCcIdsToBaseGraph(
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+
+    final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
+        .compute(graph.getVertices().map(new VertexIdMapFunction()),
+            graph.getEdgeIds(),
+            1000);
+
+    return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
+  }
   /**
    * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.
    *
@@ -142,29 +178,60 @@ public class Preprocessing {
    * @param isLinkFilterActive boolean if filter should be used
    * @return output graph
    */
-  public static Graph<Long, ObjectMap, NullValue> applyLinkFilterStrategy(
-      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env,
+  public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilterStrategy(
+      Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env,
       boolean isLinkFilterActive) {
+
     if (isLinkFilterActive) {
-      LOG.info("[1] Apply basic link filter strategy");
-      DataSet<Edge<Long, NullValue>> edgesNoDuplicates = graph
-          .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.OUT)
+      DataSet<Edge<Long, ObjectMap>> edges = graph
+          .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL)
           .groupBy(1, 2)
-          .aggregate(Aggregations.SUM, 3)
-          .filter(new ExcludeOneToManyOntologiesFilter()) // deleted links accumulator
-          .map(new MapFunction<Tuple4<Edge<Long, NullValue>, Long, String, Integer>,
-              Edge<Long, NullValue>>() {
+          .aggregate(Aggregations.SUM, 3)//.andMax(4);
+          .flatMap(new FlatMapFunction<Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double>,
+              Edge<Long, ObjectMap>>() {
             @Override
-            public Edge<Long, NullValue> map(Tuple4<Edge<Long, NullValue>, Long, String, Integer> tuple)
-                throws Exception {
-              return tuple.f0;
+            public void flatMap(Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double> tuple,
+                                Collector<Edge<Long, ObjectMap>> collector) throws Exception {
+              if (tuple.f3 < 2) {
+                collector.collect(tuple.f0);
+              }
+            }
+          })
+          .distinct(0, 1)
+          .filter(new RichFilterFunction<Edge<Long, ObjectMap>>() {
+            private LongCounter filteredLinks = new LongCounter();
+
+            @Override
+            public void open(final Configuration parameters) throws Exception {
+              super.open(parameters);
+              getRuntimeContext().addAccumulator(Utils.LINK_FILTER_ACCUMULATOR, filteredLinks);
+            }
+
+            @Override
+            public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
+              filteredLinks.add(1L);
+              return true;
             }
           });
 
-      return Graph.fromDataSet(graph.getVertices(), edgesNoDuplicates, env);
+      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(graph.getVertices(),
+          edges.<Tuple2<Long, Long>>project(0, 1));
+
+      return Graph.fromDataSet(resultVertices, edges, env);
     } else {
       return graph;
     }
+//      TextOutputFormat format = new TextOutputFormat(new Path("hdfs:///mapping-analysis/linklion/preProcEdges"));
+//      format.setWriteMode(FileSystem.WriteMode.OVERWRITE);
+//
+//      tmp
+//          .filter(new ExcludeOneToManyOntologiesFilter())
+//          .map(new MapFunction<Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double>, String>() {
+//        @Override
+//        public String map(Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double> edge) throws Exception {
+//          return edge.toString();
+//        }
+//      }).output(format);
   }
 
   /**
@@ -186,7 +253,7 @@ public class Preprocessing {
   /**
    * Exclude edges where directly connected source and target vertices have different type property values.
    * @param graph input graph
-   * @param isTypeMissMatchCorrectionActive can be disabled in options
+   * @param isTypeMissMatchCorrectionActive true enables option
    * @return corrected graph
    * @throws Exception
    */
@@ -217,7 +284,7 @@ public class Preprocessing {
           });
 
       DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(graph.getVertices(),
-          edgesEqualType);
+          edgesEqualType.<Tuple2<Long, Long>>project(0, 1));
 
       return Graph.fromDataSet(resultVertices, edgesEqualType, env);
 

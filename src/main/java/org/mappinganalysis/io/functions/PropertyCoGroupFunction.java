@@ -26,33 +26,37 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
 
   public void coGroup(Iterable<Vertex<Long, ObjectMap>> vertices, Iterable<FlinkProperty> properties,
                       Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-    Vertex<Long, ObjectMap> vertex = Iterables.get(vertices, 0);
-    ObjectMap vertexProperties = vertex.getValue();
+    try {
+      Vertex<Long, ObjectMap> vertex = Iterables.get(vertices, 0);;
+      ObjectMap vertexProperties = vertex.getValue();
 
-    for (FlinkProperty property : properties) {
-      String value = property.getPropertyValue();
-      String key = property.getPropertyKey();
-      if (vertexProperties.containsKey(Utils.LAT) && key.equals(Utils.LAT)
-          || vertexProperties.containsKey(Utils.LON) && key.equals(Utils.LON)) {
-        continue;
+      for (FlinkProperty property : properties) {
+        String value = property.getPropertyValue();
+        String key = property.getPropertyKey();
+        if (vertexProperties.containsKey(Utils.LAT) && key.equals(Utils.LAT)
+            || vertexProperties.containsKey(Utils.LON) && key.equals(Utils.LON)) {
+          continue;
+        }
+        if (vertexProperties.containsKey(Utils.LABEL) && key.equals(Utils.LABEL)) {
+          continue;
+        }
+
+        if (property.getPropertyType().equals("double")) {
+          vertexProperties.addProperty(key, Doubles.tryParse(value));
+        } else if (property.getPropertyType().equals("string")) {
+          vertexProperties.addProperty(key, value);
+        }
       }
-      if (vertexProperties.containsKey(Utils.LABEL) && key.equals(Utils.LABEL)) {
-        continue;
+
+      // skip no label vertices
+      if (vertexProperties.containsKey(Utils.LABEL)) {
+        vertex.setValue(vertexProperties);
+
+        vertexCounter.add(1L);
+        out.collect(vertex);
       }
-
-      if (property.getPropertyType().equals("double")) {
-        vertexProperties.addProperty(key, Doubles.tryParse(value));
-      } else if (property.getPropertyType().equals("string")) {
-        vertexProperties.addProperty(key, value);
-      }
-    }
-
-    // skip no label vertices
-    if (vertexProperties.containsKey(Utils.LABEL)) {
-      vertex.setValue(vertexProperties);
-
-      vertexCounter.add(1L);
-      out.collect(vertex);
+    } catch (IndexOutOfBoundsException e) {
+      // dont collect the vertex if the vertex does not exist
     }
   }
 }
