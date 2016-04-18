@@ -26,8 +26,13 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
 
   public void coGroup(Iterable<Vertex<Long, ObjectMap>> vertices, Iterable<FlinkProperty> properties,
                       Collector<Vertex<Long, ObjectMap>> out) throws Exception {
+    Vertex<Long, ObjectMap> vertex = null;
     try {
-      Vertex<Long, ObjectMap> vertex = Iterables.get(vertices, 0);;
+      vertex = Iterables.get(vertices, 0);
+    } catch (IndexOutOfBoundsException e) {
+      // dont collect the vertex if the vertex does not exist
+    }
+    if (vertex != null) {
       ObjectMap vertexProperties = vertex.getValue();
 
       for (FlinkProperty property : properties) {
@@ -55,8 +60,6 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
         vertexCounter.add(1L);
         out.collect(vertex);
       }
-    } catch (IndexOutOfBoundsException e) {
-      // dont collect the vertex if the vertex does not exist
     }
   }
 }

@@ -6,6 +6,11 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.core.fs.Path;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -163,13 +168,14 @@ public class Utils {
   public static final String ONTOLOGIES = "ontologies";
 
   /**
-   * DBpedia namespace
+   * source namespaces
    */
-  public static final String DBP_NAMESPACE = "http://dbpedia.org/";
-  /**
-   * GeoNames namespace
-   */
-  public static final String GN_NAMESPACE = "http://sws.geonames.org/";
+  public static final String DBP_NS = "http://dbpedia.org/";
+  public static final String GN_NS = "http://sws.geonames.org/";
+  public static final String LGD_NS = "http://linkedgeodata.org/";
+  public static final String NYT_NS = "http://data.nytimes.com/";
+  public static final String FB_NS = "http://rdf.freebase.com/";
+
 
   private static boolean DB_UTF8_MODE = false;
   private static final HashFunction HF = Hashing.md5();
@@ -227,6 +233,20 @@ public class Utils {
     MongoClient client = new MongoClient("localhost", 27017);
 
     return client.getDatabase(dbName);
+  }
+
+  public static void writeToHdfs(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir) {
+
+    TextOutputFormat format = new TextOutputFormat(new Path("hdfs:///mapping-analysis/linklion/" + outDir));
+    format.setWriteMode(FileSystem.WriteMode.OVERWRITE);
+
+    vertices
+        .map(new MapFunction<Vertex<Long, ObjectMap>, String>() {
+          @Override
+          public String map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex.toString();
+          }
+        }).output(format);
   }
 
   /**

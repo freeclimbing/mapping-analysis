@@ -88,10 +88,10 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @param geoMap property map of vertex
    */
   public void setGeoProperties(HashMap<String, GeoCode> geoMap) {
-      if (geoMap.containsKey(Utils.GN_NAMESPACE)) {
-        setLatLon(geoMap.get(Utils.GN_NAMESPACE));
-      } else if (geoMap.containsKey(Utils.DBP_NAMESPACE)) {
-        setLatLon(geoMap.get(Utils.DBP_NAMESPACE));
+      if (geoMap.containsKey(Utils.GN_NS)) {
+        setLatLon(geoMap.get(Utils.GN_NS));
+      } else if (geoMap.containsKey(Utils.DBP_NS)) {
+        setLatLon(geoMap.get(Utils.DBP_NS));
       } else {
         GeoCode result = null;
         int smallest = Integer.MAX_VALUE;
@@ -117,6 +117,16 @@ public class ObjectMap implements Map<String, Object>, Serializable {
       return (Set<Long>) clusteredVertices;
     } else {
       return Sets.newHashSet((long) clusteredVertices);
+    }
+  }
+
+  public Set<String> getOntologiesList() {
+    Object ontologies = map.get(Utils.ONTOLOGIES);
+
+    if (ontologies instanceof Set) {
+      return (Set<String>) ontologies;
+    } else {
+      return Sets.newHashSet(ontologies.toString());
     }
   }
 

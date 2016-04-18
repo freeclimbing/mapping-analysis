@@ -22,6 +22,7 @@ import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.JDBCDataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
@@ -39,19 +40,30 @@ public class Preprocessing {
    * Execute all preprocessing steps with the given options
    * @param graph input graph
    * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
-   * @param env execution environment
-   * @return graph
+   * @param out
+   *@param env execution environment  @return graph
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           boolean isLinkFilterActive,
-                                                          ExecutionEnvironment env) throws Exception {
+                                                          ExampleOutput out, ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = applyTypeMissMatchCorrection(graph, true, env);
-    graph = addCcIdsToBaseGraph(graph);
+    out.addVertexAndEdgeSizes("afterTypeToInternalType", graph);
 
+    graph = applyTypeMissMatchCorrection(graph, true, env);
+    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
+
+    graph = addCcIdsToBaseGraph(graph);
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
+
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
+    out.addVertexAndEdgeSizes("afterLinkFilter", simGraph.mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
+      @Override
+      public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
+        return NullValue.getInstance();
+      }
+    }));
+
     simGraph = addCcIdsToGraph(simGraph, env);
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
@@ -59,7 +71,16 @@ public class Preprocessing {
         .groupBy(new CcIdAndCompTypeKeySelector())
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
-    return Graph.fromDataSet(vertices, simGraph.getEdges(), env);
+    Graph<Long, ObjectMap, ObjectMap> resultGraph = Graph.fromDataSet(vertices, simGraph.getEdges(), env);
+    out.addVertexAndEdgeSizes("endPreproc", resultGraph
+        .mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
+      @Override
+      public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
+        return NullValue.getInstance();
+      }
+    }));
+
+    return resultGraph;
   }
 
   /**
@@ -77,6 +98,8 @@ public class Preprocessing {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile);
+
+//    Utils.writeToHdfs(vertices, "inputVertices");
 
     // restrict edges to these where source and target are vertices
     DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(inputDir + edgeFile)
@@ -281,9 +304,11 @@ public class Preprocessing {
             public Edge<Long, NullValue> map(Tuple4<Long, Long, String, String> tuple) throws Exception {
               return new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance());
             }
-          });
+          })
+          .distinct(0, 1);
 
-      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(graph.getVertices(),
+      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
+          graph.getVertices(),
           edgesEqualType.<Tuple2<Long, Long>>project(0, 1));
 
       return Graph.fromDataSet(resultVertices, edgesEqualType, env);
