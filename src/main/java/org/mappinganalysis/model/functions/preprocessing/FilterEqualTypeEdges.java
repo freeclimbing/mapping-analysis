@@ -17,10 +17,14 @@ public class FilterEqualTypeEdges extends RichFilterFunction<Tuple4<Long, Long, 
 
   @Override
   public boolean filter(Tuple4<Long, Long, String, String> tuple) throws Exception {
-    boolean result = (tuple.f2.equals(Utils.NO_TYPE_AVAILABLE)
-        || tuple.f2.equals(Utils.NO_TYPE_FOUND)
-        || tuple.f3.equals(Utils.NO_TYPE_AVAILABLE)
-        || tuple.f3.equals(Utils.NO_TYPE_FOUND))
+    boolean result = (
+        tuple.f2.equals(Utils.NO_TYPE_AVAILABLE)
+            || tuple.f2.equals(Utils.NO_TYPE_FOUND)
+            || tuple.f2.equals("")
+            || tuple.f3.equals(Utils.NO_TYPE_AVAILABLE)
+            || tuple.f3.equals(Utils.NO_TYPE_FOUND)
+            || tuple.f3.equals("")
+        )
         || Utils.getShadingType(tuple.f2).equals(Utils.getShadingType(tuple.f3));
 
     if (!result) {

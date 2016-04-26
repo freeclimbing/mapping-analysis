@@ -41,6 +41,7 @@ public class Utils {
    * Database property names.
    */
   private static String DB_NAME = "";
+  public static String INPUT_DIR;
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static String PRE_CLUSTER_STRATEGY;
   public static boolean PRINT_STATS;
@@ -235,15 +236,14 @@ public class Utils {
     return client.getDatabase(dbName);
   }
 
-  public static void writeToHdfs(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir) {
+  public static <T> void writeToHdfs(DataSet<T> data, String outDir) {
 
-    TextOutputFormat format = new TextOutputFormat(new Path("hdfs:///mapping-analysis/linklion/" + outDir));
+    TextOutputFormat format = new TextOutputFormat(new Path(INPUT_DIR + outDir));
     format.setWriteMode(FileSystem.WriteMode.OVERWRITE);
 
-    vertices
-        .map(new MapFunction<Vertex<Long, ObjectMap>, String>() {
+    data.map(new MapFunction<T, String>() {
           @Override
-          public String map(Vertex<Long, ObjectMap> vertex) throws Exception {
+          public String map(T vertex) throws Exception {
             return vertex.toString();
           }
         }).output(format);

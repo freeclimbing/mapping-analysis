@@ -1,15 +1,14 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichFilterFunction;
+import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.api.java.tuple.Tuple5;
+import org.apache.flink.api.java.operators.GroupReduceOperator;
+import org.apache.flink.api.java.operators.JoinOperator;
+import org.apache.flink.api.java.tuple.*;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
@@ -48,15 +47,56 @@ public class Preprocessing {
                                                           boolean isLinkFilterActive,
                                                           ExampleOutput out, ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    out.addVertexAndEdgeSizes("afterTypeToInternalType", graph);
+
+    graph = addCcIdsToBaseGraph(graph);
+
+    // restrict to first 100k clusters
+    DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
+          @Override
+          public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
+          }
+        })
+        .first(100000);
+
+    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID));
+          }
+        })
+        .join(restrictedComponentIds)
+        .where(1)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple1<Long>>() {
+          @Override
+          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple1<Long>> collector) throws Exception {
+            collector.collect(new Tuple1<>(left.f0));
+          }
+        })
+        .leftOuterJoin(graph.getVertices())
+        .where(0)
+        .equalTo(0)
+        .with(new JoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public Vertex<Long, ObjectMap> join(Tuple1<Long> longTuple1, Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex;
+          }
+        });
+
+    graph = Graph.fromDataSet(deleteVerticesWithoutAnyEdges(newVertices, graph.getEdgeIds()),
+        graph.getEdges(), env);
+    out.addVertexAndEdgeSizes("afterInitialVertexDeletionAndRestrictedClusters", graph);
 
     graph = applyTypeMissMatchCorrection(graph, true, env);
     out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
 
-    graph = addCcIdsToBaseGraph(graph);
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
+
     out.addVertexAndEdgeSizes("afterLinkFilter", simGraph.mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
       @Override
       public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
@@ -72,13 +112,13 @@ public class Preprocessing {
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
     Graph<Long, ObjectMap, ObjectMap> resultGraph = Graph.fromDataSet(vertices, simGraph.getEdges(), env);
-    out.addVertexAndEdgeSizes("endPreproc", resultGraph
-        .mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
-      @Override
-      public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
-        return NullValue.getInstance();
-      }
-    }));
+//    out.addVertexAndEdgeSizes("endPreproc", resultGraph
+//        .mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
+//      @Override
+//      public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
+//        return NullValue.getInstance();
+//      }
+//    }));
 
     return resultGraph;
   }
@@ -87,9 +127,8 @@ public class Preprocessing {
    * CSV Reader todo fix duplicate code
    * @return graph with vertices and edges.
    * @throws Exception
-   * @param inputDir
    */
-  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(String inputDir, ExecutionEnvironment env)
+  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(ExecutionEnvironment env)
       throws Exception {
     JDBCDataLoader loader = new JDBCDataLoader(env);
     final String vertexFile = "concept.csv";
@@ -97,12 +136,12 @@ public class Preprocessing {
     final String propertyFile = "concept_attributes.csv";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
-        .getVerticesFromCsv(inputDir + vertexFile, inputDir + propertyFile);
+        .getVerticesFromCsv(Utils.INPUT_DIR + vertexFile, Utils.INPUT_DIR + propertyFile);
 
 //    Utils.writeToHdfs(vertices, "inputVertices");
 
     // restrict edges to these where source and target are vertices
-    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(inputDir + edgeFile)
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(Utils.INPUT_DIR + edgeFile)
         .leftOuterJoin(vertices)
         .where(0).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction())
@@ -206,36 +245,28 @@ public class Preprocessing {
       boolean isLinkFilterActive) {
 
     if (isLinkFilterActive) {
-      DataSet<Edge<Long, ObjectMap>> edges = graph
+      DataSet<Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double>> oneToManyTuples = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL)
           .groupBy(1, 2)
           .aggregate(Aggregations.SUM, 3)//.andMax(4);
-          .flatMap(new FlatMapFunction<Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double>,
-              Edge<Long, ObjectMap>>() {
+          .filter(new FilterFunction<Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double>>() {
             @Override
-            public void flatMap(Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double> tuple,
-                                Collector<Edge<Long, ObjectMap>> collector) throws Exception {
-              if (tuple.f3 < 2) {
-                collector.collect(tuple.f0);
-              }
-            }
-          })
-          .distinct(0, 1)
-          .filter(new RichFilterFunction<Edge<Long, ObjectMap>>() {
-            private LongCounter filteredLinks = new LongCounter();
-
-            @Override
-            public void open(final Configuration parameters) throws Exception {
-              super.open(parameters);
-              getRuntimeContext().addAccumulator(Utils.LINK_FILTER_ACCUMULATOR, filteredLinks);
-            }
-
-            @Override
-            public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
-              filteredLinks.add(1L);
-              return true;
+            public boolean filter(Tuple5<Edge<Long, ObjectMap>, Long, String, Integer, Double> tuple) throws Exception {
+              return tuple.f3 > 1;
             }
           });
+
+      Utils.writeToHdfs(oneToManyTuples, "edgeTuplePreproc");
+
+      DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges()
+          .leftOuterJoin(oneToManyTuples.<Tuple1<Long>>project(1))
+          .where(0)
+          .equalTo(0)
+          .with(new LinkFilterExcludeEdgeFlatJoinFunction())
+          .leftOuterJoin(oneToManyTuples.<Tuple1<Long>>project(1))
+          .where(1)
+          .equalTo(0)
+          .with(new LinkFilterExcludeEdgeFlatJoinFunction());
 
       DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(graph.getVertices(),
           edges.<Tuple2<Long, Long>>project(0, 1));
@@ -286,18 +317,44 @@ public class Preprocessing {
       DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
           .map(new VertexIdTypeTupleMapper());
 
-      DataSet<Edge<Long, NullValue>> edgesEqualType = graph.getEdges()
+      DataSet<Tuple4<Long, Long, String, String>> edgeTypes = graph.getEdges()
           .map(new MapFunction<Edge<Long, NullValue>, Tuple4<Long, Long, String, String>>() {
             @Override
             public Tuple4<Long, Long, String, String> map(Edge<Long, NullValue> edge) throws Exception {
               return new Tuple4<>(edge.getSource(), edge.getTarget(), "", "");
             }
           })
-          .join(vertexIdAndTypeList)
+          .leftOuterJoin(vertexIdAndTypeList)
           .where(0).equalTo(0)
           .with(new EdgeTypeJoinFunction(0))
-          .join(vertexIdAndTypeList).where(1).equalTo(0)
+          .distinct(0, 1)
+          .leftOuterJoin(vertexIdAndTypeList)
+          .where(1)
+          .equalTo(0)
           .with(new EdgeTypeJoinFunction(1))
+          .distinct(0, 1);
+
+      Utils.writeToHdfs(edgeTypes, "edgeTypes");
+
+      Utils.writeToHdfs(edgeTypes
+          .filter(new FilterEqualTypeEdges()), "edgeTypesEqual");
+      Utils.writeToHdfs(edgeTypes.filter(new FilterFunction<Tuple4<Long, Long, String, String>>() {
+        @Override
+        public boolean filter(Tuple4<Long, Long, String, String> tuple) throws Exception {
+          boolean result = (
+              tuple.f2.equals(Utils.NO_TYPE_AVAILABLE)
+                  || tuple.f2.equals(Utils.NO_TYPE_FOUND)
+                  || tuple.f2.equals("")
+                  || tuple.f3.equals(Utils.NO_TYPE_AVAILABLE)
+                  || tuple.f3.equals(Utils.NO_TYPE_FOUND)
+                  || tuple.f3.equals("")
+          )
+              || Utils.getShadingType(tuple.f2).equals(Utils.getShadingType(tuple.f3));
+          return !result;
+        }
+      }), "edgeTypesNotEqual");
+
+      DataSet<Edge<Long, NullValue>> edgesEqualType = edgeTypes
           .filter(new FilterEqualTypeEdges())
           .map(new MapFunction<Tuple4<Long, Long, String, String>, Edge<Long, NullValue>>() {
             @Override
@@ -317,5 +374,26 @@ public class Preprocessing {
 
 
     return graph;
+  }
+
+  private static class LinkFilterExcludeEdgeFlatJoinFunction extends RichFlatJoinFunction<Edge<Long,ObjectMap>,
+      Tuple1<Long>, Edge<Long, ObjectMap>> {
+    private LongCounter filteredLinks = new LongCounter();
+
+    @Override
+    public void open(final Configuration parameters) throws Exception {
+      super.open(parameters);
+      getRuntimeContext().addAccumulator(Utils.LINK_FILTER_ACCUMULATOR, filteredLinks);
+    }
+
+    @Override
+    public void join(Edge<Long, ObjectMap> left, Tuple1<Long> right,
+                     Collector<Edge<Long, ObjectMap>> collector) throws Exception {
+      if (right == null) {
+        collector.collect(left);
+      } else {
+        filteredLinks.add(1L);
+      }
+    }
   }
 }
