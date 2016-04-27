@@ -50,45 +50,7 @@ public class Preprocessing {
 
     graph = addCcIdsToBaseGraph(graph);
 
-    // restrict to first 100k clusters
-    DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
-          @Override
-          public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
-          }
-        })
-        .first(100000);
-
-    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID));
-          }
-        })
-        .join(restrictedComponentIds)
-        .where(1)
-        .equalTo(0)
-        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple1<Long>>() {
-          @Override
-          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple1<Long>> collector) throws Exception {
-            collector.collect(new Tuple1<>(left.f0));
-          }
-        })
-        .leftOuterJoin(graph.getVertices())
-        .where(0)
-        .equalTo(0)
-        .with(new JoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
-          @Override
-          public Vertex<Long, ObjectMap> join(Tuple1<Long> longTuple1, Vertex<Long, ObjectMap> vertex) throws Exception {
-            return vertex;
-          }
-        });
-
-    graph = Graph.fromDataSet(deleteVerticesWithoutAnyEdges(newVertices, graph.getEdgeIds()),
-        graph.getEdges(), env);
-    out.addVertexAndEdgeSizes("afterInitialVertexDeletionAndRestrictedClusters", graph);
+//    graph = restrictGraph(graph, out, env);
 
     graph = applyTypeMissMatchCorrection(graph, true, env);
     out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
@@ -123,6 +85,53 @@ public class Preprocessing {
     return resultGraph;
   }
 
+  private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph, ExampleOutput out, ExecutionEnvironment env) {
+    // restrict to first 100k clusters
+    DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
+          @Override
+          public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
+          }
+        })
+        .first(100000);
+
+    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID));
+          }
+        }) //vid, ccid
+        .join(restrictedComponentIds)
+        .where(1)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple1<Long>>() {
+          @Override
+          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple1<Long>> collector) throws Exception {
+            collector.collect(new Tuple1<>(left.f0));
+          }
+        })
+        .leftOuterJoin(graph.getVertices())
+        .where(0)
+        .equalTo(0)
+        .with(new JoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public Vertex<Long, ObjectMap> join(Tuple1<Long> longTuple1, Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex;
+          }
+        });
+
+    Utils.writeToHdfs(newVertices, "newVertices");
+
+
+    DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph, newVertices);
+
+    graph = Graph.fromDataSet(newVertices, newEdges, env);
+    out.addVertexAndEdgeSizes("afterInitialVertexDeletionAndRestrictedClusters", graph);
+    return graph;
+  }
+
   /**
    * CSV Reader todo fix duplicate code
    * @return graph with vertices and edges.
@@ -153,6 +162,17 @@ public class Preprocessing {
         deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
         edges,
         env);
+  }
+
+  // not yet working correctly
+  private static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(Graph<Long, ObjectMap, NullValue> graph, DataSet<Vertex<Long, ObjectMap>> newVertices) {
+    return graph.getEdges()
+        .leftOuterJoin(newVertices)
+        .where(0).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction())
+        .leftOuterJoin(newVertices)
+        .where(1).equalTo(0)
+        .with(new EdgeRestrictFlatJoinFunction());
   }
 
   /**
@@ -324,11 +344,11 @@ public class Preprocessing {
               return new Tuple4<>(edge.getSource(), edge.getTarget(), "", "");
             }
           })
-          .leftOuterJoin(vertexIdAndTypeList)
+          .join(vertexIdAndTypeList)
           .where(0).equalTo(0)
           .with(new EdgeTypeJoinFunction(0))
           .distinct(0, 1)
-          .leftOuterJoin(vertexIdAndTypeList)
+          .join(vertexIdAndTypeList)
           .where(1)
           .equalTo(0)
           .with(new EdgeTypeJoinFunction(1))

@@ -13,12 +13,12 @@ public class EdgeTypeJoinFunction implements JoinFunction<Tuple4<Long, Long, Str
   }
 
   @Override
-  public Tuple4<Long, Long, String, String> join(Tuple4<Long, Long, String, String> edge,
-                                                 Tuple2<Long, String> tuple) throws Exception {
+  public Tuple4<Long, Long, String, String> join(Tuple4<Long, Long, String, String> left,
+                                                 Tuple2<Long, String> right) throws Exception {
     if (tuplePosition == 0) {
-      return new Tuple4<>(edge.f0, edge.f1, tuple.f1, "");
+      return new Tuple4<>(left.f0, left.f1, right.f1, "");
     } else {
-      return new Tuple4<>(edge.f0, edge.f1, edge.f2, tuple.f1);
+      return new Tuple4<>(left.f0, left.f1, left.f2, right.f1);
     }
   }
 }

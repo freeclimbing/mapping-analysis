@@ -17,14 +17,6 @@ import java.util.*;
 public class ObjectMap implements Map<String, Object>, Serializable {
   private static final long serialVersionUID = 1L;
 
-  public ObjectMap getMap() {
-    return (ObjectMap) map;
-  }
-
-  public void setMap(ObjectMap map) {
-    this.map = map;
-  }
-
   private Map<String, Object> map = null;
 
   public ObjectMap(ObjectMap map) {
@@ -37,6 +29,14 @@ public class ObjectMap implements Map<String, Object>, Serializable {
 
   public ObjectMap() {
     map = Maps.newHashMap();
+  }
+
+  public ObjectMap getMap() {
+    return (ObjectMap) map;
+  }
+
+  public void setMap(ObjectMap map) {
+    this.map = map;
   }
 
   public String toString() {

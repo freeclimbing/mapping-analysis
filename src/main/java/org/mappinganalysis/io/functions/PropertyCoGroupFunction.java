@@ -38,13 +38,6 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
       for (FlinkProperty property : properties) {
         String value = property.getPropertyValue();
         String key = property.getPropertyKey();
-        if (vertexProperties.containsKey(Utils.LAT) && key.equals(Utils.LAT)
-            || vertexProperties.containsKey(Utils.LON) && key.equals(Utils.LON)) {
-          continue;
-        }
-        if (vertexProperties.containsKey(Utils.LABEL) && key.equals(Utils.LABEL)) {
-          continue;
-        }
 
         if (property.getPropertyType().equals("double")) {
           vertexProperties.addProperty(key, Doubles.tryParse(value));
@@ -53,7 +46,7 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
         }
       }
 
-      // skip no label vertices
+      // only add vertices with label
       if (vertexProperties.containsKey(Utils.LABEL)) {
         vertex.setValue(vertexProperties);
 
