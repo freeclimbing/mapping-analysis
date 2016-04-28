@@ -6,11 +6,9 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.core.fs.Path;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -42,10 +40,15 @@ public class Utils {
    */
   private static String DB_NAME = "";
   public static String INPUT_DIR;
+  public static String VERBOSITY;
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static String PRE_CLUSTER_STRATEGY;
   public static boolean PRINT_STATS;
   public static boolean IS_LINK_FILTER_ACTIVE;
+
+  public static final String DEBUG = "debug";
+  public static final String INFO = "info";
+  public static final String LESS = "less";
 
   public static final String LL_DB_NAME = "linklion_links_9_2015";
   public static final String BIO_DB_NAME = "bioportal_mappings_11_08_2015";
@@ -237,16 +240,21 @@ public class Utils {
   }
 
   public static <T> void writeToHdfs(DataSet<T> data, String outDir) {
+    if (VERBOSITY.equals(DEBUG)) {
+      data.writeAsFormattedText(INPUT_DIR + outDir,
+          FileSystem.WriteMode.OVERWRITE,
+          new DataSetTextFormatter<T>());
+    }
+  }
 
-    TextOutputFormat format = new TextOutputFormat(new Path(INPUT_DIR + outDir));
-    format.setWriteMode(FileSystem.WriteMode.OVERWRITE);
+  public static class DataSetTextFormatter<V> implements
+      TextOutputFormat.TextFormatter<V> {
+    @Override
+    public String format(V v) {
+      return v.toString();
+    }
 
-    data.map(new MapFunction<T, String>() {
-          @Override
-          public String map(T vertex) throws Exception {
-            return vertex.toString();
-          }
-        }).output(format);
+
   }
 
   /**

@@ -6,6 +6,9 @@ import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+/**
+ * Check if type "" exists.TODO
+ */
 public class VertexIdTypeTupleMapper implements MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, String>> {
   @Override
   public Tuple2<Long, String> map(Vertex<Long, ObjectMap> vertex) throws Exception {
