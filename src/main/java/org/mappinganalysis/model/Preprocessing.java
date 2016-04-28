@@ -1,11 +1,12 @@
 package org.mappinganalysis.model;
 
-import org.apache.avro.SchemaBuilder;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
+import org.apache.flink.api.java.operators.AggregateOperator;
+import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
@@ -317,7 +318,7 @@ public class Preprocessing {
           .equalTo(0)
           .with(new EdgeComponentIdJoinFunction());
 
-      DataSet<Tuple3<Long, Integer, Integer>> result = edgeWithComps
+      DataSet<Tuple3<Long, Integer, Integer>> tmpResult = edgeWithComps
           .leftOuterJoin(oneToManyVertexComponentIds)
           .where(2)
           .equalTo(1)
@@ -346,7 +347,17 @@ public class Preprocessing {
             }
           });
 
-      Utils.writeToHdfs(result, "compSize+removedElements");
+      Utils.writeToHdfs(tmpResult, "rmEdgesPerCompAndEdgeCount");
+
+      DataSet<Tuple3<Integer, Integer, Integer>> result = tmpResult
+          .map(new MapFunction<Tuple3<Long, Integer, Integer>, Tuple3<Integer, Integer, Integer>>() {
+            @Override
+            public Tuple3<Integer, Integer, Integer> map(Tuple3<Long, Integer, Integer> tuple) throws Exception {
+              return new Tuple3<>(tuple.f1, tuple.f2, 1);
+            }
+          }).groupBy(0, 1).sum(2);
+      Utils.writeToHdfs(result, "rmEdgesCountAggregated");
+
     }
   }
 
