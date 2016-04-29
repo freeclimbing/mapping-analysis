@@ -7,14 +7,11 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
-import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
-import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
-import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
-import org.mappinganalysis.model.functions.preprocessing.GenerateHashCcIdGroupReduceFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
@@ -216,18 +213,26 @@ public class SimilarityComputation {
    * @param graph graph with similarities already computed
    * @param processingMode if 'default', both methods are executed
    * @param minClusterSim minimal aggregated similarty to create a cluster
-   *@param env env  @return result
+   * @param env env  @return result
    */
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, double minClusterSim,
-                                                                  ExecutionEnvironment env) throws Exception {
+                                                                  ExecutionEnvironment env, ExampleOutput out) throws Exception {
     // TypeGroupBy
     // internally compType is used, afterwards typeIntern is used again
-    graph = new TypeGroupBy().execute(graph, processingMode, 1000);
+    graph = new TypeGroupBy().execute(graph, processingMode, 1000, out);
 
+    out.addVertexAndEdgeSizes("pre-simsort-prepare", graph);
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
+
+    Utils.writeToHdfs(graph.getVertices(), "finalRepresentativeVertices");
+    out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
+//    env.execute();
+
     graph = SimSort.execute(graph, 1000, minClusterSim);
+
+
 
     return SimSort.excludeLowSimVertices(graph, env);
 

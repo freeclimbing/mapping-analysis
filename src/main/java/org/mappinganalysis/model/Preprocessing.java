@@ -46,18 +46,14 @@ public class Preprocessing {
                                                           boolean isLinkFilterActive,
                                                           ExampleOutput out, ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-
     graph = addCcIdsToBaseGraph(graph);
 
-//    graph = restrictGraph(graph, out, env);
-
     graph = applyTypeMissMatchCorrection(graph, true, env);
-    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
+//    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
 
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive, out);
-
     simGraph = addCcIdsToGraph(simGraph, env);
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
@@ -65,16 +61,7 @@ public class Preprocessing {
         .groupBy(new CcIdAndCompTypeKeySelector())
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
-    Graph<Long, ObjectMap, ObjectMap> resultGraph = Graph.fromDataSet(vertices, simGraph.getEdges(), env);
-//    out.addVertexAndEdgeSizes("endPreproc", resultGraph
-//        .mapEdges(new MapFunction<Edge<Long, ObjectMap>, NullValue>() {
-//      @Override
-//      public NullValue map(Edge<Long, ObjectMap> edge) throws Exception {
-//        return NullValue.getInstance();
-//      }
-//    }));
-
-    return resultGraph;
+    return Graph.fromDataSet(vertices, simGraph.getEdges(), env);
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph, ExampleOutput out, ExecutionEnvironment env) {
@@ -287,77 +274,15 @@ public class Preprocessing {
         }
       });
 
-      writeRemovedEdgesToHDFS(graph, oneToManyVertexComponentIds, Utils.CC_ID);
-      env.execute();
-
-//      out.addVertexAndEdgeSizes("applyLinkFilter: pre-delete-vertices:",
-//          Graph.fromDataSet(graph.getVertices(), newEdges, env));
+      Utils.writeRemovedEdgesToHDFS(graph, oneToManyVertexComponentIds, Utils.CC_ID, out);
 
       DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
           graph.getVertices(),
           newEdges.<Tuple2<Long, Long>>project(0, 1));
 
-      Graph<Long, ObjectMap, ObjectMap> result = Graph.fromDataSet(resultVertices, newEdges, env);
-//      out.addVertexAndEdgeSizes("applyLinkFilter: post-delete-vertices:", result);
-      return result;
+      return Graph.fromDataSet(resultVertices, newEdges, env);
     } else {
       return graph;
-    }
-  }
-
-  private static void writeRemovedEdgesToHDFS(Graph<Long, ObjectMap, ObjectMap> graph,
-                                              DataSet<VertexComponentTuple2> oneToManyVertexComponentIds,
-                                              String componentIdName) {
-    if (Utils.VERBOSITY.equals(Utils.DEBUG)) {
-      DataSet<VertexComponentTuple2> vertexComponentIds = graph.getVertices()
-          .map(new VertexComponentIdMapFunction(componentIdName));
-
-      DataSet<EdgeComponentTuple3> edgeWithComps = graph.getEdgeIds()
-          .leftOuterJoin(vertexComponentIds)
-          .where(0)
-          .equalTo(0)
-          .with(new EdgeComponentIdJoinFunction());
-
-      DataSet<Tuple3<Long, Integer, Integer>> tmpResult = edgeWithComps
-          .leftOuterJoin(oneToManyVertexComponentIds)
-          .where(2)
-          .equalTo(1)
-          .with(new JoinFunction<EdgeComponentTuple3, VertexComponentTuple2, Tuple3<Long, Integer, Integer>>() {
-            @Override
-            public Tuple3<Long, Integer, Integer> join(EdgeComponentTuple3 left,
-                                                       VertexComponentTuple2 right) throws Exception {
-              if (right == null) {
-                return new Tuple3<>(left.getComponentId(), 0, 1);
-              } else {
-                if ((long) left.getSourceId() == right.getVertexId()
-                    || (long) left.getTargetId() == right.getVertexId()) {
-                  return new Tuple3<>(left.getComponentId(), 1, 1);
-                } else {
-                  return new Tuple3<>(left.getComponentId(), 0, 1);
-                }
-              }
-            }
-          })
-          .groupBy(0)
-          .sum(1).and(Aggregations.SUM, 2)
-          .filter(new FilterFunction<Tuple3<Long, Integer, Integer>>() {
-            @Override
-            public boolean filter(Tuple3<Long, Integer, Integer> tuple) throws Exception {
-              return tuple.f1 != 0;
-            }
-          });
-
-      Utils.writeToHdfs(tmpResult, "rmEdgesPerCompAndEdgeCount");
-
-      DataSet<Tuple3<Integer, Integer, Integer>> result = tmpResult
-          .map(new MapFunction<Tuple3<Long, Integer, Integer>, Tuple3<Integer, Integer, Integer>>() {
-            @Override
-            public Tuple3<Integer, Integer, Integer> map(Tuple3<Long, Integer, Integer> tuple) throws Exception {
-              return new Tuple3<>(tuple.f1, tuple.f2, 1);
-            }
-          }).groupBy(0, 1).sum(2);
-      Utils.writeToHdfs(result, "rmEdgesCountAggregated");
-
     }
   }
 
@@ -369,7 +294,6 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> applyTypeToInternalTypeMapping(
       Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
-    LOG.info("[1] Apply type preprocessing");
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .getVertices()
         .map(new InternalTypeMapFunction());
@@ -450,25 +374,4 @@ public class Preprocessing {
     }
   }
 
-  private static class VertexComponentIdMapFunction implements MapFunction<Vertex<Long,ObjectMap>,
-      VertexComponentTuple2> {
-    private final String component;
-
-    public VertexComponentIdMapFunction(String component) {
-      this.component = component;
-    }
-
-    @Override
-    public VertexComponentTuple2 map(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return new VertexComponentTuple2(vertex.getId(), (long) vertex.getValue().get(component));
-    }
-  }
-
-  private static class EdgeComponentIdJoinFunction implements JoinFunction<Tuple2<Long,Long>,
-      VertexComponentTuple2, EdgeComponentTuple3> {
-    @Override
-    public EdgeComponentTuple3 join(Tuple2<Long, Long> left, VertexComponentTuple2 right) throws Exception {
-      return new EdgeComponentTuple3(left.f0, left.f1, right.getComponentId());
-    }
-  }
 }

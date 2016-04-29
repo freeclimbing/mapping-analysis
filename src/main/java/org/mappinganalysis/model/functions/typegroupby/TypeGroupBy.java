@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.typegroupby;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
@@ -13,22 +14,33 @@ public class TypeGroupBy {
    * @param graph input graph
    * @param processingMode if default, typeGroupBy is executed
    * @param maxIterations maximal count vertex centric iterations  @return graph where non-type vertices are assigned to best matching component
+   * @param out
    */
   public Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                   String processingMode, Integer maxIterations) throws Exception {
+                                                   String processingMode, Integer maxIterations,
+                                                   ExampleOutput out) throws Exception {
     if (processingMode.equals(Utils.DEFAULT_VALUE)) {
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
       tbcParams.setDirection(EdgeDirection.ALL);
-      tbcParams.setSolutionSetUnmanagedMemory(true);
+//      tbcParams.setSolutionSetUnmanagedMemory(true);
 
-      return graph.runVertexCentricIteration(
+      if (out != null)
+      out.addTuples("preTypeGroupBy", Utils.writeVertexComponentsToHDFS(graph, Utils.CC_ID, "preTypeGroupBy"));
+
+      graph = graph.runVertexCentricIteration(
           new TypeGroupByVertexUpdateFunction(),
           new TypeGroupByMessagingFunction(), maxIterations, tbcParams);
+
+      if (out != null)
+      out.addTuples("preTypeGroupBy", Utils.writeVertexComponentsToHDFS(graph, Utils.HASH_CC, "postTypeGroupBy"));
+
+      return graph;
     } else {
       return graph;
     }
   }
+
 
   public String getName() {
     return TypeGroupBy.class.getName();

@@ -6,13 +6,23 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.VertexComponentTuple2;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.simplifiers.Simplifiers;
@@ -241,7 +251,7 @@ public class Utils {
 
   public static <T> void writeToHdfs(DataSet<T> data, String outDir) {
     if (VERBOSITY.equals(DEBUG)) {
-      data.writeAsFormattedText(INPUT_DIR + outDir,
+      data.writeAsFormattedText(INPUT_DIR + "output/" + outDir,
           FileSystem.WriteMode.OVERWRITE,
           new DataSetTextFormatter<T>());
     }
@@ -253,8 +263,84 @@ public class Utils {
     public String format(V v) {
       return v.toString();
     }
+  }
 
+  public static void writeRemovedEdgesToHDFS(Graph<Long, ObjectMap, ObjectMap> graph,
+                                             DataSet<VertexComponentTuple2> oneToManyVertexComponentIds,
+                                             String componentIdName, ExampleOutput out) {
+    if (VERBOSITY.equals(DEBUG)) {
+      DataSet<VertexComponentTuple2> vertexComponentIds = graph.getVertices()
+          .map(new VertexComponentIdMapFunction(componentIdName));
 
+      DataSet<EdgeComponentTuple3> edgeWithComps = graph.getEdgeIds()
+          .leftOuterJoin(vertexComponentIds)
+          .where(0)
+          .equalTo(0)
+          .with(new EdgeComponentIdJoinFunction());
+
+      DataSet<Tuple3<Long, Integer, Integer>> tmpResult = edgeWithComps
+          .leftOuterJoin(oneToManyVertexComponentIds)
+          .where(2)
+          .equalTo(1)
+          .with(new AggregateBaseDeletedEdgesJoinFunction())
+          .groupBy(0)
+          .sum(1).and(Aggregations.SUM, 2)
+          .filter(new FilterFunction<Tuple3<Long, Integer, Integer>>() {
+            @Override
+            public boolean filter(Tuple3<Long, Integer, Integer> tuple) throws Exception {
+              return tuple.f1 != 0;
+            }
+          });
+      Utils.writeToHdfs(tmpResult, "rmEdgesPerCompAndEdgeCount");
+
+      DataSet<Tuple3<Integer, Integer, Integer>> result = getAggCount(tmpResult);
+      Utils.writeToHdfs(result, "rmEdgesCountAggregated");
+
+      out.addTuples("removed edges, edges in component, count", result);
+    }
+  }
+
+  public static DataSet<Tuple2<Integer, Integer>> writeVertexComponentsToHDFS(
+      Graph<Long, ObjectMap, ObjectMap> graph, final String compId, String prefix) {
+
+    // single line per vertex
+    DataSet<Tuple3<Long, Long, Integer>> vertexComponents = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple3<Long, Long, Integer>>() {
+          @Override
+          public Tuple3<Long, Long, Integer> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple3<>(vertex.getId(), (long) vertex.getValue().get(compId), 1);
+          }
+        });
+    // TMP TODO
+//    Utils.writeToHdfs(vertexComponents, prefix + "VertexComps");
+
+    DataSet<Tuple3<Long, Integer, Integer>> aggVertexComponents = vertexComponents
+        .groupBy(1)
+        .sum(2)
+        .map(new MapFunction<Tuple3<Long, Long, Integer>, Tuple3<Long, Integer, Integer>>() {
+          @Override
+          public Tuple3<Long, Integer, Integer> map(Tuple3<Long, Long, Integer> idCompCountTuple) throws Exception {
+            return new Tuple3<>(idCompCountTuple.f1, idCompCountTuple.f2, 1);
+          }
+        });
+    Utils.writeToHdfs(aggVertexComponents, prefix + "AggVertexComps");
+
+    DataSet<Tuple2<Integer, Integer>> aggAggCount = aggVertexComponents.groupBy(1).sum(2).project(1, 2);
+    Utils.writeToHdfs(aggAggCount, prefix + "AggAggVertexComps");
+
+    return aggAggCount;
+  }
+
+  public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {
+    return tmpResult
+        .map(new MapFunction<Tuple3<Long, Integer, Integer>, Tuple3<Integer, Integer, Integer>>() {
+          @Override
+          public Tuple3<Integer, Integer, Integer> map(Tuple3<Long, Integer, Integer> tuple) throws Exception {
+            return new Tuple3<>(tuple.f1, tuple.f2, 1);
+          }
+        })
+        .groupBy(0, 1)
+        .sum(2);
   }
 
   /**
@@ -440,5 +526,45 @@ public class Utils {
     return edge.getSource().toString()
         .concat("<->").concat(edge.getTarget().toString())
         .concat(": ").concat(edge.getValue().get(Utils.AGGREGATED_SIM_VALUE).toString());
+  }
+
+
+  private static class VertexComponentIdMapFunction implements MapFunction<Vertex<Long,ObjectMap>,
+      VertexComponentTuple2> {
+    private final String component;
+
+    public VertexComponentIdMapFunction(String component) {
+      this.component = component;
+    }
+
+    @Override
+    public VertexComponentTuple2 map(Vertex<Long, ObjectMap> vertex) throws Exception {
+      return new VertexComponentTuple2(vertex.getId(), (long) vertex.getValue().get(component));
+    }
+  }
+
+  private static class EdgeComponentIdJoinFunction implements JoinFunction<Tuple2<Long,Long>,
+      VertexComponentTuple2, EdgeComponentTuple3> {
+    @Override
+    public EdgeComponentTuple3 join(Tuple2<Long, Long> left, VertexComponentTuple2 right) throws Exception {
+      return new EdgeComponentTuple3(left.f0, left.f1, right.getComponentId());
+    }
+  }
+
+  private static class AggregateBaseDeletedEdgesJoinFunction implements JoinFunction<EdgeComponentTuple3, VertexComponentTuple2, Tuple3<Long, Integer, Integer>> {
+    @Override
+    public Tuple3<Long, Integer, Integer> join(EdgeComponentTuple3 left,
+                                               VertexComponentTuple2 right) throws Exception {
+      if (right == null) {
+        return new Tuple3<>(left.getComponentId(), 0, 1);
+      } else {
+        if ((long) left.getSourceId() == right.getVertexId()
+            || (long) left.getTargetId() == right.getVertexId()) {
+          return new Tuple3<>(left.getComponentId(), 1, 1);
+        } else {
+          return new Tuple3<>(left.getComponentId(), 0, 1);
+        }
+      }
+    }
   }
 }

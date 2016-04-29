@@ -70,7 +70,7 @@ public class SimSort {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("SimSort");
     aggParameters.setDirection(EdgeDirection.ALL);
-    aggParameters.setSolutionSetUnmanagedMemory(true);
+//    aggParameters.setSolutionSetUnmanagedMemory(true);
 
     return graph.runVertexCentricIteration(
         new SimSortVertexUpdateFunction(minimumSimilarity),
