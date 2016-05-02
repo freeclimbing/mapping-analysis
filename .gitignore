@@ -1,6 +1,5 @@
 .idea
 target/
-output/
 db.properties
 *.aux
 *.bbl
