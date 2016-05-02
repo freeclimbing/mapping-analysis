@@ -51,9 +51,9 @@ public class SimSortTest {
     for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {
       LOG.info(vertex);
     }
-    for (Edge<Long, ObjectMap> edge : firstGraph.getEdges().collect()) {
-      LOG.info(edge);
-    }
+//    for (Edge<Long, ObjectMap> edge : firstGraph.getEdges().collect()) {
+//      LOG.info(edge);
+//    }
   }
 
   /**
@@ -93,26 +93,4 @@ public class SimSortTest {
 //    LOG.info("vertex_status_false  " + simSortGraph.getVertices().count());
 //
 //  }
-
-
-  // TODO needed?
-  //        LOG.info("#####");
-//        LOG.info("##### 1. part: ");
-//
-//        for (Vertex<Long, ObjectMap> vertex : simSortGraph.getVertices().sortPartition(0, Order.ASCENDING).first(500).collect()) {
-//          LOG.info(vertex);
-//        }
-//        LOG.info("#####");
-//        LOG.info("##### 2. part");
-//        for (Vertex<Long, ObjectMap> vertex : simSortGraph2.getVertices().sortPartition(0, Order.ASCENDING).first(500).collect()) {
-//          LOG.info(vertex);
-//        }
-//        LOG.info("#####");
-//        LOG.info("#####");
-
-//        List<Long> ccList = Lists.newArrayList(284L);
-//        LOG.info("### pre verts: ");
-//        Stats.writeCcToLog(graph, ccList, Utils.CC_ID);
-//        LOG.info("### verts: ");
-//        Stats.writeCcToLog(simSortGraph, ccList, Utils.CC_ID);
 }

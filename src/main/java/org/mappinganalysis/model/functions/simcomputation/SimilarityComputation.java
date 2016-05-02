@@ -222,17 +222,14 @@ public class SimilarityComputation {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000, out);
 
-    out.addVertexAndEdgeSizes("pre-simsort-prepare", graph);
+//    out.addVertexAndEdgeSizes("pre-simsort-prepare", graph);
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
 
-    Utils.writeToHdfs(graph.getVertices(), "finalRepresentativeVertices");
+//    Utils.writeToHdfs(graph.getVertices(), "finalRepresentativeVertices");
     out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
-//    env.execute();
 
-    graph = SimSort.execute(graph, 1000, minClusterSim);
-
-
+    graph = SimSort.execute(graph, 100, minClusterSim);
 
     return SimSort.excludeLowSimVertices(graph, env);
 

@@ -14,7 +14,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
-import org.mappinganalysis.io.JDBCDataLoader;
+import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -94,7 +94,7 @@ public class BasicTest {
   @SuppressWarnings("unchecked")
   protected Graph<Long, ObjectMap, NullValue> createSimpleGraph() throws Exception {
 
-    JDBCDataLoader loader = new JDBCDataLoader(env);
+    DataLoader loader = new DataLoader(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVertices(Utils.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {

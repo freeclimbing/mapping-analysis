@@ -12,6 +12,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.api.java.operators.ProjectOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -300,7 +301,7 @@ public class Utils {
     }
   }
 
-  public static DataSet<Tuple2<Integer, Integer>> writeVertexComponentsToHDFS(
+  public static DataSet<Tuple2<Long, Integer>> writeVertexComponentsToHDFS(
       Graph<Long, ObjectMap, ObjectMap> graph, final String compId, String prefix) {
 
     // single line per vertex
@@ -308,27 +309,28 @@ public class Utils {
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple3<Long, Long, Integer>>() {
           @Override
           public Tuple3<Long, Long, Integer> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple3<>(vertex.getId(), (long) vertex.getValue().get(compId), 1);
+            return new Tuple3<>((long) vertex.getValue().get(Utils.HASH_CC),
+                (long) vertex.getValue().get(compId), 1);
           }
         });
-    // TMP TODO
-//    Utils.writeToHdfs(vertexComponents, prefix + "VertexComps");
 
     DataSet<Tuple3<Long, Integer, Integer>> aggVertexComponents = vertexComponents
-        .groupBy(1)
+        .groupBy(1) // compId
         .sum(2)
+        .and(Aggregations.MIN, 0) //hash cc
         .map(new MapFunction<Tuple3<Long, Long, Integer>, Tuple3<Long, Integer, Integer>>() {
           @Override
           public Tuple3<Long, Integer, Integer> map(Tuple3<Long, Long, Integer> idCompCountTuple) throws Exception {
-            return new Tuple3<>(idCompCountTuple.f1, idCompCountTuple.f2, 1);
+            return new Tuple3<>(idCompCountTuple.f0, idCompCountTuple.f2, 1);
           }
         });
     Utils.writeToHdfs(aggVertexComponents, prefix + "AggVertexComps");
 
-    DataSet<Tuple2<Integer, Integer>> aggAggCount = aggVertexComponents.groupBy(1).sum(2).project(1, 2);
-    Utils.writeToHdfs(aggAggCount, prefix + "AggAggVertexComps");
+    // too much aggregated, not needed yet
+//    DataSet<Tuple2<Integer, Integer>> aggAggCount = aggVertexComponents.groupBy(1).sum(2).project(1, 2);
+//    Utils.writeToHdfs(aggAggCount, prefix + "AggAggVertexComps");
 
-    return aggAggCount;
+    return aggVertexComponents.project(0, 1);
   }
 
   public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {

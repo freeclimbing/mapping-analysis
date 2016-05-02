@@ -5,8 +5,6 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
-import org.apache.flink.api.java.operators.AggregateOperator;
-import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
@@ -17,7 +15,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.FlinkConnectedComponents;
-import org.mappinganalysis.io.JDBCDataLoader;
+import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
@@ -48,6 +46,8 @@ public class Preprocessing {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToBaseGraph(graph);
 
+    graph = restrictGraph(graph, out, env);
+
     graph = applyTypeMissMatchCorrection(graph, true, env);
 //    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
 
@@ -64,7 +64,8 @@ public class Preprocessing {
     return Graph.fromDataSet(vertices, simGraph.getEdges(), env);
   }
 
-  private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph, ExampleOutput out, ExecutionEnvironment env) {
+  private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
+                                                                 ExampleOutput out, ExecutionEnvironment env) {
     // restrict to first 100k clusters
     DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
@@ -73,7 +74,13 @@ public class Preprocessing {
             return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
           }
         })
-        .first(100000);
+        .filter(new FilterFunction<Tuple1<Long>>() {
+          @Override
+          public boolean filter(Tuple1<Long> longTuple1) throws Exception {
+            return longTuple1.f0 == 122L;
+          }
+        });
+//        .first(100000);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
@@ -101,8 +108,7 @@ public class Preprocessing {
           }
         });
 
-    Utils.writeToHdfs(newVertices, "newVertices");
-
+//    Utils.writeToHdfs(newVertices, "newVertices");
 
     DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph, newVertices);
 
@@ -118,7 +124,7 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(ExecutionEnvironment env)
       throws Exception {
-    JDBCDataLoader loader = new JDBCDataLoader(env);
+    DataLoader loader = new DataLoader(env);
     final String vertexFile = "concept.csv";
     final String edgeFile = "linksWithIDs.csv";
     final String propertyFile = "concept_attributes.csv";
@@ -184,7 +190,7 @@ public class Preprocessing {
    */
   public static Graph<Long, ObjectMap, NullValue> getInputGraph(String fullDbString, ExecutionEnvironment env)
       throws Exception {
-    JDBCDataLoader loader = new JDBCDataLoader(env);
+    DataLoader loader = new DataLoader(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVertices(fullDbString);
 
     // restrict edges to these where source and target are vertices
@@ -230,6 +236,7 @@ public class Preprocessing {
 
     return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
   }
+
   /**
    * Preprocessing strategy to restrict resources to have only one counterpart in every target ontology.
    *
