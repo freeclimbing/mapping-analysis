@@ -76,6 +76,10 @@ public class SimSort {
         new SimSortMessagingFunction(), maxIterations, aggParameters);
   }
 
+  /**
+   * SimSort post processing
+   * @throws Exception
+   */
   public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                         ExecutionEnvironment env) throws Exception {
 //    DataSet<Vertex<Long, ObjectMap>> excludedVertices = graph.getVertices()

@@ -52,9 +52,9 @@ public class Utils {
   private static String DB_NAME = "";
   public static String INPUT_DIR;
   public static String VERBOSITY;
+  public static boolean IS_SIMSORT_ENABLED;
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static String PRE_CLUSTER_STRATEGY;
-  public static boolean PRINT_STATS;
   public static boolean IS_LINK_FILTER_ACTIVE;
 
   public static final String DEBUG = "debug";

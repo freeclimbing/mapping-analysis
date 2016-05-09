@@ -11,14 +11,8 @@ import org.mappinganalysis.utils.Utils;
 public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap, AggSimValueTuple, ObjectMap> {
   @Override
   public void sendMessages(Vertex<Long, ObjectMap> vertex) throws Exception {
-    boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);// || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
+    boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);
 
-//    if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-//      LOG.info(" messaging on vertex: " + vertex.getId() + " #### nas no vertex state?" + hasNoVertexState);
-////      LOG.info((boolean) vertex.getValue().get(Utils.VERTEX_STATUS));
-////      LOG.info(!vertex.getValue().containsKey(Utils.VERTEX_STATUS));
-//
-//    }
     if (hasNoVertexState) {
       for (Edge<Long, ObjectMap> edge : getEdges()) {
         AggSimValueTuple message = new AggSimValueTuple(

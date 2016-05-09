@@ -8,6 +8,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
+import org.apache.hadoop.util.UTF8ByteArrayUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
@@ -240,7 +241,9 @@ public class SimilarityComputation {
 
 //    out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
 
-    graph = SimSort.execute(graph, 100, minClusterSim);
+    if (Utils.IS_SIMSORT_ENABLED) {
+      graph = SimSort.execute(graph, 100, minClusterSim);
+    }
 
     return SimSort.excludeLowSimVertices(graph, env);
 
