@@ -1,21 +1,21 @@
 package org.mappinganalysis.model.functions.refinement;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.api.java.operators.UnionOperator;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple1;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.representative.MajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
@@ -29,6 +29,7 @@ import org.mappinganalysis.utils.functions.keyselector.OldHashCcKeySelector;
 import org.mappinganalysis.utils.functions.keyselector.RefineIdKeySelector;
 
 public class Refinement {
+  private static final Logger LOG = Logger.getLogger(Refinement.class);
 
   /**
    * Prepare vertex dataset for the following refinement step
@@ -72,14 +73,27 @@ public class Refinement {
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(minThreshold));
 
-//    Utils.writeToHdfs(similarTriplets, "simTriplets"+left+right+minThreshold);
+    Utils.writeToHdfs(similarTriplets, "simTriplets"+leftSize+rightSize+minThreshold);
 
+    DataSet<Tuple4<Long, Long, Long, Double>> noticableTriplets = extractExcludeTriplets(similarTriplets);
+    Utils.writeToHdfs(noticableTriplets, "noticableTriplets"+leftSize+rightSize+minThreshold);
 
     similarTriplets = similarTriplets
-        .leftOuterJoin(extractExcludeTriplets(similarTriplets))
+        .leftOuterJoin(noticableTriplets)
         .where(0,1)
         .equalTo(0,1)
-        .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction());
+        .with(new FlatJoinFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Long, Double>,
+            Triplet<Long, ObjectMap, ObjectMap>>() {
+          @Override
+          public void join(Triplet<Long, ObjectMap, ObjectMap> left, Tuple4<Long, Long, Long, Double> right, Collector<Triplet<Long, ObjectMap, ObjectMap>> collector) throws Exception {
+            if (right == null) {
+              collector.collect(left);
+            }
+          }
+        });
+
+//    noticableTriplets.
+//        .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction());
 
         DataSet<Vertex<Long, ObjectMap>> clustersMoreThanTwoSimTriplets = similarTriplets
         .filter(new RefineIdFilterFunction())
@@ -249,7 +263,7 @@ public class Refinement {
    * 1. tuples where duplicate ontologies are found
    * 2. tuples where more than one match occures
    */
-  private static DataSet<Tuple3<Long, Long, Long>> extractExcludeTriplets(
+  private static DataSet<Tuple4<Long, Long, Long, Double>> extractExcludeTriplets(
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets) throws Exception {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> equalSourceVertex = getDuplicateTriplets(similarTriplets, 0);
@@ -268,8 +282,8 @@ public class Refinement {
    * @param column 0 - source, 1 - target
    * @return tuples which should be excluded
    */
-  private static DataSet<Tuple3<Long, Long, Long>> excludeTuples(DataSet<Triplet<Long, ObjectMap, ObjectMap>> triplets,
-                                                                 final int column) {
+  private static DataSet<Tuple4<Long, Long, Long, Double>> excludeTuples(
+      DataSet<Triplet<Long, ObjectMap, ObjectMap>> triplets, final int column) {
     return triplets
         .groupBy(1 - column)
         .reduceGroup(new CollectExcludeTuplesGroupReduceFunction(column));
@@ -285,7 +299,7 @@ public class Refinement {
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> getDuplicateTriplets(DataSet<Triplet<Long, ObjectMap,
       ObjectMap>> similarTriplets, int column) {
 
-    DataSet<Tuple2<Long, Long>> filter = similarTriplets
+    DataSet<Tuple2<Long, Long>> duplicateTuples = similarTriplets
         .<Tuple2<Long, Long>>project(0,1)
         .map(new FrequencyMapByFunction(column))
         .groupBy(0)
@@ -293,11 +307,12 @@ public class Refinement {
         .filter(new FilterFunction<Tuple2<Long, Long>>() {
           @Override
           public boolean filter(Tuple2<Long, Long> tuple) throws Exception {
+            LOG.info("getDuplicateTriplets: " + tuple.toString());
             return tuple.f1 > 1;
           }
         });
 
-    return filter.leftOuterJoin(similarTriplets)
+    return duplicateTuples.leftOuterJoin(similarTriplets)
         .where(0)
         .equalTo(column)
         .with(new JoinFunction<Tuple2<Long, Long>, Triplet<Long, ObjectMap, ObjectMap>,
@@ -313,9 +328,9 @@ public class Refinement {
 //    return similarTriplets.<Tuple2<Long, Long>>project(0, 1)
 //        .groupBy(0)
 //        .sum(1)
-//        .filter(new FilterFunction<Tuple2<Long, Long>>() {
+//        .duplicateTuples(new FilterFunction<Tuple2<Long, Long>>() {
 //          @Override
-//          public boolean filter(Tuple2<Long, Long> tuple) throws Exception {
+//          public boolean duplicateTuples(Tuple2<Long, Long> tuple) throws Exception {
 //            return tuple.f1 > 1;
 //          }
 //        })

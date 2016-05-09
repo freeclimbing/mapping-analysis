@@ -14,6 +14,7 @@ import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
@@ -205,6 +206,32 @@ public class ExampleOutput {
         .with(new OutputAppender());
   }
 
+  public void addPreClusterSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
+    if (Utils.VERBOSITY.equals(Utils.DEBUG) || Utils.VERBOSITY.equals(Utils.INFO)) {
+      DataSet<String> captionSet = env
+          .fromElements("\n*** " + caption + " ***\n");
+
+      DataSet<String> vertexSet = vertices
+          .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Long>>() {
+            @Override
+            public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+              return new Tuple2<>((long) vertex.getValue().get(Utils.HASH_CC), 1L);
+            }
+          })
+          .groupBy(0)
+          .sum(1)
+          .map(new FrequencyMapByFunction(1))
+          .groupBy(0)
+          .sum(1)
+          .reduceGroup(new ConcatTuple2Longs());
+
+      outSet = outSet
+          .cross(captionSet)
+          .with(new OutputAppender())
+          .cross(vertexSet)
+          .with(new OutputAppender());
+    }
+  }
 
   /**
    * Add the cluster sizes for the given vertex dataset.
@@ -248,24 +275,16 @@ public class ExampleOutput {
         .map(new MapFunction<Tuple2<Long, Long>, String>() {
           @Override
           public String map(Tuple2<Long, Long> tuple) throws Exception {
-            return "vertices: " + tuple.f1.toString();
+            return "count: " + tuple.f1.toString();
           }
 
         });
 
-    outSet = vertexSet.map(new MapFunction<String, ArrayList<String>>() {
-      ArrayList<String> result = Lists.newArrayList();
-      @Override
-      public ArrayList<String> map(String s) throws Exception {
-        result.add(s);
-        return result;
-      }
-    });
-//    outSet = outSet
-//        .cross(captionSet)
-//        .with(new OutputAppender())
-//        .cross(vertexSet)
-//        .with(new OutputAppender());
+    outSet = outSet
+        .cross(captionSet)
+        .with(new OutputAppender())
+        .cross(vertexSet)
+        .with(new OutputAppender());
   }
 
   public <T> void  addVertexAndEdgeSizes(String caption, Graph<Long, ObjectMap, T> graph) {

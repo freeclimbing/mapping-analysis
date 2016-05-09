@@ -120,6 +120,10 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  public Double getSimilarity() {
+    return (double) map.get(Utils.AGGREGATED_SIM_VALUE);
+  }
+
   public Set<String> getOntologiesList() {
     Object ontologies = map.get(Utils.ONTOLOGIES);
 

@@ -62,17 +62,16 @@ public class SimSort {
    * Execute SimSort procedure based on vertex-centric-iteration
    * @param graph input graph
    * @param maxIterations max vertex-centric-iteration count
-   * @param minimumSimilarity similarity which is needed to be in the cluster
    * @return resulting graph with new clusters
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          Integer maxIterations, Double minimumSimilarity) {
+                                                          Integer maxIterations) {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("SimSort");
     aggParameters.setDirection(EdgeDirection.ALL);
 
     return graph.runVertexCentricIteration(
-        new SimSortVertexUpdateFunction(minimumSimilarity),
+        new SimSortVertexUpdateFunction(Utils.MIN_SIM),
         new SimSortMessagingFunction(), maxIterations, aggParameters);
   }
 

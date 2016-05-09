@@ -10,6 +10,7 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.hadoop.util.UTF8ByteArrayUtils;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
@@ -212,22 +213,19 @@ public class SimilarityComputation {
    * Executes TypeGroupBy and SimSort method and returns the resulting graph.
    * @param graph graph with similarities already computed
    * @param processingMode if 'default', both methods are executed
-   * @param minClusterSim minimal aggregated similarty to create a cluster
    * @param env env  @return result
    */
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                                  String processingMode, double minClusterSim,
-                                                                  ExecutionEnvironment env) throws Exception {
-
-    // TypeGroupBy
+                                                                  String processingMode,
+                                                                  ExecutionEnvironment env, ExampleOutput out) throws Exception {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
 
-//    out.addVertexAndEdgeSizes("pre-simsort-prepare", graph);
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
+    out.addPreClusterSizes("cluster sizes post typegroupby", graph.getVertices());
 
-
+    //labelpropagation for testing
 //    DataSet<Vertex<Long, String>> run = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, String>() {
 //      @Override
 //      public String map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -239,10 +237,8 @@ public class SimilarityComputation {
 
 //    Utils.writeToHdfs(graph.getVertices(), "simsortprepareVerts");
 
-//    out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
-
     if (Utils.IS_SIMSORT_ENABLED) {
-      graph = SimSort.execute(graph, 100, minClusterSim);
+      graph = SimSort.execute(graph, 100);
     }
 
     return SimSort.excludeLowSimVertices(graph, env);

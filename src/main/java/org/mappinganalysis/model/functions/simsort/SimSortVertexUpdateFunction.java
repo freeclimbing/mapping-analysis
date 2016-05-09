@@ -29,17 +29,17 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
     if (hasNoVertexState || Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) == 0) {
-      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-        LOG.info(" working on vertex: " + vertex.getId());
-      }
+//      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//        LOG.info(" working on vertex: " + vertex.getId());
+//      }
       double iterationAggSim = 0;
       long messageCount = 0;
       List<Double> neighborList = Lists.newArrayList();
 
       for (AggSimValueTuple message : inMessages) {
-        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-          LOG.info(" msg: " + message);
-        }
+//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//          LOG.info(" msg: " + message);
+//        }
         ++messageCount;
         neighborList.add(message.getVertexSim());
         iterationAggSim += message.getEdgeSim();
@@ -49,9 +49,9 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 
       if (Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
-        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-          LOG.info(" deactivating: " + vertex.getId());
-        }
+//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//          LOG.info(" deactivating: " + vertex.getId());
+//        }
         if (iterationAggSim < threshold) {
           vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.FALSE);
           vertex.getValue().put(Utils.OLD_HASH_CC, vertex.getValue().get(Utils.HASH_CC));
@@ -62,9 +62,9 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       }
 
 //      if (iterationAggSim < threshold) { // last value is not saved on the first vertex which fulfills this criteria
-      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-          LOG.info(" setting new value: " + vertex.getId() + "   " + iterationAggSim);
-        }
+//      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
+//          LOG.info(" setting new value: " + vertex.getId() + "   " + iterationAggSim);
+//        }
       setNewVertexValue(vertex.getValue());
 //      }
     }

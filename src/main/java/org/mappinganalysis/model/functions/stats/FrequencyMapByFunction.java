@@ -3,6 +3,9 @@ package org.mappinganalysis.model.functions.stats;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 
+/**
+ * Preprocessing class for aggregate sum count, either take column 0 or 1 as f0, f1 is always 1L.
+ */
 public class FrequencyMapByFunction implements MapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>> {
   private final int field;
   Tuple2<Long, Long> reuseTuple;
