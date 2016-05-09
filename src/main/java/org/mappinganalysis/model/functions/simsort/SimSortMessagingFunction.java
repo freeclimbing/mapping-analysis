@@ -9,8 +9,6 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap, AggSimValueTuple, ObjectMap> {
-  private static final Logger LOG = Logger.getLogger(SimSortMessagingFunction.class);
-
   @Override
   public void sendMessages(Vertex<Long, ObjectMap> vertex) throws Exception {
     boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);// || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);

@@ -39,11 +39,11 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
     }
 
     // exclude equal id and one of (1, 2) >>(2,1)<<
-//    if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
-//      reuseTriplet.setFields(0L, 0L, null, null, null);
-//      return reuseTriplet;
-//    } else
-    if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= 5) {
+    // TODO check if this is correct
+    if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
+      reuseTriplet.setFields(0L, 0L, null, null, null);
+      return reuseTriplet;
+    } else if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= 4) {
       reuseTriplet.setFields(left.getId(), right.getId(), left.getValue(), right.getValue(), NullValue.getInstance());
       return reuseTriplet;
     } else {

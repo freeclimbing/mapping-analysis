@@ -1,7 +1,6 @@
 package org.mappinganalysis.model.functions.simsort;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;

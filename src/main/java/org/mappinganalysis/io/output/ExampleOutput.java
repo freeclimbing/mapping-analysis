@@ -10,6 +10,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
@@ -246,17 +247,25 @@ public class ExampleOutput {
         .first(1)
         .map(new MapFunction<Tuple2<Long, Long>, String>() {
           @Override
-          public String map(Tuple2<Long, Long> longLongTuple2) throws Exception {
-            return "vertices: " + longLongTuple2.f1.toString();
+          public String map(Tuple2<Long, Long> tuple) throws Exception {
+            return "vertices: " + tuple.f1.toString();
           }
 
         });
 
-    outSet = outSet
-        .cross(captionSet)
-        .with(new OutputAppender())
-        .cross(vertexSet)
-        .with(new OutputAppender());
+    outSet = vertexSet.map(new MapFunction<String, ArrayList<String>>() {
+      ArrayList<String> result = Lists.newArrayList();
+      @Override
+      public ArrayList<String> map(String s) throws Exception {
+        result.add(s);
+        return result;
+      }
+    });
+//    outSet = outSet
+//        .cross(captionSet)
+//        .with(new OutputAppender())
+//        .cross(vertexSet)
+//        .with(new OutputAppender());
   }
 
   public <T> void  addVertexAndEdgeSizes(String caption, Graph<Long, ObjectMap, T> graph) {

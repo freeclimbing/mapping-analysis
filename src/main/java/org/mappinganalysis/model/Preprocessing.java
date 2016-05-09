@@ -36,24 +36,23 @@ public class Preprocessing {
    * Execute all preprocessing steps with the given options
    * @param graph input graph
    * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
-   * @param out
    *@param env execution environment  @return graph
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           boolean isLinkFilterActive,
-                                                          ExampleOutput out, ExecutionEnvironment env) throws Exception {
+                                                          ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToBaseGraph(graph);
 
-    graph = restrictGraph(graph, out, env);
+//    graph = restrictGraph(graph, out, env);
 
     graph = applyTypeMissMatchCorrection(graph, true, env);
 //    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
 
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
 
-    simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive, out);
+    simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
     simGraph = addCcIdsToGraph(simGraph, env);
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
@@ -244,12 +243,11 @@ public class Preprocessing {
    * @param graph input graph
    * @param env environment
    * @param isLinkFilterActive boolean if filter should be used
-   * @param out
    * @return output graph
    */
   public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilterStrategy(
       Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env,
-      boolean isLinkFilterActive, ExampleOutput out) throws Exception {
+      boolean isLinkFilterActive) throws Exception {
 
     if (isLinkFilterActive) {
       DataSet<Tuple6<Edge<Long, ObjectMap>, Long, String, Integer, Double, Long>> oneToManyTuples = graph
@@ -281,7 +279,7 @@ public class Preprocessing {
         }
       });
 
-      Utils.writeRemovedEdgesToHDFS(graph, oneToManyVertexComponentIds, Utils.CC_ID, out);
+//      Utils.writeRemovedEdgesToHDFS(graph, oneToManyVertexComponentIds, Utils.CC_ID, out);
 
       DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
           graph.getVertices(),

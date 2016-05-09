@@ -9,7 +9,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
@@ -217,17 +216,29 @@ public class SimilarityComputation {
    */
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, double minClusterSim,
-                                                                  ExecutionEnvironment env, ExampleOutput out) throws Exception {
+                                                                  ExecutionEnvironment env) throws Exception {
+
     // TypeGroupBy
     // internally compType is used, afterwards typeIntern is used again
-    graph = new TypeGroupBy().execute(graph, processingMode, 1000, out);
+    graph = new TypeGroupBy().execute(graph, processingMode, 1000);
 
 //    out.addVertexAndEdgeSizes("pre-simsort-prepare", graph);
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
 
-//    Utils.writeToHdfs(graph.getVertices(), "finalRepresentativeVertices");
-    out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
+
+//    DataSet<Vertex<Long, String>> run = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, String>() {
+//      @Override
+//      public String map(Vertex<Long, ObjectMap> vertex) throws Exception {
+//        return vertex.getValue().get(Utils.LABEL).toString();
+//      }
+//    }).run(new LabelPropagation<Long, String, ObjectMap>(10));
+//
+//    run.print();
+
+//    Utils.writeToHdfs(graph.getVertices(), "simsortprepareVerts");
+
+//    out.addVertexAndEdgeSizes("post-simsort-prepare", graph);
 
     graph = SimSort.execute(graph, 100, minClusterSim);
 

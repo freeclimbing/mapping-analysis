@@ -13,7 +13,7 @@ import org.mappinganalysis.utils.Utils;
 import java.util.List;
 
 public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, AggSimValueTuple> {
-  private static final Logger LOG = Logger.getLogger(SimSortVertexUpdateFunction.class);
+//  private static final Logger LOG = Logger.getLogger(SimSortVertexUpdateFunction.class);
   private final double threshold;
 
   public SimSortVertexUpdateFunction(double threshold) {
@@ -24,7 +24,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
   public void updateVertex(Vertex<Long, ObjectMap> vertex,
                            MessageIterator<AggSimValueTuple> inMessages) throws Exception {
     double vertexAggSim = (double) vertex.getValue().get(Utils.VERTEX_AGG_SIM_VALUE);
-    LOG.info("SimSortVertexUpdateFunction: " + vertexAggSim);
+//    LOG.info("SimSortVertexUpdateFunction: " + vertexAggSim);
     boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 

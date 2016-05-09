@@ -324,7 +324,7 @@ public class Utils {
             return new Tuple3<>(idCompCountTuple.f0, idCompCountTuple.f2, 1);
           }
         });
-    Utils.writeToHdfs(aggVertexComponents, prefix + "AggVertexComps");
+//    Utils.writeToHdfs(aggVertexComponents, prefix + "AggVertexComps");
 
     // too much aggregated, not needed yet
 //    DataSet<Tuple2<Integer, Integer>> aggAggCount = aggVertexComponents.groupBy(1).sum(2).project(1, 2);
