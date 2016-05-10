@@ -8,7 +8,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
-import org.apache.hadoop.util.UTF8ByteArrayUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
@@ -221,9 +220,11 @@ public class SimilarityComputation {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
 
+    Utils.writeToHdfs(graph.getVertices(), "2typeGroupByVertices");
+
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
-    out.addPreClusterSizes("cluster sizes post typegroupby", graph.getVertices());
+    out.addPreClusterSizes("cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
 
     //labelpropagation for testing
 //    DataSet<Vertex<Long, String>> run = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, String>() {

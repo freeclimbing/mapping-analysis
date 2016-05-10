@@ -8,7 +8,8 @@ import org.mappinganalysis.utils.Utils;
 /**
  * Either return the weighted aggregated similarity or return mean similarity of all existing properties
  */
-public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Triplet<Long, ObjectMap, ObjectMap>> {
+public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>,
+    Triplet<Long, ObjectMap, ObjectMap>> {
   private final boolean ignoreMissingProperties;
 
   public AggSimValueTripletMapFunction(boolean ignoreMissingProperties) {
@@ -21,7 +22,11 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      aggregatedSim = SimilarityComputation.getMeanSimilarity(value);
+      if ((double) value.get(Utils.SIM_TRIGRAM) < 0.7) {
+        aggregatedSim = 0D;
+      } else {
+        aggregatedSim = SimilarityComputation.getMeanSimilarity(value);
+      }
     } else {
       aggregatedSim = SimilarityComputation.getWeightedAggSim(value);
     }

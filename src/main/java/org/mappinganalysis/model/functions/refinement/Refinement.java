@@ -34,16 +34,15 @@ public class Refinement {
   /**
    * Prepare vertex dataset for the following refinement step
    * @param vertices input vertices
-   * @param minClusterSim minimum similarity for new clusters
    * @return prepared vertices
    */
-  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices, double minClusterSim) {
+  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices) {
     DataSet<Triplet<Long, ObjectMap, NullValue>> sortedOutSimSortTriplets = vertices
         .filter(new OldHashCcFilterFunction())
         .groupBy(new OldHashCcKeySelector())
         .reduceGroup(new TripletCreateGroupReduceFunction());
 
-    return integrateMergedVertices(vertices, sortedOutSimSortTriplets, minClusterSim);
+    return integrateMergedVertices(vertices, sortedOutSimSortTriplets);
   }
 
 
@@ -349,13 +348,13 @@ public class Refinement {
 
   private static DataSet<Vertex<Long, ObjectMap>> integrateMergedVertices(
       DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices,
-      DataSet<Triplet<Long, ObjectMap, NullValue>> sortedOutSimSortTriplets, double threshold) {
+      DataSet<Triplet<Long, ObjectMap, NullValue>> sortedOutSimSortTriplets) {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newReprBaseTriplets = SimilarityComputation
         .computeSimilarities(sortedOutSimSortTriplets, Utils.DEFAULT_VALUE)
         .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES))
         .withForwardedFields("f0;f1;f2;f3")
-        .filter(new MinRequirementThresholdFilterFunction(threshold));
+        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_SIM));
 
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newReprBaseTriplets
         .flatMap(new VertexExtractFlatMapFunction())

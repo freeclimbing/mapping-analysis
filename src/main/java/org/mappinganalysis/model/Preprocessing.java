@@ -36,20 +36,19 @@ public class Preprocessing {
    * Execute all preprocessing steps with the given options
    * @param graph input graph
    * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
-   *@param env execution environment  @return graph
+   * @param env execution environment  @return graph
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           boolean isLinkFilterActive,
-                                                          ExecutionEnvironment env) throws Exception {
+                                                          ExecutionEnvironment env, ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToBaseGraph(graph);
+    out.addPreClusterSizes("cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
 //    graph = restrictGraph(graph, out, env);
 
     graph = applyTypeMissMatchCorrection(graph, true, env);
-//    out.addVertexAndEdgeSizes("afterTypeMismatchCorrection", graph);
-
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);

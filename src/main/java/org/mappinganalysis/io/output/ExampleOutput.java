@@ -10,8 +10,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Lists;
-import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
@@ -206,7 +204,8 @@ public class ExampleOutput {
         .with(new OutputAppender());
   }
 
-  public void addPreClusterSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
+  public void addPreClusterSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices,
+                                 final String compName) {
     if (Utils.VERBOSITY.equals(Utils.DEBUG) || Utils.VERBOSITY.equals(Utils.INFO)) {
       DataSet<String> captionSet = env
           .fromElements("\n*** " + caption + " ***\n");
@@ -215,7 +214,7 @@ public class ExampleOutput {
           .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Long>>() {
             @Override
             public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-              return new Tuple2<>((long) vertex.getValue().get(Utils.HASH_CC), 1L);
+              return new Tuple2<>((long) vertex.getValue().get(compName), 1L);
             }
           })
           .groupBy(0)
