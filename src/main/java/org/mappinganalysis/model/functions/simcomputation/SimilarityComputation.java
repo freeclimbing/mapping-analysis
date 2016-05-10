@@ -220,7 +220,7 @@ public class SimilarityComputation {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
 
-    Utils.writeToHdfs(graph.getVertices(), "2typeGroupByVertices");
+//    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
 
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);

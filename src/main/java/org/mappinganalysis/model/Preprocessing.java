@@ -43,8 +43,9 @@ public class Preprocessing {
                                                           boolean isLinkFilterActive,
                                                           ExecutionEnvironment env, ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = addCcIdsToBaseGraph(graph);
-    out.addPreClusterSizes("cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
+    graph = addCcIdsToGraph(graph);
+//    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
+//    out.addPreClusterSizes("cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
 //    graph = restrictGraph(graph, out, env);
 
@@ -52,7 +53,7 @@ public class Preprocessing {
     Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
-    simGraph = addCcIdsToGraph(simGraph, env);
+    simGraph = addCcIdsToGraph(simGraph);
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
         .map(new AddShadingTypeMapFunction())
@@ -209,23 +210,11 @@ public class Preprocessing {
   /**
    * Add initial component ids to vertices based on flink connected components.
    * @param graph input graph
-   * @param env
    * @return graph containing vertices with additional property
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, ObjectMap> addCcIdsToGraph(
-      Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) throws Exception {
-
-    final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(graph.getVertices().map(new VertexIdMapFunction()),
-            graph.getEdgeIds(),
-            1000);
-
-    return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
-  }
-
-  public static Graph<Long, ObjectMap, NullValue> addCcIdsToBaseGraph(
-      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+  public static <T> Graph<Long, ObjectMap, T> addCcIdsToGraph(
+      Graph<Long, ObjectMap, T> graph) throws Exception {
 
     final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
         .compute(graph.getVertices().map(new VertexIdMapFunction()),

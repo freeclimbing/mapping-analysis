@@ -259,7 +259,7 @@ public class ExampleOutput {
           .with(new OutputAppender());
     }
   }
-  public void addVertexSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
+  public void addVertexCount(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
     DataSet<String> captionSet = env
         .fromElements("\n*** " + caption + " ***\n");
     DataSet<String> vertexSet = vertices

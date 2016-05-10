@@ -16,6 +16,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.representative.MajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
@@ -55,8 +56,11 @@ public class Refinement {
    * @throws Exception
    */
   public static DataSet<Vertex<Long, ObjectMap>> executeThird(
-      DataSet<Vertex<Long, ObjectMap>> vertices, int leftSize, int rightSize, double minThreshold)
+      DataSet<Vertex<Long, ObjectMap>> vertices, int leftSize, int rightSize, double minThreshold, int iterationCount)
       throws Exception {
+
+//    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(Integer.MAX_VALUE);
+
     DataSet<Vertex<Long, ObjectMap>> left = vertices
         .filter(new ClusterExactSizeFilterFunction(leftSize));
     DataSet<Vertex<Long, ObjectMap>> right = vertices
@@ -72,10 +76,10 @@ public class Refinement {
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(minThreshold));
 
-    Utils.writeToHdfs(similarTriplets, "simTriplets"+leftSize+rightSize+minThreshold);
+    Utils.writeToHdfs(similarTriplets, "simTriplets"+leftSize+rightSize+minThreshold+iterationCount);
 
     DataSet<Tuple4<Long, Long, Long, Double>> noticableTriplets = extractExcludeTriplets(similarTriplets);
-    Utils.writeToHdfs(noticableTriplets, "noticableTriplets"+leftSize+rightSize+minThreshold);
+    Utils.writeToHdfs(noticableTriplets, "noticableTriplets"+leftSize+rightSize+minThreshold+iterationCount);
 
     similarTriplets = similarTriplets
         .leftOuterJoin(noticableTriplets)
@@ -91,7 +95,8 @@ public class Refinement {
           }
         });
 
-//    noticableTriplets.
+//  TODO   break noticable triplets down to only contain 1 with the highest similarity
+    //noticableTriplets.groupBy()
 //        .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction());
 
         DataSet<Vertex<Long, ObjectMap>> clustersMoreThanTwoSimTriplets = similarTriplets
@@ -100,26 +105,31 @@ public class Refinement {
         .groupBy(new RefineIdKeySelector())
         .reduceGroup(new MajorityPropertiesGroupReduceFunction());
 
+    Utils.writeToHdfs(clustersMoreThanTwoSimTriplets, "clusterMoreThan2simTriplets"+leftSize+rightSize+minThreshold+iterationCount);
+
         DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
         .map(new SimilarClusterMergeMapFunction()) // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
         .union(clustersMoreThanTwoSimTriplets);
 
-//    Utils.writeToHdfs(newClusters, "newClusters"+left+right+minThreshold);
+    Utils.writeToHdfs(newClusters, "newClusters"+leftSize+rightSize+minThreshold+iterationCount);
 
 
     DataSet<Vertex<Long, ObjectMap>> verticesNextStep
         = excludeClusteredVerticesFromInput(vertices, similarTriplets);
 
-    return newClusters.union(verticesNextStep);
+    DataSet<Vertex<Long, ObjectMap>> tmpResult = newClusters.union(verticesNextStep);
+
+    return tmpResult;
   }
 
   /**
      * Execute the refinement step - compare clusters with each other and combine similar clusters.
      * @param vertices prepared dataset
-     * @return refined dataset
+     * @param out
+   * @return refined dataset
      */
-  public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices)
+  public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
     IterativeDataSet<Vertex<Long, ObjectMap>> loop = vertices.iterate(maxClusterSize);
@@ -159,6 +169,8 @@ public class Refinement {
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
         .map(new SimilarClusterMergeMapFunction()) // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
         .union(partlyVertices);
+
+//    out.addVertices("new clusters", newClusters);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(vertices, similarTriplets);
 
