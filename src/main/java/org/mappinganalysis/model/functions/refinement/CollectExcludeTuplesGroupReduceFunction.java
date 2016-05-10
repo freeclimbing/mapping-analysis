@@ -6,13 +6,15 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
 
 import java.util.Set;
 
 public class CollectExcludeTuplesGroupReduceFunction
     implements GroupReduceFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Long, Double>> {
+  private static final Logger LOG = Logger.getLogger(CollectExcludeTuplesGroupReduceFunction.class);
+
   private final int column;
 
   public CollectExcludeTuplesGroupReduceFunction(int column) {
@@ -24,15 +26,19 @@ public class CollectExcludeTuplesGroupReduceFunction
                      Collector<Tuple4<Long, Long, Long, Double>> collector) throws Exception {
     Set<Tuple2<Long, Long>> tripletIds = Sets.newHashSet();
 
-    Tuple2<Long, Double> clusterRefineId = fillIdsCheckDuplicateOntology(triplets, tripletIds, column);
+    Tuple2<Long, Double> clusterRefineId = getLowestVertexIdAndSimilarity(triplets, tripletIds, column);
     if (clusterRefineId == null) {
-//              LOG.info("Exclude all case" + tripletIds.toString());
+//    LOG.info("Exclude all case" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
+        LOG.info("CollectExcludeTuplesGroupReduceFunction refineId null: " + tripletId.toString());
         collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, Long.MIN_VALUE, 0D));
       }
     } else {
-//              LOG.info("Exclude none + enrich" + tripletIds.toString());
+//    LOG.info("Exclude none + enrich" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
+        LOG.info("CollectExcludeTuplesGroupReduceFunction: refineId not null" + tripletId.toString() + " refine: "
+        + clusterRefineId.toString());
+
         collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, clusterRefineId.f0, clusterRefineId.f1));
       }
     }
@@ -41,8 +47,8 @@ public class CollectExcludeTuplesGroupReduceFunction
   /**
    * quick'n'dirty fix haha later todo
    */
-  private Tuple2<Long, Double> fillIdsCheckDuplicateOntology(Iterable<Triplet<Long, ObjectMap, ObjectMap>> triplets,
-                                                             Set<Tuple2<Long, Long>> tripletIds, int column) {
+  private Tuple2<Long, Double> getLowestVertexIdAndSimilarity(Iterable<Triplet<Long, ObjectMap, ObjectMap>> triplets,
+                                                              Set<Tuple2<Long, Long>> tripletIds, int column) {
     Set<String> ontologies = Sets.newHashSet();
     Tuple2<Long, Double> minimumIdAndSim = null;
 
@@ -51,20 +57,28 @@ public class CollectExcludeTuplesGroupReduceFunction
       Long trgId = triplet.getTrgVertex().getId();
       tripletIds.add(new Tuple2<>(srcId, trgId));
       Long tmpId = srcId < trgId ? srcId : trgId;
-      if (minimumIdAndSim == null || minimumIdAndSim.f0 > tmpId) {
-        minimumIdAndSim = new Tuple2<>(tmpId, triplet.getEdge().getValue().getSimilarity());
+      Double similarity = triplet.getEdge().getValue().getSimilarity();
+
+      if (minimumIdAndSim == null) {
+        minimumIdAndSim = new Tuple2<>(tmpId, similarity);
+      }
+      if (minimumIdAndSim.f0 > tmpId) {
+        minimumIdAndSim.f0 = tmpId;
+      }
+      if (minimumIdAndSim.f1 < similarity) {
+        minimumIdAndSim.f1 = similarity;
       }
 
       Set<String> tripletOnts;
       if (column == 1) {
-        tripletOnts = (Set<String>) triplet.getTrgVertex().getValue().get(Utils.ONTOLOGIES);
+        tripletOnts = triplet.getTrgVertex().getValue().getOntologiesList();
       } else {
-        tripletOnts = (Set<String>) triplet.getSrcVertex().getValue().get(Utils.ONTOLOGIES);
+        tripletOnts = triplet.getSrcVertex().getValue().getOntologiesList();
       }
 
       for (String ont : tripletOnts) {
         if (!ontologies.add(ont)) {
-//                  LOG.info("problem duplicate ontology triplet: " + triplet);
+//        LOG.info("problem duplicate ontology triplet: " + triplet);
           minimumIdAndSim = null;
           break;
         }

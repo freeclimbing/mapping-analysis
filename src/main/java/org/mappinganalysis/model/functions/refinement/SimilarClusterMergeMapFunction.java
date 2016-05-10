@@ -6,6 +6,7 @@ import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
@@ -17,6 +18,8 @@ import java.util.Set;
  */
 public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long, ObjectMap, ObjectMap>,
     Vertex<Long, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(SimilarClusterMergeMapFunction.class);
+
   Vertex<Long, ObjectMap> reuseVertex;
   private LongCounter mergedClusterCount = new LongCounter();
 
@@ -51,6 +54,7 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
     reuseVertex.getValue().put(Utils.ONTOLOGIES, resultOnts);
     mergedClusterCount.add(1L);
 
+    LOG.info("new cluster: " + reuseVertex.toString());
     return reuseVertex;
   }
 

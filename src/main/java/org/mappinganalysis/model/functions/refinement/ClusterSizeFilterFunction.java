@@ -27,7 +27,7 @@ public class ClusterSizeFilterFunction extends RichFilterFunction<Vertex<Long, O
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
     if (maxClusterSize != null) {
-      return vertex.getValue().getVerticesList().size() <= maxClusterSize - superstep;
+      return vertex.getValue().getVerticesList().size() < maxClusterSize;
     } else {
       return vertex.getValue().getVerticesList().size() == superstep;
     }

@@ -1,13 +1,10 @@
 package org.mappinganalysis.model.functions.refinement;
 
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.FlatJoinFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
-import org.apache.flink.api.java.operators.IterativeDataSet;
-import org.apache.flink.api.java.operators.UnionOperator;
+import org.apache.flink.api.java.operators.*;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
@@ -126,65 +123,97 @@ public class Refinement {
   /**
      * Execute the refinement step - compare clusters with each other and combine similar clusters.
      * @param vertices prepared dataset
-     * @param out
-   * @return refined dataset
+     * @return refined dataset
      */
   public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
-    IterativeDataSet<Vertex<Long, ObjectMap>> loop = vertices.iterate(maxClusterSize);
+    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(maxClusterSize);
 
-    DataSet<Vertex<Long, ObjectMap>> left = loop
-        .filter(new ClusterSizeFilterFunction());
-    DataSet<Vertex<Long, ObjectMap>> right = loop
+    DataSet<Vertex<Long, ObjectMap>> left = workingSet
+        .filter(new ClusterSizeFilterFunction(maxClusterSize));
+    DataSet<Vertex<Long, ObjectMap>> right = workingSet
         .filter(new ClusterSizeFilterFunction(maxClusterSize));
 
-    DataSet<Triplet<Long, ObjectMap, NullValue>> loopTriplets = left.cross(right)
+    DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = left.cross(right)
         .with(new TripletCreateCrossFunction())
         .filter(new EmptyTripletDeleteFilter());
 
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
-        .computeSimilarities(loopTriplets, Utils.DEFAULT_VALUE)
+        .computeSimilarities(triplets, Utils.DEFAULT_VALUE)
         .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES))
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(0.7));
 
+    // tuples with any special
+    DataSet<Tuple4<Long, Long, Long, Double>> noticableTuples = extractExcludeTriplets(similarTriplets);
+
     // - exclude duplicate ontology vertices
     // - mark matches with more than 1 equal src/trg high similarity triplets
     similarTriplets = similarTriplets
-        .leftOuterJoin(extractExcludeTriplets(similarTriplets))
+        .leftOuterJoin(noticableTuples)
         .where(0,1)
         .equalTo(0,1)
         .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction());
 
-    // - create cluster for marked triplets, e.g. (1, 2), (1, 3) merged to cluster vertex with vertex list (1,2,3)
-    DataSet<Vertex<Long, ObjectMap>> partlyVertices = similarTriplets
-        .filter(new RefineIdFilterFunction())
-        .flatMap(new VertexExtractFlatMapFunction())
-        .groupBy(new RefineIdKeySelector())
-        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
+    DataSet<Tuple4<Long, Long, Double, Integer>> noticableTuple4 = similarTriplets.filter(new RefineIdFilterFunction())
+        .map(new MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>>() {
+          @Override
+          public Tuple4<Long, Long, Double, Integer> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
+            return new Tuple4<>(triplet.getSrcVertex().getId(),
+                triplet.getTrgVertex().getId(),
+                triplet.getEdge().getValue().getSimilarity(),
+                1);
+          }
+        });
+
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> filteredNoticableTriplets = noticableTuple4
+        .groupBy(0)
+        .max(2).andSum(3)
+        .union(noticableTuple4
+            .groupBy(1)
+            .max(2).andSum(3))
+        .filter(new FilterFunction<Tuple4<Long, Long, Double, Integer>>() {
+          @Override
+          public boolean filter(Tuple4<Long, Long, Double, Integer> tuple) throws Exception {
+            if (tuple.f3 > 1) {
+              LOG.info("filteredNoticable " + tuple.toString());
+            }
+            return tuple.f3 > 1;
+          }
+        })
+        .leftOuterJoin(similarTriplets)
+        .where(0, 1)
+        .equalTo(0, 1)
+        .with(new JoinFunction<Tuple4<Long,Long,Double,Integer>, Triplet<Long,ObjectMap,ObjectMap>, Triplet<Long, ObjectMap, ObjectMap>>() {
+          @Override
+          public Triplet<Long, ObjectMap, ObjectMap> join(Tuple4<Long, Long, Double, Integer> tuple,
+                                                          Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
+            return triplet;
+          }
+        });
 
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
-        .map(new SimilarClusterMergeMapFunction()) // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
-        .union(partlyVertices);
+        .union(filteredNoticableTriplets)
+        .map(new SimilarClusterMergeMapFunction()); // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
 
 //    out.addVertices("new clusters", newClusters);
 
-    DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(vertices, similarTriplets);
+    DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
 
-    return loop.closeWith(newClusters.union(newVertices));
+    return workingSet.closeWith(newClusters.union(newVertices), newClusters);
   }
 
   private static DataSet<Vertex<Long, ObjectMap>> excludeClusteredVerticesFromInput(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
+      DataSet<Vertex<Long, ObjectMap>> workingSet,
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets) {
     return similarTriplets
           .flatMap(new VertexExtractFlatMapFunction())
           .<Tuple1<Long>>project(0)
           .distinct()
-          .rightOuterJoin(vertices)
+          .rightOuterJoin(workingSet)
           .where(0).equalTo(0)
           .with(new ExcludeVertexFlatJoinFunction());
   }

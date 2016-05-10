@@ -16,7 +16,7 @@ public class ExcludeDuplicateOntologyTripletFlatJoinFunction
                    Collector<Triplet<Long, ObjectMap, ObjectMap>> collector) throws Exception {
     if (right == null) {
       collector.collect(left);
-    } else if (right.f2 != Long.MIN_VALUE) { // big cluster
+    } else if (right.f2 != Long.MIN_VALUE) { // exclude big cluster
       left.getSrcVertex().getValue().put(Utils.REFINE_ID, right.f2);
       left.getTrgVertex().getValue().put(Utils.REFINE_ID, right.f2);
       collector.collect(left);
