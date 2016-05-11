@@ -460,7 +460,7 @@ public class Utils {
   public static String simplify(String value) {
     value = Simplifiers.removeAll("[\\(|,].*").simplify(value);
 //    value = Simplifiers.removeNonWord().simplify(value);
-    return Simplifiers.toLowerCase().simplify(value);
+    return Simplifiers.toLowerCase().simplify(value.trim());
   }
 
   /**

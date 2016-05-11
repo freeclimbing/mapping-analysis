@@ -219,24 +219,11 @@ public class SimilarityComputation {
                                                                   ExecutionEnvironment env, ExampleOutput out) throws Exception {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
-
-//    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
+    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
 
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
-    out.addPreClusterSizes("cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
-
-    //labelpropagation for testing
-//    DataSet<Vertex<Long, String>> run = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, String>() {
-//      @Override
-//      public String map(Vertex<Long, ObjectMap> vertex) throws Exception {
-//        return vertex.getValue().get(Utils.LABEL).toString();
-//      }
-//    }).run(new LabelPropagation<Long, String, ObjectMap>(10));
-//
-//    run.print();
-
-//    Utils.writeToHdfs(graph.getVertices(), "simsortprepareVerts");
+    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
 
     if (Utils.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);

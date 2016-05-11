@@ -2,12 +2,11 @@ package org.mappinganalysis.model.functions.refinement;
 
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.aggregation.Aggregations;
-import org.apache.flink.api.java.io.TextOutputFormat;
-import org.apache.flink.api.java.operators.*;
-import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.core.fs.Path;
+import org.apache.flink.api.java.operators.IterativeDataSet;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -31,16 +30,16 @@ public class Refinement {
 
   /**
    * Prepare vertex dataset for the following refinement step
-   * @param vertices input vertices
+   * @param vertices representative vertices
    * @return prepared vertices
    */
   public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices) {
-    DataSet<Triplet<Long, ObjectMap, NullValue>> sortedOutSimSortTriplets = vertices
+    DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
         .filter(new OldHashCcFilterFunction())
         .groupBy(new OldHashCcKeySelector())
         .reduceGroup(new TripletCreateGroupReduceFunction());
 
-    return integrateMergedVertices(vertices, sortedOutSimSortTriplets);
+    return rejoinSingleVertexClustersFromSimSort(vertices, oldHashCcTriplets);
   }
 
 
@@ -128,12 +127,29 @@ public class Refinement {
   public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
-    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(maxClusterSize);
+    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(Integer.MAX_VALUE);
 
     DataSet<Vertex<Long, ObjectMap>> left = workingSet
         .filter(new ClusterSizeFilterFunction(maxClusterSize));
     DataSet<Vertex<Long, ObjectMap>> right = workingSet
         .filter(new ClusterSizeFilterFunction(maxClusterSize));
+
+    DataSet<Vertex<Long, ObjectMap>> superstepPrinter = left
+        .first(1)
+        .filter(new RichFilterFunction<Vertex<Long, ObjectMap>>() {
+          private Integer superstep = null;
+          @Override
+          public void open(Configuration parameters) throws Exception {
+            this.superstep = getIterationRuntimeContext().getSuperstepNumber();
+          }
+          @Override
+          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+            LOG.info("Superstep: " + superstep);
+            return false;
+          }
+        });
+
+    left = left.union(superstepPrinter);
 
     DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = left.cross(right)
         .with(new TripletCreateCrossFunction())
@@ -198,8 +214,6 @@ public class Refinement {
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
         .union(filteredNoticableTriplets)
         .map(new SimilarClusterMergeMapFunction()); // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
-
-//    out.addVertices("new clusters", newClusters);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
 
@@ -387,12 +401,20 @@ public class Refinement {
 //        });
   }
 
-  private static DataSet<Vertex<Long, ObjectMap>> integrateMergedVertices(
-      DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices,
-      DataSet<Triplet<Long, ObjectMap, NullValue>> sortedOutSimSortTriplets) {
+  /**
+   * With SimSort, we extract (potentially two) single vertices from a component.
+   * Here we try to rejoin vertices which have been in one cluster previously to reduce the
+   * complexity for the following merge step.
+   * @param representativeVertices
+   * @param oldHashCcVertices
+   * @return
+   */
+  private static DataSet<Vertex<Long, ObjectMap>> rejoinSingleVertexClustersFromSimSort(
+      DataSet<Vertex<Long, ObjectMap>> representativeVertices,
+      DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcVertices) {
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newReprBaseTriplets = SimilarityComputation
-        .computeSimilarities(sortedOutSimSortTriplets, Utils.DEFAULT_VALUE)
+        .computeSimilarities(oldHashCcVertices, Utils.DEFAULT_VALUE)
         .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES))
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_SIM));
@@ -406,7 +428,7 @@ public class Refinement {
         .flatMap(new VertexExtractFlatMapFunction())
         .<Tuple1<Long>>project(0)
         .distinct()
-        .rightOuterJoin(mergedClusterVertices)
+        .rightOuterJoin(representativeVertices)
         .where(0)
         .equalTo(0)
         .with(new ExcludeVertexFlatJoinFunction())

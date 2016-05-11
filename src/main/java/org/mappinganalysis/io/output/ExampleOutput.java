@@ -11,6 +11,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.utils.Utils;
@@ -21,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class ExampleOutput {
+  private static final Logger LOG = Logger.getLogger(ExampleOutput.class);
+
   /**
    * Flink dataset, collecting the output lines
    */
@@ -354,6 +357,44 @@ public class ExampleOutput {
         .cross(captionSet)
         .with(new OutputAppender())
         .cross(vertexSet)
+        .with(new OutputAppender());
+  }
+
+  public void printClusterAndOriginalVertices(String caption,
+                                              DataSet<Vertex<Long, ObjectMap>> changedWhileMerging,
+                                              DataSet<Vertex<Long, ObjectMap>> vertices) {
+    DataSet<String> captionSet = env
+        .fromElements("\n*** " + caption + " ***\n");
+
+    DataSet<Tuple1<String>> tuples = changedWhileMerging
+        .flatMap(new RichFlatMapFunction<Vertex<Long,ObjectMap>, Tuple1<String>>() {
+          private List<Vertex<Long, ObjectMap>> origVertices;
+
+          @Override
+          public void open(Configuration parameters) {
+            this. origVertices = getRuntimeContext().getBroadcastVariable("origVertices");
+          }
+
+          @Override
+          public void flatMap(Vertex<Long, ObjectMap> cluster, Collector<Tuple1<String>> collector) throws Exception {
+            String out = "-----------------------\n".concat(cluster.toString() + "\n\n") ;
+            collector.collect(new Tuple1<>(cluster.toString() + "\n"));
+            for (Vertex<Long, ObjectMap> origVertex : origVertices) {
+              if (cluster.getValue().getVerticesList().contains(origVertex.getId())) {
+                out = out.concat(origVertex.toString()).concat("\n");
+                collector.collect(new Tuple1<>(origVertex.toString()));
+              }
+            }
+            LOG.info(out);
+
+          }
+        }).withBroadcastSet(vertices, "origVertices");
+
+    DataSet<String> dataSet =
+        new CanonicalAdjacencyMatrixBuilder().executeOnTuples(tuples);
+
+    outSet = outSet
+        .cross(captionSet)
         .with(new OutputAppender());
   }
 

@@ -10,6 +10,10 @@ import org.mappinganalysis.model.ObjectMap;
 
 import java.util.HashSet;
 
+/**
+ * Create triplets for vertices with equal component id as a prerequisite
+ * for a following similarity computation.
+ */
 public class TripletCreateGroupReduceFunction implements GroupReduceFunction<Vertex<Long, ObjectMap>,
     Triplet<Long, ObjectMap, NullValue>> {
   @Override

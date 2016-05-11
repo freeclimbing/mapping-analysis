@@ -44,8 +44,8 @@ public class Preprocessing {
                                                           ExecutionEnvironment env, ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToGraph(graph);
-//    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
-//    out.addPreClusterSizes("cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
+    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
+    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
 //    graph = restrictGraph(graph, out, env);
 
