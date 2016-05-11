@@ -30,8 +30,17 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
     boolean hasMinTwoSimValues = (hasSimDist && (hasSimLabel || hasSimType))
         || (hasSimLabel && hasSimType);
 
+    boolean hasNoOrHighDistanceSim = !hasSimDist || ((double) edgeValue.get(Utils.SIM_DISTANCE) > 0.7);
+    boolean hasNoOrHighTypeSim = !hasSimType || ((double) edgeValue.get(Utils.SIM_TYPE) > 0.7);
+    boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Utils.SIM_TRIGRAM) > 0.8);
+
     if (hasHighThreshold && hasMinTwoSimValues) {
       LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
+          + triplet.getSrcVertex().getValue().toString() + "\n"
+          + triplet.getTrgVertex().getValue().toString());
+      return true;
+    } else if (hasOnlyHighLabel && hasNoOrHighDistanceSim && hasNoOrHighTypeSim) {
+      LOG.info("Merge HIGH LABEL" + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
           + triplet.getSrcVertex().getValue().toString() + "\n"
           + triplet.getTrgVertex().getValue().toString());
       return true;
