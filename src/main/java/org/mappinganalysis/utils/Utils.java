@@ -388,10 +388,13 @@ public class Utils {
 
     String ontology = "";
     if (vertex.getValue().containsKey(ONTOLOGY)) {
-      ontology = " ontology: " + vertex.getValue().get(ONTOLOGY).toString();
+      ontology = " source: " + vertex.getValue().get(ONTOLOGY).toString();
     }
     if (vertex.getValue().containsKey(ONTOLOGIES)) {
-      ontology = " ontologies: " + vertex.getValue().get(ONTOLOGIES).toString();
+      ontology = " sources: " + vertex.getValue().get(ONTOLOGIES).toString();
+    }
+    if (vertex.getValue().containsKey(DB_URL_FIELD)) {
+      ontology = " uri: " + vertex.getValue().get(DB_URL_FIELD).toString();
     }
 
     if (latitude == null || longitude == null) {

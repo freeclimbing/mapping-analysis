@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -15,6 +16,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.utils.functions.filter.ClusterSizeSimpleFilterFunction;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
 import java.util.ArrayList;
@@ -172,6 +174,59 @@ public class ExampleOutput {
         .with(new OutputAppender());
   }
 
+  public void printEvalThreePercent(String caption,
+                                    DataSet<Vertex<Long, ObjectMap>> mergedClusters,
+                                    DataSet<Vertex<Long, ObjectMap>> vertices) {
+    DataSet<String> captionSet = env.fromElements("\n*** " + caption + " 2er cluster ***\n");
+
+    DataSet<Vertex<Long, ObjectMap>> clusters = mergedClusters
+        .filter(new ClusterSizeSimpleFilterFunction(2))
+        .first(11);
+
+    DataSet<String> vertexSet = new CanonicalAdjacencyMatrixBuilder()
+        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
+
+    outSet = outSet
+        .cross(captionSet)
+        .with(new OutputAppender())
+        .cross(vertexSet)
+        .with(new OutputAppender());
+
+    captionSet = env.fromElements("\n*** " + caption + " 3er cluster ***\n");
+
+    clusters = mergedClusters
+        .filter(new ClusterSizeSimpleFilterFunction(3))
+        .first(13);
+
+    vertexSet = new CanonicalAdjacencyMatrixBuilder()
+        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
+
+    outSet = outSet
+        .cross(captionSet)
+        .with(new OutputAppender())
+        .cross(vertexSet)
+        .with(new OutputAppender());
+
+    captionSet = env.fromElements("\n*** " + caption + " 4er cluster ***\n");
+
+    clusters = mergedClusters
+        .filter(new ClusterSizeSimpleFilterFunction(4))
+        .first(51);
+
+    vertexSet = new CanonicalAdjacencyMatrixBuilder()
+        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
+
+    outSet = outSet
+        .cross(captionSet)
+        .with(new OutputAppender())
+        .cross(vertexSet)
+        .with(new OutputAppender());
+//  mergedClusters.filter(new ClusterSizeSimpleFilterFunction(3))
+//      .first(13);
+//  mergedClusters.filter(new ClusterSizeSimpleFilterFunction(4))
+//      .first(51);
+  }
+
   public void addSelectedBaseClusters(String caption, DataSet<Vertex<Long, ObjectMap>> baseVertices,
                                                   DataSet<Vertex<Long, ObjectMap>> finalVertices,
                                                   ArrayList<Long> vertexList) {
@@ -186,6 +241,9 @@ public class ExampleOutput {
     addFinalVertexValues(caption, vertexListTuple, finalVertices, baseVertices);
   }
 
+  /**
+   * Add
+   */
   private void addFinalVertexValues(String caption, DataSet<Tuple1<Long>> vertexListTuple,
                                     DataSet<Vertex<Long, ObjectMap>> finalVertices,
                                     DataSet<Vertex<Long, ObjectMap>> baseVertices) {
@@ -262,6 +320,7 @@ public class ExampleOutput {
           .with(new OutputAppender());
     }
   }
+
   public void addVertexCount(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
     DataSet<String> captionSet = env
         .fromElements("\n*** " + caption + " ***\n");

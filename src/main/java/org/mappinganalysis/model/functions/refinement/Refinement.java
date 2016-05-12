@@ -226,9 +226,6 @@ public class Refinement {
    * With SimSort, we extract (potentially two) single vertices from a component.
    * Here we try to rejoin vertices which have been in one cluster previously to reduce the
    * complexity for the following merge step.
-   * @param representativeVertices
-   * @param oldHashCcTriplets
-   * @return
    */
   private static DataSet<Vertex<Long, ObjectMap>> rejoinSingleVertexClustersFromSimSort(
       DataSet<Vertex<Long, ObjectMap>> representativeVertices,
@@ -259,45 +256,6 @@ public class Refinement {
         .equalTo(0)
         .with(new ExcludeVertexFlatJoinFunction())
         .union(newRepresentativeVertices);
-  }
-
-  private static class ClusterExactSizeFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
-    private final int maxSize;
-
-    public ClusterExactSizeFilterFunction(int maxSize) {
-      this.maxSize = maxSize;
-    }
-
-    @Override
-    public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return vertex.getValue().getVerticesList().size() == maxSize;
-    }
-  }
-
-  private static class NotSourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
-    private final String ns;
-
-    public NotSourceFilterFunction(String ns) {
-      this.ns = ns;
-    }
-
-    @Override
-    public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return !vertex.getValue().getOntologiesList().contains(ns);
-    }
-  }
-
-  private static class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
-    private final String ns;
-
-    public SourceFilterFunction(String ns) {
-      this.ns = ns;
-    }
-
-    @Override
-    public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return vertex.getValue().getOntologiesList().contains(ns);
-    }
   }
 
   private static class CreateNoticableTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>> {

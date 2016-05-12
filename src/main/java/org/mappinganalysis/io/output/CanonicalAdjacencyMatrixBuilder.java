@@ -76,28 +76,26 @@ public class CanonicalAdjacencyMatrixBuilder {
   }
 
   /**
-   *
-   * @param vertices cluster vertices
+   * get preprocessing vertex values for vertices which are contained in final clusters
+   * @param selectedVertices cluster vertices
    * @param baseVertices base vertices
-   * @return
    */
-  public DataSet<String> executeOnRandomFinalClusterBaseVertexValues(DataSet<Vertex<Long, ObjectMap>> vertices,
+  public DataSet<String> executeOnRandomFinalClusterBaseVertexValues(DataSet<Vertex<Long, ObjectMap>> selectedVertices,
                                                                      DataSet<Vertex<Long, ObjectMap>> baseVertices) {
 
-    DataSet<Tuple3<Long, String, Long>> tuple3 = vertices
+    DataSet<Tuple3<Long, String, Long>> tuple3 = selectedVertices
         .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, Tuple3<Long, String, Long>>() {
           @Override
-          public void flatMap(
-              Vertex<Long, ObjectMap> vertex, Collector<Tuple3<Long, String, Long>> collector) throws Exception {
-            String vertexLabel = vertex.getValue().get(Utils.LABEL).toString();
-            if (vertex.getValue().containsKey(Utils.CL_VERTICES)) {
-              for (Long clVertex : vertex.getValue().getVerticesList()) {
-                collector.collect(new Tuple3<>(vertex.getId(), vertexLabel, clVertex));
+          public void flatMap(Vertex<Long, ObjectMap> clusterVertex,
+                              Collector<Tuple3<Long, String, Long>> collector) throws Exception {
+            String type = clusterVertex.getValue().containsKey(Utils.TYPE_INTERN) ?
+                clusterVertex.getValue().get(Utils.TYPE_INTERN).toString() : "";
+            String vertexLabel = clusterVertex.getValue().get(Utils.LABEL).toString()
+                + " lat: " + clusterVertex.getValue().getLatitude()
+                + " lon: " + clusterVertex.getValue().getLongitude() + " type: " + type;
+              for (Long clVertex : clusterVertex.getValue().getVerticesList()) {
+                collector.collect(new Tuple3<>(clusterVertex.getId(), vertexLabel, clVertex));
               }
-            } else {
-              collector.collect(new Tuple3<>(vertex.getId(),
-                  vertexLabel, (long) vertex.getValue().get(Utils.CC_ID)));
-            }
           }
         });
 
@@ -181,6 +179,9 @@ public class CanonicalAdjacencyMatrixBuilder {
         .reduceGroup(new ConcatVertexLabelStrings());
   }
 
+  /**
+   * basic execute, used for addGraph (deprecated?)
+   */
   public <T> DataSet<String> execute(Graph<Long, ObjectMap, T> graph) {
     // label vertices
     DataSet<VertexString> vertexLabels = graph.getVertices()
