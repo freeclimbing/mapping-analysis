@@ -321,22 +321,25 @@ public class ExampleOutput {
     }
   }
 
-  public void addVertexCount(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
+  public <T> void addDataSetCount(String caption, DataSet<T> data) {
     DataSet<String> captionSet = env
         .fromElements("\n*** " + caption + " ***\n");
-    DataSet<String> vertexSet = vertices
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
+    DataSet<String> dataSet = data
+        .map(new MapFunction<T, Tuple1<Long>>() {
           @Override
-          public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple2<>(vertex.getId(), 1L);
+          public Tuple1<Long> map(T vertex) throws Exception {
+            return new Tuple1<>(1L);
           }
         })
-        .sum(1)
+//        .groupBy(0)
+        .sum(0)
         .first(1)
-        .map(new MapFunction<Tuple2<Long, Long>, String>() {
+//        .sum(1)
+//        .first(1)
+        .map(new MapFunction<Tuple1<Long>, String>() {
           @Override
-          public String map(Tuple2<Long, Long> tuple) throws Exception {
-            return "count: " + tuple.f1.toString();
+          public String map(Tuple1<Long> tuple) throws Exception {
+            return "count: " + tuple.f0.toString();
           }
 
         });
@@ -344,7 +347,7 @@ public class ExampleOutput {
     outSet = outSet
         .cross(captionSet)
         .with(new OutputAppender())
-        .cross(vertexSet)
+        .cross(dataSet)
         .with(new OutputAppender());
   }
 

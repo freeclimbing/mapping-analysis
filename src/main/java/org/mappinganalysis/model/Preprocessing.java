@@ -149,7 +149,7 @@ public class Preprocessing {
   }
 
   // not yet working correctly
-  private static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(Graph<Long, ObjectMap, NullValue> graph, DataSet<Vertex<Long, ObjectMap>> newVertices) {
+  public static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(Graph<Long, ObjectMap, NullValue> graph, DataSet<Vertex<Long, ObjectMap>> newVertices) {
     return graph.getEdges()
         .leftOuterJoin(newVertices)
         .where(0).equalTo(0)
@@ -165,7 +165,7 @@ public class Preprocessing {
    * @param edges edge set
    * @return vertices
    */
-  private static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
+  public static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
       DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
 
     DataSet<Vertex<Long, ObjectMap>> left = vertices
