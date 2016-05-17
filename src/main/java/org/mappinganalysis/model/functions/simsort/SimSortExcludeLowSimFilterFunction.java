@@ -10,18 +10,18 @@ import org.mappinganalysis.utils.Utils;
 /**
  * Exclude vertices where vertex status is false. If vertex status is not existing, its not filtered.
  */
-public class VertexStatusFilter extends RichFilterFunction<Vertex<Long, ObjectMap>> {
+public class SimSortExcludeLowSimFilterFunction extends RichFilterFunction<Vertex<Long, ObjectMap>> {
   private final boolean wantActiveVertices;
   private LongCounter filterMatches = new LongCounter();
 
-  public VertexStatusFilter(boolean wantActiveVertices) {
+  public SimSortExcludeLowSimFilterFunction(boolean wantActiveVertices) {
     this.wantActiveVertices = wantActiveVertices;
   }
 
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.EXCLUDE_FROM_COMPONENT_ACCUMULATOR, filterMatches);
+    getRuntimeContext().addAccumulator(Utils.SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR, filterMatches);
   }
 
   @Override
@@ -32,6 +32,6 @@ public class VertexStatusFilter extends RichFilterFunction<Vertex<Long, ObjectMa
       filterMatches.add(1L);
     }
 
-    return wantActiveVertices ? isVertexStatusActive : !isVertexStatusActive;
+    return wantActiveVertices == isVertexStatusActive;
   }
 }

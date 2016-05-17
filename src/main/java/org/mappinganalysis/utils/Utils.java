@@ -36,10 +36,7 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
@@ -98,11 +95,11 @@ public class Utils {
   public static final String BASE_VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
 
-  public static final String LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
+  public static final String PREPROC_LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
   public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
 
-  public static final String EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
+  public static final String SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
   public static final String REFINEMENT_MERGE_ACCUMULATOR = "merged-cluster-counter";
   public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
@@ -355,6 +352,22 @@ public class Utils {
     return toString(vertex, null);
   }
 
+  public static ArrayList<Long> getVertexList(String dataset) {
+//    ArrayList<Long> clusterList = Lists.newArrayList(1458L);//, 2913L);//, 4966L, 5678L);
+
+    if (dataset.equals(Utils.GEO_FULL_NAME)) {
+      // eval components cikm paper
+      return Lists.newArrayList(457L, 442L, 583L, 172L, 480L, 22L, 531L, 190L, 128L, 488L,
+          601L, 20L, 312L, 335L, 18L, 486L, 120L, 607L, 44L, 459L, 484L, 150L, 244L,
+          522L, 320L, 294L, 256L, 140L, 324L, 98L, 396L, 542L, 50L, 533L, 492L, 148L, 152L, 524L, 248L,
+          337L, 54L, 476L, 78L, 274L, 327L, 298L, 351L, 214L, 214L, 240L, 154L, 212L, 192L, 454L, 300L,
+          258L, 467L, 478L, 345L, 347L, 272L, 394L, 264L, 198L, 116L, 286L, 38L, 361L, 230L, 373L, 232L,
+          520L, 52L, 363L, 398L);
+      //lake louise: 123L, 122L, 2060L, 1181L
+    } else {
+      return Lists.newArrayList(100972L, 121545L, 276947L, 235633L, 185488L, 100971L, 235632L, 121544L, 909033L);
+    }
+  }
 
   /**
    * Create a string representation of a vertex for evaluation output.
@@ -366,9 +379,9 @@ public class Utils {
     String cc;
     if (newCc == null) {
       cc = vertex.getValue().containsKey(CC_ID)
-          ? vertex.getValue().get(CC_ID).toString() : "";
+          ? ", cc(" + vertex.getValue().get(CC_ID).toString() + ")" : "";
     } else {
-      cc = newCc.toString();
+      cc = ", finalCc(" + newCc.toString() + ")";
     }
 
     String type = vertex.getValue().containsKey(TYPE_INTERN)
@@ -407,8 +420,8 @@ public class Utils {
 
       latlon = "geo(" + lat + "|" + lon + ")";
     }
-    return "##  (" + label + ": id(" + vertex.getId() + "), cc("
-        + cc + "), type(" + type + "), " + latlon + clusterVertices + ontology + ")";
+    return "##  (" + label + ": id(" + vertex.getId() + ")"
+        + cc + ", type(" + type + "), " + latlon + clusterVertices + ontology + ")";
   }
 
   /**

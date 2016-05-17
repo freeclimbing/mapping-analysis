@@ -76,20 +76,14 @@ public class SimSort {
   }
 
   /**
-   * SimSort post processing
+   * SimSort post processing exclude low sim vertices
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                         ExecutionEnvironment env) throws Exception {
-//    DataSet<Vertex<Long, ObjectMap>> excludedVertices = graph.getVertices()
-//        .filter(new VertexStatusFilter(false)); // EXCLUDE_FROM_COMPONENT_ACCUMULATOR count
-
     Graph<Long, ObjectMap, ObjectMap> componentGraph = graph
-        .filterOnVertices(new VertexStatusFilter(true));
+        .filterOnVertices(new SimSortExcludeLowSimFilterFunction(true));
 
-    // TODO check result, only graph.getVertices needed
-//    return Graph.fromDataSet(componentGraph.getVertices().union(excludedVertices),
-//        componentGraph.getEdges(), env);
     return Graph.fromDataSet(graph.getVertices(),
         componentGraph.getEdges(), env);
   }

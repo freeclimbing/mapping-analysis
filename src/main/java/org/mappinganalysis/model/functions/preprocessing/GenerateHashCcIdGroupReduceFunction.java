@@ -12,15 +12,6 @@ import org.mappinganalysis.utils.Utils;
  */
 public class GenerateHashCcIdGroupReduceFunction implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
 
-  // todo perhaps?
-//  private ListAccumulator<Edge<Long, NullValue>> filteredLinks = new ListAccumulator<>();
-//
-//  @Override
-//  public void open(final Configuration parameters) throws Exception {
-//    super.open(parameters);
-//    getRuntimeContext().addAccumulator(Utils.EXCLUDE_FROM_COMPONENT_ACCUMULATOR, filterMatches);
-//  }
-
   @Override
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {

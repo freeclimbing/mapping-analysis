@@ -1,6 +1,7 @@
 package org.mappinganalysis.utils;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.*;
@@ -15,17 +16,40 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.model.functions.stats.ResultComponentSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultEdgesSelectionFilter;
 import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
+import org.mappinganalysis.utils.functions.filter.ClusterSizeSimpleFilterFunction;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Helper methods for Flink mapping analysis
+ *
+ * use anywhere:
+ * //    if (dataset.equals(Utils.GEO_FULL_NAME)) {
+ //      final ArrayList<Long> preSplitBigClusterList
+ //          = Lists.newArrayList(4794L, 28L, 3614L, 4422L, 1429L, 1458L, 1868L);
+ //      out.addSelectedBaseClusters("big components final values",
+ //          Preprocessing.execute(inputGraph, true, env).getVertices(),
+ //          representativeVertices,
+ //          preSplitBigClusterList);
+ //    }
+
+ //    Preprocessing.deleteVerticesWithoutAnyEdges()
+ //
+ //    addCountsForSingleSource(inputGraph, out, Utils.GN_NS);
+ //    addCountsForSingleSource(inputGraph, out, Utils.DBP_NS);
+ //    addCountsForSingleSource(inputGraph, out, Utils.FB_NS);
+ //
+ //    out.print();
+
  */
 public class Stats {
   private static final Logger LOG = Logger.getLogger(Stats.class);
@@ -135,57 +159,176 @@ public class Stats {
         .print();
   }
 
-  public static void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, ObjectMap> graph,
-                                            KeySelector<Vertex<Long, ObjectMap>, Long> simSortKeySelector) throws Exception {
-    //vertices needs to be computed already
+  public static void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
     if (jobExecResult == null) {
       graph.getVertexIds().collect();
       jobExecResult = env.getLastJobExecutionResult();
     }
-    LOG.info("[0] ### Statistics: Get Data");
-    LOG.info("[0] Vertices imported: " + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
-    LOG.info("[0] Edges imported: " + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
-    LOG.info("[0] Properties imported: " + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
 
+    LOG.info("[1] ### BaseVertexCreator vertex counter: "
+        + jobExecResult.getAccumulatorResult(Utils.BASE_VERTEX_COUNT_ACCUMULATOR));
+    LOG.info("[1] ### PropertyCoGroupFunction vertex counter: "
+        + jobExecResult.getAccumulatorResult(Utils.VERTEX_COUNT_ACCUMULATOR));
+    LOG.info("[1] ### FlinkEdgeCreator edge counter: "
+        + jobExecResult.getAccumulatorResult(Utils.EDGE_COUNT_ACCUMULATOR));
+    LOG.info("[1] ### FlinkPropertyMapper property counter: "
+        + jobExecResult.getAccumulatorResult(Utils.PROP_COUNT_ACCUMULATOR));
+    LOG.info("[1] ### typeMismatchCorrection wrong edges counter: "
+        + jobExecResult.getAccumulatorResult(Utils.EDGE_EXCLUDE_ACCUMULATOR));
+    LOG.info("[1] ### applyLinkFilterStrategy correct edges counter: "
+        + jobExecResult.getAccumulatorResult(Utils.PREPROC_LINK_FILTER_ACCUMULATOR));
+
+    LOG.info("[3] ### Representatives created: "
+        + jobExecResult.getAccumulatorResult(Utils.REPRESENTATIVE_ACCUMULATOR)); // MajorityPropertiesGRFunction
+    LOG.info("[3] ### Clusters created in refinement step: "
+        + jobExecResult.getAccumulatorResult(Utils.REFINEMENT_MERGE_ACCUMULATOR)); // SimilarClusterMergeMapFunction
+    LOG.info("[3] ### Excluded vertex counter: "
+        + jobExecResult.getAccumulatorResult(Utils.EXCLUDE_VERTEX_ACCUMULATOR)); // ExcludeVertexFlatJoinFunction
+
+
+    // todo this working?
     LOG.info("[3] ### Clustering: Compute all edges within clusters: "
         + jobExecResult.getAccumulatorResult(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR));
     LOG.info("[3] ### Exclude vertices from their component and create new component: "
-        + jobExecResult.getAccumulatorResult(Utils.EXCLUDE_FROM_COMPONENT_ACCUMULATOR));
+        + jobExecResult.getAccumulatorResult(Utils.SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR));
 
-    graph.getEdgeIds().collect(); // how to get rid of this collect job TODO
-    LOG.info("[1] ### Statistics: Preprocessing");
-    Map<String, Long> typeStats = Maps.newHashMap();
-    List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
-    for (String s : typesList) {
-      if (typeStats.containsKey(s)) {
-        typeStats.put(s, typeStats.get(s) + 1L);
-      } else {
-        typeStats.put(s, 1L);
+    // optional, currently not used
+    if (jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR) != null) {
+      Map<String, Long> typeStats = Maps.newHashMap();
+      List<String> typesList = jobExecResult.getAccumulatorResult(Utils.TYPES_COUNT_ACCUMULATOR);
+      for (String s : typesList) {
+        if (typeStats.containsKey(s)) {
+          typeStats.put(s, typeStats.get(s) + 1L);
+        } else {
+          typeStats.put(s, 1L);
+        }
+      }
+
+      LOG.info("[1] ### Types parsed to internal type: ");
+      for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
+        LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
       }
     }
 
-    LOG.info("[1] ### Types parsed to internal type: ");
-    for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
-      LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
-    }
-
-    if (Utils.IS_LINK_FILTER_ACTIVE) {
-      LOG.info("[1] ### Links filtered (strategy: delete 1:n links): "
-          + jobExecResult.getAccumulatorResult(Utils.LINK_FILTER_ACCUMULATOR));
+    if (jobExecResult.getAccumulatorResult(Utils.FILTERED_LINKS_ACCUMULATOR) != null) {
       List<Edge<Long, NullValue>> filteredLinksList
           = jobExecResult.getAccumulatorResult(Utils.FILTERED_LINKS_ACCUMULATOR);
       for (Edge<Long, NullValue> edge : filteredLinksList) {
         LOG.info("[1] Link filtered: (" + edge.getSource() + ", " + edge.getTarget() + ")");
       }
     }
+  }
 
-    // fix this todo
-//    LOG.info("[1] ### Distinct HashCcId components: " + graph.getVertices().distinct(simSortKeySelector).count());
+
+  public static void printResultEdgeCounts(Graph<Long, ObjectMap, NullValue> inputGraph, ExampleOutput out, DataSet<Vertex<Long, ObjectMap>> mergedClusters) {
+    DataSet<Tuple2<Long, Long>> allResultEdgeIds = mergedClusters
+        .flatMap(new FlatMapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Long>>() {
+          @Override
+          public void flatMap(Vertex<Long, ObjectMap> vertex, Collector<Tuple2<Long, Long>> collector) throws Exception {
+            Set<Long> leftList = Sets.newHashSet(vertex.getValue().getVerticesList());
+            Set<Long> rightList = Sets.newHashSet(leftList);
+            for (Long left : leftList) {
+              rightList.remove(left);
+              for (Long right : rightList) {
+                if (left < right) {
+                  collector.collect(new Tuple2<>(left, right));
+                } else {
+                  collector.collect(new Tuple2<>(right, left));
+                }
+              }
+            }
+          }
+        });
+
+    out.addDataSetCount("all result edges count", allResultEdgeIds);
+
+    DataSet<Tuple2<Long, Long>> inputEdgeIds = inputGraph
+        .getEdgeIds()
+        .map(new MapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> map(Tuple2<Long, Long> tuple) throws Exception {
+            if (tuple.f0 < tuple.f1) {
+              return tuple;
+            } else {
+              return new Tuple2<>(tuple.f1, tuple.f0);
+            }
+          }
+        });
+
+    DataSet<Tuple2<Integer, Integer>> newPlusDeletedEdges = allResultEdgeIds.fullOuterJoin(inputEdgeIds)
+        .where(0, 1)
+        .equalTo(0, 1)
+        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Integer, Integer>>() {
+          @Override
+          public void join(Tuple2<Long, Long> left, Tuple2<Long, Long> right,
+                           Collector<Tuple2<Integer, Integer>> collector) throws Exception {
+            if (left == null) {
+              collector.collect(new Tuple2<>(0, 1));
+            }
+            if (right == null) {
+              collector.collect(new Tuple2<>(1, 0));
+            }
+          }
+        }).sum(0).andSum(1);
+
+    out.addTuples("new edges and deleted edges", newPlusDeletedEdges);
   }
 
   /**
-   * optional stats method
+   * only working for small geo dataset
+   */
+  private static void addCountsForSingleSource(Graph<Long, ObjectMap, NullValue> inputGraph,
+                                               ExampleOutput out, final String source) {
+    DataSet<Vertex<Long, ObjectMap>> nytVertices = inputGraph.getVertices()
+        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+          @Override
+          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex.getValue().get(Utils.ONTOLOGY).toString().equals(Utils.NYT_NS);
+          }
+        });
+
+    DataSet<Vertex<Long, ObjectMap>> gnVertices = inputGraph.getVertices()
+        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+          @Override
+          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return vertex.getValue().get(Utils.ONTOLOGY).toString().equals(source);
+          }
+        });
+
+    DataSet<Edge<Long, NullValue>> edgeDataSet = Preprocessing
+        .deleteEdgesWithoutSourceOrTarget(inputGraph, nytVertices.union(gnVertices));
+
+    out.addDataSetCount("vertex size for " + source, gnVertices);
+    out.addDataSetCount("edge size for " + source, edgeDataSet);
+  }
+
+  public static void addChangedWhileMergingVertices(ExampleOutput out, DataSet<Vertex<Long, ObjectMap>> representativeVertices, DataSet<Vertex<Long, ObjectMap>> mergedClusters) {
+    DataSet<Vertex<Long, ObjectMap>> changedWhileMerging = representativeVertices
+        .filter(new ClusterSizeSimpleFilterFunction(4))
+        .rightOuterJoin(mergedClusters.filter(new ClusterSizeSimpleFilterFunction(4)))
+        .where(0)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>,
+            Vertex<Long, ObjectMap>>() {
+          @Override
+          public void join(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right,
+                           Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
+            if (left == null) {
+              collector.collect(right);
+            }
+          }
+        });
+
+//    out.addRandomBaseClusters("random base clusters", preprocGraph.getVertices(), changedWhileMerging, 10);
+
+    out.addVertices("changedWhileMerging", changedWhileMerging);
+  }
+
+
+  /**
+   * optional stats method TODO remove collect call
    */
   public static void printEdgesSimValueBelowThreshold(Graph<Long, ObjectMap, NullValue> allGraph,
                                                        DataSet<Triplet<Long, ObjectMap, ObjectMap>>
@@ -232,17 +375,4 @@ public class Stats {
         })
         .print();
   }
-
-  public static void printComponentSizeAndCount(DataSet<Vertex<Long, ObjectMap>> vertices) throws Exception {
-    DataSet<Tuple2<Long, Long>> result = vertices
-        .map(new MapVertexToPropertyLongFunction(Utils.HASH_CC))
-        .groupBy(0).sum(1)
-        .map(new FrequencyMapByFunction(1))
-        .groupBy(0).sum(1);
-    LOG.info("[3] ### Component sizes and count of components with the size after clustering: ");
-    for (Tuple2<Long, Long> tuple : result.collect()) {
-      LOG.info("[3] size, count: " + tuple);
-    }
-  }
-
 }

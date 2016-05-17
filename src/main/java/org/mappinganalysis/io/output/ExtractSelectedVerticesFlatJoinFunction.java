@@ -6,7 +6,8 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 
-class ExtractSelectedVerticesFlatJoinFunction implements FlatJoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+class ExtractSelectedVerticesFlatJoinFunction implements FlatJoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>,
+    Vertex<Long, ObjectMap>> {
   @Override
   public void join(Tuple1<Long> left, Vertex<Long, ObjectMap> right,
                    Collector<Vertex<Long, ObjectMap>> collector) throws Exception {

@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -128,8 +127,17 @@ public class ExampleOutput {
         .with(new OutputAppender());
   }
 
+
+
+
+
   /**
    * For each chosen basic component id, show the changed final vertices
+   *
+   * example:
+   *     out.addRandomBaseClusters("base random clusters with vertex properties from final",
+   * graph.getVertices(),
+   * representativeVertices, 20);
    * @param caption output caption
    * @param baseVertices random base vertices
    * @param finalVertices final vertices with properties
@@ -149,6 +157,12 @@ public class ExampleOutput {
 
   /**
    * For each chosen final cluster, provide original information for the contained vertices
+   * example:
+   *      out.addRandomFinalClustersWithMinSize(
+   *        "final random clusters with vertex properties from preprocessing",
+   *        representativeVertices,
+   *        graph.getVertices(),
+   *        15, 20);
    * @param caption output caption
    * @param vertices cluster vertices
    * @param basicVertices basic vertices are used to find the original vertex properties
@@ -174,14 +188,26 @@ public class ExampleOutput {
         .with(new OutputAppender());
   }
 
+  /**
+   * Custom eval method to print results for the small geo dataset.
+   */
   public void printEvalThreePercent(String caption,
                                     DataSet<Vertex<Long, ObjectMap>> mergedClusters,
                                     DataSet<Vertex<Long, ObjectMap>> vertices) {
-    DataSet<String> captionSet = env.fromElements("\n*** " + caption + " 2er cluster ***\n");
+    addClusterSampleToOutput(caption + " 2er cluster", mergedClusters, vertices, 2, 11);
+    addClusterSampleToOutput(caption + " 3er cluster", mergedClusters, vertices, 3, 13);
+    addClusterSampleToOutput(caption + " 4er cluster", mergedClusters, vertices, 4, 51);
+  }
+
+  private void addClusterSampleToOutput(String caption, DataSet<Vertex<Long, ObjectMap>> mergedClusters,
+                                        DataSet<Vertex<Long, ObjectMap>> vertices,
+                                        int clusterSize,
+                                        int entityCount) {
+    DataSet<String> captionSet = env.fromElements("\n*** " + caption + " ***\n");
 
     DataSet<Vertex<Long, ObjectMap>> clusters = mergedClusters
-        .filter(new ClusterSizeSimpleFilterFunction(2))
-        .first(11);
+        .filter(new ClusterSizeSimpleFilterFunction(clusterSize))
+        .first(entityCount);
 
     DataSet<String> vertexSet = new CanonicalAdjacencyMatrixBuilder()
         .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
@@ -191,42 +217,11 @@ public class ExampleOutput {
         .with(new OutputAppender())
         .cross(vertexSet)
         .with(new OutputAppender());
-
-    captionSet = env.fromElements("\n*** " + caption + " 3er cluster ***\n");
-
-    clusters = mergedClusters
-        .filter(new ClusterSizeSimpleFilterFunction(3))
-        .first(13);
-
-    vertexSet = new CanonicalAdjacencyMatrixBuilder()
-        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
-
-    outSet = outSet
-        .cross(captionSet)
-        .with(new OutputAppender())
-        .cross(vertexSet)
-        .with(new OutputAppender());
-
-    captionSet = env.fromElements("\n*** " + caption + " 4er cluster ***\n");
-
-    clusters = mergedClusters
-        .filter(new ClusterSizeSimpleFilterFunction(4))
-        .first(51);
-
-    vertexSet = new CanonicalAdjacencyMatrixBuilder()
-        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
-
-    outSet = outSet
-        .cross(captionSet)
-        .with(new OutputAppender())
-        .cross(vertexSet)
-        .with(new OutputAppender());
-//  mergedClusters.filter(new ClusterSizeSimpleFilterFunction(3))
-//      .first(13);
-//  mergedClusters.filter(new ClusterSizeSimpleFilterFunction(4))
-//      .first(51);
   }
 
+  /**
+   * For a list of base cluster id's, print the base entity properties and the FINAL cluster id.
+   */
   public void addSelectedBaseClusters(String caption, DataSet<Vertex<Long, ObjectMap>> baseVertices,
                                                   DataSet<Vertex<Long, ObjectMap>> finalVertices,
                                                   ArrayList<Long> vertexList) {
@@ -242,7 +237,7 @@ public class ExampleOutput {
   }
 
   /**
-   * Add
+   * Add final vertex component ids for random/selected base vertices.
    */
   private void addFinalVertexValues(String caption, DataSet<Tuple1<Long>> vertexListTuple,
                                     DataSet<Vertex<Long, ObjectMap>> finalVertices,
@@ -256,7 +251,7 @@ public class ExampleOutput {
         .with(new ExtractSelectedVerticesFlatJoinFunction());
 
     DataSet<String> vertexSet = new CanonicalAdjacencyMatrixBuilder()
-        .executeOnVertices2(randomClusters, finalVertices);
+        .executeOnBaseClusters(randomClusters, finalVertices);
 
     outSet = outSet
         .cross(captionSet)
@@ -331,11 +326,8 @@ public class ExampleOutput {
             return new Tuple1<>(1L);
           }
         })
-//        .groupBy(0)
         .sum(0)
         .first(1)
-//        .sum(1)
-//        .first(1)
         .map(new MapFunction<Tuple1<Long>, String>() {
           @Override
           public String map(Tuple1<Long> tuple) throws Exception {
@@ -419,44 +411,6 @@ public class ExampleOutput {
         .cross(captionSet)
         .with(new OutputAppender())
         .cross(vertexSet)
-        .with(new OutputAppender());
-  }
-
-  public void printClusterAndOriginalVertices(String caption,
-                                              DataSet<Vertex<Long, ObjectMap>> changedWhileMerging,
-                                              DataSet<Vertex<Long, ObjectMap>> vertices) {
-    DataSet<String> captionSet = env
-        .fromElements("\n*** " + caption + " ***\n");
-
-    DataSet<Tuple1<String>> tuples = changedWhileMerging
-        .flatMap(new RichFlatMapFunction<Vertex<Long,ObjectMap>, Tuple1<String>>() {
-          private List<Vertex<Long, ObjectMap>> origVertices;
-
-          @Override
-          public void open(Configuration parameters) {
-            this. origVertices = getRuntimeContext().getBroadcastVariable("origVertices");
-          }
-
-          @Override
-          public void flatMap(Vertex<Long, ObjectMap> cluster, Collector<Tuple1<String>> collector) throws Exception {
-            String out = "-----------------------\n".concat(cluster.toString() + "\n\n") ;
-            collector.collect(new Tuple1<>(cluster.toString() + "\n"));
-            for (Vertex<Long, ObjectMap> origVertex : origVertices) {
-              if (cluster.getValue().getVerticesList().contains(origVertex.getId())) {
-                out = out.concat(origVertex.toString()).concat("\n");
-                collector.collect(new Tuple1<>(origVertex.toString()));
-              }
-            }
-            LOG.info(out);
-
-          }
-        }).withBroadcastSet(vertices, "origVertices");
-
-    DataSet<String> dataSet =
-        new CanonicalAdjacencyMatrixBuilder().executeOnTuples(tuples);
-
-    outSet = outSet
-        .cross(captionSet)
         .with(new OutputAppender());
   }
 

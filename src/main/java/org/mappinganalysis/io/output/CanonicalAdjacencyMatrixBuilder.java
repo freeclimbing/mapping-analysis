@@ -118,14 +118,15 @@ public class CanonicalAdjacencyMatrixBuilder {
   }
 
   /**
-   * @param finalVertices
-   * @param randomBaseVertices cluster randomBaseVertices
-   * @return
+   * Add final cluster id for each vertex contained in the base cluster.
+   * @param finalVertices vertices
+   * @param baseCluster cluster baseCluster
+   * @return aggregated cluster/vertex view
    */
-  public DataSet<String> executeOnVertices2(DataSet<Vertex<Long, ObjectMap>> randomBaseVertices,
-                                            DataSet<Vertex<Long, ObjectMap>> finalVertices) {
+  public DataSet<String> executeOnBaseClusters(DataSet<Vertex<Long, ObjectMap>> baseCluster,
+                                               DataSet<Vertex<Long, ObjectMap>> finalVertices) {
 
-    DataSet<Tuple1<Long>> clusterIds = randomBaseVertices
+    DataSet<Tuple1<Long>> clusterIds = baseCluster
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
           @Override
           public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -161,7 +162,7 @@ public class CanonicalAdjacencyMatrixBuilder {
         });
 
     DataSet<VertexLabelString> vertexLabelStrings = vertexContainedInFinal
-        .leftOuterJoin(randomBaseVertices)
+        .leftOuterJoin(baseCluster)
         .where(0).equalTo(0)
         .with(new FlatJoinFunction<Tuple2<Long, Long>, Vertex<Long, ObjectMap>, VertexLabelString>() {
           @Override

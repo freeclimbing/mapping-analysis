@@ -353,7 +353,7 @@ public class Preprocessing {
     @Override
     public void open(final Configuration parameters) throws Exception {
       super.open(parameters);
-      getRuntimeContext().addAccumulator(Utils.LINK_FILTER_ACCUMULATOR, filteredLinks);
+      getRuntimeContext().addAccumulator(Utils.PREPROC_LINK_FILTER_ACCUMULATOR, filteredLinks);
     }
 
     @Override
