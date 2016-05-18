@@ -25,6 +25,7 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
+                <updatePolicy>interval:10080</updatePolicy>
             </snapshots>
         </repository>
     </repositories>

@@ -31,8 +31,9 @@ public class SimilarityComputation {
   public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets, String filter) {
     switch (filter) {
-      case "geo":
-        return basicGeoSimilarity(triplets);
+      case Utils.SIM_GEO_LABEL_STRATEGY:
+        return joinDifferentSimilarityValues(basicGeoSimilarity(triplets),
+            basicTrigramSimilarity(triplets));
       case "label":
         return basicTrigramSimilarity(triplets);
       case "type":
@@ -47,13 +48,15 @@ public class SimilarityComputation {
   /**
    * Compute similarities based on the existing vertex properties, save aggregated similarity as edge property
    * @param graph input graph
+   * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
    * @return graph with edge similarities
    */
-  public static DataSet<Edge<Long, ObjectMap>> computeEdgeSimFromGraph(Graph<Long, ObjectMap, NullValue> graph) {
+  public static DataSet<Edge<Long, ObjectMap>> computeGraphEdgeSim(Graph<Long, ObjectMap, NullValue> graph,
+                                                                   String matchCombination) {
     LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: "
         + Utils.IGNORE_MISSING_PROPERTIES);
 
-    return computeSimilarities(graph.getTriplets(), Utils.PRE_CLUSTER_STRATEGY)
+    return computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Utils.IGNORE_MISSING_PROPERTIES));
   }
@@ -195,20 +198,6 @@ public class SimilarityComputation {
   }
 
   /**
-   * Create the graph needed for any further computation. Compute similarities on edges.
-   * @param graph preprocessed graph
-   * @param env env
-   * @return result
-   */
-  public static Graph<Long, ObjectMap, ObjectMap> initSimilarity(Graph<Long, ObjectMap, NullValue> graph,
-                                                                 ExecutionEnvironment env) {
-    return Graph.fromDataSet(
-        graph.getVertices(),
-        computeEdgeSimFromGraph(graph),
-        env);
-  }
-
-  /**
    * Executes TypeGroupBy and SimSort method and returns the resulting graph.
    * @param graph graph with similarities already computed
    * @param processingMode if 'default', both methods are executed
@@ -223,6 +212,7 @@ public class SimilarityComputation {
 
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env);
+//    Utils.writeToHdfs(graph.getVertices(), "3_prepare_simsort_results");
     out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
 
     if (Utils.IS_SIMSORT_ENABLED) {

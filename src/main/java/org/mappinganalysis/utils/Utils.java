@@ -110,22 +110,18 @@ public class Utils {
   public static final String AGG_VALUE_COUNT = "aggValueCount";
 
   /**
-   * DB connected components ID field
+   * DB fields
    */
   public static final String DB_CCID_FIELD = "ccID";
-  /**
-   * DB concept id field in connected components table
-   */
   public static final String DB_CONCEPTID_FIELD = "conceptID";
-  /**
-   * DB connected components table name.
-   */
   public static final String DB_CC_TABLE = "connectedComponents";
+
   /**
    * similarity default values.
    */
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 1D;
+  public static final String SIM_GEO_LABEL_STRATEGY = "geo-label";
   /**
    * DB attName for gn type detail information
    */

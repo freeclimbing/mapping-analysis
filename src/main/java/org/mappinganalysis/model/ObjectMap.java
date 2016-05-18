@@ -53,6 +53,26 @@ public class ObjectMap implements Map<String, Object>, Serializable {
         || map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE_FOUND);
   }
 
+  /**
+   * Get the set of type strings for a vertex from the input graph.
+   * @return String set of rdf:type values
+   * @param type specify type to retrieve, if not available, return "no type available"
+   */
+  public Set<String> getTypes(String type) {
+    if (map.containsKey(type)) {
+      Object typeObject = map.get(type);
+
+      if (typeObject instanceof Set) {
+        return Sets.newHashSet((Set<String>) typeObject);
+      } else {
+        return Sets.newHashSet(typeObject.toString());
+      }
+    } else {
+      return Sets.newHashSet(Utils.NO_TYPE_AVAILABLE);
+    }
+  }
+
+
   public boolean hasGeoProperties() {
     if (map.containsKey(Utils.LAT) && map.containsKey(Utils.LON)) {
       return Boolean.TRUE;

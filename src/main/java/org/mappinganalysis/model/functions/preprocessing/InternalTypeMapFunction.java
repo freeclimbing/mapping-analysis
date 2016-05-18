@@ -7,7 +7,6 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.TypeDictionary;
 import org.mappinganalysis.utils.Utils;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,51 +16,42 @@ public class InternalTypeMapFunction implements MapFunction<Vertex<Long, ObjectM
 
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-    Map<String, Object> properties = vertex.getValue();
-    String resultType = null;
+    ObjectMap properties = vertex.getValue();
+    Set<String> resultTypes = Sets.newHashSet();
+
     if (properties.containsKey(Utils.GN_TYPE_DETAIL)) {
-      resultType = getDictValue(properties.get(Utils.GN_TYPE_DETAIL).toString());
+      resultTypes = getDictValue(properties.get(Utils.GN_TYPE_DETAIL).toString());
     }
-    if (properties.containsKey(Utils.TYPE) && (resultType == null || resultType.equals(Utils.NO_TYPE_FOUND))) {
-      resultType = getInternalType(properties.get(Utils.TYPE));
+    if (properties.containsKey(Utils.TYPE) &&
+        (resultTypes.isEmpty() || resultTypes.contains(Utils.NO_TYPE_FOUND))) {
+      resultTypes = getDictValues(properties.getTypes(Utils.TYPE));
     }
-    if (resultType == null) {
-      resultType = Utils.NO_TYPE_AVAILABLE;
+    if (resultTypes.isEmpty()) {
+      resultTypes = Sets.newHashSet(Utils.NO_TYPE_AVAILABLE);
     }
-    properties.put(Utils.TYPE_INTERN, resultType);
+
+    properties.put(Utils.TYPE_INTERN, resultTypes);
     return vertex;
   }
 
-  /**
-   * get relevant key and translate with custom dictionary for internal use
-   */
-  private String getInternalType(Object property) {
-    String resultType;
-    if (property instanceof Set) {
-      Set<String> values = Sets.newHashSet((Set<String>) property);
-      resultType = getDictValue(values);
-    } else {
-      resultType = getDictValue(property.toString());
-    }
-    return resultType;
+  private static Set<String> getDictValue(String value) {
+    return getDictValues(Sets.newHashSet(value));
   }
 
-  private static String getDictValue(String value) {
-    return getDictValue(Sets.newHashSet((String) value));
-  }
+  private static Set<String> getDictValues(Set<String> values) {
+    Set<String> resultTypes = Sets.newHashSet();
 
-  private static String getDictValue(Set<String> values) {
     for (String value : values) {
       if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
-        return TypeDictionary.PRIMARY_TYPE.get(value);
+        resultTypes.add(TypeDictionary.PRIMARY_TYPE.get(value));
       }
     }
     for (String value : values) {
       if (TypeDictionary.SECONDARY_TYPE.containsKey(value)) {
-        return TypeDictionary.SECONDARY_TYPE.get(value);
+        resultTypes.add(TypeDictionary.SECONDARY_TYPE.get(value));
       }
     }
 
-    return Utils.NO_TYPE_FOUND;
+    return resultTypes.isEmpty() ? Sets.newHashSet(Utils.NO_TYPE_FOUND) : resultTypes;
   }
 }

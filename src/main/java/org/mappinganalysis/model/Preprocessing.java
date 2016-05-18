@@ -47,13 +47,19 @@ public class Preprocessing {
     Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
     out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
-//    graph = restrictGraph(graph, out, env);
+    graph = restrictGraph(graph, out, env);
 
-    graph = applyTypeMissMatchCorrection(graph, true, env);
-    Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.initSimilarity(graph, env);
+    // TODO type processing reworked
+//    graph = applyTypeMissMatchCorrection(graph, true, env);
+    Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
+        graph.getVertices(),
+        SimilarityComputation.computeGraphEdgeSim(graph, "bla"),
+        env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
     simGraph = addCcIdsToGraph(simGraph);
+
+
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
         .map(new AddShadingTypeMapFunction())
@@ -75,8 +81,9 @@ public class Preprocessing {
         })
         .filter(new FilterFunction<Tuple1<Long>>() {
           @Override
-          public boolean filter(Tuple1<Long> longTuple1) throws Exception {
-            return longTuple1.f0 == 122L;
+          public boolean filter(Tuple1<Long> tuple) throws Exception {
+            // 122L lake louise
+            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
           }
         });
 //        .first(100000);
@@ -111,7 +118,7 @@ public class Preprocessing {
 
     DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph, newVertices);
 
-    graph = Graph.fromDataSet(newVertices, newEdges, env);
+    graph = Graph.fromDataSet(newVertices.distinct(0), newEdges.distinct(0,1), env);
     out.addVertexAndEdgeSizes("afterInitialVertexDeletionAndRestrictedClusters", graph);
     return graph;
   }

@@ -8,25 +8,21 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.TypeDictionary;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.Set;
+
 /**
- * Return similarity 1f if labels of two resources are equal.
+ * Get type similarity (and type shading similarity).
  */
 public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
     Triplet<Long, ObjectMap, ObjectMap>> {
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-    String srcType = triplet.getSrcVertex().getValue().containsKey(Utils.TYPE_INTERN) ?
-        triplet.getSrcVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
-    String trgType = triplet.getTrgVertex().getValue().containsKey(Utils.TYPE_INTERN) ?
-        triplet.getTrgVertex().getValue().get(Utils.TYPE_INTERN).toString() : Utils.NO_TYPE_AVAILABLE;
+    Set<String> srcTypes = triplet.getSrcVertex().getValue().getTypes(Utils.TYPE_INTERN);
+    Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Utils.TYPE_INTERN);
     Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimilarityComputation.initResultTriplet(triplet);
 
-    if (isNoTypeEmpty(srcType, trgType)) {
-      double similarity = srcType.toLowerCase().equals(trgType.toLowerCase()) ? 1d : 0d;
-      if (Doubles.compare(similarity, 0d) == 0) {
-        similarity = checkTypeShadingSimilarity(srcType, trgType);
-      }
-      resultTriplet.getEdge().getValue().put(Utils.SIM_TYPE, similarity);
+    if (hasNoEmptyType(srcTypes, trgTypes)) {
+      resultTriplet.getEdge().getValue().put(Utils.SIM_TYPE, getTypeSim(srcTypes, trgTypes));
 
       return resultTriplet;
     } else {
@@ -34,11 +30,34 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
     }
   }
 
-  private boolean isNoTypeEmpty(String srcType, String trgType) {
-    return !srcType.equals(Utils.NO_TYPE_AVAILABLE) && !trgType.equals(Utils.NO_TYPE_AVAILABLE)
-        && !srcType.equals(Utils.NO_TYPE_FOUND) && !trgType.equals(Utils.NO_TYPE_FOUND);
+  /**
+   * Get type similarity for two sets of type strings, indirect type shading sim is also computed.
+   * TODO rework if type shading sim is <1
+   */
+  private double getTypeSim(Set<String> srcTypes, Set<String> trgTypes) {
+    for (String srcType : srcTypes) {
+      if (trgTypes.contains(srcType)) {
+        return 1;
+      } else {
+        for (String trgType : trgTypes) {
+          double check = checkTypeShadingSimilarity(srcType, trgType);
+          if (Doubles.compare(check, 0) != 0) {
+            return check;
+          }
+        }
+      }
+    }
+    return 0;
   }
 
+  private boolean hasNoEmptyType(Set<String> srcType, Set<String> trgType) {
+    return !srcType.contains(Utils.NO_TYPE_AVAILABLE) && !trgType.contains(Utils.NO_TYPE_AVAILABLE)
+        && !srcType.contains(Utils.NO_TYPE_FOUND) && !trgType.contains(Utils.NO_TYPE_FOUND);
+  }
+
+  /**
+   * return double because of option to reduce the result value according to shading type sim (default: 1)
+   */
   private double checkTypeShadingSimilarity(String srcType, String trgType) {
     if (TypeDictionary.TYPE_SHADINGS.containsKey(srcType)
       && TypeDictionary.TYPE_SHADINGS.get(srcType).equals(trgType)

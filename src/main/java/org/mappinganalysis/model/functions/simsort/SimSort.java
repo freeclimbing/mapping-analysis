@@ -46,7 +46,7 @@ public class SimSort {
         .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
 
     // TODO eliminate partly duplicate sim computation
-    DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation.computeEdgeSimFromGraph(distinctEdgesGraph);
+    DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation.computeGraphEdgeSim(distinctEdgesGraph, Utils.DEFAULT_VALUE);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
         .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
