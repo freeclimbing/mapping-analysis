@@ -6,11 +6,13 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.TypeDictionary;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.Set;
+
 public class AddShadingTypeMapFunction implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-    String vertexType = vertex.getValue().get(Utils.TYPE_INTERN).toString();
-    vertex.getValue().put(Utils.COMP_TYPE, Utils.getShadingType(vertexType));
+    Set<String> types = vertex.getValue().getTypes(Utils.TYPE_INTERN);
+    vertex.getValue().put(Utils.COMP_TYPE, Utils.getShadingTypes(types));
 
     return vertex;
   }

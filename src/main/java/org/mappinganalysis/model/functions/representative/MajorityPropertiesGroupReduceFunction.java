@@ -41,7 +41,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
-    HashMap<String, Integer> typeMap = Maps.newHashMap();
+    HashMap<Set<String>, Integer> typeMap = Maps.newHashMap();
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> currentVertex : vertices) {
@@ -126,15 +126,15 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     }
   }
 
-  private void addTypeToMap(HashMap<String, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
-    if (currentVertex.getValue().containsKey(Utils.TYPE_INTERN)
-        && !currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
-      String type = currentVertex.getValue().get(Utils.TYPE_INTERN).toString();
-      if (typeMap.containsKey(type)) {
-        int labelCount = typeMap.get(type);
-        typeMap.put(type, labelCount + 1);
+  private void addTypeToMap(HashMap<Set<String>, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
+    if (!currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
+      Set<String> types = currentVertex.getValue().getTypes(Utils.TYPE_INTERN);
+
+      if (typeMap.containsKey(types)) {
+        int labelCount = typeMap.get(types);
+        typeMap.put(types, labelCount + 1);
       } else {
-        typeMap.put(type, 1);
+        typeMap.put(types, 1);
       }
     }
   }
@@ -143,16 +143,19 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
    * Get the hash map value having the highest count of occurrence.
    * For label property, if count is equal, a longer string is preferred.
    * @param map containing value options with count of occurrence
-   * @param property special behavior if label
+   * @param propertyName special behavior if label
    * @return resulting value
    */
-  private String getFinalValue(HashMap<String, Integer> map, String property) {
-    Map.Entry<String, Integer> finalEntry = null;
-    for (Map.Entry<String, Integer> entry : map.entrySet()) {
+  private <T> T getFinalValue(HashMap<T, Integer> map, String propertyName) {
+    Map.Entry<T, Integer> finalEntry = null;
+    for (Map.Entry<T, Integer> entry : map.entrySet()) {
       if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
         finalEntry = entry;
-      } else if (entry.getKey().length() > finalEntry.getKey().length() && property.equals(Utils.LABEL)) {
-        finalEntry = entry;
+      } else if (entry.getKey() instanceof String && propertyName.equals(Utils.LABEL)) {
+        String labelKey = entry.getKey().toString();
+        if (labelKey.length() > finalEntry.getKey().toString().length()) {
+          finalEntry = entry;
+        }
       }
     }
 

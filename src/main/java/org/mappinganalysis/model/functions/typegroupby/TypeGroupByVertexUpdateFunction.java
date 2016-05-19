@@ -19,7 +19,7 @@ import java.util.HashMap;
 
 public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(TypeGroupByVertexUpdateFunction.class);
-  private ArrayList<Long> vertexList = Lists.newArrayList(3420L, 5586L, 3490L, 3419L);
+  private ArrayList<Long> vertexList = Lists.newArrayList(60L, 61L, 5856L);
 
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex, MessageIterator<ObjectMap> inMessages)

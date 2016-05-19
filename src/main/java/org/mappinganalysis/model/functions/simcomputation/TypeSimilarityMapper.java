@@ -51,8 +51,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
   }
 
   private boolean hasNoEmptyType(Set<String> srcType, Set<String> trgType) {
-    return !srcType.contains(Utils.NO_TYPE_AVAILABLE) && !trgType.contains(Utils.NO_TYPE_AVAILABLE)
-        && !srcType.contains(Utils.NO_TYPE_FOUND) && !trgType.contains(Utils.NO_TYPE_FOUND);
+    return !srcType.contains(Utils.NO_TYPE) && !trgType.contains(Utils.NO_TYPE);
   }
 
   /**

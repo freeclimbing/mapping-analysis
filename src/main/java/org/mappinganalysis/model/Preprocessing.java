@@ -35,31 +35,31 @@ public class Preprocessing {
   /**
    * Execute all preprocessing steps with the given options
    * @param graph input graph
-   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
-   * @param env execution environment  @return graph
-   * @throws Exception
+   * @param isRestrictActive
+   *@param isLinkFilterActive should links with duplicate entries per dataset be deleted
+   * @param env execution environment  @return graph   @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          boolean isLinkFilterActive,
+                                                          boolean isLinkFilterActive, boolean isRestrictActive,
                                                           ExecutionEnvironment env, ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToGraph(graph);
     Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
     out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
-    graph = restrictGraph(graph, out, env);
+    if (isRestrictActive) {
+      graph = restrictGraph(graph, out, env);
+    }
 
     // TODO type processing reworked
 //    graph = applyTypeMissMatchCorrection(graph, true, env);
     Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
         graph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(graph, "bla"),
+        SimilarityComputation.computeGraphEdgeSim(graph, Utils.DEFAULT_VALUE),
         env);
 
     simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
     simGraph = addCcIdsToGraph(simGraph);
-
-
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
         .map(new AddShadingTypeMapFunction())

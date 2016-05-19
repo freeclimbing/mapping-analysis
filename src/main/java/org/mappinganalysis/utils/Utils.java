@@ -2,6 +2,7 @@ package org.mappinganalysis.utils;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.mongodb.MongoClient;
@@ -52,6 +53,7 @@ public class Utils {
   public static boolean IS_SIMSORT_ENABLED;
   public static Double MIN_SIM;
   public static boolean IGNORE_MISSING_PROPERTIES;
+  public static boolean IS_RESTRICT_ACTIVE;
   public static String PRE_CLUSTER_STRATEGY;
   public static boolean IS_LINK_FILTER_ACTIVE;
 
@@ -143,8 +145,7 @@ public class Utils {
    * temp values for missing values
    */
   public static final String NO_LABEL_FOUND = "no_label_found";
-  public static final String NO_TYPE_FOUND = "no_type_found";
-  public static final String NO_TYPE_AVAILABLE = "no_type_available";
+  public static final String NO_TYPE = "no_type";
   /**
    * Field name for sim value names
    */
@@ -462,6 +463,24 @@ public class Utils {
     }
 
     return vertexType;
+  }
+
+  /**
+   * For unclear types, generalize to the most common ancestors
+   * @param types input string
+   * @return generalized type
+   */
+  public static Set<String> getShadingTypes(Set<String> types) {
+    Set<String> result = Sets.newHashSet(types);
+    for (String type : types) {
+      String tmp = getShadingType(type);
+      if (!tmp.equals(type)) {
+        result.remove(type);
+        result.add(tmp);
+      }
+    }
+
+    return result;
   }
 
   /**

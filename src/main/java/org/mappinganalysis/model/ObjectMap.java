@@ -49,8 +49,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return true if type has value not available or not found
    */
   public boolean hasNoType(String type) {
-    return map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE_AVAILABLE)
-        || map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE_FOUND);
+    return map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE);
   }
 
   /**
@@ -68,7 +67,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
         return Sets.newHashSet(typeObject.toString());
       }
     } else {
-      return Sets.newHashSet(Utils.NO_TYPE_AVAILABLE);
+      return Sets.newHashSet(Utils.NO_TYPE);
     }
   }
 

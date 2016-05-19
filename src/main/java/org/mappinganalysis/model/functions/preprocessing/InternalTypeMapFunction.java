@@ -23,11 +23,11 @@ public class InternalTypeMapFunction implements MapFunction<Vertex<Long, ObjectM
       resultTypes = getDictValue(properties.get(Utils.GN_TYPE_DETAIL).toString());
     }
     if (properties.containsKey(Utils.TYPE) &&
-        (resultTypes.isEmpty() || resultTypes.contains(Utils.NO_TYPE_FOUND))) {
+        (resultTypes.isEmpty() || resultTypes.contains(Utils.NO_TYPE))) {
       resultTypes = getDictValues(properties.getTypes(Utils.TYPE));
     }
     if (resultTypes.isEmpty()) {
-      resultTypes = Sets.newHashSet(Utils.NO_TYPE_AVAILABLE);
+      resultTypes = Sets.newHashSet(Utils.NO_TYPE);
     }
 
     properties.put(Utils.TYPE_INTERN, resultTypes);
@@ -52,6 +52,6 @@ public class InternalTypeMapFunction implements MapFunction<Vertex<Long, ObjectM
       }
     }
 
-    return resultTypes.isEmpty() ? Sets.newHashSet(Utils.NO_TYPE_FOUND) : resultTypes;
+    return resultTypes.isEmpty() ? Sets.newHashSet(Utils.NO_TYPE) : resultTypes;
   }
 }
