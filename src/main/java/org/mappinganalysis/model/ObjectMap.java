@@ -49,7 +49,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return true if type has value not available or not found
    */
   public boolean hasNoType(String type) {
-    return map.containsKey(type) && map.get(type).equals(Utils.NO_TYPE);
+    return map.containsKey(type) && getTypes(type).contains(Utils.NO_TYPE);
   }
 
   /**
@@ -71,6 +71,13 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  /**
+   * Get the hash cc id from an object map - no check if hash is available
+   * @return hashCcId
+   */
+  public Long getHashCcId() {
+    return (long) map.get(Utils.HASH_CC);
+  }
 
   public boolean hasGeoProperties() {
     if (map.containsKey(Utils.LAT) && map.containsKey(Utils.LON)) {

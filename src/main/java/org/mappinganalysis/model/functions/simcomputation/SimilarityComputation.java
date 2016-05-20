@@ -188,12 +188,9 @@ public class SimilarityComputation {
    */
   private static double getDistanceValue(ObjectMap value) {
     Object object = value.get(Utils.SIM_DISTANCE);
-    if (object instanceof Double) {
-      return (Double) object;
-    } else {
-      LOG.info("Error (should not occur)" + object.getClass().toString());
-      return -1;
-    }
+    Preconditions.checkArgument(object instanceof Double, "Error (should not occur)" + object.getClass().toString());
+
+    return (Double) object;
     //      aggregatedSim += geoWeight * (Double) value.get(Utils.SIM_DISTANCE); // TODO why is this not working?
   }
 
@@ -204,8 +201,8 @@ public class SimilarityComputation {
    * @param env env  @return result
    */
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                                  String processingMode,
-                                                                  ExecutionEnvironment env, ExampleOutput out) throws Exception {
+                                                                  String processingMode, ExecutionEnvironment env,
+                                                                  ExampleOutput out) throws Exception {
     // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
     Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");

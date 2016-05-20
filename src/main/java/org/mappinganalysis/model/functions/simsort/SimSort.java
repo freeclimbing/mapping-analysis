@@ -72,7 +72,7 @@ public class SimSort {
     aggParameters.setDirection(EdgeDirection.ALL);
 
     return graph.runVertexCentricIteration(
-        new SimSortVertexUpdateFunction(Utils.MIN_SIM),
+        new SimSortVertexUpdateFunction(Utils.MIN_SIMSORT_SIM),
         new SimSortMessagingFunction(), maxIterations, aggParameters);
   }
 

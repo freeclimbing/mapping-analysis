@@ -52,6 +52,7 @@ public class Utils {
   public static String VERBOSITY;
   public static boolean IS_SIMSORT_ENABLED;
   public static Double MIN_SIM;
+  public static Double MIN_SIMSORT_SIM;
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static boolean IS_RESTRICT_ACTIVE;
   public static String PRE_CLUSTER_STRATEGY;
