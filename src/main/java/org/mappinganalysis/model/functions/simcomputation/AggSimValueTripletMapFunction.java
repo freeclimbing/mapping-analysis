@@ -11,9 +11,11 @@ import org.mappinganalysis.utils.Utils;
 public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>,
     Triplet<Long, ObjectMap, ObjectMap>> {
   private final boolean ignoreMissingProperties;
+  private final Double minSim;
 
-  public AggSimValueTripletMapFunction(boolean ignoreMissingProperties) {
+  public AggSimValueTripletMapFunction(boolean ignoreMissingProperties, Double minSim) {
     this.ignoreMissingProperties = ignoreMissingProperties;
+    this.minSim = minSim;
   }
 
   @Override
@@ -22,7 +24,7 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      if ((double) value.get(Utils.SIM_TRIGRAM) < 0.7) {
+      if ((double) value.get(Utils.SIM_TRIGRAM) < minSim) {
         aggregatedSim = 0D;
       } else {
         aggregatedSim = SimilarityComputation.getMeanSimilarity(value);

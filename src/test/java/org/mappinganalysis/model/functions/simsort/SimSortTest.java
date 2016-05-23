@@ -43,7 +43,7 @@ public class SimSortTest {
 
     firstGraph = SimSort.prepare(firstGraph, Utils.DEFAULT_VALUE, env);
 
-    Utils.MIN_SIM = 0.75D;
+    Utils.MIN_CLUSTER_SIM = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200);
 
     // TODO Test
@@ -67,7 +67,7 @@ public class SimSortTest {
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
     firstGraph = SimSort.prepare(firstGraph, "onlySimSort", env);
-    Utils.MIN_SIM = 0.75D;
+    Utils.MIN_CLUSTER_SIM = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200);
 
     for (int i = 0; i < 20; i++) {

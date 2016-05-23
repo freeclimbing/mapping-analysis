@@ -8,6 +8,10 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.utils.VertexToTuple2Map;
 
+/**
+ * not yet used
+ */
+@Deprecated
 public class ClusterGraph extends Tuple2<ClusterVertex, ClusterEdge> {
 
   private DataSet<ClusterVertex> vertices = null;

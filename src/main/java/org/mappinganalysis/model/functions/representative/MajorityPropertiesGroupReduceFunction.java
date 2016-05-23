@@ -65,7 +65,10 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
       resultProps.put(Utils.LABEL, getFinalValue(labelMap, Utils.LABEL));
     }
     if (!typeMap.isEmpty()) {
-      resultProps.put(Utils.TYPE_INTERN, getFinalValue(typeMap, Utils.TYPE_INTERN));
+      Set<String> finalValue = getFinalValue(typeMap, Utils.TYPE_INTERN);
+
+      LOG.info("set type to: " + finalValue.toString());
+      resultProps.put(Utils.TYPE_INTERN, finalValue);
     }
     resultProps.put(Utils.ONTOLOGIES, clusterOntologies);
     resultProps.put(Utils.CL_VERTICES, clusterVertices);

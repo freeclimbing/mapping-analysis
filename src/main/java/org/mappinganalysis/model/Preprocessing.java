@@ -35,13 +35,15 @@ public class Preprocessing {
   /**
    * Execute all preprocessing steps with the given options
    * @param graph input graph
-   * @param isRestrictActive
-   *@param isLinkFilterActive should links with duplicate entries per dataset be deleted
+   * @param isRestrictActive restrict graph to smaller subset of vertices and edges
+   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
    * @param env execution environment  @return graph   @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          boolean isLinkFilterActive, boolean isRestrictActive,
-                                                          ExecutionEnvironment env, ExampleOutput out) throws Exception {
+                                                          boolean isLinkFilterActive,
+                                                          boolean isRestrictActive,
+                                                          ExecutionEnvironment env,
+                                                          ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToGraph(graph);
     Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
@@ -70,7 +72,8 @@ public class Preprocessing {
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
-                                                                 ExampleOutput out, ExecutionEnvironment env) {
+                                                                 ExampleOutput out,
+                                                                 ExecutionEnvironment env) {
     // restrict to first 100k clusters
     DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
@@ -157,7 +160,9 @@ public class Preprocessing {
   }
 
   // not yet working correctly
-  public static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(Graph<Long, ObjectMap, NullValue> graph, DataSet<Vertex<Long, ObjectMap>> newVertices) {
+  public static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(
+      Graph<Long, ObjectMap, NullValue> graph,
+      DataSet<Vertex<Long, ObjectMap>> newVertices) {
     return graph.getEdges()
         .leftOuterJoin(newVertices)
         .where(0).equalTo(0)
@@ -174,7 +179,8 @@ public class Preprocessing {
    * @return vertices
    */
   public static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      DataSet<Tuple2<Long, Long>> edges) {
 
     DataSet<Vertex<Long, ObjectMap>> left = vertices
         .leftOuterJoin(edges)
@@ -242,7 +248,8 @@ public class Preprocessing {
    * @return output graph
    */
   public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilterStrategy(
-      Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env,
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env,
       boolean isLinkFilterActive) throws Exception {
 
     if (isLinkFilterActive) {
@@ -294,7 +301,8 @@ public class Preprocessing {
    * @return graph with additional internal type property
    */
   public static Graph<Long, ObjectMap, NullValue> applyTypeToInternalTypeMapping(
-      Graph<Long, ObjectMap, NullValue> graph, ExecutionEnvironment env) {
+      Graph<Long, ObjectMap, NullValue> graph,
+      ExecutionEnvironment env) {
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .getVertices()
         .map(new InternalTypeMapFunction());
@@ -309,8 +317,10 @@ public class Preprocessing {
    * @return corrected graph
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(Graph<Long, ObjectMap, NullValue> graph,
-      boolean isTypeMissMatchCorrectionActive, ExecutionEnvironment env) throws Exception {
+  public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(
+      Graph<Long, ObjectMap, NullValue> graph,
+      boolean isTypeMissMatchCorrectionActive,
+      ExecutionEnvironment env) throws Exception {
     if (isTypeMissMatchCorrectionActive) {
       DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
           .map(new VertexIdTypeTupleMapper());

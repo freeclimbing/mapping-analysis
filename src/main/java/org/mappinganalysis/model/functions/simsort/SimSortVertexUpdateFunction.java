@@ -10,6 +10,7 @@ import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, AggSimValueTuple> {
@@ -24,34 +25,26 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
   public void updateVertex(Vertex<Long, ObjectMap> vertex,
                            MessageIterator<AggSimValueTuple> inMessages) throws Exception {
     double vertexAggSim = (double) vertex.getValue().get(Utils.VERTEX_AGG_SIM_VALUE);
-//    LOG.info("SimSortVertexUpdateFunction: " + vertexAggSim);
     boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
     if (hasNoVertexState || Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) == 0) {
-//      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-//        LOG.info(" working on vertex: " + vertex.getId());
-//      }
       double iterationAggSim = 0;
       long messageCount = 0;
       List<Double> neighborList = Lists.newArrayList();
 
       for (AggSimValueTuple message : inMessages) {
-//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-//          LOG.info(" msg: " + message);
-//        }
         ++messageCount;
         neighborList.add(message.getVertexSim());
         iterationAggSim += message.getEdgeSim();
       }
-      iterationAggSim /= messageCount;
+      BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
+      iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
+
       vertex.getValue().put(Utils.VERTEX_AGG_SIM_VALUE, iterationAggSim);
 
       if (Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
-//        if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
-//          LOG.info(" deactivating: " + vertex.getId());
-//        }
         if (iterationAggSim < threshold) {
           vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.FALSE);
           vertex.getValue().put(Utils.OLD_HASH_CC, vertex.getValue().get(Utils.HASH_CC));

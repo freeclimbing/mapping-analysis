@@ -8,6 +8,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.GeoDistance;
 import org.mappinganalysis.utils.Utils;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -32,9 +33,10 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
 
     ObjectMap property = new ObjectMap();
     if (distance >= maxDistInMeter) {
-      property.put(Utils.SIM_DISTANCE, 0.0);
+      property.put(Utils.SIM_DISTANCE, 0D);
     } else {
-      double result = 1.0 - (distance / maxDistInMeter);
+      BigDecimal tmpResult = new BigDecimal(1D - (distance / maxDistInMeter));
+      double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
       property.put(Utils.SIM_DISTANCE, result);
     }
 

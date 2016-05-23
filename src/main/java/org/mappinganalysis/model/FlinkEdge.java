@@ -13,6 +13,10 @@ import java.util.Map;
  * f3: target vertex id
  * f4: edge properties
  */
+/**
+ * not yet used
+ */
+@Deprecated
 public class FlinkEdge extends
     Tuple5<Long, String, Long, Long, Map<String, Object>> {
 

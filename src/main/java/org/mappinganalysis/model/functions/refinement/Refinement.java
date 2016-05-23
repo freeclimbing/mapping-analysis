@@ -10,6 +10,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
@@ -31,13 +32,13 @@ public class Refinement {
    * @param vertices representative vertices
    * @return prepared vertices
    */
-  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices) {
+  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out) {
     DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
         .filter(new OldHashCcFilterFunction())
         .groupBy(new OldHashCcKeySelector())
         .reduceGroup(new TripletCreateGroupReduceFunction());
 
-    return rejoinSingleVertexClustersFromSimSort(vertices, oldHashCcTriplets);
+    return rejoinSingleVertexClustersFromSimSort(vertices, oldHashCcTriplets, out);
   }
 
   /**
@@ -63,9 +64,9 @@ public class Refinement {
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
         .computeSimilarities(triplets, Utils.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES))
+        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES, Utils.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3")
-        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_SIM));
+        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_CLUSTER_SIM));
 
     // - exclude duplicate ontology vertices
     // - mark matches with more than 1 equal src/trg high similarity triplets
@@ -121,14 +122,20 @@ public class Refinement {
     return left;
   }
 
+  /**
+   * Remove cluster ids from vertex set which are merged.
+   * @param baseVertexSet base vertex set
+   * @param similarTriplets triplets where source and target vertex needs to be removed from base vertex set
+   * @return cleaned base vertex set
+   */
   private static DataSet<Vertex<Long, ObjectMap>> excludeClusteredVerticesFromInput(
-      DataSet<Vertex<Long, ObjectMap>> workingSet,
+      DataSet<Vertex<Long, ObjectMap>> baseVertexSet,
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets) {
     return similarTriplets
           .flatMap(new VertexExtractFlatMapFunction())
           .<Tuple1<Long>>project(0)
           .distinct()
-          .rightOuterJoin(workingSet)
+          .rightOuterJoin(baseVertexSet)
           .where(0).equalTo(0)
           .with(new ExcludeVertexFlatJoinFunction());
   }
@@ -229,17 +236,38 @@ public class Refinement {
    */
   private static DataSet<Vertex<Long, ObjectMap>> rejoinSingleVertexClustersFromSimSort(
       DataSet<Vertex<Long, ObjectMap>> representativeVertices,
-      DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets) {
+      DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets, ExampleOutput out) {
 
     // vertices with min sim, some triplets get omitted -> error cause
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = SimilarityComputation
         .computeSimilarities(oldHashCcTriplets, Utils.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES))
+        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES, Utils.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3");
 
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
-        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_SIM));
+    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
+    Utils.writeToHdfs(newBaseTriplets, "6_init_newBaseTriplets");
 
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
+        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_CLUSTER_SIM));
+
+    out.addDataSetCount("newReprTriplets", newRepresentativeTriplets);
+
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> lowSimOldHashTriplets = newBaseTriplets
+        .leftOuterJoin(newRepresentativeTriplets)
+        .where(0, 1)
+        .equalTo(0, 1)
+        .with(new FlatJoinFunction<Triplet<Long, ObjectMap, ObjectMap>, Triplet<Long, ObjectMap, ObjectMap>,
+            Triplet<Long, ObjectMap, ObjectMap>>() {
+          @Override
+          public void join(Triplet<Long, ObjectMap, ObjectMap> left, Triplet<Long, ObjectMap, ObjectMap> right,
+                           Collector<Triplet<Long, ObjectMap, ObjectMap>> out) throws Exception {
+            if (right == null) {
+              out.collect(left);
+            }
+          }
+        });
+
+    out.addDataSetCount("lowOldSims", lowSimOldHashTriplets);
 
     // reduce to single representative, some vertices are now missing
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets
@@ -256,9 +284,11 @@ public class Refinement {
         .equalTo(0)
         .with(new ExcludeVertexFlatJoinFunction())
         .union(newRepresentativeVertices);
+//        .union(lowSimOldHashTriplets.);
   }
 
-  private static class CreateNoticableTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>> {
+  private static class CreateNoticableTripletMapFunction
+      implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>> {
     @Override
     public Tuple4<Long, Long, Double, Integer> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
       return new Tuple4<>(triplet.getSrcVertex().getId(),
@@ -268,12 +298,10 @@ public class Refinement {
     }
   }
 
-  private static class MaxSimPerNoticableTupleFilterFunction implements FilterFunction<Tuple4<Long, Long, Double, Integer>> {
+  private static class MaxSimPerNoticableTupleFilterFunction
+      implements FilterFunction<Tuple4<Long, Long, Double, Integer>> {
     @Override
     public boolean filter(Tuple4<Long, Long, Double, Integer> tuple) throws Exception {
-//            if (tuple.f3 > 1) {
-//              LOG.info("filteredNoticable " + tuple.toString());
-//            }
       return tuple.f3 > 1;
     }
   }
