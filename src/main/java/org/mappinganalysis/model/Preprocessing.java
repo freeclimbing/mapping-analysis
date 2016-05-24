@@ -85,7 +85,7 @@ public class Preprocessing {
         .filter(new FilterFunction<Tuple1<Long>>() {
           @Override
           public boolean filter(Tuple1<Long> tuple) throws Exception {
-            return tuple.f0 == 122L;
+            return tuple.f0 == 14L || tuple.f0 == 15L || tuple.f0 == 3252L || tuple.f0 == 3811L;
 //            return tuple.f0 == 1134L || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
 //            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
           }

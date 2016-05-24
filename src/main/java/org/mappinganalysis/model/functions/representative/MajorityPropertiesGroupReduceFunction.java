@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.representative;
 
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -66,8 +67,6 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     }
     if (!typeMap.isEmpty()) {
       Set<String> finalValue = getFinalValue(typeMap, Utils.TYPE_INTERN);
-
-      LOG.info("set type to: " + finalValue.toString());
       resultProps.put(Utils.TYPE_INTERN, finalValue);
     }
     resultProps.put(Utils.ONTOLOGIES, clusterOntologies);

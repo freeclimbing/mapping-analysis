@@ -26,20 +26,20 @@ public class CollectExcludeTuplesGroupReduceFunction
                      Collector<Tuple4<Long, Long, Long, Double>> collector) throws Exception {
     Set<Tuple2<Long, Long>> tripletIds = Sets.newHashSet();
 
-    Tuple2<Long, Double> clusterRefineId = getLowestVertexIdAndSimilarity(triplets, tripletIds, column);
-    if (clusterRefineId == null) {
+    // logic here:
+    Tuple2<Long, Double> clRefineIdAndSim = getLowestVertIdAndHighestSim(triplets, tripletIds, column);
+    if (clRefineIdAndSim == null) {
 //    LOG.info("Exclude all case" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
-        LOG.info("CollectExcludeTuplesGroupReduceFunction refineId null: " + tripletId.toString());
+//        LOG.info("CollectExcludeTuplesGroupReduceFunction refineId null: " + tripletId.toString());
         collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, Long.MIN_VALUE, 0D));
       }
     } else {
-//    LOG.info("Exclude none + enrich" + tripletIds.toString());
+    LOG.info("Exclude none + enrich" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
-        LOG.info("CollectExcludeTuplesGroupReduceFunction: refineId not null" + tripletId.toString() + " refine: "
-        + clusterRefineId.toString());
+        LOG.info("refineId not null" + tripletId.toString() + " refine: " + clRefineIdAndSim.toString());
 
-        collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, clusterRefineId.f0, clusterRefineId.f1));
+        collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, clRefineIdAndSim.f0, clRefineIdAndSim.f1));
       }
     }
   }
@@ -47,8 +47,8 @@ public class CollectExcludeTuplesGroupReduceFunction
   /**
    * quick'n'dirty fix haha later todo
    */
-  private Tuple2<Long, Double> getLowestVertexIdAndSimilarity(Iterable<Triplet<Long, ObjectMap, ObjectMap>> triplets,
-                                                              Set<Tuple2<Long, Long>> tripletIds, int column) {
+  private Tuple2<Long, Double> getLowestVertIdAndHighestSim(Iterable<Triplet<Long, ObjectMap, ObjectMap>> triplets,
+                                                            Set<Tuple2<Long, Long>> tripletIds, int column) {
     Set<String> ontologies = Sets.newHashSet();
     Tuple2<Long, Double> minimumIdAndSim = null;
 

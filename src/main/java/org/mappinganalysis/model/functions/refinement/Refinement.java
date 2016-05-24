@@ -74,16 +74,17 @@ public class Refinement {
         .leftOuterJoin(extractNoticableTriplets(similarTriplets))
         .where(0,1)
         .equalTo(0,1)
-        .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction());
+        .with(new ExcludeDuplicateOntologyTripletFlatJoinFunction())
+        .distinct(0,1);
 
-    DataSet<Tuple4<Long, Long, Double, Integer>> noticableTuple4 = similarTriplets
+    DataSet<Tuple4<Long, Long, Double, Integer>> srcTrgSimOneTuple = similarTriplets
         .filter(new RefineIdFilterFunction())
         .map(new CreateNoticableTripletMapFunction());
 
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> filteredNoticableTriplets = noticableTuple4
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> filteredNoticableTriplets = srcTrgSimOneTuple
         .groupBy(0)
         .max(2).andSum(3)
-        .union(noticableTuple4
+        .union(srcTrgSimOneTuple
             .groupBy(1)
             .max(2).andSum(3))
         .filter(new MaxSimPerNoticableTupleFilterFunction())
@@ -160,6 +161,10 @@ public class Refinement {
    * Exclude
    * 1. tuples where duplicate ontologies are found
    * 2. tuples where more than one match occures
+   *
+   * return value for "to be excluded" triplets:
+   * - srcId, trgId, Long.MIN_VALUE, 0D
+   *
    * @param triplets input triplets
    * @param column 0 - source, 1 - target
    * @return tuples which should be excluded
@@ -291,10 +296,13 @@ public class Refinement {
       implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>> {
     @Override
     public Tuple4<Long, Long, Double, Integer> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
-      return new Tuple4<>(triplet.getSrcVertex().getId(),
+      Tuple4<Long, Long, Double, Integer> result = new Tuple4<>(triplet.getSrcVertex().getId(),
           triplet.getTrgVertex().getId(),
           triplet.getEdge().getValue().getSimilarity(),
           1);
+
+      LOG.info("noticable tuple: " + result.toString());
+      return result;
     }
   }
 
@@ -302,6 +310,7 @@ public class Refinement {
       implements FilterFunction<Tuple4<Long, Long, Double, Integer>> {
     @Override
     public boolean filter(Tuple4<Long, Long, Double, Integer> tuple) throws Exception {
+      LOG.info("agg noti tuple: " + tuple.toString());
       return tuple.f3 > 1;
     }
   }
@@ -310,6 +319,7 @@ public class Refinement {
       implements JoinFunction<T, Triplet<Long,ObjectMap,O>, Triplet<Long, ObjectMap, O>> {
     @Override
     public Triplet<Long, ObjectMap, O> join(T tuple, Triplet<Long, ObjectMap, O> triplet) throws Exception {
+      LOG.info("final triplet: " + triplet.toString());
       return triplet;
     }
   }
