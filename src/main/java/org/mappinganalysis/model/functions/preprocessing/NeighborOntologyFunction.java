@@ -1,7 +1,7 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.NeighborsFunctionWithVertexValue;
 import org.apache.flink.graph.Vertex;
@@ -14,19 +14,24 @@ import org.mappinganalysis.utils.Utils;
  */
 public class NeighborOntologyFunction
     implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
-    Tuple6<Edge<Long, ObjectMap>, Long, String, Integer, Double, Long>> {
+    Tuple7<Long, Long, Long, String, Integer, Double, Long>> {
 
   @Override
   public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
       Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
-      Collector<Tuple6<Edge<Long, ObjectMap>, Long, String, Integer, Double, Long>> collector)
+      Collector<Tuple7<Long, Long, Long, String, Integer, Double, Long>> collector)
       throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
       String ontology = neighbor.f1.getValue().get(Utils.ONTOLOGY).toString();
       Double edgeSim = (Double) edge.getValue().get(Utils.AGGREGATED_SIM_VALUE);
 
-      collector.collect(new Tuple6<>(edge, vertex.getId(), ontology, 1, edgeSim,
+      collector.collect(new Tuple7<>(edge.getSource(),
+          edge.getTarget(),
+          vertex.getId(),
+          ontology,
+          1,
+          edgeSim,
           (long) vertex.getValue().get(Utils.CC_ID)));
     }
   }

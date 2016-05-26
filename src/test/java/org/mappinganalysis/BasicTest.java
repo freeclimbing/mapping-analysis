@@ -1,12 +1,17 @@
 package org.mappinganalysis;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.aggregation.Aggregations;
+import org.apache.flink.api.java.operators.AggregateOperator;
+import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
@@ -17,10 +22,13 @@ import org.mappinganalysis.graph.FlinkConnectedComponents;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.VertexIdMapFunction;
+import org.mappinganalysis.model.functions.preprocessing.BiggerOneOccuranceFilterFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -38,6 +46,34 @@ public class BasicTest {
 //            + key + ": " + value.toString());
 
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+  @Test
+  public void aggregateTest() throws Exception {
+    HashMap<String, Object> mapOne = Maps.newHashMap();
+    mapOne.put("distance", 1.0);
+    mapOne.put("trigramSim", 0.738549);
+    mapOne.put("aggSimValue", 0.8692745);
+    HashMap<String, Object> mapTwo = Maps.newHashMap();
+    mapTwo.put("distance", 1.0);
+    mapTwo.put("trigramSim", 0.957427);
+    mapTwo.put("aggSimValue", 0.9787135);
+    Edge<Long, ObjectMap> one = new Edge<>(2338L, 3186L, new ObjectMap(mapOne));
+    Edge<Long, ObjectMap> two = new Edge<>(1429L, 3186L, new ObjectMap(mapTwo));
+    DataSource<Tuple6<Edge<Long, ObjectMap>, Long, String, Integer, Double, Long>> data = env
+        .fromElements(
+            new Tuple6<>(one, 3186L, "http://data.nytimes.com/", 1, 0.8692745, 1429L),
+            new Tuple6<>(one, 3186L, "http://data.nytimes.com/", 1, 0.8692745, 1429L),
+            new Tuple6<>(two, 3186L, "http://data.nytimes.com/", 1, 0.9787135, 1429L),
+            new Tuple6<>(one, 3186L, "http://data.nytimes.com/", 1, 0.8692745, 1429L),
+            new Tuple6<>(one, 3186L, "http://data.nytimes.com/", 1, 0.8692745, 1429L),
+            new Tuple6<>(one, 3186L, "http://data.nytimes.com/", 1, 0.8692745, 1429L));
+
+    AggregateOperator<Tuple6<Edge<Long, ObjectMap>, Long, String, Integer, Double, Long>> result = data
+        .groupBy(1, 2)
+        .sum(3).andMax(4);
+
+    result.print();
+  }
 
   @Test
   public void simpleTest() throws Exception {

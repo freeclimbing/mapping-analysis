@@ -15,15 +15,29 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeGroupByTest {
   private static final Logger LOG = Logger.getLogger(TypeGroupByTest.class);
+
+  /**
+   * test if no type vertices are handled correctly
+   */
   private static final String TGB_EQUAL_SIM_NO_TYPE_LOW_CCID = "g[" +
-      "(v1 {compType = \"no_type_available\", hashCc = -4832605177143139923L})" +
-      "(v2 {compType = \"no_type_available\", hashCc = 6500562624977345488L})" +
+      "(v1 {compType = \"" + Utils.NO_TYPE + "\", hashCc = -4832605177143139923L})" +
+      "(v2 {compType = \"" + Utils.NO_TYPE + "\", hashCc = 6500562624977345488L})" +
       "(v3 {compType = \"AdministrativeRegion\", hashCc = -8401086609692859185L})]" +
       "(v1)-[e1:sameAs {aggSimValue = 0.9428090453147888D}]->(v2)" +
       "(v1)-[e2:sameAs {aggSimValue = 0.9428090453147888D}]->(v3)";
 
+  /**
+   * test if lowest cc is resulting cc for all vertices (no type at all)
+   */
+  private static final String NO_TYPE_STRING = "g[" +
+      "(v1 {typeIntern = \"" + Utils.NO_TYPE + "\", compType = \"" + Utils.NO_TYPE + "\", hashCc = -814546109484291321L})" +
+      "(v2 {typeIntern = \"" + Utils.NO_TYPE + "\", compType = \"" + Utils.NO_TYPE + "\", hashCc = -7443960355069871745L})" +
+      "(v3 {typeIntern = \"" + Utils.NO_TYPE + "\", compType = \"" + Utils.NO_TYPE + "\", hashCc = 7462085439452287248L})]" +
+      "(v1)-[e1:sameAs {aggSimValue = 0.9D}]->(v2)" +
+      "(v1)-[e2:sameAs {aggSimValue = 0.9D}]->(v3)";
+
   private static final String TGB_SIMPLE = "g[" +
-      "(v1 {compType = \"no_type_available\", hashCc = 12L})" +
+      "(v1 {compType = \"" + Utils.NO_TYPE + "\", hashCc = 12L})" +
       "(v2 {compType = \"Mountain\", hashCc = 23L})" +
       "(v3 {compType = \"Settlement\", hashCc = 42L})" +
       "(v4 {compType = \"Settlement\", hashCc = 42L})]" +
@@ -33,9 +47,9 @@ public class TypeGroupByTest {
 
   private static final String TGB_TRIPLE_UNKNOWN = "g[" +
       "(v1 {compType = \"Settlement\", hashCc = 12L})" +
-      "(v2 {compType = \"no_type_available\", hashCc = 21L})" +
-      "(v3 {compType = \"no_type_available\", hashCc = 33L})" +
-      "(v4 {compType = \"no_type_available\", hashCc = 42L})" +
+      "(v2 {compType = \"" + Utils.NO_TYPE + "\", hashCc = 21L})" +
+      "(v3 {compType = \"" + Utils.NO_TYPE + "\", hashCc = 33L})" +
+      "(v4 {compType = \"" + Utils.NO_TYPE + "\", hashCc = 42L})" +
       "(v5 {compType = \"School\", hashCc = 51L})]" +
       "(v1)-[e1:sameAs {aggSimValue = .9D}]->(v2)" +
       "(v2)-[e2:sameAs {aggSimValue = .6D}]->(v3)" +
@@ -56,6 +70,22 @@ public class TypeGroupByTest {
     for (int i=0; i < 5; i++) {
       assertEquals(0, graph.filterOnVertices(new SpecificCcIdFilter()).getVertices().count());
     }
+  }
+
+  /**
+   * No type at all for all vertices, get lowest cc id for all vertices in result
+   */
+  @Test
+  public void noTypeTest() throws Exception {
+    GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(NO_TYPE_STRING);
+    Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
+
+    graph = new TypeGroupBy().execute(graph, Utils.DEFAULT_VALUE, 100);
+
+    graph.getVertices().print();
+//    for (int i=0; i < 5; i++) {
+//      assertEquals(0, graph.filterOnVertices(new SpecificCcIdFilter()).getVertices().count());
+//    }
   }
 
   @Test

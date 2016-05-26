@@ -12,6 +12,7 @@ import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.ClusterComputation;
+import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
@@ -27,10 +28,13 @@ public class SimSort {
    * @param graph input graph
    * @param processingMode cc id or hash cc id
    * @param env execution environment
+   * @param out
    * @return preprocessed graph
    */
   public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          String processingMode, ExecutionEnvironment env) {
+                                                          String processingMode,
+                                                          ExecutionEnvironment env,
+                                                          ExampleOutput out) throws Exception {
     KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new CcIdKeySelector();
     if (processingMode.equals(Utils.DEFAULT_VALUE)) {
       keySelector = new HashCcIdKeySelector();
@@ -45,7 +49,6 @@ public class SimSort {
     Graph<Long, ObjectMap, NullValue> distinctEdgesGraph = Graph
         .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
 
-    // TODO eliminate partly duplicate sim computation
     DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
         .computeGraphEdgeSim(distinctEdgesGraph, Utils.SIM_GEO_LABEL_STRATEGY);
 

@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.representative;
 
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -129,7 +128,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   }
 
   private void addTypeToMap(HashMap<Set<String>, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
-    if (!currentVertex.getValue().hasNoType(Utils.TYPE_INTERN)) {
+    if (!currentVertex.getValue().hasTypeNoType(Utils.TYPE_INTERN)) {
       Set<String> types = currentVertex.getValue().getTypes(Utils.TYPE_INTERN);
 
       if (typeMap.containsKey(types)) {

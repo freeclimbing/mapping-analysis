@@ -64,7 +64,7 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
     if (!priority.containsKey(Utils.LABEL) && minor.containsKey(Utils.LABEL)) {
       priority.put(Utils.LABEL, minor.get(Utils.LABEL));
     }
-    if (!priority.hasNoType(Utils.TYPE_INTERN) && minor.hasNoType(Utils.TYPE_INTERN)) {
+    if (!priority.hasTypeNoType(Utils.TYPE_INTERN) && minor.hasTypeNoType(Utils.TYPE_INTERN)) {
       priority.put(Utils.TYPE_INTERN, minor.get(Utils.TYPE_INTERN));
     }
     if (!priority.hasGeoProperties() && minor.hasGeoProperties()) {

@@ -48,7 +48,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @param type specific type
    * @return true if type has value not available or not found
    */
-  public boolean hasNoType(String type) {
+  public boolean hasTypeNoType(String type) {
     return map.containsKey(type) && getTypes(type).contains(Utils.NO_TYPE);
   }
 

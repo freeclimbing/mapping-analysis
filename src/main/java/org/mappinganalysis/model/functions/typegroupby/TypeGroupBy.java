@@ -1,22 +1,13 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
-import org.apache.flink.api.common.functions.FlatJoinFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.operators.JoinOperator;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
-import org.apache.flink.util.Collector;
-import org.mappinganalysis.io.output.ExampleOutput;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.utils.Utils;
 
 public class TypeGroupBy {
-
   /**
    * For a given graph, assign all vertices with no type to the component where the best similarity can be found.
    * @param graph input graph
@@ -24,7 +15,7 @@ public class TypeGroupBy {
    * @param maxIterations maximal count vertex centric iterations  @return graph where non-type vertices are assigned to best matching component
    */
   public Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          String processingMode, Integer maxIterations) throws Exception {
+                                                   String processingMode, Integer maxIterations) throws Exception {
     if (processingMode.equals(Utils.DEFAULT_VALUE)) {
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
@@ -69,7 +60,6 @@ public class TypeGroupBy {
       return graph;
     }
   }
-
 
   public String getName() {
     return TypeGroupBy.class.getName();

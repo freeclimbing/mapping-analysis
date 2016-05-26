@@ -3,14 +3,11 @@ package org.mappinganalysis.model.functions.preprocessing;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.ImmutableSortedSet;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Iterables;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Sets;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 import java.util.Set;
-import java.util.SortedSet;
 
 /**
  * Generate new component ids based on type affiliation and current component id.
@@ -23,7 +20,7 @@ public class GenerateHashCcIdGroupReduceFunction implements GroupReduceFunction<
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
     Long hash = null;
     for (Vertex<Long, ObjectMap> vertex : vertices) {
-      if (vertex.getValue().hasNoType(Utils.COMP_TYPE)) {
+      if (vertex.getValue().hasTypeNoType(Utils.COMP_TYPE)) {
         vertex.getValue().put(Utils.HASH_CC, Utils.getHash(vertex.getId().toString()));
       } else {
         if (hash == null) {

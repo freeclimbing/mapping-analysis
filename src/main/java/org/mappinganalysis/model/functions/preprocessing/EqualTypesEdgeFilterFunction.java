@@ -6,7 +6,7 @@ import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
 import org.mappinganalysis.utils.Utils;
 
-public class FilterEqualTypeEdges extends RichFilterFunction<Tuple4<Long, Long, String, String>> {
+public class EqualTypesEdgeFilterFunction extends RichFilterFunction<Tuple4<Long, Long, String, String>> {
   private LongCounter edgeCounter = new LongCounter();
 
   @Override

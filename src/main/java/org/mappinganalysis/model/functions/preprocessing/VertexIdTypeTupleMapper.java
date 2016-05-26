@@ -1,22 +1,22 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
 /**
- * Check if type "" exists.TODO
+ * For each type contained in a vertex, emit a Tupl2 for further processing.
  */
-public class VertexIdTypeTupleMapper implements MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, String>> {
+public class VertexIdTypeTupleMapper implements FlatMapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, String>> {
   @Override
-  public Tuple2<Long, String> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-    String type = "";
+  public void flatMap(Vertex<Long, ObjectMap> vertex, Collector<Tuple2<Long, String>> out) throws Exception {
     if (vertex.getValue().containsKey(Utils.TYPE_INTERN)) {
-      type = vertex.getValue().get(Utils.TYPE_INTERN).toString();
+      for (String value : vertex.getValue().getTypes(Utils.TYPE_INTERN)) {
+        out.collect(new Tuple2<>(vertex.getId(), value));
+      }
     }
-
-    return new Tuple2<>(vertex.getId(), type);
   }
 }

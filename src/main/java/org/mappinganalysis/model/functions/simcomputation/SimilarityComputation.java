@@ -2,11 +2,13 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
@@ -204,18 +206,48 @@ public class SimilarityComputation {
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
     // internally compType is used, afterwards typeIntern is used again
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+      @Override
+      public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
+        return true;
+      }
+    });
+    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(new FilterFunction<Edge<Long, ObjectMap>>() {
+      @Override
+      public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
+        return true;
+      }
+    });
+
+    graph = Graph.fromDataSet(vertices, edges, env);
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
-    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
+
+    vertices = graph.getVertices().filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+      @Override
+      public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
+        return true;
+      }
+    });
+    edges = graph.getEdges().filter(new FilterFunction<Edge<Long, ObjectMap>>() {
+      @Override
+      public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
+        return true;
+      }
+    });
+
+    graph = Graph.fromDataSet(vertices, edges, env);
+
+//    ExampleOutput aout = new ExampleOutput(env);
+//    Utils.writeToHdfs(graph.getVertices(), "3_pre_error");
+//    aout.print();
 
     /* SimSort */
-    graph = SimSort.prepare(graph, processingMode, env);
-//    Utils.writeToHdfs(graph.getVertices(), "3_prepare_simsort_results");
+    graph = SimSort.prepare(graph, processingMode, env, out);
+    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
     out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
-
     if (Utils.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);
     }
-
     return SimSort.excludeLowSimVertices(graph, env);
 
   }
