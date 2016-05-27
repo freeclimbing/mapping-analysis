@@ -13,7 +13,9 @@ public class BiggerOneOccuranceFilterFunction implements FilterFunction<Tuple7<L
   @Override
   public boolean filter(Tuple7<Long, Long, Long, String, Integer, Double, Long> tuple)
       throws Exception {
-//    LOG.info("notYetFiltered: " + tuple);
+    if (tuple.f4 > 1) {
+      LOG.info("biggerOneTuple: " + tuple);
+    }
     return tuple.f4 > 1;
   }
 }

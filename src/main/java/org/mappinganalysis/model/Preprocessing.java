@@ -2,6 +2,8 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.JoinOperator;
@@ -84,7 +86,7 @@ public class Preprocessing {
         .filter(new FilterFunction<Tuple1<Long>>() {
           @Override
           public boolean filter(Tuple1<Long> tuple) throws Exception {
-            return tuple.f0 == 60L;
+            return tuple.f0 == 1868L;
 //            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
 //            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
           }
@@ -254,57 +256,57 @@ public class Preprocessing {
       boolean isLinkFilterActive) throws Exception {
 
     if (isLinkFilterActive) {
-      // Tuple6(edge, VertexId, Ontology, One, EdgeSim, VertexCc)
+      // Tuple7(edge src, edge trg, VertexId, Ontology, One, EdgeSim, VertexCc)
       final DataSet<Tuple7<Long, Long, Long, String, Integer, Double, Long>> basicOneToManyTuples = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
 
-      DataSet<Tuple4<Long, Long, Long, String>> maxTuples = basicOneToManyTuples
+      DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
           .groupBy(2, 3)
-          .max(5)
-          .map(new MapFunction<Tuple7<Long, Long, Long, String, Integer, Double, Long>,
-              Tuple4<Long, Long, Long, String>>() {
-            @Override
-            public Tuple4<Long, Long, Long, String> map(Tuple7<Long, Long, Long, String, Integer, Double, Long> value)
-                throws Exception {
-              return new Tuple4<>(value.f0, value.f1, value.f2, value.f3);
-            }
-          }).withForwardedFields("f0;f1;f2;f3");
-
-      DataSet<Tuple7<Long, Long, Long, String, Integer, Double, Long>> oneToManyTuples = basicOneToManyTuples
-          .groupBy(2, 3)
-          .sum(4)
-          .filter(new BiggerOneOccuranceFilterFunction());
-
-      DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = oneToManyTuples.join(maxTuples)
-          .where(2, 3)
-          .equalTo(2, 3)
-          .with(new JoinFunction<Tuple7<Long, Long, Long, String, Integer, Double, Long>,
-              Tuple4<Long, Long, Long, String>,
-              Tuple3<Long, Long, Long>>() {
-            @Override
-            public Tuple3<Long, Long, Long> join(Tuple7<Long, Long, Long, String, Integer, Double, Long> first,
-                                                 Tuple4<Long, Long, Long, String> second) throws Exception {
-//              LOG.info("newResult: " + first.toString() + " --- " + second.toString());
-              return new Tuple3<>(second.f0, second.f1, first.f2);
-            }
+          .sum(4).andMax(5)
+//          .filter(new BiggerOneOccuranceFilterFunction())
+          .filter(tuple -> {
+              if (tuple.f4 > 1) {
+                LOG.info("biggerOneTuple: " + tuple);
+              }
+            return tuple.f4 > 1;
           })
+          .map(value -> {
+            LOG.info("maxButRandom: " + value.toString());
+            return new Tuple3<>(value.f2, value.f3, value.f5);
+          }).returns(new TypeHint<Tuple3<Long, String, Double>>() {});
+
+      DataSet<Tuple2<Long, Long>> newEdgesTuples = maxRandomTuples.leftOuterJoin(basicOneToManyTuples)
+          .where(0, 1, 2)
+          .equalTo(2, 3, 5)
+          .with(new JoinFunction<Tuple3<Long, String, Double>, Tuple7<Long, Long, Long, String, Integer, Double, Long>,
+              Tuple2<Long, Long>>() {
+            @Override
+            public Tuple2<Long, Long> join(Tuple3<Long, String, Double> first,
+                                           Tuple7<Long, Long, Long, String, Integer, Double, Long> second) throws Exception {
+              LOG.info("firstMax: " + first.toString() + " secondMax: " + second.toString());
+              return new Tuple2<>(second.f0, second.f1);
+            }
+          });
+
+      DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = newEdgesTuples
           .join(graph.getEdges())
           .where(0, 1)
           .equalTo(0, 1)
-          .with(new JoinFunction<Tuple3<Long, Long, Long>, Edge<Long, ObjectMap>, Edge<Long, ObjectMap>>() {
+          .with(new JoinFunction<Tuple2<Long, Long>, Edge<Long, ObjectMap>, Edge<Long, ObjectMap>>() {
             @Override
-            public Edge<Long, ObjectMap> join(Tuple3<Long, Long, Long> first, Edge<Long, ObjectMap> second)
+            public Edge<Long, ObjectMap> join(Tuple2<Long, Long> first, Edge<Long, ObjectMap> second)
                 throws Exception {
+              LOG.info("firstEdge: " + first.toString() + " secondEdge: " + second.toString());
               return second;
             }
           });
 
       DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
-          .leftOuterJoin(oneToManyTuples.<Tuple1<Long>>project(2))
+          .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
           .where(0)
           .equalTo(0)
           .with(new LinkFilterExcludeEdgeFlatJoinFunction())
-          .leftOuterJoin(oneToManyTuples.<Tuple1<Long>>project(2))
+          .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
           .where(1)
           .equalTo(0)
           .with(new LinkFilterExcludeEdgeFlatJoinFunction())

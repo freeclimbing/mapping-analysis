@@ -237,14 +237,12 @@ public class SimilarityComputation {
 
     graph = Graph.fromDataSet(vertices, edges, env);
 
-//    ExampleOutput aout = new ExampleOutput(env);
-//    Utils.writeToHdfs(graph.getVertices(), "3_pre_error");
-//    aout.print();
-
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env, out);
     Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
     out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
+    out.print();
+
     if (Utils.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);
     }
