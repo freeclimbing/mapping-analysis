@@ -17,7 +17,7 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex, MessageIterator<ObjectMap> inMessages)
       throws Exception {
-    LOG.info("potentiallyUpdatingVertex: " + vertex.toString());
+//    LOG.info("potentiallyUpdatingVertex: " + vertex.toString());
     if (!vertex.getValue().containsKey(Utils.TMP_TYPE) && vertex.getValue().hasTypeNoType(Utils.COMP_TYPE)) {
       HashMap<Long, Double> options = initOptions(vertex);
 
@@ -39,7 +39,7 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
       // save new cc_id on vertex
       if (!newBestValue.isEmpty()) {
         updateVertexValue(vertex, newBestValue, options);
-          LOG.info("### set vert " + vertex.getId() + " value to: " + vertex.getValue());
+//          LOG.info("### set vert " + vertex.getId() + " value to: " + vertex.getValue());
         setNewVertexValue(vertex.getValue());
       }
     }
@@ -50,13 +50,13 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
     ObjectMap newBestValue = new ObjectMap();
     long vertexCcId = vertex.getValue().getHashCcId();
 
-    LOG.info("findNewBestValue on vertexCCid: " + vertexCcId + " vertex: " + vertex.getId());
+//    LOG.info("findNewBestValue on vertexCCid: " + vertexCcId + " vertex: " + vertex.getId());
 
     double bestSim = 0D;
     // get max sim from neighbors + vertex
     for (ObjectMap msg : inMessages) {
       long msgCcId = msg.getHashCcId();
-      LOG.info("vertex " + vertex.getId() + " got message from: " + msg.get(Utils.VERTEX_ID) + " " + msg.getHashCcId());
+//      LOG.info("vertex " + vertex.getId() + " got message from: " + msg.get(Utils.VERTEX_ID) + " " + msg.getHashCcId());
 
       if (vertexCcId != msgCcId) {
         double newSim = (double) msg.get(Utils.AGGREGATED_SIM_VALUE);
@@ -90,18 +90,18 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
         if (Doubles.compare(newSim, bestSim) > 0 || isSpecialCondition) {
           bestSim = newSim;
           if (msg.containsKey(Utils.TMP_TYPE) || !msg.hasTypeNoType(Utils.COMP_TYPE)) {
-            LOG.info("tmp type or has type: " + msg);
+//            LOG.info("tmp type or has type: " + msg);
             newBestValue = msg;
           } else if (msg.hasTypeNoType(Utils.COMP_TYPE)) {
-            LOG.info("has no type: " + msg);
+//            LOG.info("has no type: " + msg);
             newBestValue = msgCcId < vertexCcId ? msg : vertex.getValue();
-            LOG.info("nbv has no type: " + newBestValue.toString());
+//            LOG.info("nbv has no type: " + newBestValue.toString());
           }
         } else if (msg.containsKey(Utils.TMP_TYPE) || !msg.hasTypeNoType(Utils.COMP_TYPE)
             && !newBestValue.isEmpty() // same similarity, both have types / tmp types, take lowest hashCcId
             && Doubles.compare(newSim, bestSim) == 0
             && msgCcId < newBestValue.getHashCcId()) {
-          LOG.info("same sim take lower cc: " + msg);
+//          LOG.info("same sim take lower cc: " + msg);
           newBestValue = msg;
         }
       } else {

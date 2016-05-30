@@ -53,6 +53,18 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   /**
+   * Get label property from a single entity. If there is no label, return a placeholder value.
+   * @return label
+   */
+  public String getLabel() {
+    if (map.containsKey(Utils.LABEL)) {
+      return map.get(Utils.LABEL).toString();
+    } else {
+      return Utils.NO_LABEL_FOUND;
+    }
+  }
+
+  /**
    * Get the set of type strings for a vertex from the input graph.
    * @return String set of rdf:type values
    * @param type specify type to retrieve, if not available, return "no type available"

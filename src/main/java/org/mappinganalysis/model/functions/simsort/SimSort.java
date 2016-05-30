@@ -14,11 +14,11 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.ClusterComputation;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
-import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
 
 public class SimSort {
   private static final Logger LOG = Logger.getLogger(SimSort.class);
@@ -28,7 +28,6 @@ public class SimSort {
    * @param graph input graph
    * @param processingMode cc id or hash cc id
    * @param env execution environment
-   * @param out
    * @return preprocessed graph
    */
   public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
@@ -53,11 +52,11 @@ public class SimSort {
         .computeGraphEdgeSim(distinctEdgesGraph, Utils.SIM_GEO_LABEL_STRATEGY);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
-        .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
+        .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() { // do not use lambda
           @Override
-          public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            vertex.getValue().put(Utils.VERTEX_AGG_SIM_VALUE, Utils.DEFAULT_VERTEX_SIM);
-            return vertex.getValue();
+          public ObjectMap map(Vertex<Long, ObjectMap> value) throws Exception {
+            value.getValue().put(Utils.VERTEX_AGG_SIM_VALUE, Utils.DEFAULT_VERTEX_SIM);
+            return value.getValue();
           }
         });
   }

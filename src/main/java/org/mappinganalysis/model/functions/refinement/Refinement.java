@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.refinement;
 
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.api.java.tuple.Tuple1;
@@ -19,6 +20,7 @@ import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapF
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.utils.functions.RightSideOnlyJoinFunction;
 import org.mappinganalysis.utils.functions.filter.OldHashCcFilterFunction;
 import org.mappinganalysis.utils.functions.filter.RefineIdExcludeFilterFunction;
 import org.mappinganalysis.utils.functions.filter.RefineIdFilterFunction;
@@ -58,8 +60,8 @@ public class Refinement {
         .filter(new ClusterSizeFilterFunction(maxClusterSize));
 
     DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = left.cross(right)
-        .with(new TripletCreateCrossFunction())
-        .filter(new EmptyTripletDeleteFilter());
+        .with(new TripletCreateCrossFunction(maxClusterSize))
+        .filter(value -> value.getSrcVertex().getId() != 0L && value.getTrgVertex().getId() != 0L);
 
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
@@ -91,7 +93,7 @@ public class Refinement {
         .leftOuterJoin(similarTriplets)
         .where(0, 1)
         .equalTo(0, 1)
-        .with(new TupleToTripletJoinFunction<Tuple4<Long, Long, Double, Integer>, ObjectMap>());
+        .with(new TupleToTripletJoinFunction<>());
 
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
@@ -138,7 +140,7 @@ public class Refinement {
           .distinct()
           .rightOuterJoin(baseVertexSet)
           .where(0).equalTo(0)
-          .with(new ExcludeVertexFlatJoinFunction());
+          .with(new RightSideOnlyJoinFunction<>());
   }
 
   /**
@@ -191,47 +193,16 @@ public class Refinement {
         .map(new FrequencyMapByFunction(column))
         .groupBy(0)
         .sum(1)
-        .filter(new FilterFunction<Tuple2<Long, Long>>() {
-          @Override
-          public boolean filter(Tuple2<Long, Long> tuple) throws Exception {
-            LOG.info("getDuplicateTriplets: " + tuple.toString());
-            return tuple.f1 > 1;
-          }
+        .filter(tuple -> {
+          LOG.info("getDuplicateTriplets: " + tuple.toString());
+          return tuple.f1 > 1;
         });
 
     return duplicateTuples.leftOuterJoin(similarTriplets)
         .where(0)
         .equalTo(column)
-        .with(new JoinFunction<Tuple2<Long, Long>, Triplet<Long, ObjectMap, ObjectMap>,
-            Triplet<Long, ObjectMap, ObjectMap>>() {
-          @Override
-          public Triplet<Long, ObjectMap, ObjectMap> join(Tuple2<Long, Long> tuple,
-                                                          Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
-            return triplet;
-          }
-        });
-
-    // TODO check method
-//    return similarTriplets.<Tuple2<Long, Long>>project(0, 1)
-//        .groupBy(0)
-//        .sum(1)
-//        .duplicateTuples(new FilterFunction<Tuple2<Long, Long>>() {
-//          @Override
-//          public boolean duplicateTuples(Tuple2<Long, Long> tuple) throws Exception {
-//            return tuple.f1 > 1;
-//          }
-//        })
-//        .leftOuterJoin(similarTriplets)
-//        .where(0)
-//        .equalTo(column)
-//        .with(new JoinFunction<Tuple2<Long, Long>, Triplet<Long, ObjectMap, ObjectMap>,
-//            Triplet<Long, ObjectMap, ObjectMap>>() {
-//          @Override
-//          public Triplet<Long, ObjectMap, ObjectMap> join(Tuple2<Long, Long> tuple,
-//              Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
-//            return triplet;
-//          }
-//        });
+        .with((tuple, triplet) -> triplet)
+        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
   }
 
   /**
@@ -287,7 +258,7 @@ public class Refinement {
         .rightOuterJoin(representativeVertices)
         .where(0)
         .equalTo(0)
-        .with(new ExcludeVertexFlatJoinFunction())
+        .with(new RightSideOnlyJoinFunction<>())
         .union(newRepresentativeVertices);
 //        .union(lowSimOldHashTriplets.);
   }

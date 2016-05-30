@@ -52,7 +52,7 @@ public class Preprocessing {
     out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
     if (isRestrictActive) {
-      graph = restrictGraph(graph, out, env);
+      graph = restrictGraph(graph, env);
     }
 
     graph = applyTypeMissMatchCorrection(graph, true, env);
@@ -73,33 +73,19 @@ public class Preprocessing {
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
-                                                                 ExampleOutput out,
                                                                  ExecutionEnvironment env) {
     // restrict to first 100k clusters
     DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
-          @Override
-          public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
-          }
-        })
-        .filter(new FilterFunction<Tuple1<Long>>() {
-          @Override
-          public boolean filter(Tuple1<Long> tuple) throws Exception {
-            return tuple.f0 == 1868L;
+        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID)))
+        .filter(tuple -> {
+          return tuple.f0 == 1868L;
 //            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
 //            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
-          }
         });
 //        .first(1000);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID));
-          }
-        }) //vid, ccid
+        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID))) //vid, ccid
         .join(restrictedComponentIds)
         .where(1)
         .equalTo(0)
@@ -113,13 +99,7 @@ public class Preprocessing {
         .leftOuterJoin(graph.getVertices())
         .where(0)
         .equalTo(0)
-        .with(new JoinFunction<Tuple1<Long>, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
-          @Override
-          public Vertex<Long, ObjectMap> join(Tuple1<Long> longTuple1, Vertex<Long, ObjectMap> vertex)
-              throws Exception {
-            return vertex;
-          }
-        });
+        .with((longTuple1, vertex) -> vertex).returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
 //    Utils.writeToHdfs(newVertices, "newVertices");
 
@@ -263,7 +243,6 @@ public class Preprocessing {
       DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
           .groupBy(2, 3)
           .sum(4).andMax(5)
-//          .filter(new BiggerOneOccuranceFilterFunction())
           .filter(tuple -> {
               if (tuple.f4 > 1) {
                 LOG.info("biggerOneTuple: " + tuple);
@@ -278,28 +257,19 @@ public class Preprocessing {
       DataSet<Tuple2<Long, Long>> newEdgesTuples = maxRandomTuples.leftOuterJoin(basicOneToManyTuples)
           .where(0, 1, 2)
           .equalTo(2, 3, 5)
-          .with(new JoinFunction<Tuple3<Long, String, Double>, Tuple7<Long, Long, Long, String, Integer, Double, Long>,
-              Tuple2<Long, Long>>() {
-            @Override
-            public Tuple2<Long, Long> join(Tuple3<Long, String, Double> first,
-                                           Tuple7<Long, Long, Long, String, Integer, Double, Long> second) throws Exception {
-              LOG.info("firstMax: " + first.toString() + " secondMax: " + second.toString());
-              return new Tuple2<>(second.f0, second.f1);
-            }
-          });
+          .with((first, second) -> {
+            LOG.info("firstMax: " + first.toString() + " secondMax: " + second.toString());
+            return new Tuple2<>(second.f0, second.f1);
+          }).returns(new TypeHint<Tuple2<Long, Long>>() {});
 
       DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = newEdgesTuples
           .join(graph.getEdges())
           .where(0, 1)
           .equalTo(0, 1)
-          .with(new JoinFunction<Tuple2<Long, Long>, Edge<Long, ObjectMap>, Edge<Long, ObjectMap>>() {
-            @Override
-            public Edge<Long, ObjectMap> join(Tuple2<Long, Long> first, Edge<Long, ObjectMap> second)
-                throws Exception {
-              LOG.info("firstEdge: " + first.toString() + " secondEdge: " + second.toString());
-              return second;
-            }
-          });
+          .with((first, second) -> {
+            LOG.info("firstEdge: " + first.toString() + " secondEdge: " + second.toString());
+            return second;
+          }).returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
       DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
           .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
@@ -354,12 +324,8 @@ public class Preprocessing {
           .flatMap(new VertexIdTypeTupleMapper());
 
       DataSet<Tuple4<Long, Long, String, String>> edgeTypes = graph.getEdges()
-          .map(new MapFunction<Edge<Long, NullValue>, Tuple4<Long, Long, String, String>>() {
-            @Override
-            public Tuple4<Long, Long, String, String> map(Edge<Long, NullValue> edge) throws Exception {
-              return new Tuple4<>(edge.getSource(), edge.getTarget(), "", "");
-            }
-          })
+          .map(edge -> new Tuple4<>(edge.getSource(), edge.getTarget(), "", ""))
+          .returns(new TypeHint<Tuple4<Long, Long, String, String>>() {})
           .join(vertexIdAndTypeList)
           .where(0).equalTo(0)
           .with(new EdgeTypeJoinFunction(0))
@@ -372,12 +338,8 @@ public class Preprocessing {
 
       DataSet<Edge<Long, NullValue>> edgesEqualType = edgeTypes
           .filter(new EqualTypesEdgeFilterFunction())
-          .map(new MapFunction<Tuple4<Long, Long, String, String>, Edge<Long, NullValue>>() {
-            @Override
-            public Edge<Long, NullValue> map(Tuple4<Long, Long, String, String> tuple) throws Exception {
-              return new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance());
-            }
-          })
+          .map(tuple -> new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance()))
+          .returns(new TypeHint<Edge<Long, NullValue>>() {})
           .distinct(0, 1);
 
       DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
@@ -387,7 +349,6 @@ public class Preprocessing {
       return Graph.fromDataSet(resultVertices, edgesEqualType, env);
 
     }
-
 
     return graph;
   }

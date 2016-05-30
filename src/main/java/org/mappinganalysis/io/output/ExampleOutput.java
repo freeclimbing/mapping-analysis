@@ -2,6 +2,7 @@ package org.mappinganalysis.io.output;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple1;
@@ -30,10 +31,9 @@ public class ExampleOutput {
    */
   private DataSet<ArrayList<String>> outSet;
   private ExecutionEnvironment env;
-  private DataSet<String> strings = null;
 
   public ExampleOutput(ExecutionEnvironment env) {
-    this.outSet = env.fromElements(new ArrayList<String>());
+    this.outSet = env.fromElements(new ArrayList<>());
     this.env = env;
   }
 
@@ -58,12 +58,7 @@ public class ExampleOutput {
   public void addSelectedVertices(String caption, DataSet<Vertex<Long, ObjectMap>> vertices,
                                   ArrayList<Long> vertexList) {
     DataSet<Tuple1<Long>> vertexIds = env.fromCollection(vertexList)
-        .map(new MapFunction<Long, Tuple1<Long>>() {
-          @Override
-          public Tuple1<Long> map(Long value) throws Exception {
-            return new Tuple1<>(value);
-          }
-        });
+        .map((MapFunction<Long, Tuple1<Long>>) Tuple1::new);
     DataSet<String> captionSet = env
         .fromElements("\n*** " + caption + " ***\n");
     DataSet<String> vertexSet = vertices
@@ -89,35 +84,32 @@ public class ExampleOutput {
 
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges()
         .filter(new RichFilterFunction<Edge<Long, ObjectMap>>() {
-      public List<Long> vertexIds;
+          public List<Long> vertexIds;
 
-      @Override
-      public void open(Configuration parameters) {
-        this.vertexIds = getRuntimeContext().getBroadcastVariable("vertexIds");
-      }
+          @Override
+          public void open(Configuration parameters) {
+            this.vertexIds = getRuntimeContext().getBroadcastVariable("vertexIds");
+          }
 
-      @Override
-      public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
-        if (vertexIds.contains(edge.getSource()) || vertexIds.contains(edge.getTarget())) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }).withBroadcastSet(vertexIds, "vertexIds");
-
+          @Override
+          public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
+            if (vertexIds.contains(edge.getSource()) || vertexIds.contains(edge.getTarget())) {
+              return true;
+            } else {
+              return false;
+            }
+          }
+        }).withBroadcastSet(vertexIds, "vertexIds");
 
     DataSet<String> edgeSet = edges
-        .map(new MapFunction<Edge<Long, ObjectMap>, String>() {
-          @Override
-          public String map(Edge<Long, ObjectMap> edge) throws Exception {
-            String simValue = "";
-            if (edge.getValue().containsKey(Utils.AGGREGATED_SIM_VALUE)) {
-              simValue = " " + edge.getValue().get(Utils.AGGREGATED_SIM_VALUE).toString();
-            }
-            return "(" + edge.getSource() + ", " + edge.getTarget() + ")" + simValue;
+        .map(edge -> {
+          String simValue = "";
+          if (edge.getValue().containsKey(Utils.AGGREGATED_SIM_VALUE)) {
+            simValue = " " + edge.getValue().get(Utils.AGGREGATED_SIM_VALUE).toString();
           }
+          return "(" + edge.getSource() + ", " + edge.getTarget() + ")" + simValue;
         })
+        .returns(new TypeHint<String>() {})
         .reduceGroup(new ConcatStrings());
 
     outSet = outSet
@@ -126,10 +118,6 @@ public class ExampleOutput {
         .cross(edgeSet)
         .with(new OutputAppender());
   }
-
-
-
-
 
   /**
    * For each chosen basic component id, show the changed final vertices
@@ -145,12 +133,11 @@ public class ExampleOutput {
    */
   public void addRandomBaseClusters(String caption, DataSet<Vertex<Long, ObjectMap>> baseVertices,
                                     DataSet<Vertex<Long, ObjectMap>> finalVertices, int amount) {
-    DataSet<Tuple1<Long>> randomCcIds = baseVertices.map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<Long>>() {
-      @Override
-      public Tuple1<Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-        return new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID));
-      }
-    }).distinct().first(amount);
+    DataSet<Tuple1<Long>> randomCcIds = baseVertices
+        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID)))
+        .returns(new TypeHint<Tuple1<Long>>() {})
+        .distinct()
+        .first(amount);
 
     addFinalVertexValues(caption, randomCcIds, finalVertices, baseVertices);
   }
@@ -172,7 +159,6 @@ public class ExampleOutput {
   public void addRandomFinalClustersWithMinSize(String caption, DataSet<Vertex<Long, ObjectMap>> vertices,
                                                 DataSet<Vertex<Long, ObjectMap>> basicVertices,
                                                 int minClusterSize, int amount) {
-
     DataSet<String> captionSet = env.fromElements("\n*** " + caption + " ***\n");
     DataSet<Vertex<Long, ObjectMap>> randomClusters = vertices
         .filter(new MinClusterSizeFilterFunction(minClusterSize))
@@ -226,12 +212,8 @@ public class ExampleOutput {
                                                   DataSet<Vertex<Long, ObjectMap>> finalVertices,
                                                   ArrayList<Long> vertexList) {
     DataSet<Tuple1<Long>> vertexListTuple = env.fromCollection(vertexList)
-        .map(new MapFunction<Long, Tuple1<Long>>() {
-          @Override
-          public Tuple1<Long> map(Long value) throws Exception {
-            return new Tuple1<>(value);
-          }
-        });
+        .map(Tuple1::new) // method references
+        .returns(new TypeHint<Tuple1<Long>>() {});
 
     addFinalVertexValues(caption, vertexListTuple, finalVertices, baseVertices);
   }
@@ -267,12 +249,8 @@ public class ExampleOutput {
           .fromElements("\n*** " + caption + " ***\n");
 
       DataSet<String> vertexSet = vertices
-          .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Long>>() {
-            @Override
-            public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-              return new Tuple2<>((long) vertex.getValue().get(compName), 1L);
-            }
-          })
+          .map(vertex -> new Tuple2<>((long) vertex.getValue().get(compName), 1L))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {})
           .groupBy(0)
           .sum(1)
           .map(new FrequencyMapByFunction(1))
@@ -299,12 +277,8 @@ public class ExampleOutput {
           .fromElements("\n*** " + caption + " ***\n");
 
       DataSet<String> vertexSet = vertices
-          .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
-            @Override
-            public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-              return new Tuple2<>((long) vertex.getValue().getVerticesList().size(), 1L);
-            }
-          })
+          .map(vertex -> new Tuple2<>((long) vertex.getValue().getVerticesList().size(), 1L))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {})
           .groupBy(0).sum(1)
           .reduceGroup(new ConcatTuple2Longs());
 
@@ -320,21 +294,12 @@ public class ExampleOutput {
     DataSet<String> captionSet = env
         .fromElements("\n*** " + caption + " ***\n");
     DataSet<String> dataSet = data
-        .map(new MapFunction<T, Tuple1<Long>>() {
-          @Override
-          public Tuple1<Long> map(T vertex) throws Exception {
-            return new Tuple1<>(1L);
-          }
-        })
+        .map(vertex -> new Tuple1<>(1L))
+        .returns(new TypeHint<Tuple1<Long>>() {})
         .sum(0)
         .first(1)
-        .map(new MapFunction<Tuple1<Long>, String>() {
-          @Override
-          public String map(Tuple1<Long> tuple) throws Exception {
-            return "count: " + tuple.f0.toString();
-          }
-
-        });
+        .map(tuple -> "count: " + tuple.f0.toString())
+        .returns(new TypeHint<String>() {});
 
     outSet = outSet
         .cross(captionSet)
@@ -348,36 +313,20 @@ public class ExampleOutput {
       DataSet<String> captionSet = env
           .fromElements("\n*** " + caption + " ***\n");
       DataSet<String> vertexSet = graph.getVertices()
-          .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
-            @Override
-            public Tuple2<Long, Long> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-              return new Tuple2<>(vertex.getId(), 1L);
-            }
-          })
+          .map(vertex -> new Tuple2<>(vertex.getId(), 1L))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {})
           .sum(1)
           .first(1)
-          .map(new MapFunction<Tuple2<Long, Long>, String>() {
-            @Override
-            public String map(Tuple2<Long, Long> tuple) throws Exception {
-              return "vertices: " + tuple.f1.toString();
-            }
-          });
+          .map(tuple -> "vertices: " + tuple.f1.toString())
+          .returns(new TypeHint<String>() {});
 
       DataSet<String> edgeSet = graph.getEdgeIds()
-          .map(new MapFunction<Tuple2<Long, Long>, Tuple1<Long>>() {
-            @Override
-            public Tuple1<Long> map(Tuple2<Long, Long> longLongTuple2) throws Exception {
-              return new Tuple1<>(1L);
-            }
-          })
+          .map(tuple -> new Tuple1<>(1L))
+          .returns(new TypeHint<Tuple1<Long>>() {})
           .sum(0)
           .first(1)
-          .map(new MapFunction<Tuple1<Long>, String>() {
-            @Override
-            public String map(Tuple1<Long> tuple) throws Exception {
-              return "edges: " + tuple.f0.toString();
-            }
-          });
+          .map(tuple -> "edges: " + tuple.f0.toString())
+          .returns(new TypeHint<String>() {});
 
       outSet = outSet
           .cross(captionSet)

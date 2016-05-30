@@ -205,43 +205,22 @@ public class SimilarityComputation {
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
-    // internally compType is used, afterwards typeIntern is used again
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-      @Override
-      public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
-        return true;
-      }
-    });
-    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(new FilterFunction<Edge<Long, ObjectMap>>() {
-      @Override
-      public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
-        return true;
-      }
-    });
-
+    // Sync needed
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true);
+    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
+
+    // internally compType is used, afterwards typeIntern is used again
     graph = new TypeGroupBy().execute(graph, processingMode, 1000);
 
-    vertices = graph.getVertices().filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-      @Override
-      public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
-        return true;
-      }
-    });
-    edges = graph.getEdges().filter(new FilterFunction<Edge<Long, ObjectMap>>() {
-      @Override
-      public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
-        return true;
-      }
-    });
-
+    vertices = graph.getVertices().filter(value -> true);
+    edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
 
     /* SimSort */
     graph = SimSort.prepare(graph, processingMode, env, out);
     Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
     out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
-    out.print();
 
     if (Utils.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);

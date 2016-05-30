@@ -185,7 +185,7 @@ public class Stats {
     LOG.info("[3] ### Clusters created in refinement step: "
         + jobExecResult.getAccumulatorResult(Utils.REFINEMENT_MERGE_ACCUMULATOR)); // SimilarClusterMergeMapFunction
     LOG.info("[3] ### Excluded vertex counter: "
-        + jobExecResult.getAccumulatorResult(Utils.EXCLUDE_VERTEX_ACCUMULATOR)); // ExcludeVertexFlatJoinFunction
+        + jobExecResult.getAccumulatorResult(Utils.EXCLUDE_VERTEX_ACCUMULATOR)); // RightSideOnlyJoinFunction
 
 
     // todo this working?

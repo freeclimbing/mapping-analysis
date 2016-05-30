@@ -7,6 +7,8 @@ import org.mappinganalysis.utils.Utils;
 
 /**
  * Either return the weighted aggregated similarity or return mean similarity of all existing properties
+ *
+ * used in general merge and rejoin vertices from simsort
  */
 public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>,
     Triplet<Long, ObjectMap, ObjectMap>> {

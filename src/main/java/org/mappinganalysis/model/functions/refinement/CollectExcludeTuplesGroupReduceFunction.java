@@ -45,7 +45,7 @@ public class CollectExcludeTuplesGroupReduceFunction
   }
 
   /**
-   * quick'n'dirty fix haha later todo
+   * quick'n'dirty fix
    */
   private Tuple2<Long, Double> getLowestVertIdAndHighestSim(Iterable<Triplet<Long, ObjectMap, ObjectMap>> triplets,
                                                             Set<Tuple2<Long, Long>> tripletIds, int column) {

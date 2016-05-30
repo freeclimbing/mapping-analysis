@@ -587,7 +587,8 @@ public class Utils {
     }
   }
 
-  private static class AggregateBaseDeletedEdgesJoinFunction implements JoinFunction<EdgeComponentTuple3, VertexComponentTuple2, Tuple3<Long, Integer, Integer>> {
+  private static class AggregateBaseDeletedEdgesJoinFunction
+      implements JoinFunction<EdgeComponentTuple3, VertexComponentTuple2, Tuple3<Long, Integer, Integer>> {
     @Override
     public Tuple3<Long, Integer, Integer> join(EdgeComponentTuple3 left,
                                                VertexComponentTuple2 right) throws Exception {

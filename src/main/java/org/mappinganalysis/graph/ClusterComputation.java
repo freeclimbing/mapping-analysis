@@ -2,6 +2,7 @@ package org.mappinganalysis.graph;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
@@ -10,7 +11,7 @@ import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
-import org.mappinganalysis.model.functions.clustering.ExcludeInputJoinFunction;
+import org.mappinganalysis.utils.functions.LeftSideOnlyJoinFunction;
 import org.mappinganalysis.utils.Utils;
 
 public class ClusterComputation {
@@ -49,18 +50,9 @@ public class ClusterComputation {
    */
   public static DataSet<Edge<Long, NullValue>> getDistinctSimpleEdges(DataSet<Edge<Long, NullValue>> input) {
     return input
-        .filter(new FilterFunction<Edge<Long, NullValue>>() {
-          @Override
-          public boolean filter(Edge<Long, NullValue> edge) throws Exception {
-            return (long) edge.getSource() != edge.getTarget();
-          }
-        })
-        .map(new MapFunction<Edge<Long, NullValue>, Edge<Long, NullValue>>() {
-          @Override
-          public Edge<Long, NullValue> map(Edge<Long, NullValue> edge) throws Exception {
-            return edge.getSource() < edge.getTarget() ? edge : edge.reverse();
-          }
-        })
+        .filter(edge -> (long) edge.getSource() != edge.getTarget())
+        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
+        .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct()
         .filter(new RichFilterFunction<Edge<Long, NullValue>>() {
           private LongCounter restrictEdgeCounter = new LongCounter();
@@ -84,24 +76,14 @@ public class ClusterComputation {
   public static DataSet<Edge<Long, NullValue>> restrictToNewEdges(DataSet<Edge<Long, NullValue>> input,
                                                                   DataSet<Edge<Long, NullValue>> tmpResult) {
     return tmpResult
-        .filter(new FilterFunction<Edge<Long, NullValue>>() {
-          @Override
-          public boolean filter(Edge<Long, NullValue> edge) throws Exception {
-            return (long) edge.getSource() != edge.getTarget();
-          }
-        })
+        .filter(edge -> (long) edge.getSource() != edge.getTarget())
         .leftOuterJoin(input)
         .where(0, 1).equalTo(0, 1)
-        .with(new ExcludeInputJoinFunction())
+        .with(new LeftSideOnlyJoinFunction<>())
         .leftOuterJoin(input)
         .where(0, 1).equalTo(1, 0)
-        .with(new ExcludeInputJoinFunction())
-        .map(new MapFunction<Edge<Long, NullValue>, Edge<Long, NullValue>>() {
-          @Override
-          public Edge<Long, NullValue> map(Edge<Long, NullValue> edge) throws Exception {
-            return edge.getSource() < edge.getTarget() ? edge : edge.reverse();
-          }
-        })
+        .with(new LeftSideOnlyJoinFunction<>())
+        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .distinct();
   }
 }

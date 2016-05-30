@@ -13,16 +13,16 @@ import java.util.Set;
 /**
  * Create triplets for potentially matching vertices,
  * skip those where prerequisites are not good enough.
- *
- * Fix size 4 for big dataset. TODO
  */
 public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>, Triplet<Long, ObjectMap, NullValue>> {
   private static final Logger LOG = Logger.getLogger(TripletCreateCrossFunction.class);
   private final Triplet<Long, ObjectMap, NullValue> reuseTriplet;
+  private final int maxClusterSize;
 
-  public TripletCreateCrossFunction() {
+  public TripletCreateCrossFunction(int maxClusterSize) {
     reuseTriplet = new Triplet<>();
+    this.maxClusterSize = maxClusterSize;
   }
 
   @Override
@@ -33,7 +33,12 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
     Set<String> trgOnts = (Set<String>) right.getValue().get(Utils.ONTOLOGIES);
     for (String srcValue : srcOnts) {
       if (trgOnts.contains(srcValue)) {
-        reuseTriplet.setFields(0L, 0L, null, null, null);
+        reuseTriplet.setFields(0L,
+            0L,
+            null,
+            null,
+            null);
+
         return reuseTriplet;
       }
     }
@@ -42,13 +47,24 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
     // TODO check if this is correct
     if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
       reuseTriplet.setFields(0L, 0L, null, null, null);
+
       return reuseTriplet;
-    } else if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= 4) {
-      reuseTriplet.setFields(left.getId(), right.getId(), left.getValue(), right.getValue(), NullValue.getInstance());
+    } else if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= maxClusterSize) {
+      reuseTriplet.setFields(left.getId(),
+          right.getId(),
+          left.getValue(),
+          right.getValue(),
+          NullValue.getInstance());
+
       return reuseTriplet;
     } else {
       LOG.error("triplet size too high, skipped: " + left.getId() + " ### " + right.getId());
-      reuseTriplet.setFields(0L, 0L, null, null, null);
+      reuseTriplet.setFields(0L,
+          0L,
+          null,
+          null,
+          null);
+
       return reuseTriplet;
     }
   }
