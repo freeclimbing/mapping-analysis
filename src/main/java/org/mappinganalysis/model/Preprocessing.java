@@ -243,33 +243,21 @@ public class Preprocessing {
       DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
           .groupBy(2, 3)
           .sum(4).andMax(5)
-          .filter(tuple -> {
-              if (tuple.f4 > 1) {
-                LOG.info("biggerOneTuple: " + tuple);
-              }
-            return tuple.f4 > 1;
-          })
-          .map(value -> {
-            LOG.info("maxButRandom: " + value.toString());
-            return new Tuple3<>(value.f2, value.f3, value.f5);
-          }).returns(new TypeHint<Tuple3<Long, String, Double>>() {});
+          .filter(tuple -> tuple.f4 > 1)
+          .map(tuple -> new Tuple3<>(tuple.f2, tuple.f3, tuple.f5))
+          .returns(new TypeHint<Tuple3<Long, String, Double>>() {});
 
-      DataSet<Tuple2<Long, Long>> newEdgesTuples = maxRandomTuples.leftOuterJoin(basicOneToManyTuples)
+      DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = maxRandomTuples
+          .leftOuterJoin(basicOneToManyTuples)
           .where(0, 1, 2)
           .equalTo(2, 3, 5)
-          .with((first, second) -> {
-            LOG.info("firstMax: " + first.toString() + " secondMax: " + second.toString());
-            return new Tuple2<>(second.f0, second.f1);
-          }).returns(new TypeHint<Tuple2<Long, Long>>() {});
-
-      DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = newEdgesTuples
+          .with((first, second) -> new Tuple2<>(second.f0, second.f1))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {})
           .join(graph.getEdges())
           .where(0, 1)
           .equalTo(0, 1)
-          .with((first, second) -> {
-            LOG.info("firstEdge: " + first.toString() + " secondEdge: " + second.toString());
-            return second;
-          }).returns(new TypeHint<Edge<Long, ObjectMap>>() {});
+          .with((first, second) -> second)
+          .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
       DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
           .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
