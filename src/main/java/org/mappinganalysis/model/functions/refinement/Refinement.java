@@ -92,11 +92,17 @@ public class Refinement {
         .union(srcTrgSimOneTuple
             .groupBy(1)
             .max(2).andSum(3))
-        .filter(new MaxSimPerNoticableTupleFilterFunction())
+        .filter(tuple -> {
+          LOG.info("agg noti tuple: " + tuple.toString());
+          return tuple.f3 > 1;
+        })
         .leftOuterJoin(similarTriplets)
         .where(0, 1)
         .equalTo(0, 1)
-        .with(new TupleToTripletJoinFunction<>());
+        .with((tuple, triplet) -> {
+          LOG.info("final triplet: " + triplet.toString());
+          return triplet;
+        }).returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
@@ -263,7 +269,6 @@ public class Refinement {
         .equalTo(0)
         .with(new RightSideOnlyJoinFunction<>())
         .union(newRepresentativeVertices);
-//        .union(lowSimOldHashTriplets.);
   }
 
   private static class CreateNoticableTripletMapFunction
@@ -277,24 +282,6 @@ public class Refinement {
 
       LOG.info("noticable tuple: " + result.toString());
       return result;
-    }
-  }
-
-  private static class MaxSimPerNoticableTupleFilterFunction
-      implements FilterFunction<Tuple4<Long, Long, Double, Integer>> {
-    @Override
-    public boolean filter(Tuple4<Long, Long, Double, Integer> tuple) throws Exception {
-      LOG.info("agg noti tuple: " + tuple.toString());
-      return tuple.f3 > 1;
-    }
-  }
-
-  private static class TupleToTripletJoinFunction<T, O>
-      implements JoinFunction<T, Triplet<Long,ObjectMap,O>, Triplet<Long, ObjectMap, O>> {
-    @Override
-    public Triplet<Long, ObjectMap, O> join(T tuple, Triplet<Long, ObjectMap, O> triplet) throws Exception {
-      LOG.info("final triplet: " + triplet.toString());
-      return triplet;
     }
   }
 }

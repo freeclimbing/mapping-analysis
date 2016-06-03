@@ -292,7 +292,7 @@ public class Preprocessing {
 
     if (isLinkFilterActive) {
       // Tuple7(edge src, edge trg, VertexId, Ontology, One, EdgeSim, VertexCc)
-      final DataSet<Tuple7<Long, Long, Long, String, Integer, Double, Long>> basicOneToManyTuples = graph
+      final DataSet<Tuple6<Long, Long, Long, String, Integer, Double>> basicOneToManyTuples = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
 
       DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
