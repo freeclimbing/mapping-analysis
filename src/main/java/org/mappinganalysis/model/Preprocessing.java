@@ -3,10 +3,8 @@ package org.mappinganalysis.model;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
@@ -48,8 +46,8 @@ public class Preprocessing {
                                                           ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = addCcIdsToGraph(graph);
-    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
-    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
+//    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
+//    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
     if (isRestrictActive) {
       graph = restrictGraph(graph, env);
@@ -66,6 +64,10 @@ public class Preprocessing {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
         .map(new AddShadingTypeMapFunction())
+        .filter(vertex -> {
+          LOG.info("shadingVertex: " + vertex.toString());
+          return true;
+        })
         .groupBy(new CcIdAndCompTypeKeySelector())
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
@@ -77,15 +79,17 @@ public class Preprocessing {
     // restrict to first 100k clusters
     DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
         .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID)))
-        .filter(tuple -> {
-          return tuple.f0 == 1868L;
-//            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
-//            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
-        });
-//        .first(1000);
+        .returns(new TypeHint<Tuple1<Long>>() {})
+//        .filter(tuple -> {
+//          return tuple.f0 == 1868L;
+////            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
+////            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
+//        });
+        .first(500);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
         .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID))) //vid, ccid
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
         .join(restrictedComponentIds)
         .where(1)
         .equalTo(0)
@@ -101,12 +105,9 @@ public class Preprocessing {
         .equalTo(0)
         .with((longTuple1, vertex) -> vertex).returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
-//    Utils.writeToHdfs(newVertices, "newVertices");
-
-    DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph, newVertices);
+    DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph.getEdges(), newVertices);
 
     graph = Graph.fromDataSet(newVertices.distinct(0), newEdges.distinct(0,1), env);
-//    out.addVertexAndEdgeSizes("afterInitialVertexDeletionAndRestrictedClusters", graph);
     return graph;
   }
 
@@ -121,60 +122,113 @@ public class Preprocessing {
     final String vertexFile = "concept.csv";
     final String edgeFile = "linksWithIDs.csv";
     final String propertyFile = "concept_attributes.csv";
+    final String ccFile = "cc.csv";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVerticesFromCsv(Utils.INPUT_DIR + vertexFile, Utils.INPUT_DIR + propertyFile);
 
-//    Utils.writeToHdfs(vertices, "inputVertices");
+    if (Utils.INPUT_DIR.contains("linklion")) {
+      vertices = restrictLinkLionVertices(env, ccFile, vertices);
+    }
 
-    // restrict edges to these where source and target are vertices
-    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(Utils.INPUT_DIR + edgeFile)
-        .leftOuterJoin(vertices)
-        .where(0).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction())
-        .leftOuterJoin(vertices)
-        .where(1).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction());
+    DataSet<Edge<Long, NullValue>> edges
+        = deleteEdgesWithoutSourceOrTarget(loader.getEdgesFromCsv(Utils.INPUT_DIR + edgeFile), vertices);
+
+    vertices = deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1));
+//    out.addDataSetCount("relevant vertices", vertices);
+//
+//    edges = deleteEdgesWithoutSourceOrTarget(edges, vertices);
+//    out.addDataSetCount("second edge count", edges);
+
+//    out.print();
 
     return Graph.fromDataSet(
-        deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
+        vertices,
         edges,
         env);
   }
 
-  // not yet working correctly
+  /**
+   * Restrict LinkLion dataset by (currently) taking all vertices from CCs
+   * where nyt entities are contained (~6000 entities).
+   *
+   * Second option: take random ccs, WIP
+   */
+  private static DataSet<Vertex<Long, ObjectMap>> restrictLinkLionVertices(ExecutionEnvironment env, String ccFile, DataSet<Vertex<Long, ObjectMap>> vertices) {
+    DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
+        vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.NYT_NS));
+//          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
+
+    DataSet<Tuple2<Long, Long>> vertexCcs = env.readCsvFile(Utils.INPUT_DIR + ccFile)
+        .fieldDelimiter(";")
+        .ignoreInvalidLines()
+        .types(Integer.class, Integer.class)
+        .map(value -> new Tuple2<>((long) value.f0, (long) value.f1))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    DataSet<Tuple1<Long>> relevantCcs = vertexCcs.rightOuterJoin(nytFbVertices)
+        .where(0)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple2<Long, Long>, Vertex<Long, ObjectMap>, Tuple1<Long>>() {
+          @Override
+          public void join(Tuple2<Long, Long> first, Vertex<Long, ObjectMap> second, Collector<Tuple1<Long>> out) throws Exception {
+//              LOG.info("inputVertexZero: " + first.toString() + " " + second.toString());
+            out.collect(new Tuple1<>(first.f1));
+          }
+        });
+
+//      out.addDataSetCount("relevant ccs nyt", relevantCcs);
+
+    vertices = relevantCcs.join(vertexCcs)
+        .where(0)
+        .equalTo(1)
+        .with((left, right) -> new Tuple1<>(right.f0))
+        .returns(new TypeHint<Tuple1<Long>>() {})
+        .join(vertices)
+        .where(0)
+        .equalTo(0)
+        .with((id, vertex) -> vertex)
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+        .distinct(0);
+
+//      out.addDataSetCount("relevant vertices", vertices);
+    return vertices;
+  }
+
+  /**
+   * Delete edges where source or target vertex are not in the vertex set.
+   */
   public static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(
-      Graph<Long, ObjectMap, NullValue> graph,
-      DataSet<Vertex<Long, ObjectMap>> newVertices) {
-    return graph.getEdges()
-        .leftOuterJoin(newVertices)
+      DataSet<Edge<Long, NullValue>> edges, DataSet<Vertex<Long, ObjectMap>> newVertices) {
+    return edges.leftOuterJoin(newVertices)
         .where(0).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction())
         .leftOuterJoin(newVertices)
         .where(1).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction());
+        .with(new EdgeRestrictFlatJoinFunction())
+        .distinct();
   }
 
   /**
-   * delete vertices without any edges
-   * @param vertices input vertices
-   * @param edges edge set
+   * Delete vertices which are not source or target of an edge.
+   * @param vertices (reduced) set of input vertices
+   * @param edges corresponding edge set
    * @return vertices
    */
   public static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
-      DataSet<Tuple2<Long, Long>> edges) {
+      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
 
     DataSet<Vertex<Long, ObjectMap>> left = vertices
         .leftOuterJoin(edges)
         .where(0).equalTo(0)
-        .with(new VertexRestrictFlatJoinFunction()).distinct(0);
+        .with(new VertexRestrictFlatJoinFunction());
 
     return vertices
         .leftOuterJoin(edges)
         .where(0).equalTo(1)
-        .with(new VertexRestrictFlatJoinFunction()).distinct(0)
-        .union(left);
+        .with(new VertexRestrictFlatJoinFunction())
+        .union(left)
+        .distinct(0);
   }
 
   /**
@@ -183,6 +237,7 @@ public class Preprocessing {
    * @return graph with vertices and edges.
    * @throws Exception
    * @param fullDbString complete server+port+db string
+   * @deprecated load from db too slow
    */
   public static Graph<Long, ObjectMap, NullValue> getInputGraph(String fullDbString, ExecutionEnvironment env)
       throws Exception {
@@ -253,7 +308,7 @@ public class Preprocessing {
           .equalTo(2, 3, 5)
           .with((first, second) -> new Tuple2<>(second.f0, second.f1))
           .returns(new TypeHint<Tuple2<Long, Long>>() {})
-          .join(graph.getEdges())
+          .leftOuterJoin(graph.getEdges())
           .where(0, 1)
           .equalTo(0, 1)
           .with((first, second) -> second)

@@ -501,13 +501,13 @@ public class Utils {
    * @return metric
    */
   public static StringMetric getBasicTrigramMetric() {
-    return with(new CosineSimilarity<String>())
+    return with(new CosineSimilarity<>())
         .tokenize(Tokenizers.qGram(3))
         .build();
   }
 
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
-    return with(new CosineSimilarity<String>())
+    return with(new CosineSimilarity<>())
         .simplify(Simplifiers.removeAll("[\\(|,].*"))
 //        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
         .simplify(Simplifiers.toLowerCase())

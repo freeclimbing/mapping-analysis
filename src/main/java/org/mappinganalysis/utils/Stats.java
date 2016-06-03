@@ -51,6 +51,28 @@ import java.util.Set;
  //    out.print();
 
  */
+
+//DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
+//    vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.NYT_NS));
+//          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
+
+//      DataSet<Vertex<Long, ObjectMap>> fbVertices = vertices.filter(vertex ->
+//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
+//
+//      DataSet<Vertex<Long, ObjectMap>> dbpVertices = vertices.filter(vertex ->
+//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.DBP_NS));
+//
+//      DataSet<Vertex<Long, ObjectMap>> lgdVertices = vertices.filter(vertex ->
+//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.LGD_NS));
+//
+//      DataSet<Vertex<Long, ObjectMap>> gnVertices = vertices.filter(vertex ->
+//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.GN_NS));
+//
+//      out.addDataSetCount("freebase count", fbVertices);
+//      out.addDataSetCount("lgd count", lgdVertices);
+//      out.addDataSetCount("dbp count", dbpVertices);
+//      out.addDataSetCount("gn count", gnVertices);
+
 public class Stats {
   private static final Logger LOG = Logger.getLogger(Stats.class);
 
@@ -282,23 +304,13 @@ public class Stats {
   private static void addCountsForSingleSource(Graph<Long, ObjectMap, NullValue> inputGraph,
                                                ExampleOutput out, final String source) {
     DataSet<Vertex<Long, ObjectMap>> nytVertices = inputGraph.getVertices()
-        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-          @Override
-          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return vertex.getValue().get(Utils.ONTOLOGY).toString().equals(Utils.NYT_NS);
-          }
-        });
+        .filter(vertex -> vertex.getValue().get(Utils.ONTOLOGY).toString().equals(Utils.NYT_NS));
 
     DataSet<Vertex<Long, ObjectMap>> gnVertices = inputGraph.getVertices()
-        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-          @Override
-          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return vertex.getValue().get(Utils.ONTOLOGY).toString().equals(source);
-          }
-        });
+        .filter(vertex -> vertex.getValue().get(Utils.ONTOLOGY).toString().equals(source));
 
     DataSet<Edge<Long, NullValue>> edgeDataSet = Preprocessing
-        .deleteEdgesWithoutSourceOrTarget(inputGraph, nytVertices.union(gnVertices));
+        .deleteEdgesWithoutSourceOrTarget(inputGraph.getEdges(), nytVertices.union(gnVertices));
 
     out.addDataSetCount("vertex size for " + source, gnVertices);
     out.addDataSetCount("edge size for " + source, edgeDataSet);

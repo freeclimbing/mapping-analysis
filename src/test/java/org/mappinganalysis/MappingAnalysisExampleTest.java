@@ -49,13 +49,16 @@ public class MappingAnalysisExampleTest {
     List<Vertex<Long, ObjectMap>> vertexList = Lists.newArrayList();
 
     // create Gelly edges and vertices -> graph
-    for (org.s1ck.gdl.model.Vertex v : handler.getVertices()) {
-      vertexList.add(new Vertex<>(v.getId(), new ObjectMap(v.getProperties())));
+    for (org.s1ck.gdl.model.Vertex vertex : handler.getVertices()) {
+      ObjectMap map = new ObjectMap();
+      map.putAll(vertex.getProperties());
+      vertexList.add(new Vertex<>(vertex.getId(), map));
     }
     for (org.s1ck.gdl.model.Edge edge : handler.getEdges()) {
+      ObjectMap map = new ObjectMap();
+      map.putAll(edge.getProperties());
       edgeList.add(new Edge<>(edge.getSourceVertexId(),
-          edge.getTargetVertexId(),
-          new ObjectMap(edge.getProperties())));
+          edge.getTargetVertexId(), map));
     }
 
     return Graph.fromCollection(vertexList, edgeList, env);

@@ -46,11 +46,11 @@ public class BasicTest {
 
   @Test
   public void aggregateTest() throws Exception {
-    HashMap<String, Object> mapOne = Maps.newHashMap();
+    ObjectMap mapOne = new ObjectMap();
     mapOne.put("distance", 1.0);
     mapOne.put("trigramSim", 0.738549);
     mapOne.put("aggSimValue", 0.8692745);
-    HashMap<String, Object> mapTwo = Maps.newHashMap();
+    ObjectMap mapTwo = new ObjectMap();
     mapTwo.put("distance", 1.0);
     mapTwo.put("trigramSim", 0.957427);
     mapTwo.put("aggSimValue", 0.9787135);

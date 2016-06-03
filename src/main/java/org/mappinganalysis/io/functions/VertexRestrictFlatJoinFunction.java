@@ -12,9 +12,9 @@ import org.mappinganalysis.model.ObjectMap;
 public class VertexRestrictFlatJoinFunction implements FlatJoinFunction<Vertex<Long, ObjectMap>,
     Tuple2<Long, Long>, Vertex<Long, ObjectMap>> {
   @Override
-  public void join(Vertex<Long, ObjectMap> vertex, Tuple2<Long, Long> edge,
+  public void join(Vertex<Long, ObjectMap> vertex, Tuple2<Long, Long> edgeTuple,
                    Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
-    if (edge != null) {
+    if (edgeTuple != null) {
       collector.collect(vertex);
     }
   }

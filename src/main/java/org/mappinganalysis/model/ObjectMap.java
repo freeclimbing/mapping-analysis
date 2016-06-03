@@ -23,10 +23,6 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     this.map = map;
   }
 
-  public ObjectMap(Map<String, Object> map) {
-    this.map = map;
-  }
-
   public ObjectMap() {
     map = Maps.newHashMap();
   }
