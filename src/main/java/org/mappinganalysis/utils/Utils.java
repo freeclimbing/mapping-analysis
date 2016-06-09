@@ -86,9 +86,10 @@ public class Utils {
   /**
    * Command line option names.
    */
-  public static final  String CMD_LL = "linklion";
-  public static final  String CMD_GEO = "geo";
-  public static final  String DEFAULT_VALUE = "default";
+  public static final String CMD_LL = "linklion";
+  public static final String CMD_GEO = "geo";
+  public static final String DEFAULT_VALUE = "default";
+  public static final String PROCESSING_MODE_NEXT_TGB = "next-tgb";
 
   /**
    * Accumulators

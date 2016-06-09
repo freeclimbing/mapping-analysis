@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -15,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeGroupByTest {
   private static final Logger LOG = Logger.getLogger(TypeGroupByTest.class);
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   /**
    * test if no type vertices are handled correctly
@@ -65,7 +67,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(TGB_EQUAL_SIM_NO_TYPE_LOW_CCID);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph = new TypeGroupBy().execute(graph, Utils.DEFAULT_VALUE, 100);
+    graph = TypeGroupBy.execute(graph, Utils.DEFAULT_VALUE, 100, env, null);
 
     for (int i=0; i < 5; i++) {
       assertEquals(0, graph.filterOnVertices(new SpecificCcIdFilter()).getVertices().count());
@@ -80,7 +82,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(NO_TYPE_STRING);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph = new TypeGroupBy().execute(graph, Utils.DEFAULT_VALUE, 100);
+    graph = TypeGroupBy.execute(graph, Utils.DEFAULT_VALUE, 100, env, null);
 
     graph.getVertices().print();
 //    for (int i=0; i < 5; i++) {
@@ -93,7 +95,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(TGB_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = new TypeGroupBy().execute(firstGraph, Utils.DEFAULT_VALUE, 100);
+    firstGraph = TypeGroupBy.execute(firstGraph, Utils.DEFAULT_VALUE, 100, env, null);
 
     for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {
       ObjectMap value = vertex.getValue();
@@ -110,7 +112,7 @@ public class TypeGroupByTest {
     GDLHandler secondHandler = new GDLHandler.Builder().buildFromString(TGB_TRIPLE_UNKNOWN);
     Graph<Long, ObjectMap, ObjectMap> secondGraph = MappingAnalysisExampleTest.createTestGraph(secondHandler);
 
-    secondGraph = new TypeGroupBy().execute(secondGraph, Utils.DEFAULT_VALUE, 100);
+    secondGraph = TypeGroupBy.execute(secondGraph, Utils.DEFAULT_VALUE, 100, env, null);
 
     for (Vertex<Long, ObjectMap> vertex : secondGraph.getVertices().collect()) {
       ObjectMap value = vertex.getValue();

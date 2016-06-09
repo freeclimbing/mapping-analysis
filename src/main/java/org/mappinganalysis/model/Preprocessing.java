@@ -14,17 +14,16 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.FlinkConnectedComponents;
+import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.model.functions.VertexIdMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
+import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
 /**
  * Preprocessing.
@@ -45,7 +44,7 @@ public class Preprocessing {
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = addCcIdsToGraph(graph);
+    graph = GraphUtils.addCcIdsToGraph(graph);
 //    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
 //    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
@@ -59,19 +58,7 @@ public class Preprocessing {
         SimilarityComputation.computeGraphEdgeSim(graph, Utils.DEFAULT_VALUE),
         env);
 
-    simGraph = applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
-    simGraph = addCcIdsToGraph(simGraph);
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = simGraph.getVertices()
-        .map(new AddShadingTypeMapFunction())
-        .filter(vertex -> {
-          LOG.info("shadingVertex: " + vertex.toString());
-          return true;
-        })
-        .groupBy(new CcIdAndCompTypeKeySelector())
-        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
-
-    return Graph.fromDataSet(vertices, simGraph.getEdges(), env);
+    return applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
@@ -128,7 +115,8 @@ public class Preprocessing {
         .getVerticesFromCsv(Utils.INPUT_DIR + vertexFile, Utils.INPUT_DIR + propertyFile);
 
     if (Utils.INPUT_DIR.contains("linklion")) {
-      vertices = restrictLinkLionVertices(env, ccFile, vertices);
+//      vertices = getNytVerticesLinklion(env, ccFile, vertices);
+      vertices = getRandomCcsFromLinklion(env, ccFile, vertices);
     }
 
     DataSet<Edge<Long, NullValue>> edges
@@ -149,22 +137,63 @@ public class Preprocessing {
   }
 
   /**
+   * Restrict LinkLion dataset by taking random CCs
+   */
+  private static DataSet<Vertex<Long, ObjectMap>> getRandomCcsFromLinklion(ExecutionEnvironment env,
+                                                                           String ccFile,
+                                                                           DataSet<Vertex<Long, ObjectMap>> vertices) {
+    DataSet<Tuple2<Long, Long>> vertexIdAndCcs = getBaseVertexCcs(env, ccFile);
+
+    DataSet<Tuple1<Long>> relevantCcs = vertexIdAndCcs.<Tuple1<Long>>project(1).first(1000);
+
+    vertices = restrictVerticesToGivenCcs(vertices, vertexIdAndCcs, relevantCcs);
+
+    return vertices;
+  }
+
+  private static DataSet<Vertex<Long, ObjectMap>> restrictVerticesToGivenCcs(DataSet<Vertex<Long, ObjectMap>> vertices,
+                                                                             DataSet<Tuple2<Long, Long>> vertexCcs,
+                                                                             DataSet<Tuple1<Long>> relevantCcs) {
+    vertices = relevantCcs.join(vertexCcs)
+        .where(0)
+        .equalTo(1)
+        .with((left, right) -> new Tuple1<>(right.f0))
+        .returns(new TypeHint<Tuple1<Long>>() {})
+        .join(vertices)
+        .where(0)
+        .equalTo(0)
+        .with((id, vertex) -> {
+          LOG.info("restrictedVertex: " + vertex);
+          return vertex;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+        .distinct(0);
+    return vertices;
+  }
+
+  private static DataSet<Tuple2<Long, Long>> getBaseVertexCcs(ExecutionEnvironment env, String ccFile) {
+    return env.readCsvFile(Utils.INPUT_DIR + ccFile)
+          .fieldDelimiter(";")
+          .ignoreInvalidLines()
+          .types(Integer.class, Integer.class)
+          .map(value -> new Tuple2<>((long) value.f0, (long) value.f1))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+  }
+
+  /**
    * Restrict LinkLion dataset by (currently) taking all vertices from CCs
    * where nyt entities are contained (~6000 entities).
    *
    * Second option: take random ccs, WIP
    */
-  private static DataSet<Vertex<Long, ObjectMap>> restrictLinkLionVertices(ExecutionEnvironment env, String ccFile, DataSet<Vertex<Long, ObjectMap>> vertices) {
+  private static DataSet<Vertex<Long, ObjectMap>> getNytVerticesLinklion(ExecutionEnvironment env,
+                                                                         String ccFile,
+                                                                         DataSet<Vertex<Long, ObjectMap>> vertices) {
     DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
         vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.NYT_NS));
 //          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
 
-    DataSet<Tuple2<Long, Long>> vertexCcs = env.readCsvFile(Utils.INPUT_DIR + ccFile)
-        .fieldDelimiter(";")
-        .ignoreInvalidLines()
-        .types(Integer.class, Integer.class)
-        .map(value -> new Tuple2<>((long) value.f0, (long) value.f1))
-        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+    DataSet<Tuple2<Long, Long>> vertexCcs = getBaseVertexCcs(env, ccFile);
 
     DataSet<Tuple1<Long>> relevantCcs = vertexCcs.rightOuterJoin(nytFbVertices)
         .where(0)
@@ -179,17 +208,7 @@ public class Preprocessing {
 
 //      out.addDataSetCount("relevant ccs nyt", relevantCcs);
 
-    vertices = relevantCcs.join(vertexCcs)
-        .where(0)
-        .equalTo(1)
-        .with((left, right) -> new Tuple1<>(right.f0))
-        .returns(new TypeHint<Tuple1<Long>>() {})
-        .join(vertices)
-        .where(0)
-        .equalTo(0)
-        .with((id, vertex) -> vertex)
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-        .distinct(0);
+    vertices = restrictVerticesToGivenCcs(vertices, vertexCcs, relevantCcs);
 
 //      out.addDataSetCount("relevant vertices", vertices);
     return vertices;
@@ -257,23 +276,6 @@ public class Preprocessing {
         deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
         edges,
         env);
-  }
-
-  /**
-   * Add initial component ids to vertices based on flink connected components.
-   * @param graph input graph
-   * @return graph containing vertices with additional property
-   * @throws Exception
-   */
-  public static <T> Graph<Long, ObjectMap, T> addCcIdsToGraph(
-      Graph<Long, ObjectMap, T> graph) throws Exception {
-
-    final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(graph.getVertices().map(new VertexIdMapFunction()),
-            graph.getEdgeIds(),
-            1000);
-
-    return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
   }
 
   /**

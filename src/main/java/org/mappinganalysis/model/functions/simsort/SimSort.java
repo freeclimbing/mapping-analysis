@@ -11,10 +11,9 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.ClusterComputation;
+import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
@@ -39,17 +38,12 @@ public class SimSort {
       keySelector = new HashCcIdKeySelector();
     }
 
-    DataSet<Edge<Long, NullValue>> allEdges = graph.getVertices()
-        .coGroup(graph.getVertices())
-        .where(keySelector)
-        .equalTo(keySelector)
-        .with(new EdgeExtractCoGroupFunction());
-
-    Graph<Long, ObjectMap, NullValue> distinctEdgesGraph = Graph
-        .fromDataSet(graph.getVertices(), ClusterComputation.getDistinctSimpleEdges(allEdges), env);
+    DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
+        .getTransitiveClosureEdges(graph.getVertices(), keySelector);
 
     DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
-        .computeGraphEdgeSim(distinctEdgesGraph, Utils.SIM_GEO_LABEL_STRATEGY);
+        .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
+            Utils.SIM_GEO_LABEL_STRATEGY);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
         .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() { // do not use lambda

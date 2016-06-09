@@ -108,8 +108,8 @@ public class BasicTest {
 
     // get new edges in components
 //    DataSet<Edge<Long, NullValue>> newEdges
-//        = ClusterComputation.restrictToNewEdges(graph.getEdges(),
-//        ClusterComputation.computeComponentEdges(ccResultVertices));
+//        = GraphUtils.restrictToNewEdges(graph.getEdges(),
+//        GraphUtils.computeComponentEdges(ccResultVertices));
 
 //    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
 //        = MappingAnalysisExample.computeSimilarities(

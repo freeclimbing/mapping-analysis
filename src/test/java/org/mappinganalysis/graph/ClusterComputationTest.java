@@ -11,6 +11,7 @@ import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
 
@@ -26,12 +27,12 @@ public class ClusterComputationTest {
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
     DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
     DataSet<Edge<Long, NullValue>> allEdges
-        = ClusterComputation.computeComponentEdges(inputVertices);
+        = GraphUtils.computeComponentEdges(inputVertices, new CcIdKeySelector());
 
     assertEquals(9, allEdges.count());
 
     DataSet<Edge<Long, NullValue>> newEdges
-        = ClusterComputation.restrictToNewEdges(graph.getEdges(), allEdges);
+        = GraphUtils.restrictToNewEdges(graph.getEdges(), allEdges);
     assertEquals(1, newEdges.count());
     assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
   }
@@ -41,18 +42,18 @@ public class ClusterComputationTest {
     final Graph<Long, NullValue, NullValue> graph = createTestGraph();
     final DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
     final DataSet<Edge<Long, NullValue>> tooMuchEdges
-        = ClusterComputation.computeComponentEdges(inputVertices);
+        = GraphUtils.computeComponentEdges(inputVertices, new CcIdKeySelector());
 
     assertEquals(9, tooMuchEdges.count());
 
     final DataSet<Edge<Long, NullValue>> simpleAllEdges
-        = ClusterComputation.getDistinctSimpleEdges(tooMuchEdges);
+        = GraphUtils.getDistinctSimpleEdges(tooMuchEdges);
 
     assertEquals(3, simpleAllEdges.count());
     assertTrue(simpleAllEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
     final DataSet<Edge<Long, NullValue>> secondMethod
-        = ClusterComputation.computeComponentEdges(inputVertices, true);
+        = GraphUtils.computeComponentEdges(inputVertices, new CcIdKeySelector());
     assertEquals(3, secondMethod.count());
   }
 
