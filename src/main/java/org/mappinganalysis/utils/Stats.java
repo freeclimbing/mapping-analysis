@@ -181,7 +181,8 @@ public class Stats {
         .print();
   }
 
-  public static void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+  public static <T> void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, T> graph)
+      throws Exception {
 
     JobExecutionResult jobExecResult = env.getLastJobExecutionResult();
     if (jobExecResult == null) {

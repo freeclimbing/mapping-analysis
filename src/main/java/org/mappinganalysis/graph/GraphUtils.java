@@ -1,25 +1,23 @@
 package org.mappinganalysis.graph;
 
-import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.model.functions.VertexIdMapFunction;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.utils.functions.LeftSideOnlyJoinFunction;
-import org.mappinganalysis.utils.Utils;
 
 public class GraphUtils {
+  private static final Logger LOG = Logger.getLogger(GraphUtils.class);
 
   /**
    * Add initial component ids to vertices based on flink connected components.
@@ -28,14 +26,22 @@ public class GraphUtils {
    * @throws Exception
    */
   public static <T> Graph<Long, ObjectMap, T> addCcIdsToGraph(
-      Graph<Long, ObjectMap, T> graph) throws Exception {
+      Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) throws Exception {
 
-    final DataSet<Tuple2<Long, Long>> components = FlinkConnectedComponents
-        .compute(graph.getVertices().map(new VertexIdMapFunction()),
-            graph.getEdgeIds(),
-            1000);
+    DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
+        .map(value -> new Vertex<>(value.f0, value.f0))
+        .returns(new TypeHint<Vertex<Long, Long>>() {});
+    DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
+        .map(edge -> new Edge<>(edge.f0, edge.f1, NullValue.getInstance()))
+        .returns(new TypeHint<Edge<Long, NullValue>>() {});
+    Graph<Long, Long, NullValue> workingGraph = Graph.fromDataSet(vertices, edges, env);
 
-    return graph.joinWithVertices(components, new CcIdVertexJoinFunction());
+    DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
+        .run(new GSAConnectedComponents<>(1000))
+        .map(value -> new Tuple2<>(value.f0, value.f1))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
   }
 
   /**
@@ -63,11 +69,13 @@ public class GraphUtils {
       DataSet<Vertex<Long, ObjectMap>> vertices,
       KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
       boolean isSimpleDistinctEdgeSet) {
+
+    DataSet<Edge<Long, NullValue>> edgeSet = computeComponentEdges(vertices, keySelector);
+
     if (isSimpleDistinctEdgeSet) {
-      DataSet<Edge<Long, NullValue>> edgeSet = computeComponentEdges(vertices, keySelector);
       return getDistinctSimpleEdges(edgeSet);
     } else {
-      return computeComponentEdges(vertices, keySelector);
+      return edgeSet;
     }
   }
 
@@ -94,19 +102,9 @@ public class GraphUtils {
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct()
-        .filter(new RichFilterFunction<Edge<Long, NullValue>>() {
-          private LongCounter restrictEdgeCounter = new LongCounter();
-
-          @Override
-          public void open(final Configuration parameters) throws Exception {
-            super.open(parameters);
-            getRuntimeContext().addAccumulator(Utils.RESTRICT_EDGE_COUNT_ACCUMULATOR, restrictEdgeCounter);
-          }
-          @Override
-          public boolean filter(Edge<Long, NullValue> longNullValueEdge) throws Exception {
-            restrictEdgeCounter.add(1L);
+        .filter(edge -> {
+            LOG.info("distinctSimpleEdge: " + edge.toString());
             return true;
-          }
         });
   }
 

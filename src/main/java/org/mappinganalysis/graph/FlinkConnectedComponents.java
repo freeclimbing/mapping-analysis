@@ -16,6 +16,8 @@ import java.util.HashSet;
 
 /**
  * Compute Flink Connected Components.
+ * TODO remove
+ * @deprecated
  */
 public class FlinkConnectedComponents {
   private static final Logger LOG = Logger.getLogger(FlinkConnectedComponents.class);

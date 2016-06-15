@@ -21,6 +21,7 @@ import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.utils.Stats;
 import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
@@ -34,21 +35,17 @@ public class Preprocessing {
   /**
    * Execute all preprocessing steps with the given options
    * @param graph input graph
-   * @param isRestrictActive restrict graph to smaller subset of vertices and edges
-   * @param isLinkFilterActive should links with duplicate entries per dataset be deleted
    * @param env execution environment  @return graph   @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          boolean isLinkFilterActive,
-                                                          boolean isRestrictActive,
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = GraphUtils.addCcIdsToGraph(graph);
+    graph = GraphUtils.addCcIdsToGraph(graph, env);
 //    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
 //    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
-    if (isRestrictActive) {
+    if (Utils.IS_RESTRICT_ACTIVE) {
       graph = restrictGraph(graph, env);
     }
 
@@ -58,7 +55,7 @@ public class Preprocessing {
         SimilarityComputation.computeGraphEdgeSim(graph, Utils.DEFAULT_VALUE),
         env);
 
-    return applyLinkFilterStrategy(simGraph, env, isLinkFilterActive);
+    return applyLinkFilterStrategy(simGraph, env, Utils.IS_LINK_FILTER_ACTIVE);
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,

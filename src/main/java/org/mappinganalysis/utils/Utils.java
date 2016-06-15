@@ -58,6 +58,8 @@ public class Utils {
   public static boolean IS_RESTRICT_ACTIVE;
   public static String PRE_CLUSTER_STRATEGY;
   public static boolean IS_LINK_FILTER_ACTIVE;
+  public static boolean IS_TGB_DEFAULT_MODE;
+
 
   public static final String DEBUG = "debug";
   public static final String INFO = "info";
@@ -89,7 +91,6 @@ public class Utils {
   public static final String CMD_LL = "linklion";
   public static final String CMD_GEO = "geo";
   public static final String DEFAULT_VALUE = "default";
-  public static final String PROCESSING_MODE_NEXT_TGB = "next-tgb";
 
   /**
    * Accumulators

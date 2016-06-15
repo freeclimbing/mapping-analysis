@@ -193,7 +193,6 @@ public class SimilarityComputation {
     Preconditions.checkArgument(object instanceof Double, "Error (should not occur)" + object.getClass().toString());
 
     return (Double) object;
-    //      aggregatedSim += geoWeight * (Double) value.get(Utils.SIM_DISTANCE); // TODO why is this not working?
   }
 
   /**
@@ -206,14 +205,9 @@ public class SimilarityComputation {
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
     // Sync needed
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> {
-//      LOG.info("tmpProc: " + value);
-      return true;
-    });
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true);
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
-
-    LOG.info("processingMode: " + processingMode);
 
     // internally compType is used, afterwards typeIntern is used again
     graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
@@ -222,18 +216,15 @@ public class SimilarityComputation {
     edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
 
-    LOG.info("processingMode: " + processingMode);
-
     /* SimSort */
-    graph = SimSort.prepare(graph, processingMode, env, out);
-    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
-    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
-    out.print();
-
-    if (Utils.IS_SIMSORT_ENABLED) {
-      graph = SimSort.execute(graph, 100);
-    }
-    return SimSort.excludeLowSimVertices(graph, env);
+//    graph = SimSort.prepare(graph, processingMode, env, out);
+//    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
+//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
+//
+//    if (Utils.IS_SIMSORT_ENABLED) {
+//      graph = SimSort.execute(graph, 100);
+//    }
+    return graph;//SimSort.excludeLowSimVertices(graph, env);
 
   }
 }
