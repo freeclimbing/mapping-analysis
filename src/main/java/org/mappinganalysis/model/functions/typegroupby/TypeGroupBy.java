@@ -1,10 +1,13 @@
 package org.mappinganalysis.model.functions.typegroupby;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.AggregateOperator;
+import org.apache.flink.api.java.operators.FilterOperator;
 import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
@@ -24,6 +27,7 @@ import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelecto
 import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
 import java.util.Optional;
+import java.util.Set;
 
 public class TypeGroupBy {
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
@@ -42,20 +46,11 @@ public class TypeGroupBy {
     // type groupby preprocessing
     graph = GraphUtils.addCcIdsToGraph(graph, env);
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
+    DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
-    graph = Graph.fromDataSet(vertices, edges, env);
+    graph = Graph.fromDataSet(tmpVertices, edges, env);
 
-    graph = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
-      @Override
-      public ObjectMap map(Vertex<Long, ObjectMap> value) throws Exception {
-        LOG.info("tgb mid: " + value.toString());
-        return value.f1;
-      }
-    });
-
-//    DataSet<Vertex<Long, ObjectMap>>
-        vertices = graph.getVertices()
+    final DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
         .filter(vertex -> {
           LOG.info("shadingVertex: " + vertex.toString());
@@ -69,9 +64,9 @@ public class TypeGroupBy {
     LOG.info("mode: " + Utils.IS_TGB_DEFAULT_MODE);
 
     if (!Utils.IS_TGB_DEFAULT_MODE) {
-      DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
+      final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
           .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
-      DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
+      final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
           .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
               Utils.SIM_GEO_LABEL_STRATEGY);
 
@@ -82,25 +77,45 @@ public class TypeGroupBy {
 //      Utils.writeToHdfs(graph.getVertices(), "2_post_preprocessing");
       out.print();
 
-      DataSet<Tuple4<Long, Double, String, Long>> neighborSimTypes = graph
+      final DataSet<Tuple4<Long, Double, Set<String>, Long>> neighborSimTypes = graph
           .groupReduceOnNeighbors(new NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
-              Tuple4<Long, Double, String, Long>>() {
+              Tuple4<Long, Double, Set<String>, Long>>() {
             @Override
             public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
                                          Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
-                                         Collector<Tuple4<Long, Double, String, Long>> out) throws Exception {
-              if (vertex.getValue().getTypes(Utils.TYPE_INTERN)
-                  .stream().findFirst().get()
-                  .equals(Utils.NO_TYPE)) {
+                                         Collector<Tuple4<Long, Double, Set<String>, Long>> out) throws Exception {
+              String vertexType = vertex.getValue().getTypes(Utils.TYPE_INTERN).stream().findFirst().get();
+              if (vertexType.equals(Utils.NO_TYPE)) {
                 neighbors.forEach(neighbor -> out.collect(new Tuple4<>(vertex.getId(),
                     neighbor.f0.getValue().getSimilarity(),
-                    neighbor.f1.getValue().get(Utils.TYPE_INTERN).toString(),
+                    neighbor.f1.getValue().getTypes(Utils.TYPE_INTERN),
                     neighbor.f1.getValue().getHashCcId())));
               }
             }
           }, EdgeDirection.ALL);
 
-//      vertices = graph.getVertices().leftOuterJoin(neighborSimTypes)
+      final DataSet<Tuple4<Long, Double, Set<String>, Long>> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
+
+      // all tuples minus max tuple ids with type
+      DataSet<Tuple4<Long, Double, Set<String>, Long>> noTypedNeighborsCandidates = neighborSimTypes
+          .leftOuterJoin(maxTypedSimValues)
+          .where(0)
+          .equalTo(0)
+          .with(new FlatJoinFunction<Tuple4<Long, Double, Set<String>, Long>,
+              Tuple4<Long, Double, Set<String>, Long>, Tuple4<Long, Double, Set<String>, Long>>() {
+            @Override
+            public void join(Tuple4<Long, Double, Set<String>, Long> first,
+                             Tuple4<Long, Double, Set<String>, Long> second,
+                             Collector<Tuple4<Long, Double, Set<String>, Long>> out) throws Exception {
+              if (second == null) {
+//                LOG.info("noTypeCandidate: " + first.toString());
+                out.collect(first);
+              }
+            }
+          });
+
+//      // TODO tmp log begin
+//      DataSet<Vertex<Long, ObjectMap>> newVertices = vertices.leftOuterJoin(tmp1)
 //          .where(0)
 //          .equalTo(0)
 //          .with((left, right) -> {
@@ -110,68 +125,65 @@ public class TypeGroupBy {
 //          })
 //          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
 //          });
+//
+//      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
+//      // TODO tmp log end
 
-//      graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
-
-      // commented code "works" - but still wip
-      // check also simcomp code TODO
-
-      DataSet<Tuple4<Long, Double, String, Long>> maxVertexSimValues = neighborSimTypes
-          .filter(value -> !value.f2.equals(Utils.NO_TYPE))
+      DataSet<Vertex<Long, ObjectMap>> noTypedNeighbors = noTypedNeighborsCandidates
           .groupBy(0)
-          .max(1).andMin(3);
-
-      DataSet<Tuple4<Long, Double, String, Long>> maxVertSimTypes = maxVertexSimValues
-          .leftOuterJoin(neighborSimTypes)
+          .min(3)
+          .leftOuterJoin(vertices)
           .where(0)
           .equalTo(0)
           .with((left, right) -> {
-            LOG.info("maxVertSimTypes: " + right);
-            return right;})
-          .returns(new TypeHint<Tuple4<Long, Double, String, Long>>() {
-          });
+            if (right.getValue().getHashCcId() < left.f3) {
+            right.getValue().put(Utils.HASH_CC, left.f3);
 
-      DataSet<Tuple4<Long, Double, String, Long>> noTypeCandidates = maxVertSimTypes
-          .rightOuterJoin(neighborSimTypes)
-          .where(0)
-          .equalTo(0)
-          .with(new FlatJoinFunction<Tuple4<Long, Double, String, Long>, Tuple4<Long, Double, String, Long>, Tuple4<Long, Double, String, Long>>() {
-            @Override
-            public void join(Tuple4<Long, Double, String, Long> first,
-                             Tuple4<Long, Double, String, Long> second,
-                             Collector<Tuple4<Long, Double, String, Long>> out) throws Exception {
-              if (first == null) {
-                LOG.info("noTypeCandidate: " + second.toString());
-                out.collect(second);
-              }
+            LOG.info("right:111 " + right.toString());
+            return right;
+            } else {
+              LOG.info("right:222 " + right.toString());
+              return right;
             }
-          });
-
-      DataSet<Tuple4<Long, Double, String, Long>> minNoTypeCcs = noTypeCandidates
-          .groupBy(0)
-          .min(3);
-
-      DataSet<Tuple4<Long, Double, String, Long>> noTypeVertices = noTypeCandidates
-          .distinct(0)
-          .leftOuterJoin(minNoTypeCcs)
-          .where(0)
-          .equalTo(0)
-          .with((left, right) -> new Tuple4<>(left.f0, left.f1, left.f2, right.f3))
-          .returns(new TypeHint<Tuple4<Long, Double, String, Long>>() {});
-
-      DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-          .leftOuterJoin(noTypeVertices.union(maxVertSimTypes))
-          .where(0)
-          .equalTo(0)
-          .with((left, right) -> {
-            left.getValue().put(Utils.HASH_CC, right.f3);
-            return left;
           })
           .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
-      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
+      DataSet<Vertex<Long, ObjectMap>> typedNeighbors = maxTypedSimValues
+          .leftOuterJoin(graph.getVertices())
+          .where(0)
+          .equalTo(0)
+          .with((left, right) -> {
+            LOG.info("right:typed " + right.toString());
+
+            right.getValue().put(Utils.HASH_CC, left.f3);
+            return right;
+          })
+          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
+          });
+
+//      // TODO tmp log begin
+      graph = Graph.fromDataSet(noTypedNeighbors.union(typedNeighbors), graph.getEdges(), env);
+//      // TODO tmp log end
+
+//      DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+//          .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
+//          .where(0)
+//          .equalTo(0)
+//          .with((unchanged, updated) -> {
+//            if (updated == null) {
+//              LOG.info("final: unchanged: " + unchanged.toString());
+//              return unchanged;
+//            } else {
+//              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
+//              return updated;
+//            }
+//          })
+//          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+//
+//      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
 
       return graph;
+      // check also simcomp code TODO
     } else if (Utils.IS_TGB_DEFAULT_MODE) { // old vertex centric iteration
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
@@ -181,12 +193,26 @@ public class TypeGroupBy {
           new TypeGroupByVertexUpdateFunction(),
           new TypeGroupByMessagingFunction(), maxIterations, tbcParams);
 
-      out.addDataSetCount("tgb vertex count", graph.getVertices());
-      out.print();
-
       return graph;
     } else {
       return graph;
     }
+  }
+
+  private static DataSet<Tuple4<Long, Double, Set<String>, Long>> getMaxNeighborSims(
+      DataSet<Tuple4<Long, Double, Set<String>, Long>> neighborSimTypes) {
+
+    final DataSet<Tuple4<Long, Double, Set<String>, Long>> typeVals = neighborSimTypes
+        .filter(value -> !value.f2.contains(Utils.NO_TYPE));
+
+    return typeVals
+            .groupBy(0).max(1)
+            .leftOuterJoin(typeVals)
+            .where(0,1)
+            .equalTo(0,1)
+            .with((left, right) -> right)
+            .returns(new TypeHint<Tuple4<Long, Double, Set<String>, Long>>() {})
+            .groupBy(0)
+            .min(3);
   }
 }
