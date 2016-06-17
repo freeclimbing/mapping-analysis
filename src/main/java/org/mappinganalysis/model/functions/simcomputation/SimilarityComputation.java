@@ -10,7 +10,9 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.debug.PrintVertices;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
@@ -205,12 +207,15 @@ public class SimilarityComputation {
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
     // Sync needed
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true);
+    LOG.setLevel(Level.DEBUG);
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true)
+        .map(new PrintVertices(false, "preTGB"));
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
 
     // internally compType is used, afterwards typeIntern is used again
     graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
+
 
     vertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
     edges = graph.getEdges().filter(value -> true);

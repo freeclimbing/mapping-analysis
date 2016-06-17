@@ -1,5 +1,7 @@
 package org.mappinganalysis.graph;
 
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -9,11 +11,13 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.library.GSAConnectedComponents;
+import org.apache.flink.hadoop.shaded.com.google.common.base.Preconditions;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
+import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.LeftSideOnlyJoinFunction;
 
 public class GraphUtils {
@@ -26,20 +30,46 @@ public class GraphUtils {
    * @throws Exception
    */
   public static <T> Graph<Long, ObjectMap, T> addCcIdsToGraph(
-      Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) throws Exception {
+      Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env, Integer test) throws Exception {
 
     DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
-        .map(value -> new Vertex<>(value.f0, value.f0))
-        .returns(new TypeHint<Vertex<Long, Long>>() {});
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, Long>>() {
+          @Override
+          public Vertex<Long, Long> map(Vertex<Long, ObjectMap> value) throws Exception {
+            return new Vertex<>(value.getId(), value.getId());
+          }
+        });
+
+//            value -> new Vertex<>(value.getId(), value.getId()))
+//        {
+//          LOG.info("durchlauf: " + test);
+//          return new Vertex<>(value.getId(), value.getId());
+//        })
+//        .returns(new TypeHint<Vertex<Long, Long>>() {});
+
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
-        .map(edge -> new Edge<>(edge.f0, edge.f1, NullValue.getInstance()))
+        .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {});
+
     Graph<Long, Long, NullValue> workingGraph = Graph.fromDataSet(vertices, edges, env);
+
+//    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() {
+//      @Override
+//      public boolean filter(Vertex<Long, Long> value) throws Exception {
+//        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
+//        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
+//        return true;
+//      }
+//    });
 
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
         .run(new GSAConnectedComponents<>(1000))
-        .map(value -> new Tuple2<>(value.f0, value.f1))
+        .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+
+    Utils.writeToHdfs(verticesWithMinIds, "4_post_sim_sort");
+    env.execute();
 
     return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
   }

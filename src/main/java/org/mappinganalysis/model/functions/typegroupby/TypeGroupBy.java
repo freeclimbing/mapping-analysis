@@ -15,9 +15,14 @@ import org.apache.flink.graph.*;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
+import org.mappinganalysis.io.debug.PrintNeighborTuple;
+import org.mappinganalysis.io.debug.PrintVertices;
+import org.mappinganalysis.io.debug.Printer;
 import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.NeighborTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.GenerateHashCcIdGroupReduceFunction;
@@ -44,23 +49,29 @@ public class TypeGroupBy {
                                                    Integer maxIterations,
                                                    ExecutionEnvironment env, ExampleOutput out) throws Exception {
     // type groupby preprocessing
-    graph = GraphUtils.addCcIdsToGraph(graph, env);
+    graph = GraphUtils.addCcIdsToGraph(graph, env, 2);
 
     DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
+    tmpVertices = tmpVertices.map(new PrintVertices(false, "preprocTGB1"));
+
     graph = Graph.fromDataSet(tmpVertices, edges, env);
 
-    final DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
+
+
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
-        .filter(vertex -> {
-          LOG.info("shadingVertex: " + vertex.toString());
-          return true;
-        })
         .groupBy(new CcIdAndCompTypeKeySelector())
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
+
+
+    vertices = vertices.map(new PrintVertices(false, "preprocTGB2"));
+
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
     // end preprocessing
+
     LOG.info("mode: " + Utils.IS_TGB_DEFAULT_MODE);
 
     if (!Utils.IS_TGB_DEFAULT_MODE) {
@@ -72,21 +83,21 @@ public class TypeGroupBy {
 
       graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
 
-      out.addVertexAndEdgeSizes("2 vertex and edge sizes after preprocessing", graph);
-      out.addPreClusterSizes("2 cluster sizes after preprocessing", graph.getVertices(), Utils.CC_ID);
+//      out.addVertexAndEdgeSizes("2 vertex and edge sizes after preprocessing", graph);
+//      out.addPreClusterSizes("2 cluster sizes after preprocessing", graph.getVertices(), Utils.CC_ID);
 //      Utils.writeToHdfs(graph.getVertices(), "2_post_preprocessing");
-      out.print();
+//      out.print();
 
-      final DataSet<Tuple4<Long, Double, Set<String>, Long>> neighborSimTypes = graph
+      final DataSet<NeighborTuple> neighborSimTypes = graph
           .groupReduceOnNeighbors(new NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
-              Tuple4<Long, Double, Set<String>, Long>>() {
+              NeighborTuple>() {
             @Override
             public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
                                          Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
-                                         Collector<Tuple4<Long, Double, Set<String>, Long>> out) throws Exception {
+                                         Collector<NeighborTuple> out) throws Exception {
               String vertexType = vertex.getValue().getTypes(Utils.TYPE_INTERN).stream().findFirst().get();
               if (vertexType.equals(Utils.NO_TYPE)) {
-                neighbors.forEach(neighbor -> out.collect(new Tuple4<>(vertex.getId(),
+                neighbors.forEach(neighbor -> out.collect(new NeighborTuple(vertex.getId(),
                     neighbor.f0.getValue().getSimilarity(),
                     neighbor.f1.getValue().getTypes(Utils.TYPE_INTERN),
                     neighbor.f1.getValue().getHashCcId())));
@@ -94,25 +105,32 @@ public class TypeGroupBy {
             }
           }, EdgeDirection.ALL);
 
-      final DataSet<Tuple4<Long, Double, Set<String>, Long>> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
+      final DataSet<NeighborTuple> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
 
       // all tuples minus max tuple ids with type
-      DataSet<Tuple4<Long, Double, Set<String>, Long>> noTypedNeighborsCandidates = neighborSimTypes
+      DataSet<NeighborTuple> noTypedNeighborsCandidates = neighborSimTypes
           .leftOuterJoin(maxTypedSimValues)
           .where(0)
           .equalTo(0)
-          .with(new FlatJoinFunction<Tuple4<Long, Double, Set<String>, Long>,
-              Tuple4<Long, Double, Set<String>, Long>, Tuple4<Long, Double, Set<String>, Long>>() {
+          .with(new FlatJoinFunction<NeighborTuple,
+              NeighborTuple, NeighborTuple>() {
             @Override
-            public void join(Tuple4<Long, Double, Set<String>, Long> first,
-                             Tuple4<Long, Double, Set<String>, Long> second,
-                             Collector<Tuple4<Long, Double, Set<String>, Long>> out) throws Exception {
+            public void join(NeighborTuple first, NeighborTuple second,
+                             Collector<NeighborTuple> out) throws Exception {
               if (second == null) {
 //                LOG.info("noTypeCandidate: " + first.toString());
                 out.collect(first);
               }
             }
           });
+
+      // TODO
+//      LOG.setLevel(Level.DEBUG);
+      LOG.info("debugEnabled: " + LOG.isInfoEnabled());
+      if (LOG.isInfoEnabled()) {
+        noTypedNeighborsCandidates = noTypedNeighborsCandidates
+            .map(new PrintNeighborTuple(false, "noTypeCandidates"));
+      }
 
 //      // TODO tmp log begin
 //      DataSet<Vertex<Long, ObjectMap>> newVertices = vertices.leftOuterJoin(tmp1)
@@ -136,8 +154,8 @@ public class TypeGroupBy {
           .where(0)
           .equalTo(0)
           .with((left, right) -> {
-            if (right.getValue().getHashCcId() < left.f3) {
-            right.getValue().put(Utils.HASH_CC, left.f3);
+            if (right.getValue().getHashCcId() < left.getCompId()) {
+            right.getValue().put(Utils.HASH_CC, left.getCompId());
 
             LOG.info("right:111 " + right.toString());
             return right;
@@ -155,7 +173,7 @@ public class TypeGroupBy {
           .with((left, right) -> {
             LOG.info("right:typed " + right.toString());
 
-            right.getValue().put(Utils.HASH_CC, left.f3);
+            right.getValue().put(Utils.HASH_CC, left.getCompId());
             return right;
           })
           .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
@@ -170,13 +188,15 @@ public class TypeGroupBy {
 //          .where(0)
 //          .equalTo(0)
 //          .with((unchanged, updated) -> {
-//            if (updated == null) {
-//              LOG.info("final: unchanged: " + unchanged.toString());
-//              return unchanged;
-//            } else {
-//              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
-//              return updated;
-//            }
+//            LOG.info("unchanged: " + unchanged.toString());
+//            return unchanged;
+////            if (updated == null) {
+////              LOG.info("final: unchanged: " + unchanged.toString());
+////              return unchanged;
+////            } else {
+////              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
+////              return updated;
+////            }
 //          })
 //          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 //
@@ -184,7 +204,7 @@ public class TypeGroupBy {
 
       return graph;
       // check also simcomp code TODO
-    } else if (Utils.IS_TGB_DEFAULT_MODE) { // old vertex centric iteration
+    } else { // old vertex centric iteration
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
       tbcParams.setDirection(EdgeDirection.ALL);
@@ -194,16 +214,14 @@ public class TypeGroupBy {
           new TypeGroupByMessagingFunction(), maxIterations, tbcParams);
 
       return graph;
-    } else {
-      return graph;
     }
   }
 
-  private static DataSet<Tuple4<Long, Double, Set<String>, Long>> getMaxNeighborSims(
-      DataSet<Tuple4<Long, Double, Set<String>, Long>> neighborSimTypes) {
+  private static DataSet<NeighborTuple> getMaxNeighborSims(
+      DataSet<NeighborTuple> neighborSimTypes) {
 
-    final DataSet<Tuple4<Long, Double, Set<String>, Long>> typeVals = neighborSimTypes
-        .filter(value -> !value.f2.contains(Utils.NO_TYPE));
+    final DataSet<NeighborTuple> typeVals = neighborSimTypes
+        .filter(value -> !value.getTypes().contains(Utils.NO_TYPE));
 
     return typeVals
             .groupBy(0).max(1)
@@ -211,7 +229,7 @@ public class TypeGroupBy {
             .where(0,1)
             .equalTo(0,1)
             .with((left, right) -> right)
-            .returns(new TypeHint<Tuple4<Long, Double, Set<String>, Long>>() {})
+            .returns(new TypeHint<NeighborTuple>() {})
             .groupBy(0)
             .min(3);
   }

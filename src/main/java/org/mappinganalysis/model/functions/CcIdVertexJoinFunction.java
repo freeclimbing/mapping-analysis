@@ -9,8 +9,9 @@ import org.mappinganalysis.utils.Utils;
  */
 public class CcIdVertexJoinFunction implements VertexJoinFunction<ObjectMap, Long> {
   @Override
-  public ObjectMap vertexJoin(ObjectMap objectMap, Long ccId) throws Exception {
-    objectMap.put(Utils.CC_ID, ccId);
-    return objectMap;
+  public ObjectMap vertexJoin(ObjectMap map, Long ccId) throws Exception {
+    map.put(Utils.CC_ID, ccId);
+
+    return map;
   }
 }

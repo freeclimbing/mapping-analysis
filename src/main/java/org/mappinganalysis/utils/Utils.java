@@ -11,6 +11,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.operators.ProjectOperator;
@@ -253,7 +254,7 @@ public class Utils {
     if (VERBOSITY.equals(DEBUG)) {
       data.writeAsFormattedText(INPUT_DIR + "output/" + outDir,
           FileSystem.WriteMode.OVERWRITE,
-          new DataSetTextFormatter<T>());
+          new DataSetTextFormatter<>());
     }
   }
 
