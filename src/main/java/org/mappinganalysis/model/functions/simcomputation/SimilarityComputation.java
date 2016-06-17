@@ -216,8 +216,13 @@ public class SimilarityComputation {
     // internally compType is used, afterwards typeIntern is used again
     graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
 
+//    Utils.writeToHdfs(graph.getVertices(), "4_post_sim_sort");
+//    env.execute();
 
-    vertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
+    vertices = graph.getVertices().filter(value -> {
+      LOG.info("filtered vertex");
+      return true;
+    }); // sync needed (only sometimes?)
     edges = graph.getEdges().filter(value -> true);
     graph = Graph.fromDataSet(vertices, edges, env);
 

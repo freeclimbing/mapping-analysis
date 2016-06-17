@@ -40,36 +40,30 @@ public class GraphUtils {
           }
         });
 
-//            value -> new Vertex<>(value.getId(), value.getId()))
-//        {
-//          LOG.info("durchlauf: " + test);
-//          return new Vertex<>(value.getId(), value.getId());
-//        })
-//        .returns(new TypeHint<Vertex<Long, Long>>() {});
-
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {});
 
     Graph<Long, Long, NullValue> workingGraph = Graph.fromDataSet(vertices, edges, env);
 
-//    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() {
-//      @Override
-//      public boolean filter(Vertex<Long, Long> value) throws Exception {
-//        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
-//        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
-//        return true;
-//      }
-//    });
+    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() {
+      @Override
+      public boolean filter(Vertex<Long, Long> value) throws Exception {
+        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
+        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
+        return true;
+      }
+    });
 
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
         .run(new GSAConnectedComponents<>(1000))
-        .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
-        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+        .map(new MapFunction<Vertex<Long, Long>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> map(Vertex<Long, Long> vertex) throws Exception {
+            return new Tuple2<>(vertex.getId(), vertex.getValue());
 
-
-    Utils.writeToHdfs(verticesWithMinIds, "4_post_sim_sort");
-    env.execute();
+          }
+        });
 
     return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
   }

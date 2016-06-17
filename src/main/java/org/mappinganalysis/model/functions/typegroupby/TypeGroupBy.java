@@ -54,21 +54,14 @@ public class TypeGroupBy {
     DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true); // sync needed (only sometimes?)
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
     tmpVertices = tmpVertices.map(new PrintVertices(false, "preprocTGB1"));
-
     graph = Graph.fromDataSet(tmpVertices, edges, env);
-
-
-
 
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
         .groupBy(new CcIdAndCompTypeKeySelector())
         .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
 
-
-
     vertices = vertices.map(new PrintVertices(false, "preprocTGB2"));
-
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
     // end preprocessing
 
@@ -126,14 +119,14 @@ public class TypeGroupBy {
 
       // TODO
 //      LOG.setLevel(Level.DEBUG);
-      LOG.info("debugEnabled: " + LOG.isInfoEnabled());
+//      LOG.info("debugEnabled: " + LOG.isInfoEnabled());
       if (LOG.isInfoEnabled()) {
         noTypedNeighborsCandidates = noTypedNeighborsCandidates
             .map(new PrintNeighborTuple(false, "noTypeCandidates"));
       }
 
 //      // TODO tmp log begin
-//      DataSet<Vertex<Long, ObjectMap>> newVertices = vertices.leftOuterJoin(tmp1)
+//      DataSet<Vertex<Long, ObjectMap>> newVertices = vertices.leftOuterJoin(noTypedNeighborsCandidates)
 //          .where(0)
 //          .equalTo(0)
 //          .with((left, right) -> {
@@ -180,30 +173,30 @@ public class TypeGroupBy {
           });
 
 //      // TODO tmp log begin
-      graph = Graph.fromDataSet(noTypedNeighbors.union(typedNeighbors), graph.getEdges(), env);
-//      // TODO tmp log end
+//      graph = Graph.fromDataSet(noTypedNeighbors.union(typedNeighbors), graph.getEdges(), env);
+      // TODO tmp log end
 
-//      DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-//          .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
-//          .where(0)
-//          .equalTo(0)
-//          .with((unchanged, updated) -> {
+      DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+          .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
+          .where(0)
+          .equalTo(0)
+          .with((unchanged, updated) -> {
 //            LOG.info("unchanged: " + unchanged.toString());
 //            return unchanged;
-////            if (updated == null) {
-////              LOG.info("final: unchanged: " + unchanged.toString());
-////              return unchanged;
-////            } else {
-////              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
-////              return updated;
-////            }
-//          })
-//          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-//
-//      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
+            if (updated == null) {
+              LOG.info("final: unchanged: " + unchanged.toString());
+              return unchanged;
+            } else {
+              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
+              return updated;
+            }
+          })
+          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+
+      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
 
       return graph;
-      // check also simcomp code TODO
     } else { // old vertex centric iteration
       VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
       tbcParams.setName("Type-based Cluster Generation Iteration");
