@@ -11,6 +11,9 @@ import org.mappinganalysis.utils.Utils;
 
 import java.util.HashMap;
 
+/**
+ * @deprecated
+ */
 public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, ObjectMap, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(TypeGroupByVertexUpdateFunction.class);
 
@@ -22,19 +25,6 @@ public class TypeGroupByVertexUpdateFunction extends VertexUpdateFunction<Long, 
       HashMap<Long, Double> options = initOptions(vertex);
 
       ObjectMap newBestValue = findNewBestValue(vertex, inMessages, options);
-
-      // TODO check for big dataset if needed
-//      // if neighbor is already in cc, neighbors of neighbors may be interesting
-//      for (Long key : options.keySet()) {
-//        if (options.get(key).equals(Collections.max(options.values()))) {
-//          for (ObjectMap msg : inMessages) {
-//            if (msg.get(Utils.VERTEX_ID).equals(key)) {
-//              Preconditions.checkArgument(false, msg);
-//              newBestValue = msg;
-//            }
-//          }
-//        }
-//      }
 
       // save new cc_id on vertex
       if (!newBestValue.isEmpty()) {

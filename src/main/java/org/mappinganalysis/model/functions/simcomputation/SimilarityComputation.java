@@ -220,21 +220,24 @@ public class SimilarityComputation {
 //    env.execute();
 
     vertices = graph.getVertices().filter(value -> {
-      LOG.info("filtered vertex");
+      LOG.info("filtered vertex " + value.toString());
       return true;
     }); // sync needed (only sometimes?)
-    edges = graph.getEdges().filter(value -> true);
+    edges = graph.getEdges().filter(value -> {
+      LOG.info("filtered edge");
+      return true;
+    });
     graph = Graph.fromDataSet(vertices, edges, env);
 
     /* SimSort */
-//    graph = SimSort.prepare(graph, processingMode, env, out);
-//    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
+    graph = SimSort.prepare(graph, processingMode, env, out);
+    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
 //    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
-//
-//    if (Utils.IS_SIMSORT_ENABLED) {
-//      graph = SimSort.execute(graph, 100);
-//    }
-    return graph;//SimSort.excludeLowSimVertices(graph, env);
+
+    if (Utils.IS_SIMSORT_ENABLED) {
+      graph = SimSort.execute(graph, 100);
+    }
+    return SimSort.excludeLowSimVertices(graph, env);
 
   }
 }

@@ -7,6 +7,9 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.utils.Utils;
 
+/**
+ * @deprecated
+ */
 public class TypeGroupByMessagingFunction extends MessagingFunction<Long, ObjectMap, ObjectMap, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(TypeGroupByMessagingFunction.class);
 

@@ -17,7 +17,6 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
-import org.mappinganalysis.utils.Utils;
 import org.mappinganalysis.utils.functions.LeftSideOnlyJoinFunction;
 
 public class GraphUtils {
@@ -30,7 +29,7 @@ public class GraphUtils {
    * @throws Exception
    */
   public static <T> Graph<Long, ObjectMap, T> addCcIdsToGraph(
-      Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env, Integer test) throws Exception {
+      Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) throws Exception {
 
     DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, Long>>() {

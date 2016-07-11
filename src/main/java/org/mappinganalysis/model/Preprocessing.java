@@ -21,10 +21,7 @@ import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.utils.Stats;
 import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
 
 /**
  * Preprocessing.
@@ -41,7 +38,7 @@ public class Preprocessing {
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = GraphUtils.addCcIdsToGraph(graph, env, 1);
+    graph = GraphUtils.addCcIdsToGraph(graph, env);
 
 //    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
 //    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
