@@ -6,7 +6,55 @@
 
     <groupId>org.mappinganalysis</groupId>
     <artifactId>mapping-analysis</artifactId>
+    <packaging>pom</packaging>
     <version>0.1-SNAPSHOT</version>
+
+    <modules>
+        <module>property-enrichment</module>
+        <module>analysis-clique</module>
+        <module>analysis-core</module>
+    </modules>
+
+    <developers>
+        <developer>
+            <id>mnentwig</id>
+            <name>Markus Nentwig</name>
+            <email>nentwig@informatik.uni-leipzig.de</email>
+            <timezone>+1</timezone>
+            <organization>University of Leipzig</organization>
+            <organizationUrl>http://dbs.uni-leipzig.de/en</organizationUrl>
+        </developer>
+        <developer>
+            <id>agross</id>
+            <name>Anika Groß</name>
+            <email>gross@informatik.uni-leipzig.de</email>
+            <timezone>+1</timezone>
+            <organization>University of Leipzig</organization>
+            <organizationUrl>http://dbs.uni-leipzig.de/en</organizationUrl>
+        </developer>
+    </developers>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.maven.version>3.0.0</project.maven.version>
+        <project.build.targetJdk>1.8</project.build.targetJdk>
+
+        <plugin.maven-shade-plugin.version>2.4.2</plugin.maven-shade-plugin.version>
+        <plugin.maven-compiler.version>3.0</plugin.maven-compiler.version>
+        <plugin.maven-shade.version>2.4.2</plugin.maven-shade.version>
+
+        <dep.flink.version>1.0.3</dep.flink.version>
+        <dep.flinkSnapshot.version>1.0-SNAPSHOT</dep.flinkSnapshot.version>
+        <!--<dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>-->
+        <dep.mysql.version>5.1.6</dep.mysql.version>
+        <dep.guava.version>18.0</dep.guava.version>
+        <dep.junit.version>4.11</dep.junit.version>
+        <dep.log4j.version>1.2.17</dep.log4j.version>
+        <dep.mongodb.version>3.0.3</dep.mongodb.version>
+        <dep.jgrapht.version>0.9.1</dep.jgrapht.version>
+        <dep.jena.version>2.10.0</dep.jena.version>
+        <dep.gdl.version>0.2-SNAPSHOT</dep.gdl.version>
+    </properties>
 
     <repositories>
         <repository>
@@ -66,95 +114,34 @@
         </plugins>
     </build>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.maven.version>3.0h.0</project.maven.version>
-        <project.build.targetJdk>1.7</project.build.targetJdk>
-
-        <plugin.maven-shade-plugin.version>2.4.2</plugin.maven-shade-plugin.version>
-        <plugin.maven-compiler.version>3.0</plugin.maven-compiler.version>
-        <plugin.maven-shade.version>2.4.2</plugin.maven-shade.version>
-
-        <project.build.targetJdk>1.7</project.build.targetJdk>
-
-        <dep.flink.version>1.0.3</dep.flink.version>
-        <dep.flinkSnapshot.version>1.0-SNAPSHOT</dep.flinkSnapshot.version>
-        <!--<dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>-->
-        <dep.mysql.version>5.1.6</dep.mysql.version>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.github.mpkorstanje</groupId>
-            <artifactId>simmetrics-core</artifactId>
-            <version>4.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.s1ck</groupId>
-            <artifactId>gdl</artifactId>
-            <version>0.2-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-java</artifactId>
-            <version>${dep.flink.version}</version>
-            <!--<scope>provided</scope>-->
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients_2.10</artifactId>
-            <version>${dep.flink.version}</version>
-            <!--<scope>provided</scope>-->
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-gelly</artifactId>
-            <version>${dep.flinkSnapshot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-jdbc</artifactId>
-            <version>${dep.flinkSnapshot.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>${dep.mysql.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-            <!--<scope>provided</scope>-->
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>18.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>3.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-core</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.jena</groupId>
-            <artifactId>apache-jena-libs</artifactId>
-            <type>pom</type>
-            <version>2.10.0</version>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${dep.log4j.version}</version>
+                <!--<scope>provided</scope>-->
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${dep.junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${dep.guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongo-java-driver</artifactId>
+                <version>${dep.mongodb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${dep.jgrapht.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
