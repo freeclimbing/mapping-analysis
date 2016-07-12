@@ -13,6 +13,9 @@
     <artifactId>analysis-clique</artifactId>
     <packaging>jar</packaging>
 
+    <name>Clique-Analysis classes</name>
+    <description>Clique-Analysis classes</description>
+
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>

@@ -13,6 +13,9 @@
     <artifactId>property-enrichment</artifactId>
     <packaging>jar</packaging>
 
+    <name>Property-Enrichment</name>
+    <description>Mapping-analysis property-enrichment classes</description>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.flink</groupId>
