@@ -6,11 +6,10 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.GeoDistance;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.GeoDistance;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * Return triple including the distance between 2 geo points as edge value.
@@ -35,16 +34,16 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
 
     ObjectMap property = new ObjectMap();
     if (distance >= maxDistInMeter) {
-      property.put(Utils.SIM_DISTANCE, 0D);
+      property.put(Constants.SIM_DISTANCE, 0D);
     } else {
       BigDecimal tmpResult = new BigDecimal(1D - (distance / maxDistInMeter));
       double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-      property.put(Utils.SIM_DISTANCE, result);
+      property.put(Constants.SIM_DISTANCE, result);
     }
 
     if (LOG.isDebugEnabled()) {
       LOG.info("geoSim: " + triplet.getSrcVertex().getId() + " "
-          + triplet.getTrgVertex().getId() + " " + property.get(Utils.SIM_DISTANCE));
+          + triplet.getTrgVertex().getId() + " " + property.get(Constants.SIM_DISTANCE));
     }
 
     return new Triplet<>(

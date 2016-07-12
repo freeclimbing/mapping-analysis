@@ -19,7 +19,7 @@ import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.List;
 
@@ -150,7 +150,7 @@ public class BasicTest {
 
     DataLoader loader = new DataLoader(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
-        .getVertices(Utils.GEO_FULL_NAME)
+        .getVertices(Constants.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
           @Override
           public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {

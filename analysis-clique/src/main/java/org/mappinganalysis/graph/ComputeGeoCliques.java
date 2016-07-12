@@ -1,4 +1,4 @@
-package main.java.org.mappinganalysis.graph;
+package org.mappinganalysis.graph;
 
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.MongoCollection;
@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import org.bson.BsonValue;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.CompCheckVertex;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Utils;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;

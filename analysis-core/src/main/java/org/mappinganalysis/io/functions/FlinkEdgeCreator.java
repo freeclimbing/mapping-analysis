@@ -6,7 +6,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Create Flink edge object from raw database result set.
@@ -22,7 +22,7 @@ public class FlinkEdgeCreator extends RichMapFunction<Tuple2<Integer, Integer>, 
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.EDGE_COUNT_ACCUMULATOR, edgeCounter);
+    getRuntimeContext().addAccumulator(Constants.EDGE_COUNT_ACCUMULATOR, edgeCounter);
   }
 
   @Override

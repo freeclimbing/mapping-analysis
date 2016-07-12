@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Utils;
 
 public class ComputeCliques {
 

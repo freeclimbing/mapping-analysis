@@ -21,7 +21,7 @@ import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Preprocessing.
@@ -43,7 +43,7 @@ public class Preprocessing {
 //    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
 //    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
 
-    if (Utils.IS_RESTRICT_ACTIVE) {
+    if (Constants.IS_RESTRICT_ACTIVE) {
       graph = restrictGraph(graph, env);
     }
 
@@ -53,20 +53,20 @@ public class Preprocessing {
     graph = applyTypeMissMatchCorrection(graph, true, env);
     Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
         graph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(graph, Utils.DEFAULT_VALUE),
+        SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
 
     /*
      * restrict links to 1:1 in terms of sources from one entity to another
      */
-    return applyLinkFilterStrategy(simGraph, env, Utils.IS_LINK_FILTER_ACTIVE);
+    return applyLinkFilterStrategy(simGraph, env, Constants.IS_LINK_FILTER_ACTIVE);
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
                                                                  ExecutionEnvironment env) {
     // restrict to first ??? clusters
     DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
-        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID)))
+        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Constants.CC_ID)))
         .returns(new TypeHint<Tuple1<Long>>() {})
 //        .filter(tuple -> {
 //          return tuple.f0 == 1868L;
@@ -76,7 +76,7 @@ public class Preprocessing {
         .first(500);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Utils.CC_ID))) //vid, ccid
+        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Constants.CC_ID))) //vid, ccid
         .returns(new TypeHint<Tuple2<Long, Long>>() {})
         .join(restrictedComponentIds)
         .where(1)
@@ -113,15 +113,15 @@ public class Preprocessing {
     final String ccFile = "cc.csv";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
-        .getVerticesFromCsv(Utils.INPUT_DIR + vertexFile, Utils.INPUT_DIR + propertyFile);
+        .getVerticesFromCsv(Constants.INPUT_DIR + vertexFile, Constants.INPUT_DIR + propertyFile);
 
-    if (Utils.INPUT_DIR.contains("linklion")) {
+    if (Constants.INPUT_DIR.contains("linklion")) {
 //      vertices = getNytVerticesLinklion(env, ccFile, vertices);
       vertices = getRandomCcsFromLinklion(env, ccFile, vertices);
     }
 
     DataSet<Edge<Long, NullValue>> edges = deleteEdgesWithoutSourceOrTarget(
-        loader.getEdgesFromCsv(Utils.INPUT_DIR + edgeFile), vertices);
+        loader.getEdgesFromCsv(Constants.INPUT_DIR + edgeFile), vertices);
 
     vertices = deleteVerticesWithoutAnyEdges(
         vertices, edges.<Tuple2<Long, Long>>project(0, 1));
@@ -166,7 +166,7 @@ public class Preprocessing {
   }
 
   private static DataSet<Tuple2<Long, Long>> getBaseVertexCcs(ExecutionEnvironment env, String ccFile) {
-    return env.readCsvFile(Utils.INPUT_DIR + ccFile)
+    return env.readCsvFile(Constants.INPUT_DIR + ccFile)
           .fieldDelimiter(";")
           .ignoreInvalidLines()
           .types(Integer.class, Integer.class)
@@ -184,7 +184,7 @@ public class Preprocessing {
                                                                          String ccFile,
                                                                          DataSet<Vertex<Long, ObjectMap>> vertices) {
     DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
-        vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.NYT_NS));
+        vertex.getValue().get(Constants.ONTOLOGY).equals(Constants.NYT_NS));
 //          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
 
     DataSet<Tuple2<Long, Long>> vertexCcs = getBaseVertexCcs(env, ccFile);
@@ -399,7 +399,7 @@ public class Preprocessing {
     @Override
     public void open(final Configuration parameters) throws Exception {
       super.open(parameters);
-      getRuntimeContext().addAccumulator(Utils.PREPROC_LINK_FILTER_ACCUMULATOR, filteredLinks);
+      getRuntimeContext().addAccumulator(Constants.PREPROC_LINK_FILTER_ACCUMULATOR, filteredLinks);
     }
 
     @Override

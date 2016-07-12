@@ -11,7 +11,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
@@ -19,12 +18,12 @@ import org.mappinganalysis.model.functions.representative.MajorityPropertiesGrou
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
-import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.RightSideOnlyJoinFunction;
-import org.mappinganalysis.utils.functions.filter.OldHashCcFilterFunction;
-import org.mappinganalysis.utils.functions.filter.RefineIdExcludeFilterFunction;
-import org.mappinganalysis.utils.functions.filter.RefineIdFilterFunction;
-import org.mappinganalysis.utils.functions.keyselector.OldHashCcKeySelector;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.RightSideOnlyJoinFunction;
+import org.mappinganalysis.util.functions.filter.OldHashCcFilterFunction;
+import org.mappinganalysis.util.functions.filter.RefineIdExcludeFilterFunction;
+import org.mappinganalysis.util.functions.filter.RefineIdFilterFunction;
+import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
 
 public class Refinement {
   private static final Logger LOG = Logger.getLogger(Refinement.class);
@@ -51,7 +50,7 @@ public class Refinement {
   public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
-    if (Utils.INPUT_DIR.contains("linklion")) {
+    if (Constants.INPUT_DIR.contains("linklion")) {
       maxClusterSize = 5;
     }
     IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(Integer.MAX_VALUE);
@@ -68,10 +67,10 @@ public class Refinement {
 
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
-        .computeSimilarities(triplets, Utils.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES, Utils.MIN_LABEL_PRIORITY_SIM))
+        .computeSimilarities(triplets, Constants.DEFAULT_VALUE)
+        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3")
-        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_CLUSTER_SIM));
+        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
 
     // - exclude duplicate ontology vertices
     // - mark matches with more than 1 equal src/trg high similarity triplets
@@ -225,15 +224,15 @@ public class Refinement {
 
     // vertices with min sim, some triplets get omitted -> error cause
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = SimilarityComputation
-        .computeSimilarities(oldHashCcTriplets, Utils.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Utils.IGNORE_MISSING_PROPERTIES, Utils.MIN_LABEL_PRIORITY_SIM))
+        .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
+        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3");
 
 //    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
 //    Utils.writeToHdfs(newBaseTriplets, "6_init_newBaseTriplets");
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
-        .filter(new MinRequirementThresholdFilterFunction(Utils.MIN_CLUSTER_SIM));
+        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
 
 //    out.addDataSetCount("newReprTriplets", newRepresentativeTriplets);
 

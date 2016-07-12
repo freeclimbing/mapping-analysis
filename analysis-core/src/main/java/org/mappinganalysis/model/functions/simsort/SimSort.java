@@ -15,9 +15,9 @@ import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
-import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
 public class SimSort {
   private static final Logger LOG = Logger.getLogger(SimSort.class);
@@ -34,7 +34,7 @@ public class SimSort {
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
     KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new CcIdKeySelector();
-    if (processingMode.equals(Utils.DEFAULT_VALUE)) {
+    if (processingMode.equals(Constants.DEFAULT_VALUE)) {
       keySelector = new HashCcIdKeySelector();
     }
 
@@ -43,13 +43,13 @@ public class SimSort {
 
     DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
         .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-            Utils.SIM_GEO_LABEL_STRATEGY);
+            Constants.SIM_GEO_LABEL_STRATEGY);
 
     return Graph.fromDataSet(graph.getVertices(), simEdges, env)
         .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() { // do not use lambda
           @Override
           public ObjectMap map(Vertex<Long, ObjectMap> value) throws Exception {
-            value.getValue().put(Utils.VERTEX_AGG_SIM_VALUE, Utils.DEFAULT_VERTEX_SIM);
+            value.getValue().put(Constants.VERTEX_AGG_SIM_VALUE, Constants.DEFAULT_VERTEX_SIM);
             return value.getValue();
           }
         });
@@ -68,7 +68,7 @@ public class SimSort {
     aggParameters.setDirection(EdgeDirection.ALL);
 
     return graph.runVertexCentricIteration(
-        new SimSortVertexUpdateFunction(Utils.MIN_SIMSORT_SIM),
+        new SimSortVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
         new SimSortMessagingFunction(), maxIterations, aggParameters);
   }
 

@@ -2,13 +2,12 @@ package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple6;
-import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.NeighborsFunctionWithVertexValue;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Find neighbors with same ontology (to exclude or handle them later)
@@ -24,8 +23,8 @@ public class NeighborOntologyFunction
       throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
-      String ontology = neighbor.f1.getValue().get(Utils.ONTOLOGY).toString();
-      Double edgeSim = (Double) edge.getValue().get(Utils.AGGREGATED_SIM_VALUE);
+      String ontology = neighbor.f1.getValue().get(Constants.ONTOLOGY).toString();
+      Double edgeSim = (Double) edge.getValue().get(Constants.AGGREGATED_SIM_VALUE);
 
       collector.collect(new Tuple6<>(edge.getSource(),
           edge.getTarget(),

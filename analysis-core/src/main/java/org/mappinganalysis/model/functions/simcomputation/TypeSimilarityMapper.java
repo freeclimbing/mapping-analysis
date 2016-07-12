@@ -5,8 +5,8 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.TypeDictionary;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.TypeDictionary;
 
 import java.util.Set;
 
@@ -17,12 +17,12 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
     Triplet<Long, ObjectMap, ObjectMap>> {
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-    Set<String> srcTypes = triplet.getSrcVertex().getValue().getTypes(Utils.TYPE_INTERN);
-    Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Utils.TYPE_INTERN);
+    Set<String> srcTypes = triplet.getSrcVertex().getValue().getTypes(Constants.TYPE_INTERN);
+    Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Constants.TYPE_INTERN);
     Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimilarityComputation.initResultTriplet(triplet);
 
     if (hasNoEmptyType(srcTypes, trgTypes)) {
-      resultTriplet.getEdge().getValue().put(Utils.SIM_TYPE, getTypeSim(srcTypes, trgTypes));
+      resultTriplet.getEdge().getValue().put(Constants.SIM_TYPE, getTypeSim(srcTypes, trgTypes));
 
       return resultTriplet;
     } else {
@@ -51,7 +51,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
   }
 
   private boolean hasNoEmptyType(Set<String> srcType, Set<String> trgType) {
-    return !srcType.contains(Utils.NO_TYPE) && !trgType.contains(Utils.NO_TYPE);
+    return !srcType.contains(Constants.NO_TYPE) && !trgType.contains(Constants.NO_TYPE);
   }
 
   /**
@@ -62,7 +62,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
       && TypeDictionary.TYPE_SHADINGS.get(srcType).equals(trgType)
       || TypeDictionary.TYPE_SHADINGS.containsKey(trgType)
       && TypeDictionary.TYPE_SHADINGS.get(trgType).equals(srcType)) {
-      return Utils.SHADING_TYPE_SIM;
+      return Constants.SHADING_TYPE_SIM;
     } else {
       return 0d;
     }

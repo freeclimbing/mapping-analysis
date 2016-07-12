@@ -4,7 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
@@ -19,7 +19,7 @@ public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, ObjectMa
   }
 
   private boolean isGeoPoint(ObjectMap props) {
-    if (props.containsKey(Utils.LAT) && props.containsKey(Utils.LON)) {
+    if (props.containsKey(Constants.LAT) && props.containsKey(Constants.LON)) {
       return ((props.getLatitude() == null)
           || (props.getLongitude() == null)) ? Boolean.FALSE : Boolean.TRUE;
     } else {

@@ -19,22 +19,16 @@ package org.mappinganalysis.io.output;
 
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.operators.FlatMapOperator;
-import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
-
-import java.util.List;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 /**
  * Operator deriving a string representation from a graph collection.
@@ -62,8 +56,8 @@ public class CanonicalAdjacencyMatrixBuilder {
           public void flatMap(
               Vertex<Long, ObjectMap> vertex, Collector<VertexString> collector) throws Exception {
             Long vertexId = vertex.getId();
-            String vertexLabel = "(" + vertex.getValue().get(Utils.LABEL) + ")";
-            if (vertex.getValue().containsKey(Utils.CL_VERTICES)) {
+            String vertexLabel = "(" + vertex.getValue().get(Constants.LABEL) + ")";
+            if (vertex.getValue().containsKey(Constants.CL_VERTICES)) {
               vertexLabel = vertexLabel.concat(vertex.getValue().getVerticesList().toString());
             }
 
@@ -88,9 +82,9 @@ public class CanonicalAdjacencyMatrixBuilder {
           @Override
           public void flatMap(Vertex<Long, ObjectMap> clusterVertex,
                               Collector<Tuple3<Long, String, Long>> collector) throws Exception {
-            String type = clusterVertex.getValue().containsKey(Utils.TYPE_INTERN) ?
-                clusterVertex.getValue().get(Utils.TYPE_INTERN).toString() : "";
-            String vertexLabel = clusterVertex.getValue().get(Utils.LABEL).toString()
+            String type = clusterVertex.getValue().containsKey(Constants.TYPE_INTERN) ?
+                clusterVertex.getValue().get(Constants.TYPE_INTERN).toString() : "";
+            String vertexLabel = clusterVertex.getValue().get(Constants.LABEL).toString()
                 + " lat: " + clusterVertex.getValue().getLatitude()
                 + " lon: " + clusterVertex.getValue().getLongitude() + " type: " + type;
               for (Long clVertex : clusterVertex.getValue().getVerticesList()) {
@@ -140,7 +134,7 @@ public class CanonicalAdjacencyMatrixBuilder {
           @Override
           public void flatMap(Vertex<Long, ObjectMap> vertex,
                               Collector<Tuple2<Long, Long>> collector) throws Exception {
-            if (vertex.getValue().containsKey(Utils.CL_VERTICES)) {
+            if (vertex.getValue().containsKey(Constants.CL_VERTICES)) {
               for (Long vertexListValue : vertex.getValue().getVerticesList()) {
                 collector.collect(new Tuple2<>(vertex.getId(), vertexListValue));
               }
@@ -169,7 +163,7 @@ public class CanonicalAdjacencyMatrixBuilder {
           public void join(Tuple2<Long, Long> left, Vertex<Long, ObjectMap> right,
                            Collector<VertexLabelString> collector) throws Exception {
             if (left != null) {
-              Long clusterId = (long) right.getValue().get(Utils.CC_ID);
+              Long clusterId = (long) right.getValue().get(Constants.CC_ID);
               String value = Utils.toString(right, left.f1);
               collector.collect(new VertexLabelString(clusterId, clusterId.toString(), value));
             }
@@ -191,7 +185,7 @@ public class CanonicalAdjacencyMatrixBuilder {
           public void flatMap(
               Vertex<Long, ObjectMap> vertex, Collector<VertexString> collector) throws Exception {
             Long vertexId = vertex.getId();
-            String vertexLabel = "(" + vertex.getValue().get(Utils.LABEL) + ")";
+            String vertexLabel = "(" + vertex.getValue().get(Constants.LABEL) + ")";
 
             collector.collect(new VertexString(vertexId, vertexLabel));
 

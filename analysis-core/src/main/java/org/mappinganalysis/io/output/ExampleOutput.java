@@ -15,9 +15,9 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
-import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.filter.ClusterSizeSimpleFilterFunction;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,8 +104,8 @@ public class ExampleOutput {
     DataSet<String> edgeSet = edges
         .map(edge -> {
           String simValue = "";
-          if (edge.getValue().containsKey(Utils.AGGREGATED_SIM_VALUE)) {
-            simValue = " " + edge.getValue().get(Utils.AGGREGATED_SIM_VALUE).toString();
+          if (edge.getValue().containsKey(Constants.AGGREGATED_SIM_VALUE)) {
+            simValue = " " + edge.getValue().get(Constants.AGGREGATED_SIM_VALUE).toString();
           }
           return "(" + edge.getSource() + ", " + edge.getTarget() + ")" + simValue;
         })
@@ -134,7 +134,7 @@ public class ExampleOutput {
   public void addRandomBaseClusters(String caption, DataSet<Vertex<Long, ObjectMap>> baseVertices,
                                     DataSet<Vertex<Long, ObjectMap>> finalVertices, int amount) {
     DataSet<Tuple1<Long>> randomCcIds = baseVertices
-        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Utils.CC_ID)))
+        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Constants.CC_ID)))
         .returns(new TypeHint<Tuple1<Long>>() {})
         .distinct()
         .first(amount);
@@ -244,7 +244,7 @@ public class ExampleOutput {
 
   public void addPreClusterSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices,
                                  final String compName) {
-    if (Utils.VERBOSITY.equals(Utils.DEBUG) || Utils.VERBOSITY.equals(Utils.INFO)) {
+    if (Constants.VERBOSITY.equals(Constants.DEBUG) || Constants.VERBOSITY.equals(Constants.INFO)) {
       DataSet<String> captionSet = env
           .fromElements("\n*** " + caption + " ***\n");
 
@@ -272,7 +272,7 @@ public class ExampleOutput {
    * @param vertices vertices
    */
   public void addClusterSizes(String caption, DataSet<Vertex<Long, ObjectMap>> vertices) {
-    if (Utils.VERBOSITY.equals(Utils.DEBUG) || Utils.VERBOSITY.equals(Utils.INFO)) {
+    if (Constants.VERBOSITY.equals(Constants.DEBUG) || Constants.VERBOSITY.equals(Constants.INFO)) {
       DataSet<String> captionSet = env
           .fromElements("\n*** " + caption + " ***\n");
 
@@ -309,7 +309,7 @@ public class ExampleOutput {
   }
 
   public <T> void  addVertexAndEdgeSizes(String caption, Graph<Long, ObjectMap, T> graph) {
-    if (Utils.VERBOSITY.equals(Utils.DEBUG) || Utils.VERBOSITY.equals(Utils.INFO)) {
+    if (Constants.VERBOSITY.equals(Constants.DEBUG) || Constants.VERBOSITY.equals(Constants.INFO)) {
       DataSet<String> captionSet = env
           .fromElements("\n*** " + caption + " ***\n");
       DataSet<String> vertexSet = graph.getVertices()

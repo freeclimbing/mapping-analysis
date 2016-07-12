@@ -3,7 +3,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Triplet;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Either return the weighted aggregated similarity or return mean similarity of all existing properties
@@ -26,7 +26,7 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      if ((double) value.get(Utils.SIM_TRIGRAM) < minSim) {
+      if ((double) value.get(Constants.SIM_TRIGRAM) < minSim) {
         aggregatedSim = 0D;
       } else {
         aggregatedSim = SimilarityComputation.getMeanSimilarity(value);
@@ -35,7 +35,7 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
       aggregatedSim = SimilarityComputation.getWeightedAggSim(value);
     }
 
-    value.put(Utils.AGGREGATED_SIM_VALUE, aggregatedSim);
+    value.put(Constants.AGGREGATED_SIM_VALUE, aggregatedSim);
     return triplet;
   }
 }

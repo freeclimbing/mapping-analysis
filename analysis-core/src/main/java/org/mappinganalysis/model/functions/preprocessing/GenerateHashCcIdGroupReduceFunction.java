@@ -5,7 +5,8 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.ImmutableSortedSet;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
@@ -20,17 +21,17 @@ public class GenerateHashCcIdGroupReduceFunction implements GroupReduceFunction<
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
     Long hash = null;
     for (Vertex<Long, ObjectMap> vertex : vertices) {
-      if (vertex.getValue().hasTypeNoType(Utils.COMP_TYPE)) {
-        vertex.getValue().put(Utils.HASH_CC, Utils.getHash(vertex.getId().toString()));
+      if (vertex.getValue().hasTypeNoType(Constants.COMP_TYPE)) {
+        vertex.getValue().put(Constants.HASH_CC, Utils.getHash(vertex.getId().toString()));
       } else {
         if (hash == null) {
-          Set<String> types = vertex.getValue().getTypes(Utils.COMP_TYPE);
+          Set<String> types = vertex.getValue().getTypes(Constants.COMP_TYPE);
           ImmutableSortedSet<String> typeSet = ImmutableSortedSet.copyOf(types);
 
           hash = Utils.getHash(typeSet.toString()
-              .concat(vertex.getValue().get(Utils.CC_ID).toString()));
+              .concat(vertex.getValue().get(Constants.CC_ID).toString()));
         }
-        vertex.getValue().put(Utils.HASH_CC, hash);
+        vertex.getValue().put(Constants.HASH_CC, hash);
       }
       collector.collect(vertex);
     }

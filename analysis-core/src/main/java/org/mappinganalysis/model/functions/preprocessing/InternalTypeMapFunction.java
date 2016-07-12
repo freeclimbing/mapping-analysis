@@ -6,8 +6,8 @@ import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.TypeDictionary;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.TypeDictionary;
 
 import java.util.Set;
 
@@ -20,26 +20,26 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.TYPES_COUNT_ACCUMULATOR, types);
+    getRuntimeContext().addAccumulator(Constants.TYPES_COUNT_ACCUMULATOR, types);
   }
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
     ObjectMap properties = vertex.getValue();
     Set<String> resultTypes = Sets.newHashSet();
 
-    if (properties.containsKey(Utils.GN_TYPE_DETAIL)) {
-      resultTypes = getDictValue(properties.get(Utils.GN_TYPE_DETAIL).toString());
+    if (properties.containsKey(Constants.GN_TYPE_DETAIL)) {
+      resultTypes = getDictValue(properties.get(Constants.GN_TYPE_DETAIL).toString());
     }
-    if (properties.containsKey(Utils.TYPE) &&
-        (resultTypes.isEmpty() || resultTypes.contains(Utils.NO_TYPE))) {
-      resultTypes = getDictValues(properties.getTypes(Utils.TYPE));
+    if (properties.containsKey(Constants.TYPE) &&
+        (resultTypes.isEmpty() || resultTypes.contains(Constants.NO_TYPE))) {
+      resultTypes = getDictValues(properties.getTypes(Constants.TYPE));
     }
     if (resultTypes.isEmpty()) {
-      resultTypes = Sets.newHashSet(Utils.NO_TYPE);
+      resultTypes = Sets.newHashSet(Constants.NO_TYPE);
     }
 
     types.add(resultTypes.toString());
-    properties.put(Utils.TYPE_INTERN, resultTypes);
+    properties.put(Constants.TYPE_INTERN, resultTypes);
     return vertex;
   }
 
@@ -61,6 +61,6 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
       }
     }
 
-    return resultTypes.isEmpty() ? Sets.newHashSet(Utils.NO_TYPE) : resultTypes;
+    return resultTypes.isEmpty() ? Sets.newHashSet(Constants.NO_TYPE) : resultTypes;
   }
 }

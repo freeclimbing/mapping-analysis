@@ -8,7 +8,7 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.Set;
 
@@ -30,7 +30,7 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.REFINEMENT_MERGE_ACCUMULATOR, mergedClusterCount);
+    getRuntimeContext().addAccumulator(Constants.REFINEMENT_MERGE_ACCUMULATOR, mergedClusterCount);
   }
 
   @Override
@@ -46,12 +46,12 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
       reuseVertex.setFields(triplet.getSrcVertex().getId(), compareAndReturnBest(trgVal, srcVal));
     }
     srcVertices.addAll(trgVertices);
-    reuseVertex.getValue().put(Utils.CL_VERTICES, srcVertices);
+    reuseVertex.getValue().put(Constants.CL_VERTICES, srcVertices);
 
     Set<String> resultOnts = Sets.newHashSet();
-    resultOnts.addAll((Set<String>) srcVal.get(Utils.ONTOLOGIES));
-    resultOnts.addAll((Set<String>) trgVal.get(Utils.ONTOLOGIES));
-    reuseVertex.getValue().put(Utils.ONTOLOGIES, resultOnts);
+    resultOnts.addAll((Set<String>) srcVal.get(Constants.ONTOLOGIES));
+    resultOnts.addAll((Set<String>) trgVal.get(Constants.ONTOLOGIES));
+    reuseVertex.getValue().put(Constants.ONTOLOGIES, resultOnts);
     mergedClusterCount.add(1L);
 
     LOG.info("new cluster: " + reuseVertex.toString());
@@ -61,15 +61,15 @@ public class SimilarClusterMergeMapFunction extends RichMapFunction<Triplet<Long
 
 
   private ObjectMap compareAndReturnBest(ObjectMap priority, ObjectMap minor) {
-    if (!priority.containsKey(Utils.LABEL) && minor.containsKey(Utils.LABEL)) {
-      priority.put(Utils.LABEL, minor.get(Utils.LABEL));
+    if (!priority.containsKey(Constants.LABEL) && minor.containsKey(Constants.LABEL)) {
+      priority.put(Constants.LABEL, minor.get(Constants.LABEL));
     }
-    if (!priority.hasTypeNoType(Utils.TYPE_INTERN) && minor.hasTypeNoType(Utils.TYPE_INTERN)) {
-      priority.put(Utils.TYPE_INTERN, minor.get(Utils.TYPE_INTERN));
+    if (!priority.hasTypeNoType(Constants.TYPE_INTERN) && minor.hasTypeNoType(Constants.TYPE_INTERN)) {
+      priority.put(Constants.TYPE_INTERN, minor.get(Constants.TYPE_INTERN));
     }
     if (!priority.hasGeoProperties() && minor.hasGeoProperties()) {
-      priority.put(Utils.LAT, minor.getLatitude());
-      priority.put(Utils.LON, minor.getLongitude());
+      priority.put(Constants.LAT, minor.getLatitude());
+      priority.put(Constants.LON, minor.getLongitude());
     }
     return priority;
   }

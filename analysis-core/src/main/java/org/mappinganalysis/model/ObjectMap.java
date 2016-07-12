@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 import java.io.Serializable;
 import java.util.*;
@@ -45,7 +45,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return true if type has value not available or not found
    */
   public boolean hasTypeNoType(String type) {
-    return map.containsKey(type) && getTypes(type).contains(Utils.NO_TYPE);
+    return map.containsKey(type) && getTypes(type).contains(Constants.NO_TYPE);
   }
 
   /**
@@ -53,10 +53,10 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return label
    */
   public String getLabel() {
-    if (map.containsKey(Utils.LABEL)) {
-      return map.get(Utils.LABEL).toString();
+    if (map.containsKey(Constants.LABEL)) {
+      return map.get(Constants.LABEL).toString();
     } else {
-      return Utils.NO_LABEL_FOUND;
+      return Constants.NO_LABEL_FOUND;
     }
   }
 
@@ -75,7 +75,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
         return Sets.newHashSet(typeObject.toString());
       }
     } else {
-      return Sets.newHashSet(Utils.NO_TYPE);
+      return Sets.newHashSet(Constants.NO_TYPE);
     }
   }
 
@@ -84,11 +84,11 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return hashCcId
    */
   public Long getHashCcId() {
-    return (long) map.get(Utils.HASH_CC);
+    return (long) map.get(Constants.HASH_CC);
   }
 
   public boolean hasGeoProperties() {
-    if (map.containsKey(Utils.LAT) && map.containsKey(Utils.LON)) {
+    if (map.containsKey(Constants.LAT) && map.containsKey(Constants.LON)) {
       return Boolean.TRUE;
     } else {
       return Boolean.FALSE;
@@ -96,11 +96,11 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   public Double getLatitude() {
-    return getGeoValue(Utils.LAT);
+    return getGeoValue(Constants.LAT);
   }
 
   public Double getLongitude() {
-    return getGeoValue(Utils.LON);
+    return getGeoValue(Constants.LON);
   }
 
   private Double getGeoValue(String latOrLon) {
@@ -122,10 +122,10 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @param geoMap property map of vertex
    */
   public void setGeoProperties(HashMap<String, GeoCode> geoMap) {
-      if (geoMap.containsKey(Utils.GN_NS)) {
-        setLatLon(geoMap.get(Utils.GN_NS));
-      } else if (geoMap.containsKey(Utils.DBP_NS)) {
-        setLatLon(geoMap.get(Utils.DBP_NS));
+      if (geoMap.containsKey(Constants.GN_NS)) {
+        setLatLon(geoMap.get(Constants.GN_NS));
+      } else if (geoMap.containsKey(Constants.DBP_NS)) {
+        setLatLon(geoMap.get(Constants.DBP_NS));
       } else {
         GeoCode result = null;
         int smallest = Integer.MAX_VALUE;
@@ -140,12 +140,12 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   private void setLatLon(GeoCode geocode) {
-    map.put(Utils.LAT, geocode.getLat());
-    map.put(Utils.LON, geocode.getLon());
+    map.put(Constants.LAT, geocode.getLat());
+    map.put(Constants.LON, geocode.getLon());
   }
 
   public Set<Long> getVerticesList() {
-    Object clusteredVertices = map.get(Utils.CL_VERTICES);
+    Object clusteredVertices = map.get(Constants.CL_VERTICES);
 
     if (clusteredVertices instanceof Set) {
       return (Set<Long>) clusteredVertices;
@@ -155,11 +155,11 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   public Double getSimilarity() {
-    return (double) map.get(Utils.AGGREGATED_SIM_VALUE);
+    return (double) map.get(Constants.AGGREGATED_SIM_VALUE);
   }
 
   public Set<String> getOntologiesList() {
-    Object ontologies = map.get(Utils.ONTOLOGIES);
+    Object ontologies = map.get(Constants.ONTOLOGIES);
 
     if (ontologies instanceof Set) {
       return (Set<String>) ontologies;
@@ -178,9 +178,9 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     Preconditions.checkNotNull(value, "new lat or lon null: " + map.toString());
 
     //Todo here rly needed? write test
-    Preconditions.checkArgument(!(key.equals(Utils.LAT) && map.containsKey(Utils.LAT))
-        || !(key.equals(Utils.LON) && map.containsKey(Utils.LON)),
-        map.get(Utils.LAT) + " - " + map.get(Utils.LON) + " LAT or LON already there, new: "
+    Preconditions.checkArgument(!(key.equals(Constants.LAT) && map.containsKey(Constants.LAT))
+        || !(key.equals(Constants.LON) && map.containsKey(Constants.LON)),
+        map.get(Constants.LAT) + " - " + map.get(Constants.LON) + " LAT or LON already there, new: "
         + key + ": " + value.toString());
 
 

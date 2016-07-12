@@ -10,7 +10,7 @@ import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
-import org.mappinganalysis.utils.*;
+import org.mappinganalysis.util.*;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.sql.ResultSet;

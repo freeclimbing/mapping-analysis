@@ -8,7 +8,8 @@ import org.apache.flink.graph.spargel.VertexUpdateFunction;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,11 +25,11 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex,
                            MessageIterator<AggSimValueTuple> inMessages) throws Exception {
-    double vertexAggSim = (double) vertex.getValue().get(Utils.VERTEX_AGG_SIM_VALUE);
-    boolean hasNoVertexState = !vertex.getValue().containsKey(Utils.VERTEX_STATUS);
+    double vertexAggSim = (double) vertex.getValue().get(Constants.VERTEX_AGG_SIM_VALUE);
+    boolean hasNoVertexState = !vertex.getValue().containsKey(Constants.VERTEX_STATUS);
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
-    if (hasNoVertexState || Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) == 0) {
+    if (hasNoVertexState || Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) == 0) {
       double iterationAggSim = 0;
       long messageCount = 0;
       List<Double> neighborList = Lists.newArrayList();
@@ -41,16 +42,16 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
       iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
 
-      vertex.getValue().put(Utils.VERTEX_AGG_SIM_VALUE, iterationAggSim);
+      vertex.getValue().put(Constants.VERTEX_AGG_SIM_VALUE, iterationAggSim);
 
-      if (Doubles.compare(vertexAggSim, Utils.DEFAULT_VERTEX_SIM) != 0
+      if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
         if (iterationAggSim < threshold) {
-          vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.FALSE);
-          vertex.getValue().put(Utils.OLD_HASH_CC, vertex.getValue().get(Utils.HASH_CC));
-          vertex.getValue().put(Utils.HASH_CC, Utils.getHash(vertex.getId().toString() + "false"));
+          vertex.getValue().put(Constants.VERTEX_STATUS, Boolean.FALSE);
+          vertex.getValue().put(Constants.OLD_HASH_CC, vertex.getValue().get(Constants.HASH_CC));
+          vertex.getValue().put(Constants.HASH_CC, Utils.getHash(vertex.getId().toString() + "false"));
         } else {
-          vertex.getValue().put(Utils.VERTEX_STATUS, Boolean.TRUE);
+          vertex.getValue().put(Constants.VERTEX_STATUS, Boolean.TRUE);
         }
       }
 

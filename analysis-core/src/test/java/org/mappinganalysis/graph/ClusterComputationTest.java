@@ -10,8 +10,8 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
 
@@ -65,7 +65,7 @@ public class ClusterComputationTest {
           @Override
           public Vertex<Long, ObjectMap> map(Vertex<Long, NullValue> vertex) throws Exception {
             ObjectMap prop = new ObjectMap();
-            prop.put(Utils.CC_ID, 5680L);
+            prop.put(Constants.CC_ID, 5680L);
 
             return new Vertex<>(vertex.getId(), prop);
           }

@@ -4,7 +4,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.junit.Test;
 import org.mappinganalysis.model.Component;
 import org.mappinganalysis.model.CompCheckVertex;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Utils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

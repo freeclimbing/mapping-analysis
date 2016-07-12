@@ -9,7 +9,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class PreprocessingTest {
           @Override
           public Vertex<Long, ObjectMap> map(Vertex<Long, NullValue> vertex) throws Exception {
             ObjectMap prop = new ObjectMap();
-            prop.put(Utils.TYPE_INTERN, "foo");
+            prop.put(Constants.TYPE_INTERN, "foo");
             return new Vertex<>(vertex.getId(), prop);
           }
         });
@@ -43,11 +43,11 @@ public class PreprocessingTest {
       public Vertex<Long, String> map(Vertex<Long, ObjectMap> vertex) throws Exception {
         String result = "";
         Map<String, Object> properties = vertex.getValue();
-        if (properties.containsKey(Utils.TYPE_INTERN)) {
-          result = result.concat("intern: ").concat(properties.get(Utils.TYPE_INTERN).toString());
+        if (properties.containsKey(Constants.TYPE_INTERN)) {
+          result = result.concat("intern: ").concat(properties.get(Constants.TYPE_INTERN).toString());
         }
-        if (properties.containsKey(Utils.TYPE)) {
-          result = result.concat(" ### type: " ).concat(properties.get(Utils.TYPE).toString());
+        if (properties.containsKey(Constants.TYPE)) {
+          result = result.concat(" ### type: " ).concat(properties.get(Constants.TYPE).toString());
         }
 
         return new Vertex<>(vertex.getId(), result);

@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.representative.MajorityPropertiesGroupReduceFunction;
-import org.mappinganalysis.utils.functions.keyselector.HashCcIdKeySelector;
+import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.assertEquals;

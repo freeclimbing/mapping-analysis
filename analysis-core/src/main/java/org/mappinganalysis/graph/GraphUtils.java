@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
-import org.mappinganalysis.utils.functions.LeftSideOnlyJoinFunction;
+import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
 
 public class GraphUtils {
   private static final Logger LOG = Logger.getLogger(GraphUtils.class);

@@ -5,7 +5,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.MessagingFunction;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * @deprecated
@@ -16,13 +16,13 @@ public class TypeGroupByMessagingFunction extends MessagingFunction<Long, Object
   @Override
   public void sendMessages(Vertex<Long, ObjectMap> vertex) throws Exception {
 //    LOG.info("message from: " + vertex.toString() + "ssn: " + getSuperstepNumber());
-    vertex.getValue().put(Utils.VERTEX_ID, vertex.getId());
+    vertex.getValue().put(Constants.VERTEX_ID, vertex.getId());
 
     for (Edge<Long, ObjectMap> edge : getEdges()) {
 //      LOG.info("processing edge: " + edge.getSource() + " -> " + edge.getTarget()
 //          + " " + edge.getValue().get(Utils.AGGREGATED_SIM_VALUE)
 //          + " on vertex: " + vertex.getId() + " ssn: " + getSuperstepNumber());
-      vertex.getValue().put(Utils.AGGREGATED_SIM_VALUE, edge.getValue().get(Utils.AGGREGATED_SIM_VALUE));
+      vertex.getValue().put(Constants.AGGREGATED_SIM_VALUE, edge.getValue().get(Constants.AGGREGATED_SIM_VALUE));
       if (edge.getSource() == (long) vertex.getId()) {
 //        LOG.info("Send msg: " + vertex.getValue() + " to " + edge.getTarget() + " ssn: " + getSuperstepNumber());
 

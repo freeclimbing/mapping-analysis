@@ -3,9 +3,8 @@ package org.mappinganalysis.model.functions.stats;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.MappingAnalysisExample;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Utils;
 
 import java.util.List;
 

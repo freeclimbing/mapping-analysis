@@ -10,8 +10,8 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.CompCheckVertex;
 import org.mappinganalysis.model.Component;
-import org.mappinganalysis.utils.DbOps;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.DbOps;
+import org.mappinganalysis.util.Utils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

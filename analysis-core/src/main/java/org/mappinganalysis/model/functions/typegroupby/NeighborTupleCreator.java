@@ -7,7 +7,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.NeighborTuple;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Extract similarities and relevant properties from neighbor vertices.
@@ -18,11 +18,11 @@ class NeighborTupleCreator
   public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
                                Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
                                Collector<NeighborTuple> out) throws Exception {
-    String vertexType = vertex.getValue().getTypes(Utils.TYPE_INTERN).stream().findFirst().get();
-    if (vertexType.equals(Utils.NO_TYPE)) {
+    String vertexType = vertex.getValue().getTypes(Constants.TYPE_INTERN).stream().findFirst().get();
+    if (vertexType.equals(Constants.NO_TYPE)) {
       neighbors.forEach(neighbor -> out.collect(new NeighborTuple(vertex.getId(),
           neighbor.f0.getValue().getSimilarity(),
-          neighbor.f1.getValue().getTypes(Utils.TYPE_INTERN),
+          neighbor.f1.getValue().getTypes(Constants.TYPE_INTERN),
           neighbor.f1.getValue().getHashCcId())));
     }
   }

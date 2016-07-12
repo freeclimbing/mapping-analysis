@@ -9,7 +9,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.FlinkProperty;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Create vertex with accumulated properties from single entry database result rows.
@@ -21,7 +21,7 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.VERTEX_COUNT_ACCUMULATOR, vertexCounter);
+    getRuntimeContext().addAccumulator(Constants.VERTEX_COUNT_ACCUMULATOR, vertexCounter);
   }
 
   public void coGroup(Iterable<Vertex<Long, ObjectMap>> vertices, Iterable<FlinkProperty> properties,
@@ -47,7 +47,7 @@ public class PropertyCoGroupFunction extends RichCoGroupFunction<Vertex<Long, Ob
       }
 
       // only add vertices with label
-      if (vertexProperties.containsKey(Utils.LABEL)) {
+      if (vertexProperties.containsKey(Constants.LABEL)) {
         vertex.setValue(vertexProperties);
 
         vertexCounter.add(1L);

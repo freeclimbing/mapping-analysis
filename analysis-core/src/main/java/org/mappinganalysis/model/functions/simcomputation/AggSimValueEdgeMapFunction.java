@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Aggregate all similarity values, either based on weight based metric
@@ -31,7 +31,7 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
       aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
     }
 
-    edgeValue.put(Utils.AGGREGATED_SIM_VALUE, aggregatedSim);
+    edgeValue.put(Constants.AGGREGATED_SIM_VALUE, aggregatedSim);
     return edge;
   }
 }

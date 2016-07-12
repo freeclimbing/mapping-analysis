@@ -1,13 +1,12 @@
 package org.mappinganalysis.model.functions.refinement;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 public class ExcludeDuplicateOntologyTripletFlatJoinFunction
     implements FlatJoinFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Long, Double>,
@@ -20,8 +19,8 @@ public class ExcludeDuplicateOntologyTripletFlatJoinFunction
     if (right == null) {
       collector.collect(left);
     } else if (right.f2 != Long.MIN_VALUE) { // exclude big cluster
-      left.getSrcVertex().getValue().put(Utils.REFINE_ID, right.f2);
-      left.getTrgVertex().getValue().put(Utils.REFINE_ID, right.f2);
+      left.getSrcVertex().getValue().put(Constants.REFINE_ID, right.f2);
+      left.getTrgVertex().getValue().put(Constants.REFINE_ID, right.f2);
 
       if (left.getSrcVertex().getId() == 14L ||
           left.getSrcVertex().getId() == 15L ||

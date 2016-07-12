@@ -4,7 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Only filter triplets which have at least 2 similar enough
@@ -21,18 +21,18 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
   @Override
   public boolean filter(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
     ObjectMap edgeValue = triplet.getEdge().getValue();
-    boolean hasSimDist = edgeValue.containsKey(Utils.SIM_DISTANCE);
-    boolean hasSimLabel = edgeValue.containsKey(Utils.SIM_TRIGRAM);
-    boolean hasSimType = edgeValue.containsKey(Utils.SIM_TYPE);
+    boolean hasSimDist = edgeValue.containsKey(Constants.SIM_DISTANCE);
+    boolean hasSimLabel = edgeValue.containsKey(Constants.SIM_TRIGRAM);
+    boolean hasSimType = edgeValue.containsKey(Constants.SIM_TYPE);
 
-    boolean hasHighThreshold = edgeValue.containsKey(Utils.AGGREGATED_SIM_VALUE)
-        && (double) edgeValue.get(Utils.AGGREGATED_SIM_VALUE) > threshold;
+    boolean hasHighThreshold = edgeValue.containsKey(Constants.AGGREGATED_SIM_VALUE)
+        && (double) edgeValue.get(Constants.AGGREGATED_SIM_VALUE) > threshold;
     boolean hasMinTwoSimValues = (hasSimDist && (hasSimLabel || hasSimType))
         || (hasSimLabel && hasSimType);
 
-    boolean hasNoOrHighDistanceSim = !hasSimDist || ((double) edgeValue.get(Utils.SIM_DISTANCE) > 0.7);
-    boolean hasNoOrHighTypeSim = !hasSimType || ((double) edgeValue.get(Utils.SIM_TYPE) > 0.7);
-    boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Utils.SIM_TRIGRAM) > 0.8);
+    boolean hasNoOrHighDistanceSim = !hasSimDist || ((double) edgeValue.get(Constants.SIM_DISTANCE) > 0.7);
+    boolean hasNoOrHighTypeSim = !hasSimType || ((double) edgeValue.get(Constants.SIM_TYPE) > 0.7);
+    boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Constants.SIM_TRIGRAM) > 0.8);
 
     if (hasHighThreshold && hasMinTwoSimValues) {
       LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"

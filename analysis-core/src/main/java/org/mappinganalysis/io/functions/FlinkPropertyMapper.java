@@ -5,7 +5,7 @@ import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
 import org.mappinganalysis.model.FlinkProperty;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Create a FlinkProperty from raw database result set.
@@ -16,7 +16,7 @@ public class FlinkPropertyMapper extends RichMapFunction<Tuple4<Integer, String,
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Utils.PROP_COUNT_ACCUMULATOR, propertyCount);
+    getRuntimeContext().addAccumulator(Constants.PROP_COUNT_ACCUMULATOR, propertyCount);
   }
 
   @Override

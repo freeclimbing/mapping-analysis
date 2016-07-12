@@ -18,9 +18,9 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.GenerateHashCcIdGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.utils.Utils;
-import org.mappinganalysis.utils.functions.keyselector.CcIdAndCompTypeKeySelector;
-import org.mappinganalysis.utils.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.keyselector.CcIdAndCompTypeKeySelector;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 public class TypeGroupBy {
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
@@ -56,17 +56,17 @@ public class TypeGroupBy {
     vertices = vertices.map(new PrintVertices(false, "preprocTGB2"));
     // end preprocessing
 
-    LOG.info("mode: " + Utils.IS_TGB_DEFAULT_MODE);
+    LOG.info("mode: " + Constants.IS_TGB_DEFAULT_MODE);
 
     /**
      * Start typed grouping
      */
-    if (!Utils.IS_TGB_DEFAULT_MODE) {
+    if (!Constants.IS_TGB_DEFAULT_MODE) {
       final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
           .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
       final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
           .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-              Utils.SIM_GEO_LABEL_STRATEGY);
+              Constants.SIM_GEO_LABEL_STRATEGY);
 
       graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
 
@@ -108,7 +108,7 @@ public class TypeGroupBy {
           .equalTo(0)
           .with((left, right) -> {
             if (right.getValue().getHashCcId() < left.getCompId()) {
-              right.getValue().put(Utils.HASH_CC, left.getCompId());
+              right.getValue().put(Constants.HASH_CC, left.getCompId());
             }
             return right;
           })
@@ -119,7 +119,7 @@ public class TypeGroupBy {
           .where(0)
           .equalTo(0)
           .with((left, right) -> {
-            right.getValue().put(Utils.HASH_CC, left.getCompId());
+            right.getValue().put(Constants.HASH_CC, left.getCompId());
             return right;
           })
           .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
@@ -161,7 +161,7 @@ public class TypeGroupBy {
       DataSet<NeighborTuple> neighborSimTypes) {
 
     final DataSet<NeighborTuple> typeVals = neighborSimTypes
-        .filter(value -> !value.getTypes().contains(Utils.NO_TYPE));
+        .filter(value -> !value.getTypes().contains(Constants.NO_TYPE));
 
     return typeVals
             .groupBy(0).max(1)

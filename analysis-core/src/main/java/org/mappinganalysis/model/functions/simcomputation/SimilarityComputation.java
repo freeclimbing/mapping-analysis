@@ -2,7 +2,6 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
@@ -19,7 +18,8 @@ import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 import java.math.BigDecimal;
 
@@ -35,7 +35,7 @@ public class SimilarityComputation {
   public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets, String filter) {
     switch (filter) {
-      case Utils.SIM_GEO_LABEL_STRATEGY:
+      case Constants.SIM_GEO_LABEL_STRATEGY:
         return joinDifferentSimilarityValues(basicGeoSimilarity(triplets),
             basicTrigramSimilarity(triplets));
       case "label":
@@ -58,11 +58,11 @@ public class SimilarityComputation {
   public static DataSet<Edge<Long, ObjectMap>> computeGraphEdgeSim(Graph<Long, ObjectMap, NullValue> graph,
                                                                    String matchCombination) {
     LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: "
-        + Utils.IGNORE_MISSING_PROPERTIES);
+        + Constants.IGNORE_MISSING_PROPERTIES);
 
     return computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
-        .map(new AggSimValueEdgeMapFunction(Utils.IGNORE_MISSING_PROPERTIES));
+        .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES));
   }
 
   /**
@@ -104,7 +104,7 @@ public class SimilarityComputation {
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicGeoSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
     return triplets.filter(new EmptyGeoCodeFilter())
-        .map(new GeoCodeSimMapper(Utils.MAXIMAL_GEO_DISTANCE));
+        .map(new GeoCodeSimMapper(Constants.MAXIMAL_GEO_DISTANCE));
   }
 
   /**
@@ -130,15 +130,15 @@ public class SimilarityComputation {
   public static double getMeanSimilarity(ObjectMap value) {
     double aggregatedSim = 0;
     int propCount = 0;
-    if (value.containsKey(Utils.SIM_TRIGRAM)) {
+    if (value.containsKey(Constants.SIM_TRIGRAM)) {
       ++propCount;
-      aggregatedSim = (double) value.get(Utils.SIM_TRIGRAM);
+      aggregatedSim = (double) value.get(Constants.SIM_TRIGRAM);
     }
-    if (value.containsKey(Utils.SIM_TYPE)) {
+    if (value.containsKey(Constants.SIM_TYPE)) {
       ++propCount;
-      aggregatedSim += (double) value.get(Utils.SIM_TYPE);
+      aggregatedSim += (double) value.get(Constants.SIM_TYPE);
     }
-    if (value.containsKey(Utils.SIM_DISTANCE)) {
+    if (value.containsKey(Constants.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(value);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += distanceSim;
@@ -164,15 +164,15 @@ public class SimilarityComputation {
     double typeWeight = 0.25;
     double geoWeight = 0.3;
     double aggregatedSim;
-    if (values.containsKey(Utils.SIM_TRIGRAM)) {
-      aggregatedSim = trigramWeight * (double) values.get(Utils.SIM_TRIGRAM);
+    if (values.containsKey(Constants.SIM_TRIGRAM)) {
+      aggregatedSim = trigramWeight * (double) values.get(Constants.SIM_TRIGRAM);
     } else {
       aggregatedSim = 0;
     }
-    if (values.containsKey(Utils.SIM_TYPE)) {
-      aggregatedSim += typeWeight * (double) values.get(Utils.SIM_TYPE);
+    if (values.containsKey(Constants.SIM_TYPE)) {
+      aggregatedSim += typeWeight * (double) values.get(Constants.SIM_TYPE);
     }
-    if (values.containsKey(Utils.SIM_DISTANCE)) {
+    if (values.containsKey(Constants.SIM_DISTANCE)) {
       double distanceSim = getDistanceValue(values);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += geoWeight * distanceSim;
@@ -191,7 +191,7 @@ public class SimilarityComputation {
    * @return distance
    */
   private static double getDistanceValue(ObjectMap value) {
-    Object object = value.get(Utils.SIM_DISTANCE);
+    Object object = value.get(Constants.SIM_DISTANCE);
     Preconditions.checkArgument(object instanceof Double, "Error (should not occur)" + object.getClass().toString());
 
     return (Double) object;
@@ -247,7 +247,7 @@ public class SimilarityComputation {
     Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
 //    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
 
-    if (Utils.IS_SIMSORT_ENABLED) {
+    if (Constants.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);
     }
     return SimSort.excludeLowSimVertices(graph, env);

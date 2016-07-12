@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.utils.Utils;
+import org.mappinganalysis.util.Constants;
 import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.*;
@@ -36,14 +36,14 @@ public class SimSortTest {
 
   @Test
   public void simSortTest() throws Exception {
-    Utils.PRE_CLUSTER_STRATEGY = Utils.DEFAULT_VALUE;
-    Utils.IGNORE_MISSING_PROPERTIES = true;
+    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
+    Constants.IGNORE_MISSING_PROPERTIES = true;
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = SimSort.prepare(firstGraph, Utils.DEFAULT_VALUE, env, null);
+    firstGraph = SimSort.prepare(firstGraph, Constants.DEFAULT_VALUE, env, null);
 
-    Utils.MIN_CLUSTER_SIM = 0.75D;
+    Constants.MIN_CLUSTER_SIM = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200);
 
     // TODO Test
@@ -61,19 +61,19 @@ public class SimSortTest {
    */
   @Test
   public void simSortErrorTest() throws Exception {
-    Utils.PRE_CLUSTER_STRATEGY = Utils.DEFAULT_VALUE;
-    Utils.IGNORE_MISSING_PROPERTIES = true;
+    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
+    Constants.IGNORE_MISSING_PROPERTIES = true;
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_CANAIMA);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
     firstGraph = SimSort.prepare(firstGraph, "onlySimSort", env, null);
-    Utils.MIN_CLUSTER_SIM = 0.75D;
+    Constants.MIN_CLUSTER_SIM = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200);
 
     for (int i = 0; i < 20; i++) {
       for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {
         if (vertex.getId() == 1L || vertex.getId() == 2L) {
-          assertTrue(vertex.getValue().containsKey(Utils.VERTEX_STATUS));
+          assertTrue(vertex.getValue().containsKey(Constants.VERTEX_STATUS));
         }
       }
     }
