@@ -36,9 +36,6 @@ public class TypeGroupBy {
                                                    String processingMode,
                                                    Integer maxIterations,
                                                    ExecutionEnvironment env, ExampleOutput out) throws Exception {
-    // type groupby preprocessing
-    graph = GraphUtils.addCcIdsToGraph(graph, env);
-
     // sync begin
     DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true);
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);

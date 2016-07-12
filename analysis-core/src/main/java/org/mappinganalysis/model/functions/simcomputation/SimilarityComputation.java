@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.debug.PrintVertices;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
@@ -230,7 +231,7 @@ public class SimilarityComputation {
     vertices = graph.getVertices().filter(value -> {
       LOG.info("filtered vertex " + value.toString());
       return true;
-    }); // sync needed (only sometimes?)
+    });
     edges = graph.getEdges().filter(value -> {
       LOG.info("filtered edge");
       return true;
@@ -250,7 +251,15 @@ public class SimilarityComputation {
     if (Constants.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);
     }
-    return SimSort.excludeLowSimVertices(graph, env);
+    graph = SimSort.excludeLowSimVertices(graph, env);
+
+    /*
+     * At this point, all edges within components are computed. Therefore we can delete links where
+     * entities link several times to the same data source (e.g., geonames, linkedgeodata)
+     */
+    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
+
+    return graph;
 
   }
 }

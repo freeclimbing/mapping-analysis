@@ -33,11 +33,10 @@ public class SimSort {
                                                           String processingMode,
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
-    KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new CcIdKeySelector();
-    if (processingMode.equals(Constants.DEFAULT_VALUE)) {
-      keySelector = new HashCcIdKeySelector();
+    KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new HashCcIdKeySelector();
+    if (!processingMode.equals(Constants.DEFAULT_VALUE)) {
+      keySelector = new CcIdKeySelector(); // untested
     }
-
     DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), keySelector);
 
@@ -78,6 +77,7 @@ public class SimSort {
    */
   public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                         ExecutionEnvironment env) throws Exception {
+    // only edges are interesting
     Graph<Long, ObjectMap, ObjectMap> componentGraph = graph
         .filterOnVertices(new SimSortExcludeLowSimFilterFunction(true));
 

@@ -57,9 +57,11 @@ public class Preprocessing {
         env);
 
     /*
-     * restrict links to 1:1 in terms of sources from one entity to another
+     * restrict (direct) links to 1:1 in terms of sources from one entity to another
      */
-    return applyLinkFilterStrategy(simGraph, env, Constants.IS_LINK_FILTER_ACTIVE);
+    simGraph = applyLinkFilterStrategy(simGraph, env, Constants.IS_LINK_FILTER_ACTIVE);
+
+    return GraphUtils.addCcIdsToGraph(simGraph, env);
   }
 
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
