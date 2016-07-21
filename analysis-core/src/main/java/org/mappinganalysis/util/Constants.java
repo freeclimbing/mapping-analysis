@@ -102,8 +102,10 @@ public class Constants {
    * Command line option names.
    */
   public static String INPUT_DIR;
+  public static String LL_MODE;
   public static String VERBOSITY;
   public static boolean IS_SIMSORT_ENABLED;
+  public static boolean IS_SIMSORT_ALT_ENABLED;
   public static Double MIN_CLUSTER_SIM;
   public static Double MIN_LABEL_PRIORITY_SIM;
   public static Double MIN_SIMSORT_SIM;

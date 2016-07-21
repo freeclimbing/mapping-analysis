@@ -56,9 +56,7 @@ public class SimSort {
 
   /**
    * Execute SimSort procedure based on vertex-centric-iteration
-   * @param graph input graph
    * @param maxIterations max vertex-centric-iteration count
-   * @return resulting graph with new clusters
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
                                                           Integer maxIterations) {
@@ -69,6 +67,19 @@ public class SimSort {
     return graph.runVertexCentricIteration(
         new SimSortVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
         new SimSortMessagingFunction(), maxIterations, aggParameters);
+  }
+
+  /**
+   * Alternative sim-based refinement algorithm based on searching for cluster partitioning
+   * with good average cluster similarity in sub clusters.
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> executeAlternative(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+       ExecutionEnvironment env) {
+
+    // TODO
+
+    return graph;
   }
 
   /**

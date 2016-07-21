@@ -248,14 +248,19 @@ public class SimilarityComputation {
     Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
 //    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
 
+    // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
+    // TODO for alternative version, unneeded
     if (Constants.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 100);
+    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
+      graph = SimSort.executeAlternative(graph, env);
     }
     graph = SimSort.excludeLowSimVertices(graph, env);
 
     /*
      * At this point, all edges within components are computed. Therefore we can delete links where
      * entities link several times to the same data source (e.g., geonames, linkedgeodata)
+     * (remove 1:n links)
      */
     graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
 

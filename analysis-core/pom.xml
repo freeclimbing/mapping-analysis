@@ -23,6 +23,7 @@
             <version>4.0.1</version>
         </dependency>
 
+
         <dependency>
             <groupId>org.s1ck</groupId>
             <artifactId>gdl</artifactId>
@@ -48,6 +49,12 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-jdbc</artifactId>
             <version>${dep.flinkSnapshot.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gradoop</groupId>
+            <artifactId>gradoop-flink</artifactId>
+            <version>${dep.gradoop.version}</version>
         </dependency>
 
         <dependency>

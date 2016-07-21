@@ -33,7 +33,8 @@ public class Refinement {
    * @param vertices representative vertices
    * @return prepared vertices
    */
-  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out) {
+  public static DataSet<Vertex<Long, ObjectMap>> init(DataSet<Vertex<Long, ObjectMap>> vertices,
+                                                      ExampleOutput out) {
     DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
         .filter(new OldHashCcFilterFunction())
         .groupBy(new OldHashCcKeySelector())

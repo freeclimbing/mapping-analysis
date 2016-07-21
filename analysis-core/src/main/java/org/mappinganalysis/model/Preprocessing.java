@@ -64,6 +64,9 @@ public class Preprocessing {
     return GraphUtils.addCcIdsToGraph(simGraph, env);
   }
 
+  /**
+   * Restrict graph for testing purpose. First 500 vertices and contained edges.
+   */
   private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
                                                                  ExecutionEnvironment env) {
     // restrict to first ??? clusters
@@ -118,8 +121,11 @@ public class Preprocessing {
         .getVerticesFromCsv(Constants.INPUT_DIR + vertexFile, Constants.INPUT_DIR + propertyFile);
 
     if (Constants.INPUT_DIR.contains("linklion")) {
-//      vertices = getNytVerticesLinklion(env, ccFile, vertices);
-      vertices = getRandomCcsFromLinklion(env, ccFile, vertices);
+      if (Constants.LL_MODE.equals("nyt")) {
+        vertices = getNytVerticesLinklion(env, ccFile, vertices);
+      } else if (Constants.LL_MODE.equals("random")) {
+        vertices = getRandomCcsFromLinklion(env, ccFile, vertices, 1000);
+      }
     }
 
     DataSet<Edge<Long, NullValue>> edges = deleteEdgesWithoutSourceOrTarget(
@@ -137,19 +143,22 @@ public class Preprocessing {
   /**
    * Restrict LinkLion dataset by taking random CCs
    */
-  private static DataSet<Vertex<Long, ObjectMap>> getRandomCcsFromLinklion(ExecutionEnvironment env,
-                                                                           String ccFile,
-                                                                           DataSet<Vertex<Long, ObjectMap>> vertices) {
+  private static DataSet<Vertex<Long, ObjectMap>> getRandomCcsFromLinklion(
+      ExecutionEnvironment env,
+      String ccFile,
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      int componentNumber) {
     DataSet<Tuple2<Long, Long>> vertexIdAndCcs = getBaseVertexCcs(env, ccFile);
-    DataSet<Tuple1<Long>> relevantCcs = vertexIdAndCcs.<Tuple1<Long>>project(1).first(1000);
+    DataSet<Tuple1<Long>> relevantCcs = vertexIdAndCcs.<Tuple1<Long>>project(1).first(componentNumber);
     vertices = restrictVerticesToGivenCcs(vertices, vertexIdAndCcs, relevantCcs);
 
     return vertices;
   }
 
-  private static DataSet<Vertex<Long, ObjectMap>> restrictVerticesToGivenCcs(DataSet<Vertex<Long, ObjectMap>> vertices,
-                                                                             DataSet<Tuple2<Long, Long>> vertexCcs,
-                                                                             DataSet<Tuple1<Long>> relevantCcs) {
+  private static DataSet<Vertex<Long, ObjectMap>> restrictVerticesToGivenCcs(
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      DataSet<Tuple2<Long, Long>> vertexCcs,
+      DataSet<Tuple1<Long>> relevantCcs) {
     vertices = relevantCcs.join(vertexCcs)
         .where(0)
         .equalTo(1)

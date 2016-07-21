@@ -144,6 +144,9 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     map.put(Constants.LON, geocode.getLon());
   }
 
+  /**
+   * Get list of vertex ids which are contained in a cluster.
+   */
   public Set<Long> getVerticesList() {
     Object clusteredVertices = map.get(Constants.CL_VERTICES);
 
@@ -154,10 +157,16 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  /**
+   * Get aggregated similarity of vertex property values such as label, geo coordinates, type.
+   */
   public Double getSimilarity() {
     return (double) map.get(Constants.AGGREGATED_SIM_VALUE);
   }
 
+  /**
+   * Get list of source dataset names which are contained in the cluster.
+   */
   public Set<String> getOntologiesList() {
     Object ontologies = map.get(Constants.ONTOLOGIES);
 

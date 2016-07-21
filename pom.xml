@@ -9,6 +9,9 @@
     <packaging>pom</packaging>
     <version>0.1-SNAPSHOT</version>
 
+    <name>Mapping-Analysis</name>
+    <description>Mapping-Analysis parent</description>
+
     <modules>
         <module>property-enrichment</module>
         <module>analysis-clique</module>
@@ -45,7 +48,6 @@
 
         <dep.flink.version>1.0.3</dep.flink.version>
         <dep.flinkSnapshot.version>1.0-SNAPSHOT</dep.flinkSnapshot.version>
-        <!--<dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>-->
         <dep.mysql.version>5.1.6</dep.mysql.version>
         <dep.guava.version>18.0</dep.guava.version>
         <dep.junit.version>4.11</dep.junit.version>
@@ -53,7 +55,9 @@
         <dep.mongodb.version>3.0.3</dep.mongodb.version>
         <dep.jgrapht.version>0.9.1</dep.jgrapht.version>
         <dep.jena.version>2.10.0</dep.jena.version>
+
         <dep.gdl.version>0.2-SNAPSHOT</dep.gdl.version>
+        <dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>
     </properties>
 
     <repositories>
@@ -116,6 +120,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.gradoop</groupId>
+                <artifactId>gradoop-flink</artifactId>
+                <version>${dep.gradoop.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
