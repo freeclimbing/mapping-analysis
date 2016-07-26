@@ -1,5 +1,6 @@
 package org.mappinganalysis.io.impl.json;
 
+import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Graph;
 import org.mappinganalysis.model.ObjectMap;
 
@@ -13,10 +14,14 @@ public class JSONDataSink {
     this.edgePath = edgePath;
   }
 
-  public void writeGraph(Graph<Long, ObjectMap, ObjectMap> graph) {
+  public <EV> void writeGraph(Graph<Long, ObjectMap, EV> graph) {
     graph.getVertices()
-        .writeAsFormattedText(vertexPath, new VertexToJSONFormatter<>());
+        .writeAsFormattedText(vertexPath,
+            FileSystem.WriteMode.OVERWRITE,
+            new VertexToJSONFormatter<>());
     graph.getEdges()
-        .writeAsFormattedText(edgePath, new EdgeToJSONFormatter<>());
+        .writeAsFormattedText(edgePath,
+            FileSystem.WriteMode.OVERWRITE,
+            new EdgeToJSONFormatter<>());
   }
 }

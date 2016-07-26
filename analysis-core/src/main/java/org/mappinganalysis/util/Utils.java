@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.mappinganalysis.io.impl.json.EntityToJSON;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.VertexToJSONFormatter;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeComponentTuple3;
@@ -53,17 +54,18 @@ public class Utils {
   /**
    * TODO test
    */
-  public static <E> void writeToJSONFile(Graph<Long, ObjectMap, E> graph, String outDir) {
+  public static <EV> void writeToJSONFile(Graph<Long, ObjectMap, EV> graph, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
-      graph.getVertices()
-          .writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
-              FileSystem.WriteMode.OVERWRITE,
-              new VertexToJSONFormatter<>());
-
-//      graph.getEdges()
+//      graph.getVertices()
 //          .writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
 //              FileSystem.WriteMode.OVERWRITE,
-//              new EdgeToJSONFormatter<>());
+//              new VertexToJSONFormatter<>());
+
+      String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/vertices/";
+      String edgeOutFile = Constants.INPUT_DIR + "output/" + outDir + "/edges/";
+      JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
+
+      dataSink.writeGraph(graph);
     }
   }
 

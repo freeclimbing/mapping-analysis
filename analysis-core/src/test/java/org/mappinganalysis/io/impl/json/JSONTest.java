@@ -51,7 +51,7 @@ public class JSONTest {
     // todo do sth
 
     /**
-     * Write file
+     * Write graph to JSON file
      */
     String tmpDir = temporaryFolder.getRoot().toString();
     String vertexOutFile = tmpDir + "/outVertices.json";

@@ -10,7 +10,7 @@ import org.mappinganalysis.util.Constants;
 /**
  * Edge to JSON Formatter
  */
-public class EdgeToJSONFormatter<E extends Edge<Long, ObjectMap>>
+public class EdgeToJSONFormatter<E extends Edge<Long, ?>>
     extends EntityToJSON
     implements TextOutputFormat.TextFormatter<E> {
   @Override
@@ -19,7 +19,9 @@ public class EdgeToJSONFormatter<E extends Edge<Long, ObjectMap>>
     try {
       json.put(Constants.SOURCE, e.getSource());
       json.put(Constants.TARGET, e.getTarget());
-      json.put(Constants.DATA, writeProperties(e.getValue()));
+      if (e.getValue() instanceof ObjectMap) {
+        json.put(Constants.DATA, writeProperties((ObjectMap) e.getValue()));
+      }
     } catch (JSONException ex) {
       ex.printStackTrace();
     }
