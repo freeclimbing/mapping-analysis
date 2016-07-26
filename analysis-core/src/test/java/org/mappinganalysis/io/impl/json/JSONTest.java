@@ -4,12 +4,12 @@ import com.google.common.collect.Lists;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.library.GSATriangleCount;
 import org.apache.log4j.Logger;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
@@ -23,6 +23,8 @@ public class JSONTest {
 
   private ExecutionEnvironment env;
 
+  @Rule
+  public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   // TODO no duplicate keys for properties in gdl (only with graph properties)
   private static final String EXAMPLE = "g[" +
@@ -34,31 +36,57 @@ public class JSONTest {
 
   @Test
   public void readJSONTest() throws Exception {
+    /**
+     * Read file
+     */
     env = ExecutionEnvironment.getExecutionEnvironment();
-    String vertexFile =
+    String vertexInFile =
         JSONTest.class.getResource("/data/vertices.json").getFile();
-    String edgeFile =
+    String edgeInFile =
         JSONTest.class.getResource("/data/edges.json").getFile();
+    JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
 
-    JSONDataSource dataSource = new JSONDataSource(vertexFile, edgeFile, env);
     Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph();
 
-    DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices = graph.getVertices();
+    // todo do sth
 
-//    Collection<Vertex<Long, ObjectMap>> loadedVertices = Lists.newArrayList();
-//    graph.getVertices().output(new LocalCollectionOutputFormat<>(loadedVertices));
-//    env.execute();
+    /**
+     * Write file
+     */
+    String tmpDir = temporaryFolder.getRoot().toString();
+    String vertexOutFile = tmpDir + "/outVertices.json";
+    String edgeOutFile = tmpDir + "/outEdges.json";
+    JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
 
-    for (Vertex<Long, ObjectMap> vertex : mergedClusterVertices.collect()) {
-      LOG.info("result: " + vertex);
+    dataSink.writeGraph(graph);
+
+    /**
+     * todo better compare in and out file?
+     */
+    JSONDataSource testSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
+
+    Graph<Long, ObjectMap, ObjectMap> inOutGraph = testSource.getGraph();
+
+    DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
+    for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {
+      LOG.info("in result: " + vertex);
     }
-    DataSet<Edge<Long, ObjectMap>> mergedClusterEdges = graph.getEdges();
-    for (Edge<Long, ObjectMap> edge : mergedClusterEdges.collect()) {
-      LOG.info("resultEdge: " + edge);
+
+    DataSet<Vertex<Long, ObjectMap>> outVertices = inOutGraph.getVertices();
+    for (Vertex<Long, ObjectMap> vertex : outVertices.collect()) {
+      LOG.info("out result: " + vertex);
     }
+//    DataSet<Edge<Long, ObjectMap>> mergedClusterEdges = graph.getEdges();
+//    for (Edge<Long, ObjectMap> edge : mergedClusterEdges.collect()) {
+//      LOG.info("resultEdge: " + edge);
+//    }
   }
 
+  /**
+   * still needed?
+   */
   @Test
+  @Deprecated
   public void writeJSONTest() throws Exception {
     env = ExecutionEnvironment.getExecutionEnvironment();
     Constants.VERBOSITY = Constants.DEBUG;
@@ -73,9 +101,5 @@ public class JSONTest {
     Collection<Vertex<Long, ObjectMap>> loadedVertices = Lists.newArrayList();
     graph.getVertices().output(new LocalCollectionOutputFormat<>(loadedVertices));
     env.execute();
-
-//    for (Vertex<Long, ObjectMap> vertex : mergedClusterVertices.collect()) {
-//      LOG.info("result: " + vertex);
-//    }
   }
 }

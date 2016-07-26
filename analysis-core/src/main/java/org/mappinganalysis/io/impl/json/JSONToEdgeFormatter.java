@@ -19,9 +19,9 @@ public class JSONToEdgeFormatter
 
     Long source = jsonEdge.getLong(Constants.SOURCE);
     Long target = jsonEdge.getLong(Constants.TARGET);
-    LOG.info("#####source: " + source + " target: " + target);
+//    LOG.info("#####source: " + source + " target: " + target);
     ObjectMap properties = getProperties(jsonEdge);
-    LOG.info("#####properties: " + properties.toString());
+//    LOG.info("#####properties: " + properties.toString());
 
     return new Edge<>(source, target, properties);
   }
