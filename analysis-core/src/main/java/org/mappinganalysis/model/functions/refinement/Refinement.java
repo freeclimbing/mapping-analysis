@@ -230,7 +230,7 @@ public class Refinement {
         .withForwardedFields("f0;f1;f2;f3");
 
 //    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
-//    Utils.writeToHdfs(newBaseTriplets, "6_init_newBaseTriplets");
+//    Utils.writeToFile(newBaseTriplets, "6_init_newBaseTriplets");
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
         .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));

@@ -16,6 +16,12 @@ public class Constants {
   public static final String GEO_FULL_NAME = "dbURLfull";
   public static final String DB_PROPERY_FILE_NAME = "db";
   public static final String DB_URL_FIELD = "url";
+
+  public static final String ID = "id";
+  public static final String SOURCE = "source";
+  public static final String TARGET = "target";
+  public static final String DATA = "data";
+
   /**
    * Accumulators
    */

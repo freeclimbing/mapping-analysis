@@ -70,7 +70,7 @@ public class SimilarityMapperTest extends BasicTest {
     String one = "Brioni (Croatia)";
     String two = "Brijuni";
     StringMetric metric =
-        with(new CosineSimilarity<String>())
+        with(new CosineSimilarity<>())
             .tokenize(Tokenizers.qGram(3))
             .build();
     System.out.println(one + " ### " + two + " ### " + metric.compare(one, two));
@@ -101,7 +101,7 @@ public class SimilarityMapperTest extends BasicTest {
 
     System.out.println("trigram");
     StringMetric trigram =
-        with(new CosineSimilarity<String>())
+        with(new CosineSimilarity<>())
             .tokenize(Tokenizers.qGram(3))
             .build();
     System.out.println(trigram.compare(leipzig, leipzigsachsen));

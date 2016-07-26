@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 public class RepresentativeTest {
   private static final Logger LOG = Logger.getLogger(RepresentativeTest.class);
 
-
+  // todo wrong notype
   private static final String REPRESENTIVE = "g[" +
       "(v1 {label = \"Santa Barbara (Calif)\", typeIntern = \"no_type_available\", hashCc = 6551576449116476652L, " +
       "ontology = \"http://data.nytimes.com/\", lon = -119.698D, lat = 34.4208D})" +

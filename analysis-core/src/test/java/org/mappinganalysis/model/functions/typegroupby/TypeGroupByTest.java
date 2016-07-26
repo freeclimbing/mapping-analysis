@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TypeGroupByTest {
-  private static final Logger LOG = Logger.getLogger(TypeGroupByTest.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   /**

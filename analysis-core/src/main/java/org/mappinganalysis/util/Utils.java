@@ -17,6 +17,10 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.mappinganalysis.io.impl.json.EntityToJSON;
+import org.mappinganalysis.io.impl.json.VertexToJSONFormatter;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.ObjectMap;
@@ -38,11 +42,28 @@ public class Utils {
 
   private static final HashFunction HF = Hashing.md5();
 
-  public static <T> void writeToHdfs(DataSet<T> data, String outDir) {
+  public static <T> void writeToFile(DataSet<T> data, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
       data.writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
           FileSystem.WriteMode.OVERWRITE,
           new DataSetTextFormatter<>());
+    }
+  }
+
+  /**
+   * TODO test
+   */
+  public static <E> void writeToJSONFile(Graph<Long, ObjectMap, E> graph, String outDir) {
+    if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
+      graph.getVertices()
+          .writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
+              FileSystem.WriteMode.OVERWRITE,
+              new VertexToJSONFormatter<>());
+
+//      graph.getEdges()
+//          .writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
+//              FileSystem.WriteMode.OVERWRITE,
+//              new EdgeToJSONFormatter<>());
     }
   }
 
@@ -55,9 +76,10 @@ public class Utils {
   }
 
   @Deprecated
-  public static void writeRemovedEdgesToHDFS(Graph<Long, ObjectMap, ObjectMap> graph,
-                                             DataSet<VertexComponentTuple2> oneToManyVertexComponentIds,
-                                             String componentIdName, ExampleOutput out) {
+  public static void writeRemovedEdgesToHDFS(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      DataSet<VertexComponentTuple2> oneToManyVertexComponentIds,
+      String componentIdName, ExampleOutput out) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
       DataSet<VertexComponentTuple2> vertexComponentIds = graph.getVertices()
           .map(new VertexComponentIdMapFunction(componentIdName));
@@ -81,10 +103,10 @@ public class Utils {
               return tuple.f1 != 0;
             }
           });
-      Utils.writeToHdfs(tmpResult, "rmEdgesPerCompAndEdgeCount");
+      Utils.writeToFile(tmpResult, "rmEdgesPerCompAndEdgeCount");
 
       DataSet<Tuple3<Integer, Integer, Integer>> result = getAggCount(tmpResult);
-      Utils.writeToHdfs(result, "rmEdgesCountAggregated");
+      Utils.writeToFile(result, "rmEdgesCountAggregated");
 
       out.addTuples("removed edges, edges in component, count", result);
     }
@@ -114,11 +136,6 @@ public class Utils {
             return new Tuple3<>(idCompCountTuple.f0, idCompCountTuple.f2, 1);
           }
         });
-//    Utils.writeToHdfs(aggVertexComponents, prefix + "AggVertexComps");
-
-    // too much aggregated, not needed yet
-//    DataSet<Tuple2<Integer, Integer>> aggAggCount = aggVertexComponents.groupBy(1).sum(2).project(1, 2);
-//    Utils.writeToHdfs(aggAggCount, prefix + "AggAggVertexComps");
 
     return aggVertexComponents.project(0, 1);
   }

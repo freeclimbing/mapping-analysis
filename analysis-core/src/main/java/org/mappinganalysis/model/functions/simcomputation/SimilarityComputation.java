@@ -2,20 +2,28 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.functions.RichFlatJoinFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Triplet;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.debug.PrintVertices;
+import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
+import org.mappinganalysis.model.functions.preprocessing.NeighborOntologyFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
@@ -222,7 +230,7 @@ public class SimilarityComputation {
     // internally compType is used, afterwards typeIntern is used again
     graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
 
-//    Utils.writeToHdfs(graph.getVertices(), "4_post_sim_sort");
+//    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
 //    env.execute();
 
     /*
@@ -245,26 +253,47 @@ public class SimilarityComputation {
      * SimSort (and postprocessing TypeGroupBy in prepare)
      */
     graph = SimSort.prepare(graph, processingMode, env, out);
-    Utils.writeToHdfs(graph.getVertices(), "3_post_type_group_by");
-//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Utils.HASH_CC);
+//    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
+//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
 
     // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
     // TODO for alternative version, unneeded
-    if (Constants.IS_SIMSORT_ENABLED) {
-      graph = SimSort.execute(graph, 100);
-    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
-      graph = SimSort.executeAlternative(graph, env);
-    }
-    graph = SimSort.excludeLowSimVertices(graph, env);
+//    if (Constants.IS_SIMSORT_ENABLED) {
+//      graph = SimSort.execute(graph, 100);
+//    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
+//      graph = SimSort.executeAlternative(graph, env);
+//    }
+//    graph = SimSort.excludeLowSimVertices(graph, env);
 
     /*
      * At this point, all edges within components are computed. Therefore we can delete links where
      * entities link several times to the same data source (e.g., geonames, linkedgeodata)
      * (remove 1:n links)
      */
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
+//    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
 
     return graph;
 
+  }
+
+  private static class LinkFilterExcludeEdgeFlatJoinFunction extends RichFlatJoinFunction<Edge<Long,ObjectMap>,
+      Tuple1<Long>, Edge<Long, ObjectMap>> {
+    private LongCounter filteredLinks = new LongCounter();
+
+    @Override
+    public void open(final Configuration parameters) throws Exception {
+      super.open(parameters);
+      getRuntimeContext().addAccumulator(Constants.PREPROC_LINK_FILTER_ACCUMULATOR, filteredLinks);
+    }
+
+    @Override
+    public void join(Edge<Long, ObjectMap> left, Tuple1<Long> right,
+                     Collector<Edge<Long, ObjectMap>> collector) throws Exception {
+      if (right == null) {
+        collector.collect(left);
+      } else {
+        filteredLinks.add(1L);
+      }
+    }
   }
 }

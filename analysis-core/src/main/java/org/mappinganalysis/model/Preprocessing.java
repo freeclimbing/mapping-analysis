@@ -7,10 +7,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -22,6 +19,7 @@ import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 /**
  * Preprocessing.
@@ -37,11 +35,13 @@ public class Preprocessing {
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
+    Utils.writeToJSONFile(graph, "JSONtestpre");
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = GraphUtils.addCcIdsToGraph(graph, env);
+    Utils.writeToJSONFile(graph, "JSONtestone");
 
-//    Utils.writeToHdfs(graph.getVertices(), "1_input_graph_withCc");
-//    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Utils.CC_ID);
+//    Utils.writeToFile(graph.getVertices(), "1_input_graph_withCc");
+//    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
 
     if (Constants.IS_RESTRICT_ACTIVE) {
       graph = restrictGraph(graph, env);
@@ -206,7 +206,6 @@ public class Preprocessing {
         .with(new FlatJoinFunction<Tuple2<Long, Long>, Vertex<Long, ObjectMap>, Tuple1<Long>>() {
           @Override
           public void join(Tuple2<Long, Long> first, Vertex<Long, ObjectMap> second, Collector<Tuple1<Long>> out) throws Exception {
-//              LOG.info("inputVertexZero: " + first.toString() + " " + second.toString());
             out.collect(new Tuple1<>(first.f1));
           }
         });
@@ -298,7 +297,7 @@ public class Preprocessing {
       boolean isLinkFilterActive) throws Exception {
 
     if (isLinkFilterActive) {
-      // Tuple7(edge src, edge trg, VertexId, Ontology, One, EdgeSim, VertexCc)
+      // Tuple6(edge src, edge trg, VertexId, Ontology, One, EdgeSim)
       final DataSet<Tuple6<Long, Long, Long, String, Integer, Double>> basicOneToManyTuples = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
 
