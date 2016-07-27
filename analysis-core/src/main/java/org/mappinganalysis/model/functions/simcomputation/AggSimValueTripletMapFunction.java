@@ -35,7 +35,7 @@ public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, 
       aggregatedSim = SimilarityComputation.getWeightedAggSim(value);
     }
 
-    value.put(Constants.AGGREGATED_SIM_VALUE, aggregatedSim);
+    value.setEdgeSimilarity(aggregatedSim);
     return triplet;
   }
 }

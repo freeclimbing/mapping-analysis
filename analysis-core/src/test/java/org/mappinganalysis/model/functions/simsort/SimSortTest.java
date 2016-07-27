@@ -8,9 +8,10 @@ import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.s1ck.gdl.GDLHandler;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class SimSortTest {
   private static final Logger LOG = Logger.getLogger(SimSortTest.class);
@@ -33,6 +34,25 @@ public class SimSortTest {
       "(v1)-[e1:sameAs]->(v2)" +
       "(v1)-[e2:sameAs]->(v3)" +
       "(v1)-[e3:sameAs]->(v4)";
+
+  /**
+   * Complete "small" dataset simsort test.
+   * @throws Exception
+   */
+  @Test
+  public void simSortJSONTest() throws Exception {
+    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
+    Constants.IGNORE_MISSING_PROPERTIES = true;
+    Constants.MIN_SIMSORT_SIM = 0.7;
+
+    String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
+
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+
+    graph = SimSort.execute(graph, 200);
+    // TODO test
+    graph.getVertices().first(1).print();
+  }
 
   @Test
   public void simSortTest() throws Exception {

@@ -277,7 +277,7 @@ public class Refinement {
     public Tuple4<Long, Long, Double, Integer> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
       Tuple4<Long, Long, Double, Integer> result = new Tuple4<>(triplet.getSrcVertex().getId(),
           triplet.getTrgVertex().getId(),
-          triplet.getEdge().getValue().getSimilarity(),
+          triplet.getEdge().getValue().getEdgeSimilarity(),
           1);
 
       LOG.info("noticable tuple: " + result.toString());

@@ -31,7 +31,7 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
       aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
     }
 
-    edgeValue.put(Constants.AGGREGATED_SIM_VALUE, aggregatedSim);
+    edgeValue.setEdgeSimilarity(aggregatedSim);
     return edge;
   }
 }

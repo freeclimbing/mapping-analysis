@@ -8,6 +8,6 @@ import org.mappinganalysis.util.Constants;
 public class AggSimValueKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Double> {
   @Override
   public Double getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
-    return (double) vertex.getValue().get(Constants.VERTEX_AGG_SIM_VALUE);
+    return vertex.getValue().getVertexSimilarity();
   }
 }

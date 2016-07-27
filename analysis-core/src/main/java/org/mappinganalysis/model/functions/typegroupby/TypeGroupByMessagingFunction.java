@@ -22,7 +22,7 @@ public class TypeGroupByMessagingFunction extends MessagingFunction<Long, Object
 //      LOG.info("processing edge: " + edge.getSource() + " -> " + edge.getTarget()
 //          + " " + edge.getValue().get(Utils.AGGREGATED_SIM_VALUE)
 //          + " on vertex: " + vertex.getId() + " ssn: " + getSuperstepNumber());
-      vertex.getValue().put(Constants.AGGREGATED_SIM_VALUE, edge.getValue().get(Constants.AGGREGATED_SIM_VALUE));
+      vertex.getValue().put(Constants.AGGREGATED_SIM_VALUE, edge.getValue().getEdgeSimilarity());
       if (edge.getSource() == (long) vertex.getId()) {
 //        LOG.info("Send msg: " + vertex.getValue() + " to " + edge.getTarget() + " ssn: " + getSuperstepNumber());
 

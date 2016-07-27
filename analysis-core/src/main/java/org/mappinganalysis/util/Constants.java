@@ -74,10 +74,19 @@ public class Constants {
   public static final String SIM_TYPE = "typeMatch";
   public static final String SIM_TRIGRAM = "trigramSim";
   public static final String SIM_DISTANCE = "distance";
+  /**
+   * Aggregated similarity value on edge
+   */
   public static final String AGGREGATED_SIM_VALUE = "aggSimValue";
+  /**
+   * Aggregated similarity of all edges which are outgoing or incoming to a vertex
+   */
   public static final String VERTEX_AGG_SIM_VALUE = "vertexAggSimValue";
+  /**
+   * SimSort status flag
+   */
   public static final String VERTEX_STATUS = "vertexStatus";
-  public static final Double DEFAULT_VERTEX_SIM = -1D;
+  public static final Double DEFAULT_VERTEX_SIM = -1.0D;
   /**
    * field name for connected component ID
    */

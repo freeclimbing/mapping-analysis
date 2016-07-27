@@ -105,7 +105,7 @@ public class ExampleOutput {
         .map(edge -> {
           String simValue = "";
           if (edge.getValue().containsKey(Constants.AGGREGATED_SIM_VALUE)) {
-            simValue = " " + edge.getValue().get(Constants.AGGREGATED_SIM_VALUE).toString();
+            simValue = " " + edge.getValue().getEdgeSimilarity().toString();
           }
           return "(" + edge.getSource() + ", " + edge.getTarget() + ")" + simValue;
         })

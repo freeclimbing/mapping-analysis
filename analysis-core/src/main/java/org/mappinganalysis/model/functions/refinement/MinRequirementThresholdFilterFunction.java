@@ -26,7 +26,7 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
     boolean hasSimType = edgeValue.containsKey(Constants.SIM_TYPE);
 
     boolean hasHighThreshold = edgeValue.containsKey(Constants.AGGREGATED_SIM_VALUE)
-        && (double) edgeValue.get(Constants.AGGREGATED_SIM_VALUE) > threshold;
+        && edgeValue.getEdgeSimilarity() > threshold;
     boolean hasMinTwoSimValues = (hasSimDist && (hasSimLabel || hasSimType))
         || (hasSimLabel && hasSimType);
 

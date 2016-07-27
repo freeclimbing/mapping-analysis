@@ -215,62 +215,67 @@ public class SimilarityComputation {
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
-    LOG.setLevel(Level.DEBUG);
-    /*
-     * sync begin
-     */
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true)
-        .map(new PrintVertices(false, "preTGB"));
-    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
-    graph = Graph.fromDataSet(vertices, edges, env);
-    /*
-     * sync end
-     */
-
-    // internally compType is used, afterwards typeIntern is used again
-    graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
-
-//    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
+//    LOG.setLevel(Level.DEBUG);
+//    /*
+//     * sync begin
+//     */
+//    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true)
+//        .map(new PrintVertices(false, "preTGB"));
+//    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
+//    graph = Graph.fromDataSet(vertices, edges, env);
+//    /*
+//     * sync end
+//     */
+//
+//    // internally compType is used, afterwards typeIntern is used again
+//    graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
+//
+////    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
+////    env.execute();
+//
+//    /*
+//     * sync begin
+//     */
+//    vertices = graph.getVertices().filter(value -> {
+//      LOG.info("filtered vertex " + value.toString());
+//      return true;
+//    });
+//    edges = graph.getEdges().filter(value -> {
+//      LOG.info("filtered edge");
+//      return true;
+//    });
+//    graph = Graph.fromDataSet(vertices, edges, env);
+//    /*
+//     * sync end
+//     */
+//
+//    /*
+//     * SimSort (and postprocessing TypeGroupBy in prepare)
+//     */
+//    graph = SimSort.prepare(graph, processingMode, env, out);
+////    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
+////    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+//
+//    Utils.writeToJSONFile(graph, "JSONtest");
 //    env.execute();
 
-    /*
-     * sync begin
-     */
-    vertices = graph.getVertices().filter(value -> {
-      LOG.info("filtered vertex " + value.toString());
-      return true;
-    });
-    edges = graph.getEdges().filter(value -> {
-      LOG.info("filtered edge");
-      return true;
-    });
-    graph = Graph.fromDataSet(vertices, edges, env);
-    /*
-     * sync end
-     */
-
-    /*
-     * SimSort (and postprocessing TypeGroupBy in prepare)
-     */
-    graph = SimSort.prepare(graph, processingMode, env, out);
-//    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
-//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+    graph = Utils.readFromJSONFile("JSONtest", env);
 
     // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
     // TODO for alternative version, unneeded
-//    if (Constants.IS_SIMSORT_ENABLED) {
-//      graph = SimSort.execute(graph, 100);
-//    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
-//      graph = SimSort.executeAlternative(graph, env);
-//    }
-//    graph = SimSort.excludeLowSimVertices(graph, env);
+    if (Constants.IS_SIMSORT_ENABLED) {
+      graph = SimSort.execute(graph, 100);
+    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
+      graph = SimSort.executeAlternative(graph, env);
+    }
+    graph = SimSort.excludeLowSimVertices(graph, env);
 
     /*
      * At this point, all edges within components are computed. Therefore we can delete links where
      * entities link several times to the same data source (e.g., geonames, linkedgeodata)
      * (remove 1:n links)
      */
-//    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
+    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
 
     return graph;
 

@@ -4,10 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -21,6 +23,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.mappinganalysis.io.impl.json.EntityToJSON;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.io.impl.json.VertexToJSONFormatter;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeComponentTuple3;
@@ -56,11 +59,6 @@ public class Utils {
    */
   public static <EV> void writeToJSONFile(Graph<Long, ObjectMap, EV> graph, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
-//      graph.getVertices()
-//          .writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
-//              FileSystem.WriteMode.OVERWRITE,
-//              new VertexToJSONFormatter<>());
-
       String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/vertices/";
       String edgeOutFile = Constants.INPUT_DIR + "output/" + outDir + "/edges/";
       JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
@@ -69,12 +67,51 @@ public class Utils {
     }
   }
 
+  /**
+   * compatibility method
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir, ExecutionEnvironment env) {
+//      String vertexOutFile = Constants.INPUT_DIR + "output/" + inDir + "/vertices/";
+//      String edgeOutFile = Constants.INPUT_DIR + "output/" + inDir + "/edges/";
+//      JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
+
+    return readFromJSONFile(inDir, env, false);
+  }
+
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(
+      String graphPath,
+      ExecutionEnvironment env,
+      boolean isAbsolutePath) {
+
+    if (!graphPath.endsWith("/")) {
+      graphPath = graphPath.concat("/");
+    }
+    String vertexOutFile = graphPath.concat("vertices/");
+    String edgeOutFile = graphPath.concat("edges/");
+    if (!isAbsolutePath) {
+      vertexOutFile = Constants.INPUT_DIR + "output/" + vertexOutFile;
+      edgeOutFile = Constants.INPUT_DIR + "output/" + edgeOutFile;
+    }
+
+    JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
+
+    return jsonDataSource.getGraph();
+  }
+
   public static class DataSetTextFormatter<V> implements
       TextOutputFormat.TextFormatter<V> {
     @Override
     public String format(V v) {
       return v.toString();
     }
+  }
+
+  public static boolean isValidLatitude(Double latitude) {
+    return latitude != null && Doubles.compare(latitude, 90) <= 0 && Doubles.compare(latitude, -90) >= 0;
+  }
+
+  public static boolean isValidLongitude(Double longitude) {
+    return longitude != null && Doubles.compare(longitude, 180) <= 0 && Doubles.compare(longitude, -180) >= 0;
   }
 
   @Deprecated
@@ -339,7 +376,7 @@ public class Utils {
   public static String toLog(Edge<Long, ObjectMap> edge) {
     return edge.getSource().toString()
         .concat("<->").concat(edge.getTarget().toString())
-        .concat(": ").concat(edge.getValue().get(Constants.AGGREGATED_SIM_VALUE).toString());
+        .concat(": ").concat(edge.getValue().getEdgeSimilarity().toString());
   }
 
 

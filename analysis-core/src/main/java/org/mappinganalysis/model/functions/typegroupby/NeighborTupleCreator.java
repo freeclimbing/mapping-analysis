@@ -21,7 +21,7 @@ class NeighborTupleCreator
     String vertexType = vertex.getValue().getTypes(Constants.TYPE_INTERN).stream().findFirst().get();
     if (vertexType.equals(Constants.NO_TYPE)) {
       neighbors.forEach(neighbor -> out.collect(new NeighborTuple(vertex.getId(),
-          neighbor.f0.getValue().getSimilarity(),
+          neighbor.f0.getValue().getEdgeSimilarity(),
           neighbor.f1.getValue().getTypes(Constants.TYPE_INTERN),
           neighbor.f1.getValue().getHashCcId())));
     }

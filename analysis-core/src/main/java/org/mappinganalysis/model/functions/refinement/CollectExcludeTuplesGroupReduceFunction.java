@@ -57,7 +57,7 @@ public class CollectExcludeTuplesGroupReduceFunction
       Long trgId = triplet.getTrgVertex().getId();
       tripletIds.add(new Tuple2<>(srcId, trgId));
       Long tmpId = srcId < trgId ? srcId : trgId;
-      Double similarity = triplet.getEdge().getValue().getSimilarity();
+      Double similarity = triplet.getEdge().getValue().getEdgeSimilarity();
 
       if (minimumIdAndSim == null) {
         minimumIdAndSim = new Tuple2<>(tmpId, similarity);

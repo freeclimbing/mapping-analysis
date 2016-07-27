@@ -25,7 +25,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex,
                            MessageIterator<AggSimValueTuple> inMessages) throws Exception {
-    double vertexAggSim = (double) vertex.getValue().get(Constants.VERTEX_AGG_SIM_VALUE);
+    double vertexAggSim = vertex.getValue().getVertexSimilarity();
     boolean hasNoVertexState = !vertex.getValue().containsKey(Constants.VERTEX_STATUS);
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
@@ -42,7 +42,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
       iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
 
-      vertex.getValue().put(Constants.VERTEX_AGG_SIM_VALUE, iterationAggSim);
+      vertex.getValue().setVertexSimilarity(iterationAggSim);
 
       if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {

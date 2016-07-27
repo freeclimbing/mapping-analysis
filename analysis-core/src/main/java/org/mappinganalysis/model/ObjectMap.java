@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -91,8 +92,8 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     return (long) map.get(Constants.HASH_CC);
   }
 
-  public boolean hasGeoProperties() {
-    if (map.containsKey(Constants.LAT) && map.containsKey(Constants.LON)) {
+  public boolean hasGeoPropertiesValid() {
+    if (Utils.isValidLatitude(getLatitude()) && Utils.isValidLongitude(getLongitude())) {
       return Boolean.TRUE;
     } else {
       return Boolean.FALSE;
@@ -108,17 +109,23 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   private Double getGeoValue(String latOrLon) {
-
-    // todo check preconditions, write test
     Object geoValue = map.get(latOrLon);
+    // there are null values for entities without geo coordinates
     if (geoValue == null) {
       return null;
     }
     Preconditions.checkArgument(!(geoValue instanceof Set)
-        && !(geoValue instanceof List), "lat or lon instance of Set or List: " + geoValue);
-    Preconditions.checkArgument(geoValue instanceof Double, "not double value: " + geoValue);
+        && !(geoValue instanceof List), "lat or lon instance of Set or List - should not happen: " + geoValue);
+    Preconditions.checkArgument(!(geoValue instanceof String), "string value: " + geoValue);
 
-    return Doubles.tryParse(geoValue.toString());
+    Double result = Doubles.tryParse(geoValue.toString());
+
+    if (latOrLon.equals(Constants.LAT) && Utils.isValidLatitude(result)
+        || latOrLon.equals(Constants.LON) && Utils.isValidLongitude(result)) {
+      return result;
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -164,8 +171,32 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   /**
    * Get aggregated similarity of vertex property values such as label, geo coordinates, type.
    */
-  public Double getSimilarity() {
-    return (double) map.get(Constants.AGGREGATED_SIM_VALUE);
+  public Double getEdgeSimilarity() {
+    return Doubles.tryParse(map.get(Constants.AGGREGATED_SIM_VALUE).toString());
+  }
+
+  /**
+   * Set computed aggregated similarity on edge - compared a pair of vertex property
+   * values such as label and geo coordinates
+   * @param similarity double value of similarity
+   */
+  public void setEdgeSimilarity(double similarity) {
+    map.put(Constants.AGGREGATED_SIM_VALUE, similarity);
+  }
+
+  /**
+   * Get aggregated similarity of all edges for vertex
+   */
+  public Double getVertexSimilarity() {
+    return Doubles.tryParse(map.get(Constants.VERTEX_AGG_SIM_VALUE).toString());
+  }
+
+  /**
+   * Set computed aggregated similarity on vertex - all incoming or outgoing edge similarities aggregated
+   * @param similarity double value of similarity
+   */
+  public void setVertexSimilarity(double similarity) {
+    map.put(Constants.VERTEX_AGG_SIM_VALUE, similarity);
   }
 
   /**

@@ -82,14 +82,14 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
       clusterOntologies.add(currentVertex.getValue().get(Constants.ONTOLOGY).toString());
     }
     if (currentVertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-      clusterOntologies.addAll((Set<String>) currentVertex.getValue().get(Constants.ONTOLOGIES));
+      clusterOntologies.addAll(currentVertex.getValue().getOntologiesList());
     }
   }
 
   private void updateClusterVertexIds(Set<Long> clusterVertices, Vertex<Long, ObjectMap> currentVertex) {
     clusterVertices.add(currentVertex.getId());
     if (currentVertex.getValue().containsKey(Constants.CL_VERTICES)) {
-      clusterVertices.addAll((Set<Long>) currentVertex.getValue().get(Constants.CL_VERTICES));
+      clusterVertices.addAll(currentVertex.getValue().getVerticesList());
     }
   }
 
@@ -100,17 +100,20 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
   }
 
   private void addGeoToMap(HashMap<String, GeoCode> geoMap, Vertex<Long, ObjectMap> vertex) {
-    if (vertex.getValue().hasGeoProperties()) {
-      if (!vertex.getValue().containsKey(Constants.ONTOLOGY) && !vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
+    if (vertex.getValue().hasGeoPropertiesValid()) {
+      if (!vertex.getValue().containsKey(Constants.ONTOLOGY)
+          && !vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
         LOG.info("no/more ont but geo: " + vertex);
       }
 
+      Double latitude = vertex.getValue().getLatitude();
+      Double longitude = vertex.getValue().getLongitude();
       if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
         geoMap.put(vertex.getValue().get(Constants.ONTOLOGY).toString(),
-            new GeoCode(vertex.getValue().getLatitude(), vertex.getValue().getLongitude()));
+            new GeoCode(latitude, longitude));
       } else if (vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-        for (String value : (Set<String>) vertex.getValue().get(Constants.ONTOLOGIES)) {
-          geoMap.put(value, new GeoCode(vertex.getValue().getLatitude(), vertex.getValue().getLongitude()));
+        for (String value : vertex.getValue().getOntologiesList()) {
+          geoMap.put(value, new GeoCode(latitude, longitude));
         }
       }
     }
@@ -118,7 +121,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
 
   private void addLabelToMap(HashMap<String, Integer> labelMap, Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(Constants.LABEL)) {
-      String label = Utils.simplify(currentVertex.getValue().get(Constants.LABEL).toString());
+      String label = Utils.simplify(currentVertex.getValue().getLabel());
       if (labelMap.containsKey(label)) {
         int labelCount = labelMap.get(label);
         labelMap.put(label, labelCount + 1);

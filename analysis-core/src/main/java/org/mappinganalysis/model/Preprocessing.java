@@ -33,12 +33,9 @@ public class Preprocessing {
    * @param env execution environment  @return graph   @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          ExecutionEnvironment env,
-                                                          ExampleOutput out) throws Exception {
-    Utils.writeToJSONFile(graph, "JSONtestpre");
+                                                          ExecutionEnvironment env) throws Exception {
     graph = applyTypeToInternalTypeMapping(graph, env);
     graph = GraphUtils.addCcIdsToGraph(graph, env);
-    Utils.writeToJSONFile(graph, "JSONtestone");
 
 //    Utils.writeToFile(graph.getVertices(), "1_input_graph_withCc");
 //    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
