@@ -11,6 +11,7 @@ import org.mappinganalysis.util.Constants;
 public class  CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
   @Override
   public Long getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
-    return (long) vertex.getValue().get(Constants.CC_ID);
+    int tmp = (int) vertex.getValue().get(Constants.CC_ID); // TODO fix, needed for test
+    return (long) tmp;
   }
 }

@@ -154,7 +154,7 @@ public class Stats {
         .groupBy(new KeySelector<Vertex<Long, ObjectMap>, String>() {
           @Override
           public String getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return (String) vertex.getValue().get(Constants.ONTOLOGY);
+            return vertex.getValue().getOntology();
           }
         })
         .reduceGroup(new GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
@@ -218,22 +218,22 @@ public class Stats {
         + jobExecResult.getAccumulatorResult(Constants.SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR));
 
     // optional, currently not used
-    if (jobExecResult.getAccumulatorResult(Constants.TYPES_COUNT_ACCUMULATOR) != null) {
-      Map<String, Long> typeStats = Maps.newHashMap();
-      List<String> typesList = jobExecResult.getAccumulatorResult(Constants.TYPES_COUNT_ACCUMULATOR);
-      for (String s : typesList) {
-        if (typeStats.containsKey(s)) {
-          typeStats.put(s, typeStats.get(s) + 1L);
-        } else {
-          typeStats.put(s, 1L);
-        }
-      }
-
-      LOG.info("[1] ### Types parsed to internal type: ");
-      for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
-        LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
-      }
-    }
+//    if (jobExecResult.getAccumulatorResult(Constants.TYPES_COUNT_ACCUMULATOR) != null) {
+//      Map<String, Long> typeStats = Maps.newHashMap();
+//      List<String> typesList = jobExecResult.getAccumulatorResult(Constants.TYPES_COUNT_ACCUMULATOR);
+//      for (String s : typesList) {
+//        if (typeStats.containsKey(s)) {
+//          typeStats.put(s, typeStats.get(s) + 1L);
+//        } else {
+//          typeStats.put(s, 1L);
+//        }
+//      }
+//
+//      LOG.info("[1] ### Types parsed to internal type: ");
+//      for (Map.Entry<String, Long> entry : typeStats.entrySet()) {
+//        LOG.info("[1] " + entry.getKey() + ": " + entry.getValue());
+//      }
+//    }
 
     if (jobExecResult.getAccumulatorResult(Constants.FILTERED_LINKS_ACCUMULATOR) != null) {
       List<Edge<Long, NullValue>> filteredLinksList
@@ -305,10 +305,10 @@ public class Stats {
   private static void addCountsForSingleSource(Graph<Long, ObjectMap, NullValue> inputGraph,
                                                ExampleOutput out, final String source) {
     DataSet<Vertex<Long, ObjectMap>> nytVertices = inputGraph.getVertices()
-        .filter(vertex -> vertex.getValue().get(Constants.ONTOLOGY).toString().equals(Constants.NYT_NS));
+        .filter(vertex -> vertex.getValue().getOntology().equals(Constants.NYT_NS));
 
     DataSet<Vertex<Long, ObjectMap>> gnVertices = inputGraph.getVertices()
-        .filter(vertex -> vertex.getValue().get(Constants.ONTOLOGY).toString().equals(source));
+        .filter(vertex -> vertex.getValue().getOntology().equals(source));
 
     DataSet<Edge<Long, NullValue>> edgeDataSet = Preprocessing
         .deleteEdgesWithoutSourceOrTarget(inputGraph.getEdges(), nytVertices.union(gnVertices));

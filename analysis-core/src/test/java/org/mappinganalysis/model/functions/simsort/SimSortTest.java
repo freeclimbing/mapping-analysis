@@ -6,11 +6,13 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
+import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.s1ck.gdl.GDLHandler;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SimSortTest {
@@ -43,15 +45,20 @@ public class SimSortTest {
   public void simSortJSONTest() throws Exception {
     Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
     Constants.IGNORE_MISSING_PROPERTIES = true;
-    Constants.MIN_SIMSORT_SIM = 0.7;
+    Constants.MIN_SIMSORT_SIM = 0.5;
 
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
 
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = SimSort.execute(graph, 200);
-    // TODO test
-    graph.getVertices().first(1).print();
+    graph = SimSort.execute(graph, 100);
+    graph = SimSort.excludeLowSimVertices(graph, env);
+    graph = GraphUtils.applyLinkFilter(graph, env);
+    // old default result: 7115
+    //graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
+    LOG.info(graph.getVertexIds().count());
+
+    assertEquals(7533, graph.getVertexIds().count());
   }
 
   @Test
@@ -63,8 +70,9 @@ public class SimSortTest {
 
     firstGraph = SimSort.prepare(firstGraph, Constants.DEFAULT_VALUE, env, null);
 
+    // ?? needed?
     Constants.MIN_CLUSTER_SIM = 0.75D;
-    firstGraph = SimSort.execute(firstGraph, 200);
+    firstGraph = SimSort.execute(firstGraph, 100);
 
     // TODO Test
     for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {

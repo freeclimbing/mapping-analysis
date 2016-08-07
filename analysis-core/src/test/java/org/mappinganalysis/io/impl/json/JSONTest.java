@@ -81,25 +81,4 @@ public class JSONTest {
 //      LOG.info("resultEdge: " + edge);
 //    }
   }
-
-  /**
-   * still needed?
-   */
-  @Test
-  @Deprecated
-  public void writeJSONTest() throws Exception {
-    env = ExecutionEnvironment.getExecutionEnvironment();
-    Constants.VERBOSITY = Constants.DEBUG;
-
-    GDLHandler handler = new GDLHandler.Builder().buildFromString(EXAMPLE);
-    Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(handler);
-
-    DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices = graph.getVertices();
-
-    Utils.writeToJSONFile(graph, "output/testtmp");
-
-    Collection<Vertex<Long, ObjectMap>> loadedVertices = Lists.newArrayList();
-    graph.getVertices().output(new LocalCollectionOutputFormat<>(loadedVertices));
-    env.execute();
-  }
 }

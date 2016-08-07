@@ -21,7 +21,7 @@ public class EntityToJSON {
     JSONObject data = new JSONObject();
     if (map.size() > 0) {
       for (String key : map.keySet()) {
-        LOG.info(key + " value: " + map.get(key));
+//        LOG.info(key + " value: " + map.get(key));
         if (map.get(key) instanceof Set) {
           data.put(key, writeJSONArray((Set) map.get(key)));
         } else {

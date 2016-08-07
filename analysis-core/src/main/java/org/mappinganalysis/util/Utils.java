@@ -55,16 +55,24 @@ public class Utils {
   }
 
   /**
-   * TODO test
+   * Write a Gelly graph to JSON
    */
-  public static <EV> void writeToJSONFile(Graph<Long, ObjectMap, EV> graph, String outDir) {
-    if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
+  public static <EV> void writeGraphToJSONFile(Graph<Long, ObjectMap, EV> graph, String outDir) {
       String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/vertices/";
       String edgeOutFile = Constants.INPUT_DIR + "output/" + outDir + "/edges/";
       JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
 
       dataSink.writeGraph(graph);
-    }
+  }
+
+  /**
+   * Write a DataSet of vertices to JSON
+   */
+  public static void writeVerticesToJSONFile(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir) {
+      String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
+      JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
+
+      dataSink.writeVertices(vertices);
   }
 
   /**
@@ -249,10 +257,10 @@ public class Utils {
 
     String ontology = "";
     if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
-      ontology = " source: " + vertex.getValue().get(Constants.ONTOLOGY).toString();
+      ontology = " source: " + vertex.getValue().getOntology();
     }
     if (vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-      ontology = " sources: " + vertex.getValue().get(Constants.ONTOLOGIES).toString();
+      ontology = " sources: " + vertex.getValue().getOntologiesList().toString();
     }
     if (vertex.getValue().containsKey(Constants.DB_URL_FIELD)) {
       ontology = " uri: " + vertex.getValue().get(Constants.DB_URL_FIELD).toString();
@@ -284,8 +292,8 @@ public class Utils {
         case "School":
           vertexType = "ArchitecturalStructure";
           break;
-        case "Mountain":
-          vertexType = "Island";
+        case "Island":
+          vertexType = "Mountain";
           break;
         case "Settlement":
         case "Country":

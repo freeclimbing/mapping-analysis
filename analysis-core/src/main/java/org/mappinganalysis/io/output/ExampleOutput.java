@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Logging output class. In gradoop already deprecated methods, try to avoid usage.
+ */
 public class ExampleOutput {
   private static final Logger LOG = Logger.getLogger(ExampleOutput.class);
 
@@ -249,7 +252,10 @@ public class ExampleOutput {
           .fromElements("\n*** " + caption + " ***\n");
 
       DataSet<String> vertexSet = vertices
-          .map(vertex -> new Tuple2<>((long) vertex.getValue().get(compName), 1L))
+          .map(vertex -> {
+            LOG.info("###preClusterVertex: " + vertex.toString());
+            return new Tuple2<>((long) vertex.getValue().get(compName), 1L);
+          })
           .returns(new TypeHint<Tuple2<Long, Long>>() {})
           .groupBy(0)
           .sum(1)

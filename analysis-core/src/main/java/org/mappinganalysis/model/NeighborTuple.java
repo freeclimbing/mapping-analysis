@@ -4,6 +4,9 @@ import org.apache.flink.api.java.tuple.Tuple4;
 
 import java.util.Set;
 
+/**
+ * TypeGroupBy helper class, Tuple4 with vertexId, edgeSim, Set of types, compId
+ */
 public class NeighborTuple extends Tuple4<Long, Double, Set<String>, Long> {
   public NeighborTuple() {
   }

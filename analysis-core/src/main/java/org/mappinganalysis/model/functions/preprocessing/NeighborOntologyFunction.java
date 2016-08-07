@@ -23,7 +23,7 @@ public class NeighborOntologyFunction
       throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
-      String ontology = neighbor.f1.getValue().get(Constants.ONTOLOGY).toString();
+      String ontology = neighbor.f1.getValue().getOntology();
       Double edgeSim = edge.getValue().getEdgeSimilarity();
 
       collector.collect(new Tuple6<>(edge.getSource(),

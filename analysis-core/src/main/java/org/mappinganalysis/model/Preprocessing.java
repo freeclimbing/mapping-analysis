@@ -1,13 +1,18 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichFlatJoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.graph.*;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -19,7 +24,6 @@ import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 /**
  * Preprocessing.
@@ -32,25 +36,37 @@ public class Preprocessing {
    * @param graph input graph
    * @param env execution environment  @return graph   @throws Exception
    */
-  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
-                                                          ExecutionEnvironment env) throws Exception {
-    graph = applyTypeToInternalTypeMapping(graph, env);
-    graph = GraphUtils.addCcIdsToGraph(graph, env);
+  public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> graph,
+                                                               ExampleOutput out,
+                                                               ExecutionEnvironment env) throws Exception {
+    if (!Constants.IS_PREPROC_ONLY) {
+      return (Graph<Long, ObjectMap, ObjectMap>) graph;
+    }
+    Graph<Long, ObjectMap, NullValue> preGraph = graph
+        .mapEdges(new MapFunction<Edge<Long, EV>, NullValue>() { // dont replace
+          @Override
+          public NullValue map(Edge<Long, EV> value) throws Exception {
+            return NullValue.getInstance();
+          }
+        });
+
+    preGraph = applyTypeToInternalTypeMapping(preGraph, env);
+    preGraph = GraphUtils.addCcIdsToGraph(preGraph, env);
 
 //    Utils.writeToFile(graph.getVertices(), "1_input_graph_withCc");
-//    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
+    out.addPreClusterSizes("1 cluster sizes input graph", preGraph.getVertices(), Constants.CC_ID);
 
     if (Constants.IS_RESTRICT_ACTIVE) {
-      graph = restrictGraph(graph, env);
+      preGraph = restrictGraph(preGraph, env);
     }
 
     /*
      * restrict graph to direct links with matching type information
      */
-    graph = applyTypeMissMatchCorrection(graph, true, env);
+    preGraph = applyTypeMissMatchCorrection(preGraph, true, env);
     Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
-        graph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
+        preGraph.getVertices(),//.map(new PrintVertices(false, "TMMC")),
+        SimilarityComputation.computeGraphEdgeSim(preGraph, Constants.DEFAULT_VALUE),
         env);
 
     /*
@@ -102,11 +118,11 @@ public class Preprocessing {
   }
 
   /**
-   * CSV Reader todo fix duplicate code
+   * CSV Reader
    * @return graph with vertices and edges.
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(ExecutionEnvironment env)
+  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(ExecutionEnvironment env, ExampleOutput out)
       throws Exception {
     DataLoader loader = new DataLoader(env);
     final String vertexFile = "concept.csv";
@@ -119,9 +135,9 @@ public class Preprocessing {
 
     if (Constants.INPUT_DIR.contains("linklion")) {
       if (Constants.LL_MODE.equals("nyt")) {
-        vertices = getNytVerticesLinklion(env, ccFile, vertices);
+        vertices = getNytVerticesLinklion(env, ccFile, vertices, out);
       } else if (Constants.LL_MODE.equals("random")) {
-        vertices = getRandomCcsFromLinklion(env, ccFile, vertices, 1000);
+        vertices = getRandomCcsFromLinklion(env, ccFile, vertices, 50000);
       }
     }
 
@@ -146,6 +162,9 @@ public class Preprocessing {
       DataSet<Vertex<Long, ObjectMap>> vertices,
       int componentNumber) {
     DataSet<Tuple2<Long, Long>> vertexIdAndCcs = getBaseVertexCcs(env, ccFile);
+
+    // todo why not 10k components?
+
     DataSet<Tuple1<Long>> relevantCcs = vertexIdAndCcs.<Tuple1<Long>>project(1).first(componentNumber);
     vertices = restrictVerticesToGivenCcs(vertices, vertexIdAndCcs, relevantCcs);
 
@@ -165,11 +184,12 @@ public class Preprocessing {
         .where(0)
         .equalTo(0)
         .with((id, vertex) -> {
-          LOG.info("restrictedVertex: " + vertex);
+//          LOG.info("restrictedVertex: " + vertex);
           return vertex;
         })
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .distinct(0);
+
     return vertices;
   }
 
@@ -190,10 +210,11 @@ public class Preprocessing {
    */
   private static DataSet<Vertex<Long, ObjectMap>> getNytVerticesLinklion(ExecutionEnvironment env,
                                                                          String ccFile,
-                                                                         DataSet<Vertex<Long, ObjectMap>> vertices) {
+                                                                         DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out) {
     DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
-        vertex.getValue().get(Constants.ONTOLOGY).equals(Constants.NYT_NS));
-//          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
+//        vertex.getValue().getOntology().equals(Constants.NYT_NS));
+          vertex.getValue().getOntology().equals(Constants.FB_NS));
+    out.addDataSetCount("nyt vertices", nytFbVertices);
 
     DataSet<Tuple2<Long, Long>> vertexCcs = getBaseVertexCcs(env, ccFile);
 
@@ -292,9 +313,17 @@ public class Preprocessing {
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
       boolean isLinkFilterActive) throws Exception {
+    return applyLinkFilterStrategy(graph, env, isLinkFilterActive, Boolean.TRUE);
+  }
+
+  public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilterStrategy(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env,
+      Boolean isLinkFilterActive,
+      Boolean isDeleteSingleVertices) {
 
     if (isLinkFilterActive) {
-      // Tuple6(edge src, edge trg, VertexId, Ontology, One, EdgeSim)
+      // Tuple6(edge src, edge trg, VertexId, Ontology, 1, EdgeSim)
       final DataSet<Tuple6<Long, Long, Long, String, Integer, Double>> basicOneToManyTuples = graph
           .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
 
@@ -314,8 +343,12 @@ public class Preprocessing {
           .leftOuterJoin(graph.getEdges())
           .where(0, 1)
           .equalTo(0, 1)
-          .with((first, second) -> second)
-          .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
+          .with((first, second) -> {
+            LOG.info("###maxRandomTuple### " + second.toString());
+            return second;
+          })
+          .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
+          .distinct(0,1);
 
       DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
           .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
@@ -328,9 +361,12 @@ public class Preprocessing {
           .with(new LinkFilterExcludeEdgeFlatJoinFunction())
           .union(maxOneToManyEdges);
 
-      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
-          graph.getVertices(),
-          newEdges.<Tuple2<Long, Long>>project(0, 1));
+      DataSet<Vertex<Long, ObjectMap>> resultVertices = graph.getVertices();
+      if (isDeleteSingleVertices) {
+        resultVertices = deleteVerticesWithoutAnyEdges(
+            graph.getVertices(),
+            newEdges.<Tuple2<Long, Long>>project(0, 1));
+      }
 
       return Graph.fromDataSet(resultVertices, newEdges, env);
     } else {
@@ -413,6 +449,7 @@ public class Preprocessing {
     public void join(Edge<Long, ObjectMap> left, Tuple1<Long> right,
                      Collector<Edge<Long, ObjectMap>> collector) throws Exception {
       if (right == null) {
+        LOG.info("LFExclude: " + left.toString());
         collector.collect(left);
       } else {
         filteredLinks.add(1L);

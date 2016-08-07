@@ -79,7 +79,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
 
   private void updateClusterOntologies(Set<String> clusterOntologies, Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(Constants.ONTOLOGY)) {
-      clusterOntologies.add(currentVertex.getValue().get(Constants.ONTOLOGY).toString());
+      clusterOntologies.add(currentVertex.getValue().getOntology());
     }
     if (currentVertex.getValue().containsKey(Constants.ONTOLOGIES)) {
       clusterOntologies.addAll(currentVertex.getValue().getOntologiesList());
@@ -109,7 +109,7 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
       Double latitude = vertex.getValue().getLatitude();
       Double longitude = vertex.getValue().getLongitude();
       if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
-        geoMap.put(vertex.getValue().get(Constants.ONTOLOGY).toString(),
+        geoMap.put(vertex.getValue().getOntology(),
             new GeoCode(latitude, longitude));
       } else if (vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
         for (String value : vertex.getValue().getOntologiesList()) {

@@ -15,6 +15,7 @@ import org.apache.flink.hadoop.shaded.com.google.common.base.Preconditions;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
@@ -35,15 +36,26 @@ public class GraphUtils {
 
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
         .run(new GSAConnectedComponents<>(1000))
-        .map(new MapFunction<Vertex<Long, Long>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> map(Vertex<Long, Long> vertex) throws Exception {
-            return new Tuple2<>(vertex.getId(), vertex.getValue());
-
-          }
-        });
+        .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
     return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
+  }
+
+  public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilter(Graph<Long, ObjectMap, ObjectMap> graph,
+                                                                  ExecutionEnvironment env) {
+  //TODO
+//    DataSet<Tuple3<Long, String, Long>> vertices = graph.getVertices()
+//        .map(vertex -> new Tuple3<>(vertex.getId(), vertex.getValue().getOntology(), vertex.getValue().getHashCcId()));
+//    DataSet<Tuple3<Long, Long, Double>> edges = graph.getEdges()
+//        .map(edge -> new Tuple3<>(edge.getSource(), edge.getTarget(), edge.getValue().getEdgeSimilarity()));
+//
+//    DeltaIteration<Tuple3<Long, Long, Double>, Tuple3<Long, Long, Double>> iteration = edges
+//    .iterateDelta(edges, 1000);
+//
+//    vertices.groupBy(2);
+    return Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE, Boolean.FALSE);
+//    return graph;
   }
 
   private static <T> Graph<Long, Long, NullValue> prepareForCc(Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) {
@@ -129,11 +141,11 @@ public class GraphUtils {
         .filter(edge -> (long) edge.getSource() != edge.getTarget())
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct()
-        .filter(edge -> {
-            LOG.info("distinctSimpleEdge: " + edge.toString());
-            return true;
-        });
+        .distinct();
+//        .filter(edge -> {
+//            LOG.info("distinctSimpleEdge: " + edge.toString());
+//            return true;
+//        });
   }
 
   /**

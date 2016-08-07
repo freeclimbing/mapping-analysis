@@ -4,22 +4,22 @@ import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.*;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
-import org.mappinganalysis.io.debug.PrintNeighborTuple;
 import org.mappinganalysis.io.debug.PrintVertices;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.NeighborTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
-import org.mappinganalysis.model.functions.preprocessing.GenerateHashCcIdGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.functions.keyselector.CcIdAndCompTypeKeySelector;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 public class TypeGroupBy {
@@ -36,6 +36,7 @@ public class TypeGroupBy {
                                                    String processingMode,
                                                    Integer maxIterations,
                                                    ExecutionEnvironment env, ExampleOutput out) throws Exception {
+    // start preprocessing
     // sync begin
     DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true);
     DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
@@ -45,18 +46,16 @@ public class TypeGroupBy {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
-        .groupBy(new CcIdAndCompTypeKeySelector())
-        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
+        .groupBy(new CcIdKeySelector())
+        .reduceGroup(new HashCcIdOverlappingFunction());
+//        .groupBy(new CcIdAndCompTypeKeySelector())
+//        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
-
-    //     if (LOG.isDebugEnabled()) {
-    vertices = vertices.map(new PrintVertices(false, "preprocTGB2"));
     // end preprocessing
-
-    LOG.info("mode: " + Constants.IS_TGB_DEFAULT_MODE);
 
     /**
      * Start typed grouping
+     * IS_TGB_DEFAULT_MODE is no longer set, deprecated mode is not used anymore
      */
     if (!Constants.IS_TGB_DEFAULT_MODE) {
       final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
@@ -89,14 +88,6 @@ public class TypeGroupBy {
             }
           });
 
-      // TODO
-//      LOG.setLevel(Level.DEBUG);
-//      LOG.info("debugEnabled: " + LOG.isInfoEnabled());
-      if (LOG.isInfoEnabled()) {
-        noTypedNeighborsCandidates = noTypedNeighborsCandidates
-            .map(new PrintNeighborTuple(false, "noTypeCandidates"));
-      }
-
       DataSet<Vertex<Long, ObjectMap>> noTypedNeighbors = noTypedNeighborsCandidates
           .groupBy(0)
           .min(3)
@@ -128,10 +119,10 @@ public class TypeGroupBy {
           .equalTo(0)
           .with((unchanged, updated) -> {
             if (updated == null) {
-              LOG.info("final: unchanged: " + unchanged.toString());
+//              LOG.info("final: unchanged: " + unchanged.toString());
               return unchanged;
             } else {
-              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
+//              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
               return updated;
             }
           })

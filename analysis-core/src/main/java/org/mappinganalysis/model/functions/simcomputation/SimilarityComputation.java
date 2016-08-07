@@ -4,26 +4,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.RichFlatJoinFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple1;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.io.debug.PrintVertices;
-import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
+import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
-import org.mappinganalysis.model.functions.preprocessing.NeighborOntologyFunction;
 import org.mappinganalysis.model.functions.simsort.SimSort;
 import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
@@ -215,68 +208,68 @@ public class SimilarityComputation {
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
-//    LOG.setLevel(Level.DEBUG);
-//    /*
-//     * sync begin
-//     */
-//    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true)
-//        .map(new PrintVertices(false, "preTGB"));
-//    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
-//    graph = Graph.fromDataSet(vertices, edges, env);
-//    /*
-//     * sync end
-//     */
-//
-//    // internally compType is used, afterwards typeIntern is used again
-//    graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
-//
-////    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
-////    env.execute();
-//
-//    /*
-//     * sync begin
-//     */
-//    vertices = graph.getVertices().filter(value -> {
-//      LOG.info("filtered vertex " + value.toString());
-//      return true;
-//    });
-//    edges = graph.getEdges().filter(value -> {
-//      LOG.info("filtered edge");
-//      return true;
-//    });
-//    graph = Graph.fromDataSet(vertices, edges, env);
-//    /*
-//     * sync end
-//     */
-//
-//    /*
-//     * SimSort (and postprocessing TypeGroupBy in prepare)
-//     */
-//    graph = SimSort.prepare(graph, processingMode, env, out);
-////    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
-////    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
-//
-//    Utils.writeToJSONFile(graph, "JSONtest");
-//    env.execute();
+    if (Constants.IS_PREPROC_ONLY) {
+      LOG.setLevel(Level.DEBUG);
+    /*
+     * sync begin
+     */
+      DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true);
+//          .map(new PrintVertices(false, "preTGB"));
+      DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
+      graph = Graph.fromDataSet(vertices, edges, env);
+    /*
+     * sync end
+     */
 
-    graph = Utils.readFromJSONFile("JSONtest", env);
+      // internally compType is used, afterwards typeIntern is used again
+      graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
 
-    // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
-    // TODO for alternative version, unneeded
-    if (Constants.IS_SIMSORT_ENABLED) {
-      graph = SimSort.execute(graph, 100);
-    } else if (Constants.IS_SIMSORT_ALT_ENABLED){
-      graph = SimSort.executeAlternative(graph, env);
-    }
-    graph = SimSort.excludeLowSimVertices(graph, env);
+//    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
+
+    /*
+     * sync begin
+     */
+//      vertices = graph.getVertices().filter(value -> {
+//        LOG.info("filtered vertex " + value.toString());
+//        return true;
+//      });
+//      edges = graph.getEdges().filter(value -> {
+//        LOG.info("filtered edge");
+//        return true;
+//      });
+//      graph = Graph.fromDataSet(vertices, edges, env);
+    /*
+     * sync end
+     */
+
+    /*
+     * SimSort (and postprocessing TypeGroupBy in prepare)
+     */
+      graph = SimSort.prepare(graph, processingMode, env, out);
+//    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
+//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+
+      String outName = Constants.LL_MODE + "PreprocGraph";
+      Utils.writeGraphToJSONFile(graph, outName);
+      out.print();
+    } else {
+
+      // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
+      // TODO for alternative version, unneeded
+      if (Constants.IS_SIMSORT_ENABLED) {
+        graph = SimSort.execute(graph, 100);
+      } else if (Constants.IS_SIMSORT_ALT_ENABLED) {
+        graph = SimSort.executeAlternative(graph, env);
+      }
+      graph = SimSort.excludeLowSimVertices(graph, env);
 
     /*
      * At this point, all edges within components are computed. Therefore we can delete links where
      * entities link several times to the same data source (e.g., geonames, linkedgeodata)
      * (remove 1:n links)
      */
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE);
-
+      graph = GraphUtils.applyLinkFilter(graph, env);
+    }
     return graph;
 
   }

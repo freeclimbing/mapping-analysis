@@ -200,6 +200,13 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   /**
+   * Get source dataset name for vertex.
+   */
+  public String getOntology() {
+    return map.get(Constants.ONTOLOGY).toString();
+  }
+
+  /**
    * Get list of source dataset names which are contained in the cluster.
    */
   public Set<String> getOntologiesList() {

@@ -117,7 +117,9 @@ public class Constants {
    * Command line option names.
    */
   public static String INPUT_DIR;
-  public static String LL_MODE;
+  public static String LL_MODE = "";
+  public static String PROC_MODE = "";
+  public static boolean IS_PREPROC_ONLY;
   public static String VERBOSITY;
   public static boolean IS_SIMSORT_ENABLED;
   public static boolean IS_SIMSORT_ALT_ENABLED;
