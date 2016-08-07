@@ -17,10 +17,19 @@ public class JSONToEntity {
   /**
    * Possible property names where several values can occur, i.e, typeIntern=Settlement, Country
    */
-  List<String> arrayOptions = Arrays.asList(Constants.TYPE_INTERN,
+  List<String> arrayOptions = Arrays.asList(
+      Constants.TYPE_INTERN,
       Constants.COMP_TYPE,
       Constants.ONTOLOGIES,
-      Constants.CL_VERTICES);//, "type");
+      Constants.CL_VERTICES
+  );
+
+  List<String> longOptions = Arrays.asList(
+      Constants.HASH_CC,
+      Constants.CC_ID,
+      Constants.SOURCE,
+      Constants.TARGET
+  );
 
   protected ObjectMap getProperties(JSONObject object) throws JSONException {
     HashMap<String, Object> props =
@@ -34,13 +43,14 @@ public class JSONToEntity {
       if (arrayOptions.contains(key)) { //&& object.get(key) instanceof JSONArray) {
         Set subProps = getArrayValues(key, (JSONArray) object.get(key));
         props.put(key, subProps);
+      } else if (longOptions.contains(key)) {
+        Long longValue = object.getLong(key);
+        props.put(key, longValue);
       } else {
         Object o = object.get(key);
         props.put(key, o);
       }
     }
-
-
 
     return new ObjectMap(props);
   }

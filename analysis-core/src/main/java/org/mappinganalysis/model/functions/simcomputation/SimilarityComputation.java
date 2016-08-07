@@ -246,8 +246,10 @@ public class SimilarityComputation {
      * SimSort (and postprocessing TypeGroupBy in prepare)
      */
       graph = SimSort.prepare(graph, processingMode, env, out);
-//    Utils.writeToFile(graph.getVertices(), "3_post_type_group_by");
-//    out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+
+//      out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+//      Utils.writeVerticesToJSONFile(graph.getVertices(), "tgbJSON");
+//      out.print();
 
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);

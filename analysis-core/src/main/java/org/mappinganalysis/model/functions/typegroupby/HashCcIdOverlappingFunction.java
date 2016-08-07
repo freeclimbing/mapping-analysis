@@ -43,8 +43,8 @@ class HashCcIdOverlappingFunction implements GroupReduceFunction<Vertex<Long, Ob
         } else {
           if (hash == null) {
 //            LOG.info(tmpVertex.getId() + " not contains type: " + type + " hash: null");
-            hashDictionary.put(type, Utils.getHash(type));
-            hash = Utils.getHash(type);
+            hashDictionary.put(type, Utils.getHash(type.concat(tmpVertex.getId().toString())));
+            hash = Utils.getHash(type.concat(tmpVertex.getId().toString()));
           } else {
 //            LOG.info(tmpVertex.getId() + " not contains type: " + type + " hash: " + hash);
             hashDictionary.put(type, hash);
@@ -61,6 +61,7 @@ class HashCcIdOverlappingFunction implements GroupReduceFunction<Vertex<Long, Ob
       vertex.getValue()
           .put(Constants.HASH_CC, hashDictionary.get(rndVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
+//      LOG.info("###hashOverlap###: " + vertex.toString());
       out.collect(vertex);
     }
   }

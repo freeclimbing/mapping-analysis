@@ -13,7 +13,6 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
-import org.mappinganalysis.io.debug.PrintVertices;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.NeighborTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -38,18 +37,16 @@ public class TypeGroupBy {
                                                    ExecutionEnvironment env, ExampleOutput out) throws Exception {
     // start preprocessing
     // sync begin
-    DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true);
-    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
-    tmpVertices = tmpVertices.map(new PrintVertices(false, "preprocTGB1"));
-    graph = Graph.fromDataSet(tmpVertices, edges, env);
+//    DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true);
+//    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
+//    tmpVertices = tmpVertices.map(new PrintVertices(false, "preprocTGB1"));
+//    graph = Graph.fromDataSet(tmpVertices, edges, env);
     // sync end
 
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
         .groupBy(new CcIdKeySelector())
         .reduceGroup(new HashCcIdOverlappingFunction());
-//        .groupBy(new CcIdAndCompTypeKeySelector())
-//        .reduceGroup(new GenerateHashCcIdGroupReduceFunction());
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
     // end preprocessing
 
