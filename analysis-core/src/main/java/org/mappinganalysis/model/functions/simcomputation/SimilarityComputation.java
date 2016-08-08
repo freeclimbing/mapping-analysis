@@ -253,7 +253,7 @@ public class SimilarityComputation {
 
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);
-      out.print();
+//      out.print();
     } else {
 
       // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE

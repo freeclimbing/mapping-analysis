@@ -34,9 +34,9 @@ public class SimSort {
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
     KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new HashCcIdKeySelector();
-    if (!processingMode.equals(Constants.DEFAULT_VALUE)) {
-      keySelector = new CcIdKeySelector(); // untested
-    }
+//    if (!processingMode.equals(Constants.DEFAULT_VALUE)) {
+//      keySelector = new CcIdKeySelector(); // untested
+//    }
     DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), keySelector);
 

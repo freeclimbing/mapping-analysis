@@ -52,94 +52,81 @@ public class TypeGroupBy {
 
     /**
      * Start typed grouping
-     * IS_TGB_DEFAULT_MODE is no longer set, deprecated mode is not used anymore
      */
-    if (!Constants.IS_TGB_DEFAULT_MODE) {
-      final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
-          .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
-      final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
-          .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-              Constants.SIM_GEO_LABEL_STRATEGY);
+    final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
+        .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
+    final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
+        .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
+            Constants.SIM_GEO_LABEL_STRATEGY);
 
-      graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
+    graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
 
-      final DataSet<NeighborTuple> neighborSimTypes = graph
-          .groupReduceOnNeighbors(new NeighborTupleCreator(), EdgeDirection.ALL);
+    final DataSet<NeighborTuple> neighborSimTypes = graph
+        .groupReduceOnNeighbors(new NeighborTupleCreator(), EdgeDirection.ALL);
 
-      final DataSet<NeighborTuple> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
+    final DataSet<NeighborTuple> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
 
-      // all tuples minus max tuple ids with type
-      DataSet<NeighborTuple> noTypedNeighborsCandidates = neighborSimTypes
-          .leftOuterJoin(maxTypedSimValues)
-          .where(0)
-          .equalTo(0)
-          .with(new FlatJoinFunction<NeighborTuple,
-              NeighborTuple, NeighborTuple>() {
-            @Override
-            public void join(NeighborTuple first, NeighborTuple second,
-                             Collector<NeighborTuple> out) throws Exception {
-              if (second == null) {
+    // all tuples minus max tuple ids with type
+    DataSet<NeighborTuple> noTypedNeighborsCandidates = neighborSimTypes
+        .leftOuterJoin(maxTypedSimValues)
+        .where(0)
+        .equalTo(0)
+        .with(new FlatJoinFunction<NeighborTuple,
+            NeighborTuple, NeighborTuple>() {
+          @Override
+          public void join(NeighborTuple first, NeighborTuple second,
+                           Collector<NeighborTuple> out) throws Exception {
+            if (second == null) {
 //                LOG.info("noTypeCandidate: " + first.toString());
-                out.collect(first);
-              }
+              out.collect(first);
             }
-          });
+          }
+        });
 
-      DataSet<Vertex<Long, ObjectMap>> noTypedNeighbors = noTypedNeighborsCandidates
-          .groupBy(0)
-          .min(3)
-          .leftOuterJoin(vertices)
-          .where(0)
-          .equalTo(0)
-          .with((left, right) -> {
-            if (right.getValue().getHashCcId() < left.getCompId()) {
-              right.getValue().put(Constants.HASH_CC, left.getCompId());
-            }
-            return right;
-          })
-          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-
-      DataSet<Vertex<Long, ObjectMap>> typedNeighbors = maxTypedSimValues
-          .leftOuterJoin(graph.getVertices())
-          .where(0)
-          .equalTo(0)
-          .with((left, right) -> {
+    DataSet<Vertex<Long, ObjectMap>> noTypedNeighbors = noTypedNeighborsCandidates
+        .groupBy(0)
+        .min(3)
+        .leftOuterJoin(vertices)
+        .where(0)
+        .equalTo(0)
+        .with((left, right) -> {
+          if (right.getValue().getHashCcId() < left.getCompId()) {
             right.getValue().put(Constants.HASH_CC, left.getCompId());
-            return right;
-          })
-          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
-          });
+          }
+          return right;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
-      DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-          .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
-          .where(0)
-          .equalTo(0)
-          .with((unchanged, updated) -> {
-            if (updated == null) {
+    DataSet<Vertex<Long, ObjectMap>> typedNeighbors = maxTypedSimValues
+        .leftOuterJoin(graph.getVertices())
+        .where(0)
+        .equalTo(0)
+        .with((left, right) -> {
+          right.getValue().put(Constants.HASH_CC, left.getCompId());
+          return right;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
+        });
+
+    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+        .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
+        .where(0)
+        .equalTo(0)
+        .with((unchanged, updated) -> {
+          if (updated == null) {
 //              LOG.info("final: unchanged: " + unchanged.toString());
-              return unchanged;
-            } else {
+            return unchanged;
+          } else {
 //              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
-              return updated;
-            }
-          })
-          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+            return updated;
+          }
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
 
-      graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
+    graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
 
-      return graph;
-    } else { // deprecated vertex centric iteration
-      VertexCentricConfiguration tbcParams = new VertexCentricConfiguration();
-      tbcParams.setName("Type-based Cluster Generation Iteration");
-      tbcParams.setDirection(EdgeDirection.ALL);
-
-      graph = graph.runVertexCentricIteration(
-          new TypeGroupByVertexUpdateFunction(),
-          new TypeGroupByMessagingFunction(), maxIterations, tbcParams);
-
-      return graph;
-    }
+    return graph;
   }
 
   private static DataSet<NeighborTuple> getMaxNeighborSims(

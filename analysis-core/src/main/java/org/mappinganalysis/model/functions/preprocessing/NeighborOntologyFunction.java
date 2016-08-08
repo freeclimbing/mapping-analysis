@@ -6,6 +6,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.NeighborsFunctionWithVertexValue;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
@@ -15,6 +16,8 @@ import org.mappinganalysis.util.Constants;
 public class NeighborOntologyFunction
     implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
     Tuple6<Long, Long, Long, String, Integer, Double>> {
+  private static final Logger LOG = Logger.getLogger(NeighborOntologyFunction.class);
+
 
   @Override
   public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
@@ -26,12 +29,15 @@ public class NeighborOntologyFunction
       String ontology = neighbor.f1.getValue().getOntology();
       Double edgeSim = edge.getValue().getEdgeSimilarity();
 
-      collector.collect(new Tuple6<>(edge.getSource(),
-          edge.getTarget(),
-          vertex.getId(),
-          ontology,
-          1,
-          edgeSim));
+      Tuple6<Long, Long, Long, String, Integer, Double> resultTuple
+          = new Tuple6<>(edge.getSource(),
+            edge.getTarget(),
+            vertex.getId(),
+            ontology,
+            1,
+            edgeSim);
+      LOG.info("Tuple6: " + resultTuple.toString());
+      collector.collect(resultTuple);
     }
   }
 }

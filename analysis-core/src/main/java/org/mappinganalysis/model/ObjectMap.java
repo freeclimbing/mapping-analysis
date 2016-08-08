@@ -65,6 +65,10 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  public Long getCcId() {
+    return (long) map.get(Constants.CC_ID);
+  }
+
   /**
    * Get the set of type strings for a vertex from the input graph.
    * @return String set of rdf:type values

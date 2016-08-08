@@ -54,7 +54,7 @@ public class GraphUtils {
 //    .iterateDelta(edges, 1000);
 //
 //    vertices.groupBy(2);
-    return Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.TRUE, Boolean.FALSE);
+    return Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.FALSE);
 //    return graph;
   }
 

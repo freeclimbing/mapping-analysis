@@ -92,7 +92,7 @@
     <orderEntry type="library" name="Maven: org.apache.flink:flink-optimizer:1.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-jdbc:1.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.gradoop:gradoop-flink:0.2-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="Maven: org.gradoop:gradoop-core:0.2-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.gradoop:gradoop-common:0.2-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hbase:hbase-server:0.98.11-hadoop2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hbase:hbase-common:0.98.11-hadoop2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hbase:hbase-annotations:0.98.11-hadoop2" level="project" />

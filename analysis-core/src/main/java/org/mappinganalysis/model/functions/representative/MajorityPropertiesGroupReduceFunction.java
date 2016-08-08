@@ -74,6 +74,8 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
 
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
+
+//    LOG.info("###repres: " + resultVertex.toString());
     collector.collect(resultVertex);
   }
 

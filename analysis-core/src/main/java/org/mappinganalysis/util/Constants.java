@@ -110,8 +110,8 @@ public class Constants {
   public static final String DBP_NS = "http://dbpedia.org/";
   public static final String GN_NS = "http://sws.geonames.org/";
   public static final String LGD_NS = "http://linkedgeodata.org/";
-  public static final String NYT_NS = "http://data.nytimes.com/";
   public static final String FB_NS = "http://rdf.freebase.com/";
+  public static final String NYT_NS = "http://data.nytimes.com/";
 
   /**
    * Command line option names.
