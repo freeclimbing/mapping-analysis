@@ -19,6 +19,12 @@ public class JSONDataSource {
     this.environment = environment;
   }
 
+  public JSONDataSource(String vertexPath, ExecutionEnvironment environment) {
+    this.vertexPath = vertexPath;
+    this.environment = environment;
+    this.edgePath = null;
+  }
+
   public Graph<Long, ObjectMap, ObjectMap> getGraph() {
     DataSet<Vertex<Long, ObjectMap>> vertices = environment.readTextFile(vertexPath)
         .map(new JSONToVertexFormatter());
@@ -26,5 +32,10 @@ public class JSONDataSource {
         .map(new JSONToEdgeFormatter());
 
     return Graph.fromDataSet(vertices, edges, environment);
+  }
+
+  public DataSet<Vertex<Long, ObjectMap>> getVertices() {
+    return environment.readTextFile(vertexPath)
+        .map(new JSONToVertexFormatter());
   }
 }

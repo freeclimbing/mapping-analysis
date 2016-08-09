@@ -208,7 +208,7 @@ public class SimilarityComputation {
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
-    if (Constants.IS_PREPROC_ONLY) {
+    if (Constants.PROC_MODE.equals(Constants.PREPROC)) {
       LOG.setLevel(Level.DEBUG);
     /*
      * sync begin
@@ -253,8 +253,8 @@ public class SimilarityComputation {
 
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);
-//      out.print();
-    } else {
+      out.print();
+    } else if (Constants.PROC_MODE.equals(Constants.ANALYSIS)){
 
       // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
       // TODO for alternative version, unneeded

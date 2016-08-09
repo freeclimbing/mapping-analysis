@@ -19,12 +19,8 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.mappinganalysis.io.impl.json.EntityToJSON;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.io.impl.json.VertexToJSONFormatter;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.ObjectMap;
@@ -75,9 +71,27 @@ public class Utils {
       dataSink.writeVertices(vertices);
   }
 
+  public static DataSet<Vertex<Long, ObjectMap>> readVerticesFromJSONFile(
+      String verticesPath,
+      ExecutionEnvironment env,
+      boolean isAbsolutePath) {
+    if (!verticesPath.endsWith("/")) {
+      verticesPath = verticesPath.concat("/");
+    }
+    String vertexOutFile = verticesPath.concat("vertices/");
+    if (!isAbsolutePath) {
+      vertexOutFile = Constants.INPUT_DIR + "output/" + vertexOutFile;
+    }
+
+    JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, env);
+
+    return jsonDataSource.getVertices();
+  }
+
   /**
    * compatibility method
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir, ExecutionEnvironment env) {
 //      String vertexOutFile = Constants.INPUT_DIR + "output/" + inDir + "/vertices/";
 //      String edgeOutFile = Constants.INPUT_DIR + "output/" + inDir + "/edges/";
@@ -86,6 +100,13 @@ public class Utils {
     return readFromJSONFile(inDir, env, false);
   }
 
+  /**
+   * Read Gelly graph from JSON file
+   * @param graphPath absolute or relative path
+   * @param env execution environment
+   * @param isAbsolutePath
+   * @return
+   */
   public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(
       String graphPath,
       ExecutionEnvironment env,

@@ -32,6 +32,33 @@ public class ComponentSourceTuple extends Tuple2<Long, Integer> {
     this.f1 = 0;
   }
 
+  public boolean contains(String source) {
+    int maxSources = 5;
+    int sourcesValue = f1;
+    int input = CC_SOURCE_MAP.get(source);
+    int startValue = (int) (Math.pow(2, maxSources - 1) + 0.5);
+    if (f1 == 0) {
+      return false;
+    }
+
+    for (int i = startValue ; i > 0; i -= i/2) {
+      if (sourcesValue - i >= 0) {
+        sourcesValue -= i;
+        if (i == input) {
+          return true;
+        }
+      }
+      if (i == 1 && sourcesValue == 1) {
+        return true;
+      }
+      if (i == 1 && sourcesValue < 1) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
   public boolean addSource(String source) {
     /**
      * todo config maxSources

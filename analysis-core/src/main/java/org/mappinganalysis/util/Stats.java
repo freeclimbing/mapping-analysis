@@ -245,7 +245,9 @@ public class Stats {
   }
 
 
-  public static void printResultEdgeCounts(Graph<Long, ObjectMap, NullValue> inputGraph, ExampleOutput out, DataSet<Vertex<Long, ObjectMap>> mergedClusters) {
+  public static void printResultEdgeCounts(Graph<Long, ObjectMap, NullValue> inputGraph,
+                                           ExampleOutput out,
+                                           DataSet<Vertex<Long, ObjectMap>> mergedClusters) {
     DataSet<Tuple2<Long, Long>> allResultEdgeIds = mergedClusters
         .flatMap(new FlatMapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Long>>() {
           @Override

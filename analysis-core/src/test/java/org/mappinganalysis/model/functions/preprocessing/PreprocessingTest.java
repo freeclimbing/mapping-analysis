@@ -55,7 +55,7 @@ public class PreprocessingTest {
   @Test
   public void linkFilterStrategyTest() throws Exception {
     String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/linkFilter/").getFile();
+        .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
     graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
@@ -79,6 +79,19 @@ public class PreprocessingTest {
     });
 
     assertEquals(4, graph.getVertices().count());
+  }
+
+  @Test
+  public void nullValueTest() throws Exception {
+    String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/nullValueLinkFilter/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+
+    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
+//    graph.getEdges().print(); // 2 edges
+//    graph.getVertices().print(); // 4 vertices
+
+    graph.getVertices().print();
   }
 
   @Test

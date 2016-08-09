@@ -59,7 +59,35 @@ public class ComponentSourceTupleTest {
   }
 
   @Test
-  public void testGetCcId() throws Exception {
+  public void testContainsSrc() throws Exception {
+    ComponentSourceTuple tuple = new ComponentSourceTuple(1L);
+    tuple.addSource(Constants.DBP_NS);
+    tuple.addSource(Constants.GN_NS);
+    tuple.addSource(Constants.LGD_NS);
+
+    LOG.info("dbp: " + tuple.contains(Constants.DBP_NS));
+    LOG.info("gn: " + tuple.contains(Constants.GN_NS));
+    LOG.info("fb: " + tuple.contains(Constants.FB_NS));
+
+    ComponentSourceTuple tuple2 = new ComponentSourceTuple(2L);
+    tuple2.addSource(Constants.NYT_NS);
+    tuple2.addSource(Constants.FB_NS);
+    tuple2.addSource(Constants.LGD_NS);
+    tuple2.addSource(Constants.GN_NS);
+    tuple2.addSource(Constants.DBP_NS);
+
+    LOG.info("dbp: " + tuple2.contains(Constants.DBP_NS));
+    LOG.info("gn: " + tuple2.contains(Constants.GN_NS));
+    LOG.info("fb: " + tuple2.contains(Constants.FB_NS));
+    LOG.info("nyt: " + tuple2.contains(Constants.NYT_NS));
+    LOG.info("lgd: " + tuple2.contains(Constants.LGD_NS));
+
+    ComponentSourceTuple tuple3 = new ComponentSourceTuple(3L);
+    LOG.info("dbp: " + tuple3.contains(Constants.DBP_NS));
+    LOG.info("gn: " + tuple3.contains(Constants.GN_NS));
+    LOG.info("fb: " + tuple3.contains(Constants.FB_NS));
+    LOG.info("nyt: " + tuple3.contains(Constants.NYT_NS));
+    LOG.info("lgd: " + tuple3.contains(Constants.LGD_NS));
 
   }
 

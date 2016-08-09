@@ -113,13 +113,17 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
+  public static final String INPUT = "input";
+  public static final String PREPROC = "preproc";
+  public static final String ANALYSIS = "analysis";
+  public static final String EVAL = "eval";
+
   /**
    * Command line option names.
    */
   public static String INPUT_DIR;
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
-  public static boolean IS_PREPROC_ONLY;
   public static String VERBOSITY;
   public static boolean IS_SIMSORT_ENABLED;
   public static boolean IS_SIMSORT_ALT_ENABLED;

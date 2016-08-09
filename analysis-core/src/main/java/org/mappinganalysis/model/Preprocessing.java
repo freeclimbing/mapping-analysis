@@ -2,18 +2,17 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.GroupCombineOperator;
-import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -26,6 +25,8 @@ import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
+
+import java.util.HashMap;
 
 /**
  * Preprocessing.
@@ -41,7 +42,7 @@ public class Preprocessing {
   public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> graph,
                                                                ExampleOutput out,
                                                                ExecutionEnvironment env) throws Exception {
-    if (!Constants.IS_PREPROC_ONLY) {
+    if (Constants.PROC_MODE.equals(Constants.ANALYSIS)) {
       return (Graph<Long, ObjectMap, ObjectMap>) graph;
     }
     // todo fix this workaround
@@ -233,10 +234,6 @@ public class Preprocessing {
 
     DataSet<ComponentSourceTuple> componentSourceTuples = getComponentSourceTuples(vertices, vertexCcs);
 
-    /**
-     * min size 5
-     * first 500
-     */
     DataSet<Tuple1<Long>> additionalCcs = vertexCcs.leftOuterJoin(relevantCcs)
         .where(1)
         .equalTo(0)
@@ -248,8 +245,12 @@ public class Preprocessing {
             }
           }
         })
-        .<Tuple1<Long>>project(1);
+        .<Tuple1<Long>>project(1)
+        .distinct();
 
+    /**
+     * now based on sources count in component, we want at least 3 different sources
+     */
     additionalCcs = additionalCcs
         .leftOuterJoin(componentSourceTuples)
         .where(0)
@@ -265,32 +266,7 @@ public class Preprocessing {
         })
         .first(500);
 
-    additionalCcs.print();
-
-//        .groupBy(1)
-//        .reduceGroup(new GroupReduceFunction<Tuple2<Long, Long>, Tuple1<Long>>() {
-//          @Override
-//          public void reduce(Iterable<Tuple2<Long, Long>> values, Collector<Tuple1<Long>> out) throws Exception {
-//            int size = 0;
-//            Long comp = null;
-//            for (Tuple2<Long, Long> value : values) {
-//              ++size;
-//              if (comp == null) {
-//                comp = value.f1;
-//              }
-//            }
-//            if (size > 4) {
-//              out.collect(new Tuple1<>(comp));
-//            }
-//          }
-//        })
-//        .first(500)
-//        .project(0);
-
-    vertices = restrictVerticesToGivenCcs(vertices, vertexCcs, relevantCcs.union(additionalCcs));
-
-//      out.addDataSetCount("relevant vertices", vertices);
-    return vertices;
+    return restrictVerticesToGivenCcs(vertices, vertexCcs, relevantCcs.union(additionalCcs));
   }
 
   public static DataSet<ComponentSourceTuple> getComponentSourceTuples(
@@ -402,55 +378,85 @@ public class Preprocessing {
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
       Boolean isDeleteSingleVertices) {
-    return firstLinkFilter(graph, env, isDeleteSingleVertices);
+    return secondLinkFilter(graph, env, isDeleteSingleVertices);
   }
 
+  /**
+   * currently in use simple 1:n removal todo fix cc not needed
+   * @param graph
+   * @param env
+   * @param isDeleteSingleVertices
+   * @return
+   */
   private static Graph<Long, ObjectMap, ObjectMap> secondLinkFilter(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
       Boolean isDeleteSingleVertices) {
-    // Tuple6(edge src, edge trg, VertexId, Ontology, 1, EdgeSim)
-    final DataSet<Tuple6<Long, Long, Long, String, Integer, Double>> basicOneToManyTuples = graph
-        .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
+    // Tuple6(ccId, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
+    DataSet<LinkTuple> neighborTuples = graph
+        .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
 
-    DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
-        .groupBy(2, 3)
-        .sum(4).andMax(5)
-        .filter(tuple -> tuple.f4 > 1)
-        .map(tuple -> {
-          LOG.info("maxRandomTuple: " + tuple.f2 + ", " + tuple.f3 + ", " + tuple.f5);
-          return new Tuple3<>(tuple.f2, tuple.f3, tuple.f5);
-        })
-        .returns(new TypeHint<Tuple3<Long, String, Double>>() {});
+    DataSet<Tuple3<Long, Long, Long>> edgeTuples = neighborTuples.groupBy(0)
+        .sortGroup(5, Order.DESCENDING)
+        .sortGroup(1, Order.ASCENDING)
+        .sortGroup(2, Order.ASCENDING)
+        .reduceGroup(new GroupReduceFunction<LinkTuple,
+            Tuple3<Long, Long, Long>>() {
+          @Override
+          public void reduce(Iterable<LinkTuple> values,
+                             Collector<Tuple3<Long, Long, Long>> out) throws Exception {
+            HashMap<Long, ComponentSourceTuple> sourcesMap = Maps.newHashMap();
+            // ccid, e.src, e.trg, v.src, e.src, sim
+            for (LinkTuple link : values) {
+//              LOG.info("###nnof: " + link.toString());
+              Tuple3<Long, Long, Long> tmpResult
+                  = new Tuple3<>(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
 
-    DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = maxRandomTuples
-        .leftOuterJoin(basicOneToManyTuples)
-        .where(0, 1, 2)
-        .equalTo(2, 3, 5)
-        .with((first, second) -> new Tuple2<>(second.f0, second.f1))
-        .returns(new TypeHint<Tuple2<Long, Long>>() {})
-        .leftOuterJoin(graph.getEdges())
-        .where(0, 1)
+              ComponentSourceTuple src = sourcesMap.get(link.getSrcId());
+              ComponentSourceTuple trg = sourcesMap.get(link.getTrgId());
+              if (src == null) {
+                src = new ComponentSourceTuple(link.getSrcId());
+              }
+              if (trg == null) {
+                trg = new ComponentSourceTuple(link.getTrgId());
+              }
+
+              if (!src.contains(link.getTrgOntology())
+                  && !trg.contains(link.getSrcOntology())) {
+                src.addSource(link.getTrgOntology());
+//                LOG.info("add To srcMap: " + src.getCcId() + " " + src.getSources().toString());
+                sourcesMap.put(link.getSrcId(), src);
+                tmpResult.f1 = link.getSrcId();
+
+                trg.addSource(link.getSrcOntology());
+//                LOG.info("add To srcMap: " + trg.getCcId() + " " + trg.getSources().toString());
+                sourcesMap.put(link.getTrgId(), trg);
+                tmpResult.f2 = link.getTrgId();
+
+//                LOG.info("###sec: result: " + tmpResult.toString());
+                out.collect(tmpResult);
+              }
+            }
+          }
+        });
+
+    DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.leftOuterJoin(graph.getEdges())
+        .where(1, 2)
         .equalTo(0, 1)
-        .with((first, second) -> {
-          LOG.info("###maxRandomTuple### " + second.toString());
-          return second;
-        })
-        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
-        .distinct(0,1);
+        .with(new FlatJoinFunction<Tuple3<Long, Long, Long>,
+            Edge<Long, ObjectMap>,
+            Edge<Long, ObjectMap>>() {
+          @Override
+          public void join(Tuple3<Long, Long, Long> left,
+                           Edge<Long, ObjectMap> right,
+                           Collector<Edge<Long, ObjectMap>> out) throws Exception {
+            if (right != null)
+//              LOG.info(left.toString() + " right: " + right.toString());
+              out.collect(right);
+          }
+        });
 
-    DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
-        .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
-        .where(0)
-        .equalTo(0)
-        .with(new LinkFilterExcludeEdgeFlatJoinFunction())
-        .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
-        .where(1)
-        .equalTo(0)
-        .with(new LinkFilterExcludeEdgeFlatJoinFunction())
-        .union(maxOneToManyEdges);
-
-    DataSet<Vertex<Long, ObjectMap>> resultVertices = graph.getVertices();
+            DataSet < Vertex < Long, ObjectMap >> resultVertices = graph.getVertices();
     if (isDeleteSingleVertices) {
       resultVertices = deleteVerticesWithoutAnyEdges(
           graph.getVertices(),
@@ -459,6 +465,98 @@ public class Preprocessing {
 
     return Graph.fromDataSet(resultVertices, newEdges, env);
   }
+
+//  /**
+//   * template wip copy of secondfilter approach with sets for each link way
+//   * @param graph
+//   * @param env
+//   * @param isDeleteSingleVertices
+//   * @return
+//   */
+//  private static Graph<Long, ObjectMap, ObjectMap> thirdLinkFilter(
+//      Graph<Long, ObjectMap, ObjectMap> graph,
+//      ExecutionEnvironment env,
+//      Boolean isDeleteSingleVertices) {
+//    // Tuple6(ccId, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
+//    final DataSet<LinkTuple> neighborTuples = graph
+//        .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
+//
+//
+//    DataSet<Tuple3<Long, Long, Long>> edgeTuples = neighborTuples.groupBy(0)
+//        .sortGroup(5, Order.DESCENDING)
+////        .sortGroup(1, Order.DESCENDING)
+////        .sortGroup(2, Order.DESCENDING)
+//        .reduceGroup(new GroupReduceFunction<LinkTuple,
+//            Tuple3<Long, Long, Long>>() {
+//          @Override
+//          public void reduce(Iterable<LinkTuple> values,
+//                             Collector<Tuple3<Long, Long, Long>> out) throws Exception {
+//
+//            HashMap<Long, ComponentSourceTuple> sourcesMap = Maps.newHashMap();
+//            HashMap<Long, String> ownType = Maps.newHashMap();
+//            // ccid, e.src, e.trg, v.src, e.src, sim
+//
+//            for (LinkTuple link : values) {
+//              Tuple3<Long, Long, Long> tmpResult
+//                  = new Tuple3<>(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
+//              ComponentSourceTuple srcCst = sourcesMap.get(link.getSrcId());
+//              ComponentSourceTuple trgCst = sourcesMap.get(link.getTrgId());
+//
+//              LOG.info("###nnof: " + link.toString());
+//              if (!sourcesMap.containsKey(link.getSrcId())) {
+//                ComponentSourceTuple src = new ComponentSourceTuple(link.getSrcId());
+//                ownType.put(link.getSrcId(), link.getSrcOntology());
+//                src.addSource(link.getSrcOntology());
+//                src.addSource(link.getTrgOntology());
+//                sourcesMap.put(link.getSrcId(), src);
+//
+//                tmpResult.f1 = link.getSrcId();
+//              } else {
+//                if (srcCst.contains(link.getTrgOntology())) {
+//                  // do not create link
+//                }
+//              }
+//              if (!sourcesMap.containsKey(link.getTrgId())) {
+//                ComponentSourceTuple trg = new ComponentSourceTuple(link.getTrgId());
+//                ownType.put(link.getTrgId(), link.getTrgOntology());
+//                trg.addSource(link.getSrcOntology());
+//                trg.addSource(link.getTrgOntology());
+//                sourcesMap.put(link.getTrgId(), trg);
+//
+//                tmpResult.f2 = link.getTrgId();
+//              } else {
+//                if (trgCst.contains(link.getSrcOntology())) {
+//                  // do not create link
+//                }
+//              }
+//
+//              Set<String> srcSources = srcCst.getSources();
+//              for (String srcSource : srcSources) {
+//                if (trgCst.contains(srcSource)) {
+//                  // if true, do not create
+//                }
+//              }
+//
+//            }
+//          }
+//        });
+//
+//    DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.leftOuterJoin(graph.getEdges())
+//        .where(0, 1)
+//        .equalTo(0, 1)
+//        .with((left, right) -> right)
+//        .returns(new TypeHint<Edge<Long, ObjectMap>>() {
+//        });
+//
+//    DataSet < Vertex < Long, ObjectMap >> resultVertices = graph.getVertices();
+//    if (isDeleteSingleVertices) {
+//      resultVertices = deleteVerticesWithoutAnyEdges(
+//          graph.getVertices(),
+//          newEdges.<Tuple2<Long, Long>>project(0, 1));
+//    }
+//
+//    return Graph.fromDataSet(resultVertices, newEdges, env);
+//  }
 
   /**
    * old version of link filter method

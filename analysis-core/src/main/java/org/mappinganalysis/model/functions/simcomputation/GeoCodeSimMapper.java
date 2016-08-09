@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
+import org.apache.flink.hadoop.shaded.com.google.common.base.Preconditions;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
@@ -36,7 +37,13 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
     if (distance >= maxDistInMeter) {
       property.put(Constants.SIM_DISTANCE, 0D);
     } else {
-      BigDecimal tmpResult = new BigDecimal(1D - (distance / maxDistInMeter));
+      BigDecimal tmpResult = null;
+      double tmp = 1D - (distance / maxDistInMeter);
+      tmpResult = new BigDecimal(tmp);
+//      } catch (Exception e) {
+//        LOG.info("###distance: " + distance);
+//        e.printStackTrace();
+//      }
       double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
       property.put(Constants.SIM_DISTANCE, result);
     }
