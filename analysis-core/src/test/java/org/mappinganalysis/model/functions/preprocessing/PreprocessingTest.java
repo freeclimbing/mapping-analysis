@@ -94,6 +94,26 @@ public class PreprocessingTest {
     graph.getVertices().print();
   }
 
+
+  @Test
+  public void finalOneToManyTest() throws Exception {
+    String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/general/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    graph = SimilarityComputation.computeTransitiveClosureEdgeSimilarities(graph, env);
+    assertEquals(21, graph.getEdgeIds().count());
+
+    graph = SimilarityComputation.removeOneToManyVertices(graph, env);
+    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+      LOG.info(vertex.toString());
+      assertTrue(vertex.getId() == 60191L
+          || vertex.getId() == 252016L
+          || vertex.getId() == 513732L
+          || vertex.getId() == 60190L
+          || vertex.getId() == 1268005L);
+    }
+  }
+
   @Test
   public void oneToManyTest() throws Exception {
     String graphPath = PreprocessingTest.class

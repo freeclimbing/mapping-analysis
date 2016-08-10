@@ -305,16 +305,17 @@ public class Preprocessing {
 
   /**
    * Delete edges where source or target vertex are not in the vertex set.
+   * // TODO handle unchecked
    */
-  public static DataSet<Edge<Long, NullValue>> deleteEdgesWithoutSourceOrTarget(
-      DataSet<Edge<Long, NullValue>> edges, DataSet<Vertex<Long, ObjectMap>> newVertices) {
-    return edges.leftOuterJoin(newVertices)
+  public static <EV> DataSet<Edge<Long, EV>> deleteEdgesWithoutSourceOrTarget(
+      DataSet<Edge<Long, EV>> edges, DataSet<Vertex<Long, ObjectMap>> vertices) {
+    return edges.leftOuterJoin(vertices)
         .where(0).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction())
-        .leftOuterJoin(newVertices)
+        .leftOuterJoin(vertices)
         .where(1).equalTo(0)
         .with(new EdgeRestrictFlatJoinFunction())
-        .distinct();
+        .distinct(0,1);
   }
 
   /**
