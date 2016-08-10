@@ -18,6 +18,7 @@
 package org.mappinganalysis.io.output;
 
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -26,6 +27,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -38,12 +40,8 @@ public class CanonicalAdjacencyMatrixBuilder {
   public <T> DataSet<String> executeOnTuples(DataSet<T> tuple) {
 
     DataSet<String> tupleStrings = tuple
-        .map(new MapFunction<T, String>() {
-          @Override
-          public String map(T t) throws Exception {
-            return t.toString();
-          }
-        });
+        .map(Object::toString)
+        .returns(new TypeHint<String>() {});
 
     return tupleStrings.reduceGroup(new ConcatStrings());
   }

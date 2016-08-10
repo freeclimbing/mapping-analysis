@@ -264,8 +264,9 @@ public class TypeDictionary {
 
 
   /**
-   * deprecated
+   * not enough values to use, to broad context, etc.
    */
+  @Deprecated
   public static final HashMap<String, String> TERTIARY_TYPE;
   static {
     TERTIARY_TYPE = Maps.newHashMap();

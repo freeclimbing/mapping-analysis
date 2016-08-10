@@ -23,7 +23,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Merge properties for representative.
  */
-public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
+public class MajorityPropertiesGroupReduceFunction
+    extends RichGroupReduceFunction<Vertex<Long, ObjectMap>,
     Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MajorityPropertiesGroupReduceFunction.class);
   private LongCounter representativeCount = new LongCounter();
@@ -42,20 +43,21 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
-    HashMap<Set<String>, Integer> typeMap = Maps.newHashMap();
+    Set<String> clusterTypeSet = Sets.newHashSet();
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
-    for (Vertex<Long, ObjectMap> currentVertex : vertices) {
-      updateVertexId(resultVertex, currentVertex);
-      updateClusterVertexIds(clusterVertices, currentVertex);
-      updateClusterOntologies(clusterOntologies, currentVertex);
+    for (Vertex<Long, ObjectMap> vertex : vertices) {
+      updateVertexId(resultVertex, vertex);
+      updateClusterVertexIds(clusterVertices, vertex);
+      updateClusterOntologies(clusterOntologies, vertex);
 
-      addLabelToMap(labelMap, currentVertex);
-      addTypeToMap(typeMap, currentVertex);
-      addGeoToMap(geoMap, currentVertex);
+      addLabelToMap(labelMap, vertex);
+      addTypesToSet(clusterTypeSet, vertex);
+      addGeoToMap(geoMap, vertex);
 
-      if (currentVertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
-        resultProps.put(Constants.OLD_HASH_CC, currentVertex.getValue().get(Constants.OLD_HASH_CC));
+      if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
+        resultProps.put(Constants.OLD_HASH_CC,
+            vertex.getValue().get(Constants.OLD_HASH_CC));
       }
     }
 
@@ -65,9 +67,9 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     if (!labelMap.isEmpty()) {
       resultProps.put(Constants.LABEL, getFinalValue(labelMap, Constants.LABEL));
     }
-    if (!typeMap.isEmpty()) {
-      Set<String> finalValue = getFinalValue(typeMap, Constants.TYPE_INTERN);
-      resultProps.put(Constants.TYPE_INTERN, finalValue);
+    if (!clusterTypeSet.isEmpty()) {
+//      Set<String> finalValue = getFinalValue(typeSet, Constants.TYPE_INTERN);
+      resultProps.put(Constants.TYPE_INTERN, clusterTypeSet);
     }
     resultProps.put(Constants.ONTOLOGIES, clusterOntologies);
     resultProps.put(Constants.CL_VERTICES, clusterVertices);
@@ -75,7 +77,6 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
 
-//    LOG.info("###repres: " + resultVertex.toString());
     collector.collect(resultVertex);
   }
 
@@ -133,16 +134,10 @@ public class MajorityPropertiesGroupReduceFunction extends RichGroupReduceFuncti
     }
   }
 
-  private void addTypeToMap(HashMap<Set<String>, Integer> typeMap, Vertex<Long, ObjectMap> currentVertex) {
-    if (!currentVertex.getValue().hasTypeNoType(Constants.TYPE_INTERN)) {
-      Set<String> types = currentVertex.getValue().getTypes(Constants.TYPE_INTERN);
-
-      if (typeMap.containsKey(types)) {
-        int labelCount = typeMap.get(types);
-        typeMap.put(types, labelCount + 1);
-      } else {
-        typeMap.put(types, 1);
-      }
+  private void addTypesToSet(Set<String> cTypeSet,
+                             Vertex<Long, ObjectMap> vertex) {
+    if (!vertex.getValue().hasTypeNoType(Constants.TYPE_INTERN)) {
+      cTypeSet.addAll(vertex.getValue().getTypes(Constants.TYPE_INTERN));
     }
   }
 

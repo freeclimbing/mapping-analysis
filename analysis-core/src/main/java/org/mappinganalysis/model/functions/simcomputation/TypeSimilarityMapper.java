@@ -22,7 +22,9 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
     Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimilarityComputation.initResultTriplet(triplet);
 
     if (hasNoEmptyType(srcTypes, trgTypes)) {
-      resultTriplet.getEdge().getValue().put(Constants.SIM_TYPE, getTypeSim(srcTypes, trgTypes));
+      resultTriplet.getEdge()
+          .getValue()
+          .put(Constants.SIM_TYPE, getTypeSim(srcTypes, trgTypes));
 
       return resultTriplet;
     } else {

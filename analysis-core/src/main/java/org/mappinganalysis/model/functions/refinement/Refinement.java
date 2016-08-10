@@ -235,25 +235,6 @@ public class Refinement {
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
         .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
 
-//    out.addDataSetCount("newReprTriplets", newRepresentativeTriplets);
-
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> lowSimOldHashTriplets = newBaseTriplets
-//        .leftOuterJoin(newRepresentativeTriplets)
-//        .where(0, 1)
-//        .equalTo(0, 1)
-//        .with(new FlatJoinFunction<Triplet<Long, ObjectMap, ObjectMap>, Triplet<Long, ObjectMap, ObjectMap>,
-//            Triplet<Long, ObjectMap, ObjectMap>>() {
-//          @Override
-//          public void join(Triplet<Long, ObjectMap, ObjectMap> left, Triplet<Long, ObjectMap, ObjectMap> right,
-//                           Collector<Triplet<Long, ObjectMap, ObjectMap>> out) throws Exception {
-//            if (right == null) {
-//              out.collect(left);
-//            }
-//          }
-//        });
-
-//    out.addDataSetCount("lowOldSims", lowSimOldHashTriplets);
-
     // reduce to single representative, some vertices are now missing
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())

@@ -21,7 +21,8 @@ public class JSONToEntity {
       Constants.TYPE_INTERN,
       Constants.COMP_TYPE,
       Constants.ONTOLOGIES,
-      Constants.CL_VERTICES
+      Constants.CL_VERTICES,
+      Constants.TYPE
   );
 
   List<String> longOptions = Arrays.asList(
@@ -40,7 +41,7 @@ public class JSONToEntity {
       String key = keys.next().toString();
       //    Caused by: java.lang.ClassCastException: java.lang.String cannot be cast to org.codehaus.jettison.json.JSONArray
       //    typeIntern = AdministrativeRegion
-      if (arrayOptions.contains(key)) { //&& object.get(key) instanceof JSONArray) {
+      if (arrayOptions.contains(key) && !(object.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
         Set subProps = getArrayValues(key, (JSONArray) object.get(key));
         props.put(key, subProps);
       } else if (longOptions.contains(key)) {

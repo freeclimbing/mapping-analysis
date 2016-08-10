@@ -19,29 +19,25 @@ import java.util.Set;
 public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(InternalTypeMapFunction.class);
 
-//  private ListAccumulator<String> types = new ListAccumulator<>();
-//
-//  @Override
-//  public void open(final Configuration parameters) throws Exception {
-//    super.open(parameters);
-//    getRuntimeContext().addAccumulator(Constants.TYPES_COUNT_ACCUMULATOR, types);
-//  }
-
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
     ObjectMap properties = vertex.getValue();
     Set<String> resultTypes = Sets.newHashSet();
 
     if (properties.containsKey(Constants.GN_TYPE_DETAIL)) {
+//      LOG.info("###itm: " + vertex.getId() + " ### gn");
       resultTypes = getDictValue(properties.get(Constants.GN_TYPE_DETAIL).toString());
     }
     if (properties.containsKey(Constants.TYPE) &&
         (resultTypes.isEmpty() || resultTypes.contains(Constants.NO_TYPE))) {
+//      LOG.info("###itm: " + vertex.toString() + " ### normal");
       resultTypes = getDictValues(properties.getTypes(Constants.TYPE));
     }
     if (resultTypes.isEmpty()) {
+//      LOG.info("###itm: " + vertex.getId() + " ### notype");
       resultTypes = Sets.newHashSet(Constants.NO_TYPE);
     }
+//    LOG.info("###itm: " + vertex.toString() + " ### " + resultTypes.toString());
 
     properties.put(Constants.TYPE_INTERN, resultTypes);
     properties.remove(Constants.TYPE);
@@ -59,6 +55,7 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
     Set<String> resultTypes = Sets.newHashSet();
 
     for (String value : values) {
+      LOG.info("###itm: value: " + value);
       if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
         resultTypes.add(TypeDictionary.PRIMARY_TYPE.get(value));
       }

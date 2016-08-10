@@ -262,7 +262,7 @@ public class ExampleOutput {
 
       DataSet<String> vertexSet = vertices
           .map(vertex -> {
-            LOG.info("###preClusterVertex: " + vertex.toString());
+//            LOG.info("###preClusterVertex: " + vertex.toString());
             return new Tuple2<>((long) vertex.getValue().get(compName), 1L);
           })
           .returns(new TypeHint<Tuple2<Long, Long>>() {})

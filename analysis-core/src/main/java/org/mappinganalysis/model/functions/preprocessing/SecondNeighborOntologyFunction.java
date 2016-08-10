@@ -36,7 +36,7 @@ public class SecondNeighborOntologyFunction
           vertex.getValue().getOntology(),
           ontology,
           edgeSim);
-      LOG.info("Tuple6: " + resultTuple.toString());
+//      LOG.info("Tuple6: " + resultTuple.toString());
       collector.collect(resultTuple);
     }
   }

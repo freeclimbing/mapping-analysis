@@ -36,6 +36,7 @@ public class RepresentativeTest {
       "(v5)-[e1:sameAs {aggSimValue = 0.9428090453147888D}]->(v3)" +
       "(v5)-[e2:sameAs {aggSimValue = 0.9428090453147888D}]->(v4)]";
 
+  // todo use representative haiti test files
   @Test
   public void repTest() throws Exception {
     GDLHandler handler = new GDLHandler.Builder().buildFromString(REPRESENTIVE);
