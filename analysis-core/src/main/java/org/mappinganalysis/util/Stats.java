@@ -181,6 +181,10 @@ public class Stats {
         .print();
   }
 
+  /**
+   * Accumulator values for an ongoing flink workflow. Not working if graph is reloaded from JSON.
+   * @throws Exception
+   */
   public static <T> void printAccumulatorValues(ExecutionEnvironment env, Graph<Long, ObjectMap, T> graph)
       throws Exception {
 

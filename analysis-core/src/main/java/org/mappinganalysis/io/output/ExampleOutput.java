@@ -183,9 +183,18 @@ public class ExampleOutput {
   public void printEvalThreePercent(String caption,
                                     DataSet<Vertex<Long, ObjectMap>> mergedClusters,
                                     DataSet<Vertex<Long, ObjectMap>> vertices) {
-    addClusterSampleToOutput(caption + " 2er cluster", mergedClusters, vertices, 2, 11);
-    addClusterSampleToOutput(caption + " 3er cluster", mergedClusters, vertices, 3, 13);
-    addClusterSampleToOutput(caption + " 4er cluster", mergedClusters, vertices, 4, 51);
+    if (Constants.INPUT_DIR.contains("perfect")) {
+      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 2);
+      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 8);
+      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 72);
+    }
+
+    if (Constants.INPUT_DIR.contains("linklion")) {
+      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 20);
+      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 20);
+      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 40);
+      addClusterSampleToOutput(caption + " 5 size cluster", mergedClusters, vertices, 5, 20);
+    }
   }
 
   private void addClusterSampleToOutput(String caption, DataSet<Vertex<Long, ObjectMap>> mergedClusters,
