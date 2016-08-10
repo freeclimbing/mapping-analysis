@@ -8,7 +8,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -27,32 +26,20 @@ public class TypeGroupBy {
   /**
    * For a given graph, assign all vertices with no type to the component where the best similarity can be found.
    * @param graph input graph
-   * @param processingMode if default, typeGroupBy is executed
-   * @param maxIterations maximal count vertex centric iterations
    * @return graph where non-type vertices are assigned to best matching component
    */
-  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                   String processingMode,
-                                                   Integer maxIterations,
-                                                   ExecutionEnvironment env, ExampleOutput out) throws Exception {
+  public static Graph<Long, ObjectMap, ObjectMap> execute(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env, ExampleOutput out)
+      throws Exception {
     // start preprocessing
-    // sync begin
-//    DataSet<Vertex<Long, ObjectMap>> tmpVertices = graph.getVertices().filter(value -> true);
-//    DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
-//    tmpVertices = tmpVertices.map(new PrintVertices(false, "preprocTGB1"));
-//    graph = Graph.fromDataSet(tmpVertices, edges, env);
-    // sync end
-
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new AddShadingTypeMapFunction())
         .groupBy(new CcIdKeySelector())
         .reduceGroup(new HashCcIdOverlappingFunction());
+    // TODO needed?
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
-    // end preprocessing
 
-    /**
-     * Start typed grouping
-     */
     final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
     final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
@@ -60,7 +47,11 @@ public class TypeGroupBy {
             Constants.SIM_GEO_LABEL_STRATEGY);
 
     graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
+    // end preprocessing
 
+    /**
+     * Start typed grouping
+     */
     final DataSet<NeighborTuple> neighborSimTypes = graph
         .groupReduceOnNeighbors(new NeighborTupleCreator(), EdgeDirection.ALL);
 

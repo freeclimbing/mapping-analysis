@@ -25,20 +25,14 @@ public class SimSort {
   /**
    * create all missing edges, addGraph default vertex sim values
    * @param graph input graph
-   * @param processingMode cc id or hash cc id
    * @param env execution environment
    * @return preprocessed graph
    */
   public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          String processingMode,
                                                           ExecutionEnvironment env,
                                                           ExampleOutput out) throws Exception {
-    KeySelector<Vertex<Long, ObjectMap>, Long> keySelector = new HashCcIdKeySelector();
-//    if (!processingMode.equals(Constants.DEFAULT_VALUE)) {
-//      keySelector = new CcIdKeySelector(); // untested
-//    }
     DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
-        .getTransitiveClosureEdges(graph.getVertices(), keySelector);
+        .getTransitiveClosureEdges(graph.getVertices(), new HashCcIdKeySelector());
 
     DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
         .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
@@ -77,7 +71,8 @@ public class SimSort {
       Graph<Long, ObjectMap, ObjectMap> graph,
        ExecutionEnvironment env) {
 
-    // TODO
+    // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
+    // TODO for alternative version, unneeded
 
     return graph;
   }

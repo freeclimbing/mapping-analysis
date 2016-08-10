@@ -210,58 +210,32 @@ public class SimilarityComputation {
                                                                   ExampleOutput out) throws Exception {
     if (Constants.PROC_MODE.equals(Constants.PREPROC)) {
       LOG.setLevel(Level.DEBUG);
-    /*
-     * sync begin
-     */
+     /*
+      * sync begin
+      */
       DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices().filter(value -> true);
-//          .map(new PrintVertices(false, "preTGB"));
       DataSet<Edge<Long, ObjectMap>> edges = graph.getEdges().filter(value -> true);
       graph = Graph.fromDataSet(vertices, edges, env);
-    /*
-     * sync end
-     */
+     /*
+      * sync end
+      */
 
-      // internally compType is used, afterwards typeIntern is used again
-      graph = TypeGroupBy.execute(graph, processingMode, 1000, env, out);
+      graph = TypeGroupBy.execute(graph, env, out);
 
-//    Utils.writeToFile(graph.getVertices(), "4_post_sim_sort");
-
-    /*
-     * sync begin
-     */
-//      vertices = graph.getVertices().filter(value -> {
-//        LOG.info("filtered vertex " + value.toString());
-//        return true;
-//      });
-//      edges = graph.getEdges().filter(value -> {
-//        LOG.info("filtered edge");
-//        return true;
-//      });
-//      graph = Graph.fromDataSet(vertices, edges, env);
-    /*
-     * sync end
-     */
-
-    /*
-     * SimSort (and postprocessing TypeGroupBy in prepare)
-     */
-      graph = SimSort.prepare(graph, processingMode, env, out);
+      /*
+      * SimSort (and postprocessing TypeGroupBy in prepare)
+      */
+      graph = SimSort.prepare(graph, env, out);
 
 //      out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
-//      Utils.writeVerticesToJSONFile(graph.getVertices(), "tgbJSON");
-//      out.print();
-
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);
       out.print();
     } else if (Constants.PROC_MODE.equals(Constants.ANALYSIS)){
-
-      // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
-      // TODO for alternative version, unneeded
       if (Constants.IS_SIMSORT_ENABLED) {
         graph = SimSort.execute(graph, 100);
       } else if (Constants.IS_SIMSORT_ALT_ENABLED) {
-        graph = SimSort.executeAlternative(graph, env);
+        graph = SimSort.executeAlternative(graph, env); // not yet implemented
       }
       graph = SimSort.excludeLowSimVertices(graph, env);
 

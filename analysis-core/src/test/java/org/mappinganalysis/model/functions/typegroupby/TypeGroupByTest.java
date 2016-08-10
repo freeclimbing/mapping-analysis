@@ -71,7 +71,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(TGB_EQUAL_SIM_NO_TYPE_LOW_CCID);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph = TypeGroupBy.execute(graph, Constants.DEFAULT_VALUE, 100, env, null);
+    graph = TypeGroupBy.execute(graph, env, null);
 
     for (int i=0; i < 5; i++) {
       assertEquals(0, graph.filterOnVertices(new SpecificCcIdFilter()).getVertices().count());
@@ -88,7 +88,7 @@ public class TypeGroupByTest {
         .getResource("/data/tgb/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = TypeGroupBy.execute(graph, Constants.DEFAULT_VALUE, 100, env, null);
+    graph = TypeGroupBy.execute(graph, env, null);
 
 //    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
 //      if (vertex.getId() == 1375705L) {
@@ -114,7 +114,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(NO_TYPE_STRING);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph = TypeGroupBy.execute(graph, Constants.DEFAULT_VALUE, 100, env, null);
+    graph = TypeGroupBy.execute(graph, env, null);
 
     graph.getVertices().print();
 //    for (int i=0; i < 5; i++) {
@@ -127,7 +127,7 @@ public class TypeGroupByTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(TGB_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = TypeGroupBy.execute(firstGraph, Constants.DEFAULT_VALUE, 100, env, null);
+    firstGraph = TypeGroupBy.execute(firstGraph, env, null);
 
     for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {
       LOG.info(vertex.toString());
