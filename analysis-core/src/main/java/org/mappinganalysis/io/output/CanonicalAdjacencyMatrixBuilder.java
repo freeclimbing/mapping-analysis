@@ -80,14 +80,17 @@ public class CanonicalAdjacencyMatrixBuilder {
           @Override
           public void flatMap(Vertex<Long, ObjectMap> clusterVertex,
                               Collector<Tuple3<Long, String, Long>> collector) throws Exception {
-            String type = clusterVertex.getValue().containsKey(Constants.TYPE_INTERN) ?
-                clusterVertex.getValue().get(Constants.TYPE_INTERN).toString() : "";
-            String vertexLabel = clusterVertex.getValue().get(Constants.LABEL).toString()
-                + " lat: " + clusterVertex.getValue().getLatitude()
-                + " lon: " + clusterVertex.getValue().getLongitude() + " type: " + type;
-              for (Long clVertex : clusterVertex.getValue().getVerticesList()) {
-                collector.collect(new Tuple3<>(clusterVertex.getId(), vertexLabel, clVertex));
-              }
+            String type = clusterVertex.getValue().getTypes(Constants.TYPE_INTERN).toString();
+            String vertexLabel = clusterVertex.getValue().getLabel()
+                .concat(" lat: ")
+                .concat(clusterVertex.getValue().getLatitude().toString())
+                .concat(" lon: ")
+                .concat(clusterVertex.getValue().getLongitude().toString())
+                .concat(" type: ")
+                .concat(type);
+            for (Long clVertex : clusterVertex.getValue().getVerticesList()) {
+              collector.collect(new Tuple3<>(clusterVertex.getId(), vertexLabel, clVertex));
+            }
           }
         });
 
