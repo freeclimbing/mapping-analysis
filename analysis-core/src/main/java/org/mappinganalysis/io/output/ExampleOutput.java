@@ -16,9 +16,11 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -190,25 +192,45 @@ public class ExampleOutput {
     }
 
     if (Constants.INPUT_DIR.contains("linklion")) {
-      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 20);
-      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 20);
-      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 40);
-      addClusterSampleToOutput(caption + " 5 size cluster", mergedClusters, vertices, 5, 20);
+      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 37);
+      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 36);
+      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 48);
+      addClusterSampleToOutput(caption + " 5 size cluster", mergedClusters, vertices, 5, 19);
     }
   }
 
+  /**
+   * WIP reload existing files manually.
+   */
   private void addClusterSampleToOutput(String caption, DataSet<Vertex<Long, ObjectMap>> mergedClusters,
                                         DataSet<Vertex<Long, ObjectMap>> vertices,
                                         int clusterSize,
                                         int entityCount) {
     DataSet<String> captionSet = env.fromElements("\n*** " + caption + " ***\n");
+    String evalFile = caption.replaceAll("\\D+","").concat("-size-clusters");
+    LOG.info("###eval file " + evalFile);
 
-    DataSet<Vertex<Long, ObjectMap>> clusters = mergedClusters
-        .filter(new ClusterSizeSimpleFilterFunction(clusterSize))
-        .first(entityCount);
+//    String vertexPath = Utils.getFinalPath(evalFile, false);
+//    LOG.info("###eval vertex path " + vertexPath + " " + (new File(vertexPath).exists()));
+
+    DataSet<Vertex<Long, ObjectMap>> resultClusters;
+
+//    if (new File(vertexPath).exists()) {
+//      LOG.info("###eval sample vertices from file " + vertexPath);
+//      resultClusters = Utils.readVerticesFromJSONFile(evalFile, env, false);
+//    } else {
+      LOG.info("###eval vertices from mergedclusters, pick sample");
+      resultClusters = mergedClusters
+          .filter(new ClusterSizeSimpleFilterFunction(clusterSize))
+          .first(entityCount);
+      /**
+       * Write eval clusters for a certain size to disk for later reuse.
+       */
+      Utils.writeVerticesToJSONFile(resultClusters, evalFile);
+//    }
 
     DataSet<String> vertexSet = new CanonicalAdjacencyMatrixBuilder()
-        .executeOnRandomFinalClusterBaseVertexValues(clusters, vertices);
+        .executeOnRandomFinalClusterBaseVertexValues(resultClusters, vertices);
 
     outSet = outSet
         .cross(captionSet)

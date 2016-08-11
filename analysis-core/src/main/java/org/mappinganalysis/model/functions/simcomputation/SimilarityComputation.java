@@ -8,7 +8,6 @@ import org.apache.flink.api.common.functions.RichFlatJoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -231,6 +230,10 @@ public class SimilarityComputation {
 
       graph = removeOneToManyVertices(graph, env);
 
+//      graph = GraphUtils.addCcIdsToGraph(graph, env);
+
+      out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);
+
       graph = TypeGroupBy.execute(graph, env, out);
 
       /*
@@ -238,7 +241,7 @@ public class SimilarityComputation {
       */
       graph = SimSort.prepare(graph, env, out);
 
-//      out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
+      out.addPreClusterSizes("3 cluster sizes post typegroupby", graph.getVertices(), Constants.HASH_CC);
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);
       out.print();

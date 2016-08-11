@@ -60,10 +60,6 @@ public class Preprocessing {
 //    Utils.writeToFile(graph.getVertices(), "1_input_graph_withCc");
     out.addPreClusterSizes("1 cluster sizes input graph", preGraph.getVertices(), Constants.CC_ID);
 
-    if (Constants.IS_RESTRICT_ACTIVE) {
-      preGraph = restrictGraph(preGraph, env);
-    }
-
     /*
      * restrict graph to direct links with matching type information
      */
@@ -81,46 +77,6 @@ public class Preprocessing {
     simGraph = applyLinkFilterStrategy(simGraph, env, true);
 
     return GraphUtils.addCcIdsToGraph(simGraph, env);
-  }
-
-  /**
-   * Restrict graph for testing purpose. First 500 vertices and contained edges.
-   */
-  private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
-                                                                 ExecutionEnvironment env) {
-    // restrict to first ??? clusters
-    DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
-        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Constants.CC_ID)))
-        .returns(new TypeHint<Tuple1<Long>>() {})
-//        .filter(tuple -> {
-//          return tuple.f0 == 1868L;
-////            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
-////            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
-//        });
-        .first(500);
-
-    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Constants.CC_ID))) //vid, ccid
-        .returns(new TypeHint<Tuple2<Long, Long>>() {})
-        .join(restrictedComponentIds)
-        .where(1)
-        .equalTo(0)
-        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple1<Long>>() {
-          @Override
-          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple1<Long>> collector)
-              throws Exception {
-            collector.collect(new Tuple1<>(left.f0));
-          }
-        })
-        .leftOuterJoin(graph.getVertices())
-        .where(0)
-        .equalTo(0)
-        .with((longTuple1, vertex) -> vertex).returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-
-    DataSet<Edge<Long, NullValue>> newEdges = deleteEdgesWithoutSourceOrTarget(graph.getEdges(), newVertices);
-
-    graph = Graph.fromDataSet(newVertices.distinct(0), newEdges.distinct(0,1), env);
-    return graph;
   }
 
   /**

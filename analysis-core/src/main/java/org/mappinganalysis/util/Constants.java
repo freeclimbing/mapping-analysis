@@ -29,7 +29,6 @@ public class Constants {
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String BASE_VERTEX_COUNT_ACCUMULATOR = "vertex-count";
-  public static final String TYPES_COUNT_ACCUMULATOR = "types-count";
   public static final String PREPROC_LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
   public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
@@ -117,6 +116,7 @@ public class Constants {
   public static final String PREPROC = "preproc";
   public static final String ANALYSIS = "analysis";
   public static final String EVAL = "eval";
+  public static final String STATS = "stats";
 
   /**
    * Command line option names.

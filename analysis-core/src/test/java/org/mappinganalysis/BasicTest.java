@@ -3,12 +3,14 @@ package org.mappinganalysis;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.AggregateOperator;
 import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.graph.Edge;
@@ -16,9 +18,11 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.junit.Test;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.util.Constants;
 
 import java.util.List;
@@ -30,6 +34,50 @@ import static org.junit.Assert.assertEquals;
  * @deprecated
  */
 public class BasicTest {
+
+  /**
+   * Restrict graph for testing purpose. First 500 vertices and contained edges.
+   *
+   * not currently in use
+   */
+  @Deprecated
+  private static Graph<Long, ObjectMap, NullValue> restrictGraph(Graph<Long, ObjectMap, NullValue> graph,
+                                                                 ExecutionEnvironment env) {
+    // restrict to first ??? clusters
+    DataSet<Tuple1<Long>> restrictedComponentIds = graph.getVertices()
+        .map(vertex -> new Tuple1<>((long) vertex.getValue().get(Constants.CC_ID)))
+        .returns(new TypeHint<Tuple1<Long>>() {})
+//        .filter(tuple -> {
+//          return tuple.f0 == 1868L;
+////            return tuple.f0 == 1134L || tuple.f0 == 60L;// || tuple.f0 == 1135L || tuple.f0 == 8214L; // typegroupby diff
+////            return tuple.f0 == 890L || tuple.f0 == 1134L || tuple.f0 == 60L || tuple.f0 == 339L; // typegroupby diff
+//        });
+        .first(500);
+
+    DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
+        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get(Constants.CC_ID))) //vid, ccid
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .join(restrictedComponentIds)
+        .where(1)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple1<Long>>() {
+          @Override
+          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple1<Long>> collector)
+              throws Exception {
+            collector.collect(new Tuple1<>(left.f0));
+          }
+        })
+        .leftOuterJoin(graph.getVertices())
+        .where(0)
+        .equalTo(0)
+        .with((longTuple1, vertex) -> vertex).returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+    DataSet<Edge<Long, NullValue>> newEdges = Preprocessing
+        .deleteEdgesWithoutSourceOrTarget(graph.getEdges(), newVertices);
+
+    graph = Graph.fromDataSet(newVertices.distinct(0), newEdges.distinct(0,1), env);
+    return graph;
+  }
 
   // todo  test for objectmap not twice lat or lon
 //  public void addProperty(String key, Object value) {

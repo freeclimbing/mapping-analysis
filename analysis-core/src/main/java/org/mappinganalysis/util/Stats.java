@@ -31,48 +31,7 @@ import java.util.Set;
 
 /**
  * Helper methods for Flink mapping analysis
- *
- * use anywhere:
- * //    if (dataset.equals(Utils.GEO_FULL_NAME)) {
- //      final ArrayList<Long> preSplitBigClusterList
- //          = Lists.newArrayList(4794L, 28L, 3614L, 4422L, 1429L, 1458L, 1868L);
- //      out.addSelectedBaseClusters("big components final values",
- //          Preprocessing.execute(inputGraph, true, env).getVertices(),
- //          representativeVertices,
- //          preSplitBigClusterList);
- //    }
-
- //    Preprocessing.deleteVerticesWithoutAnyEdges()
- //
- //    addCountsForSingleSource(inputGraph, out, Utils.GN_NS);
- //    addCountsForSingleSource(inputGraph, out, Utils.DBP_NS);
- //    addCountsForSingleSource(inputGraph, out, Utils.FB_NS);
- //
- //    out.print();
-
  */
-
-//DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
-//    vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.NYT_NS));
-//          && vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
-
-//      DataSet<Vertex<Long, ObjectMap>> fbVertices = vertices.filter(vertex ->
-//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.FB_NS));
-//
-//      DataSet<Vertex<Long, ObjectMap>> dbpVertices = vertices.filter(vertex ->
-//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.DBP_NS));
-//
-//      DataSet<Vertex<Long, ObjectMap>> lgdVertices = vertices.filter(vertex ->
-//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.LGD_NS));
-//
-//      DataSet<Vertex<Long, ObjectMap>> gnVertices = vertices.filter(vertex ->
-//          vertex.getValue().get(Utils.ONTOLOGY).equals(Utils.GN_NS));
-//
-//      out.addDataSetCount("freebase count", fbVertices);
-//      out.addDataSetCount("lgd count", lgdVertices);
-//      out.addDataSetCount("dbp count", dbpVertices);
-//      out.addDataSetCount("gn count", gnVertices);
-
 public class Stats {
   private static final Logger LOG = Logger.getLogger(Stats.class);
 
@@ -247,7 +206,6 @@ public class Stats {
       }
     }
   }
-
 
   public static void printResultEdgeCounts(Graph<Long, ObjectMap, NullValue> inputGraph,
                                            ExampleOutput out,

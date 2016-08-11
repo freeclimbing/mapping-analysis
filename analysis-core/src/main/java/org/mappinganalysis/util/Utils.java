@@ -75,28 +75,29 @@ public class Utils {
       String verticesPath,
       ExecutionEnvironment env,
       boolean isAbsolutePath) {
-    if (!verticesPath.endsWith("/")) {
-      verticesPath = verticesPath.concat("/");
-    }
-    String vertexOutFile = verticesPath.concat("vertices/");
-    if (!isAbsolutePath) {
-      vertexOutFile = Constants.INPUT_DIR + "output/" + vertexOutFile;
-    }
+    String vertexOutFile = getFinalPath(verticesPath, isAbsolutePath);
 
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, env);
 
     return jsonDataSource.getVertices();
   }
 
-  /**
-   * compatibility method
-   */
-  @Deprecated
-  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir, ExecutionEnvironment env) {
-//      String vertexOutFile = Constants.INPUT_DIR + "output/" + inDir + "/vertices/";
-//      String edgeOutFile = Constants.INPUT_DIR + "output/" + inDir + "/edges/";
-//      JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
+  public static String getFinalPath(String verticesPath, boolean isAbsolutePath) {
+    if (!verticesPath.endsWith("/")) {
+      verticesPath = verticesPath.concat("/");
+    }
+    verticesPath = verticesPath.concat("vertices/");
+    if (!isAbsolutePath) {
+      verticesPath = Constants.INPUT_DIR + "output/" + verticesPath;
+    }
+    return verticesPath;
+  }
 
+  /**
+   * Read Gelly graph from JSON file
+   * @param inDir path is not absolute
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir, ExecutionEnvironment env) {
     return readFromJSONFile(inDir, env, false);
   }
 
