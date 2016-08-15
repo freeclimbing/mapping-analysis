@@ -55,7 +55,6 @@ public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, Object
     Set<String> resultTypes = Sets.newHashSet();
 
     for (String value : values) {
-      LOG.info("###itm: value: " + value);
       if (TypeDictionary.PRIMARY_TYPE.containsKey(value)) {
         resultTypes.add(TypeDictionary.PRIMARY_TYPE.get(value));
       }

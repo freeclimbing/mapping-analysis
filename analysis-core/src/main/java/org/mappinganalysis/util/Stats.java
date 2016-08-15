@@ -1,14 +1,17 @@
 package org.mappinganalysis.util;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
@@ -16,13 +19,11 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
-import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
-import org.mappinganalysis.model.functions.stats.ResultComponentSelectionFilter;
-import org.mappinganalysis.model.functions.stats.ResultEdgesSelectionFilter;
-import org.mappinganalysis.model.functions.stats.ResultVerticesSelectionFilter;
+import org.mappinganalysis.model.functions.stats.*;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
 
 import java.util.List;
@@ -263,24 +264,7 @@ public class Stats {
     out.addTuples("new edges and deleted edges", newPlusDeletedEdges);
   }
 
-  /**
-   * only working for small geo dataset
-   */
-  private static void addCountsForSingleSource(Graph<Long, ObjectMap, NullValue> inputGraph,
-                                               ExampleOutput out, final String source) {
-    DataSet<Vertex<Long, ObjectMap>> nytVertices = inputGraph.getVertices()
-        .filter(vertex -> vertex.getValue().getOntology().equals(Constants.NYT_NS));
-
-    DataSet<Vertex<Long, ObjectMap>> gnVertices = inputGraph.getVertices()
-        .filter(vertex -> vertex.getValue().getOntology().equals(source));
-
-    DataSet<Edge<Long, NullValue>> edgeDataSet = Preprocessing
-        .deleteEdgesWithoutSourceOrTarget(inputGraph.getEdges(), nytVertices.union(gnVertices));
-
-    out.addDataSetCount("vertex size for " + source, gnVertices);
-    out.addDataSetCount("edge size for " + source, edgeDataSet);
-  }
-
+  @Deprecated
   public static void addChangedWhileMergingVertices(ExampleOutput out, DataSet<Vertex<Long, ObjectMap>> representativeVertices, DataSet<Vertex<Long, ObjectMap>> mergedClusters) {
     DataSet<Vertex<Long, ObjectMap>> changedWhileMerging = representativeVertices
         .filter(new ClusterSizeSimpleFilterFunction(4))
@@ -298,15 +282,135 @@ public class Stats {
           }
         });
 
-//    out.addRandomBaseClusters("random base clusters", preprocGraph.getVertices(), changedWhileMerging, 10);
-
     out.addVertices("changedWhileMerging", changedWhileMerging);
   }
 
+  /**
+   * Get vertex count having correct geo coordinates / type: (geo, type)
+   * @param isAbsolutePath default false, needed for test
+   * @throws Exception
+   */
+  public static DataSet<Tuple2<Integer, Integer>> countMissingGeoAndTypeProperties(
+      String path, boolean isAbsolutePath, ExecutionEnvironment env) throws Exception {
+
+    Graph<Long, ObjectMap, ObjectMap> graph
+        = Utils.readFromJSONFile(path, env, isAbsolutePath);
+    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
+
+    preGraph = Preprocessing.applyTypeToInternalTypeMapping(preGraph, env);
+
+    DataSet<Tuple2<Integer, Integer>> geoTypeTuples = preGraph.getVertices()
+        .map(vertex -> {
+          int geo = 0;
+          if (vertex.getValue().hasGeoPropertiesValid()) {
+            geo = 1;
+          }
+          int type = 0;
+          if (vertex.getValue().containsKey(Constants.TYPE_INTERN)
+              && !vertex.getValue().hasTypeNoType(Constants.TYPE_INTERN)) {
+            type = 1;
+          }
+          return new Tuple2<>(geo, type);
+        })
+        .returns(new TypeHint<Tuple2<Integer, Integer>>() {});
+
+    return geoTypeTuples.sum(0).andSum(1);
+  }
 
   /**
-   * optional stats method TODO remove collect call
+   * Count sources per data source.
+   * @throws Exception
    */
+  public static DataSet<Tuple2<String, Integer>> printVertexSourceCounts(
+      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+
+    return graph.getVertices()
+        .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, String, Integer>>() {
+          @Override
+          public Tuple3<Long, String, Integer> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            return new Tuple3<Long, String, Integer>(vertex.getId(), vertex.getValue().getOntology(), 1);
+          }
+        })
+        .groupBy(1)
+        .reduce((left, right) -> new Tuple3<>(left.f0, left.f1, left.f2 + right.f2))
+        .map(value -> new Tuple2<>(value.f1, value.f2))
+        .returns(new TypeHint<Tuple2<String, Integer>>() {});
+  }
+
+  /**
+   *  Print counts of edges between different sources. It's already without
+   *  looking at the edge direction, so 2 edges (dbp, gn) and (gn, dbp)
+   *  get counted as (dbp, gn, 2)
+   * @throws Exception
+   */
+  public static DataSet<Tuple3<String, String, Integer>> printEdgeSourceCounts(
+      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+
+    DataSet<Tuple2<Long, Long>> edges = graph.getEdgeIds()
+        .distinct();
+
+    return getEdgeSourceTuples(graph, edges)
+        .map(new SourceSortFunction())
+        .groupBy(0, 1)
+        .reduce((left, right) -> new Tuple3<>(left.f0, left.f1, left.f2 + right.f2));
+  }
+
+  /**
+   * Return a tuple of edge ids and their corresponding data source string.
+   * TODO most likely too much "distinct"
+   * @return tuple (1, 2, dbp, gn)
+   */
+  private static DataSet<Tuple4<Long, Long, String, String>> getEdgeSourceTuples(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      DataSet<Tuple2<Long, Long>> edges) {
+
+    return edges
+        .map(edge -> {
+          if (edge.f0 < edge.f1) {
+            return edge;
+          } else {
+            return edge.swap();
+          }
+        })
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .distinct()
+        .leftOuterJoin(graph.getVertices())
+        .where(0)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple2<Long,Long>,
+            Vertex<Long,ObjectMap>,
+            Tuple3<Long, Long, String>>() {
+          @Override
+          public void join(Tuple2<Long, Long> left,
+                           Vertex<Long, ObjectMap> right,
+                           Collector<Tuple3<Long, Long, String>> out) throws Exception {
+            if (left != null) {
+//                LOG.info("first1: " + left.toString() + " "  + right.toString());
+              out.collect(new Tuple3<>(left.f0, left.f1, right.getValue().getOntology()));
+            }
+          }
+        })
+        .leftOuterJoin(graph.getVertices())
+        .where(1)
+        .equalTo(0)
+        .with(new FlatJoinFunction<Tuple3<Long,Long,String>, Vertex<Long,ObjectMap>, Tuple4<Long, Long, String, String>>() {
+          @Override
+          public void join(Tuple3<Long, Long, String> left,
+                           Vertex<Long, ObjectMap> right,
+                           Collector<Tuple4<Long, Long, String, String>> out) throws Exception {
+            if (left != null) {
+//                LOG.info("second1: " + left.toString() + " "  + right.toString());
+              out.collect(new Tuple4<>(left.f0, left.f1, left.f2, right.getValue().getOntology()));
+            }
+          }
+        })
+        .distinct(0,1);
+  }
+
+  /**
+   * optional stats method TODO FOR WHAT?
+   */
+  @Deprecated
   public static void printEdgesSimValueBelowThreshold(Graph<Long, ObjectMap, NullValue> allGraph,
                                                        DataSet<Triplet<Long, ObjectMap, ObjectMap>>
                                                            accumulatedSimValues) throws Exception {

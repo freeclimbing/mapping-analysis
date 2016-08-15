@@ -60,12 +60,8 @@ public class GraphUtils {
 
   private static <T> Graph<Long, Long, NullValue> prepareForCc(Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) {
     DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, Long>>() {
-          @Override
-          public Vertex<Long, Long> map(Vertex<Long, ObjectMap> value) throws Exception {
-            return new Vertex<>(value.getId(), value.getId());
-          }
-        });
+        .map(value -> new Vertex<>(value.getId(), value.getId()))
+        .returns(new TypeHint<Vertex<Long, Long>>() {});
 
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
@@ -73,7 +69,7 @@ public class GraphUtils {
 
     Graph<Long, Long, NullValue> workingGraph = Graph.fromDataSet(vertices, edges, env);
 
-    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() {
+    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() { // don't replace
       @Override
       public boolean filter(Vertex<Long, Long> value) throws Exception {
         Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
@@ -134,11 +130,28 @@ public class GraphUtils {
   }
 
   /**
+   * Maps any edge value in a graph to NullValue. JSON imports graphs with edge values,
+   * sometimes (e.g., testing) you don't want edge values.
+   * @return graph with edge NullValues
+   */
+  public static <EV> Graph<Long, ObjectMap, NullValue> mapEdgesToNullValue(
+      Graph<Long, ObjectMap, EV> graph) {
+    return graph
+        .mapEdges(new MapFunction<Edge<Long, EV>, NullValue>() { // dont replace
+          @Override
+          public NullValue map(Edge<Long, EV> value) throws Exception {
+            return NullValue.getInstance();
+          }
+        });
+  }
+
+  /**
    * Example: (1, 2), (2, 1), (1, 3), (1, 1) as input will result in (1, 2), (1,3)
    */
-  public static DataSet<Edge<Long, NullValue>> getDistinctSimpleEdges(DataSet<Edge<Long, NullValue>> input) {
+  public static DataSet<Edge<Long, NullValue>> getDistinctSimpleEdges(
+      DataSet<Edge<Long, NullValue>> input) {
     return input
-        .filter(edge -> (long) edge.getSource() != edge.getTarget())
+        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();
@@ -150,18 +163,19 @@ public class GraphUtils {
 
   /**
    * TODO Uses parts of getDistinctSimpleEdges, rewrite and test
-   *
-   * only used in test
+   * only used in cluster computation test
    */
   public static DataSet<Edge<Long, NullValue>> restrictToNewEdges(DataSet<Edge<Long, NullValue>> input,
                                                                   DataSet<Edge<Long, NullValue>> tmpResult) {
     return tmpResult
-        .filter(edge -> (long) edge.getSource() != edge.getTarget())
+        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
         .leftOuterJoin(input)
-        .where(0, 1).equalTo(0, 1)
+        .where(0, 1)
+        .equalTo(0, 1)
         .with(new LeftSideOnlyJoinFunction<>())
         .leftOuterJoin(input)
-        .where(0, 1).equalTo(1, 0)
+        .where(0, 1)
+        .equalTo(1, 0)
         .with(new LeftSideOnlyJoinFunction<>())
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})

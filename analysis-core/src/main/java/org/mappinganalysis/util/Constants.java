@@ -12,7 +12,6 @@ public class Constants {
   public static final String DEFAULT_VALUE = "default";
   public static final String DEBUG = "debug";
   public static final String INFO = "info";
-  public static final String LESS = "less";
   public static final String GEO_FULL_NAME = "dbURLfull";
   public static final String DB_PROPERY_FILE_NAME = "db";
   public static final String DB_URL_FIELD = "url";
@@ -112,11 +111,21 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
+  public static final String VERTEX = "vertex";
+  public static final String EDGE = "edge";
+  public static final String INPUT_GRAPH = "InputGraph";
+  public static final String PREPROC_GRAPH = "PreprocGraph";
+
   public static final String INPUT = "input";
   public static final String PREPROC = "preproc";
   public static final String ANALYSIS = "analysis";
   public static final String EVAL = "eval";
-  public static final String STATS = "stats";
+  public static final String STATS_EDGE_INPUT = "stats-edge-input";
+  public static final String STATS_EDGE_PREPROC = "stats-edge-preproc";
+  public static final String STATS_VERTEX_INPUT = "stats-vertex-input";
+  public static final String STATS_VERTEX_PREPROC = "stats-vertex-preproc";
+  public static final String INIT_CLUST = "2-initial-clustering";
+  public static final String MISS = "miss";
 
   /**
    * Command line option names.
@@ -131,8 +140,6 @@ public class Constants {
   public static Double MIN_LABEL_PRIORITY_SIM;
   public static Double MIN_SIMSORT_SIM;
   public static boolean IGNORE_MISSING_PROPERTIES;
-  public static boolean IS_RESTRICT_ACTIVE;
   public static String PRE_CLUSTER_STRATEGY;
   public static boolean IS_LINK_FILTER_ACTIVE;
-  public static boolean IS_TGB_DEFAULT_MODE;
 }

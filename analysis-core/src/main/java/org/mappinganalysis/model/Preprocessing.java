@@ -45,14 +45,7 @@ public class Preprocessing {
     if (Constants.PROC_MODE.equals(Constants.ANALYSIS)) {
       return (Graph<Long, ObjectMap, ObjectMap>) graph;
     }
-    // todo fix this workaround
-    Graph<Long, ObjectMap, NullValue> preGraph = graph
-        .mapEdges(new MapFunction<Edge<Long, EV>, NullValue>() { // dont replace
-          @Override
-          public NullValue map(Edge<Long, EV> value) throws Exception {
-            return NullValue.getInstance();
-          }
-        });
+    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
 
     preGraph = applyTypeToInternalTypeMapping(preGraph, env);
 
@@ -69,7 +62,7 @@ public class Preprocessing {
         SimilarityComputation.computeGraphEdgeSim(preGraph, Constants.DEFAULT_VALUE),
         env);
     // todo not needed?
-//    simGraph = GraphUtils.addCcIdsToGraph(simGraph, env);
+    simGraph = GraphUtils.addCcIdsToGraph(simGraph, env);
 
     /*
      * restrict (direct) links to 1:1 in terms of sources from one entity to another
@@ -587,7 +580,12 @@ public class Preprocessing {
       ExecutionEnvironment env) {
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .getVertices()
-        .map(new InternalTypeMapFunction());
+        .map(new InternalTypeMapFunction())
+        .map(value -> {
+          LOG.info(value.toString());
+          return value;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     return Graph.fromDataSet(vertices, graph.getEdges(), env);
   }

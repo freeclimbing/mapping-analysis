@@ -186,9 +186,9 @@ public class ExampleOutput {
                                     DataSet<Vertex<Long, ObjectMap>> mergedClusters,
                                     DataSet<Vertex<Long, ObjectMap>> vertices) {
     if (Constants.INPUT_DIR.contains("perfect")) {
-      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 2);
-      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 8);
-      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 72);
+      addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 6); // 2
+      addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 9); // 8
+      addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 64); //72
     }
 
     if (Constants.INPUT_DIR.contains("linklion")) {

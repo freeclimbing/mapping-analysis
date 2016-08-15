@@ -231,7 +231,7 @@ public class SimilarityComputation {
       graph = removeOneToManyVertices(graph, env);
 
 //      graph = GraphUtils.addCcIdsToGraph(graph, env);
-
+//      out.addVertexAndEdgeSizes("pre clustering", inputGraph);
       out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);
 
       graph = TypeGroupBy.execute(graph, env, out);
