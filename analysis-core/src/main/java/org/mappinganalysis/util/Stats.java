@@ -8,8 +8,6 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.operators.JoinOperator;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
@@ -22,11 +20,12 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.EdgeIdsVertexValueTuple;
+import org.mappinganalysis.model.EdgeIdsSourcesTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.stats.*;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
+import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 import java.util.List;
 import java.util.Map;
@@ -293,7 +292,7 @@ public class Stats {
    * @return
    */
   @Deprecated
-  public static DataSet<EdgeIdsVertexValueTuple> getLinksWithSrcAndTrgGnSource(Graph<Long, ObjectMap, ObjectMap> graph) {
+  public static DataSet<EdgeIdsSourcesTuple> getLinksWithSrcAndTrgGnSource(Graph<Long, ObjectMap, ObjectMap> graph) {
 
     DataSet<Vertex<Long, ObjectMap>> gnVertices = graph.getVertices()
         .filter(new SourceFilterFunction(Constants.GN_NS));
@@ -360,7 +359,6 @@ public class Stats {
    */
   public static DataSet<Tuple3<String, String, Integer>> printEdgeSourceCounts(
       Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-
     DataSet<Tuple2<Long, Long>> edges = graph.getEdgeIds()
         .distinct();
 
@@ -473,20 +471,5 @@ public class Stats {
           }
         })
         .print();
-  }
-
-
-
-  private static class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
-    private final String source;
-
-    public SourceFilterFunction(String source) {
-      this.source = source;
-    }
-
-    @Override
-    public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return vertex.getValue().getOntology().equals(source);
-    }
   }
 }

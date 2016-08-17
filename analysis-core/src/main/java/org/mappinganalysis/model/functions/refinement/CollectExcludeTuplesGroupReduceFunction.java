@@ -26,19 +26,15 @@ public class CollectExcludeTuplesGroupReduceFunction
                      Collector<Tuple4<Long, Long, Long, Double>> collector) throws Exception {
     Set<Tuple2<Long, Long>> tripletIds = Sets.newHashSet();
 
-    // logic here:
     Tuple2<Long, Double> clRefineIdAndSim = getLowestVertIdAndHighestSim(triplets, tripletIds, column);
     if (clRefineIdAndSim == null) {
 //    LOG.info("Exclude all case" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
-//        LOG.info("CollectExcludeTuplesGroupReduceFunction refineId null: " + tripletId.toString());
         collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, Long.MIN_VALUE, 0D));
       }
     } else {
     LOG.info("Exclude none + enrich" + tripletIds.toString());
       for (Tuple2<Long, Long> tripletId : tripletIds) {
-        LOG.info("refineId not null" + tripletId.toString() + " refine: " + clRefineIdAndSim.toString());
-
         collector.collect(new Tuple4<>(tripletId.f0, tripletId.f1, clRefineIdAndSim.f0, clRefineIdAndSim.f1));
       }
     }

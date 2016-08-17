@@ -7,7 +7,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.graph.*;
-import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -20,8 +19,6 @@ import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
-
-import java.util.HashMap;
 
 /**
  * Preprocessing.
@@ -79,12 +76,7 @@ public class Preprocessing {
       DataSet<Vertex<Long, ObjectMap>> vertices,
       ExecutionEnvironment env) {
     DataSet<Edge<Long, NullValue>> edges = getEdgeIdSourceValues(edgeIds, vertices)
-        .filter(edge -> {
-          if (edge.getSrcSource().equals(edge.getTrgSource())) {
-            LOG.info("###anomaly: " + edge.toString());
-          }
-          return !edge.getSrcSource().equals(edge.getTrgSource());
-        })
+        .filter(edge -> !edge.getSrcSource().equals(edge.getTrgSource()))
         .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();
@@ -95,24 +87,20 @@ public class Preprocessing {
   /**
    * Create a dataset of edge ids with the associated dataset source values like "http://dbpedia.org/
    */
-  public static DataSet<EdgeIdsVertexValueTuple> getEdgeIdSourceValues(
+  public static DataSet<EdgeIdsSourcesTuple> getEdgeIdSourceValues(
       DataSet<Tuple2<Long, Long>> edgeIds,
-      DataSet<Vertex<Long, ObjectMap>> gnVertices) {
+      DataSet<Vertex<Long, ObjectMap>> vertices) {
     return edgeIds
-        .map(new MapFunction<Tuple2<Long,Long>, EdgeIdsVertexValueTuple>() {
-          @Override
-          public EdgeIdsVertexValueTuple map(Tuple2<Long, Long> edge) throws Exception {
-            return new EdgeIdsVertexValueTuple(edge.f0, edge.f1, "", "");
-          }
-        })
-        .leftOuterJoin(gnVertices)
+        .map(edge -> new EdgeIdsSourcesTuple(edge.f0, edge.f1, "", ""))
+        .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
+        .leftOuterJoin(vertices)
         .where(0)
         .equalTo(0)
-        .with(new VertexValueForEdgeIdsFunction(0))
-        .leftOuterJoin(gnVertices)
+        .with(new EdgeIdsSourceNamesFunction(0))
+        .leftOuterJoin(vertices)
         .where(1)
         .equalTo(0)
-        .with(new VertexValueForEdgeIdsFunction(1));
+        .with(new EdgeIdsSourceNamesFunction(1));
   }
 
   /**
@@ -180,10 +168,7 @@ public class Preprocessing {
         .join(vertices)
         .where(0)
         .equalTo(0)
-        .with((id, vertex) -> {
-//          LOG.info("restrictedVertex: " + vertex);
-          return vertex;
-        })
+        .with((id, vertex) -> vertex)
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .distinct(0);
 
@@ -387,60 +372,23 @@ public class Preprocessing {
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
         .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
 
-    DataSet<Tuple3<Long, Long, Long>> edgeTuples = neighborTuples.groupBy(0)
+    DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0)
         .sortGroup(5, Order.DESCENDING)
         .sortGroup(1, Order.ASCENDING)
         .sortGroup(2, Order.ASCENDING)
-        .reduceGroup(new GroupReduceFunction<EdgeSourceSimTuple,
-            Tuple3<Long, Long, Long>>() {
-          @Override
-          public void reduce(Iterable<EdgeSourceSimTuple> values,
-                             Collector<Tuple3<Long, Long, Long>> out) throws Exception {
-            HashMap<Long, ComponentSourceTuple> sourcesMap = Maps.newHashMap();
-            // ccid, e.src, e.trg, v.src, e.src, sim
-            for (EdgeSourceSimTuple link : values) {
-//              LOG.info("###nnof: " + link.toString());
-              Tuple3<Long, Long, Long> tmpResult
-                  = new Tuple3<>(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
-
-              ComponentSourceTuple src = sourcesMap.get(link.getSrcId());
-              ComponentSourceTuple trg = sourcesMap.get(link.getTrgId());
-              if (src == null) {
-                src = new ComponentSourceTuple(link.getSrcId());
-              }
-              if (trg == null) {
-                trg = new ComponentSourceTuple(link.getTrgId());
-              }
-
-              if (!src.contains(link.getTrgOntology())
-                  && !trg.contains(link.getSrcOntology())) {
-                src.addSource(link.getTrgOntology());
-                sourcesMap.put(link.getSrcId(), src);
-                tmpResult.f1 = link.getSrcId();
-
-                trg.addSource(link.getSrcOntology());
-                sourcesMap.put(link.getTrgId(), trg);
-                tmpResult.f2 = link.getTrgId();
-
-//                LOG.info("###sec: result: " + tmpResult.toString());
-                out.collect(tmpResult);
-              }
-            }
-          }
-        });
+        .reduceGroup(new LinkSelectionWithCcIdFunction());
 
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.leftOuterJoin(graph.getEdges())
-        .where(1, 2)
+        .where(0, 1)
         .equalTo(0, 1)
-        .with(new FlatJoinFunction<Tuple3<Long, Long, Long>,
+        .with(new FlatJoinFunction<Tuple2<Long, Long>,
             Edge<Long, ObjectMap>,
             Edge<Long, ObjectMap>>() {
           @Override
-          public void join(Tuple3<Long, Long, Long> left,
+          public void join(Tuple2<Long, Long> left,
                            Edge<Long, ObjectMap> right,
                            Collector<Edge<Long, ObjectMap>> out) throws Exception {
             if (right != null)
-//              LOG.info(left.toString() + " right: " + right.toString());
               out.collect(right);
           }
         });
@@ -604,24 +552,4 @@ public class Preprocessing {
   }
 
 
-  private static class VertexValueForEdgeIdsFunction
-      implements FlatJoinFunction<EdgeIdsVertexValueTuple,
-      Vertex<Long,ObjectMap>,
-      EdgeIdsVertexValueTuple> {
-    private final int side;
-
-    public VertexValueForEdgeIdsFunction(int side) {
-      this.side = side;
-    }
-
-    @Override
-    public void join(EdgeIdsVertexValueTuple left,
-                     Vertex<Long, ObjectMap> right,
-                     Collector<EdgeIdsVertexValueTuple> out) throws Exception {
-      if (left != null && right != null) {
-        left.checkSideAndUpdate(side, right.getValue().getOntology());
-        out.collect(left);
-      }
-    }
-  }
 }

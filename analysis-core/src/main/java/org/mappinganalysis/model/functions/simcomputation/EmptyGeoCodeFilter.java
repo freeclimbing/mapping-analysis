@@ -12,18 +12,8 @@ import org.mappinganalysis.util.Constants;
 public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, ObjectMap, NullValue>> {
   @Override
   public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-    ObjectMap source = triplet.getSrcVertex().getValue();
-    ObjectMap target = triplet.getTrgVertex().getValue();
+    return triplet.getSrcVertex().getValue().hasGeoPropertiesValid()
+        && triplet.getTrgVertex().getValue().hasGeoPropertiesValid();
 
-    return isGeoPoint(source) && isGeoPoint(target);
-  }
-
-  private boolean isGeoPoint(ObjectMap props) {
-    if (props.containsKey(Constants.LAT) && props.containsKey(Constants.LON)) {
-      return ((props.getLatitude() == null)
-          || (props.getLongitude() == null)) ? Boolean.FALSE : Boolean.TRUE;
-    } else {
-      return Boolean.FALSE;
-    }
   }
 }

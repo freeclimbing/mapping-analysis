@@ -40,10 +40,6 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
       BigDecimal tmpResult = null;
       double tmp = 1D - (distance / maxDistInMeter);
       tmpResult = new BigDecimal(tmp);
-//      } catch (Exception e) {
-//        LOG.info("###distance: " + distance);
-//        e.printStackTrace();
-//      }
       double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
       property.put(Constants.SIM_DISTANCE, result);
     }

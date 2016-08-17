@@ -92,17 +92,15 @@ public class Refinement {
         .union(srcTrgSimOneTuple
             .groupBy(1)
             .max(2).andSum(3))
-        .filter(tuple -> {
-          LOG.info("agg noti tuple: " + tuple.toString());
-          return tuple.f3 > 1;
-        })
+        .filter(tuple -> tuple.f3 > 1)
         .leftOuterJoin(similarTriplets)
         .where(0, 1)
         .equalTo(0, 1)
         .with((tuple, triplet) -> {
           LOG.info("final triplet: " + triplet.toString());
           return triplet;
-        }).returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
+        })
+        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
@@ -250,19 +248,5 @@ public class Refinement {
         .equalTo(0)
         .with(new RightSideOnlyJoinFunction<>())
         .union(newRepresentativeVertices);
-  }
-
-  private static class CreateNoticableTripletMapFunction
-      implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple4<Long, Long, Double, Integer>> {
-    @Override
-    public Tuple4<Long, Long, Double, Integer> map(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
-      Tuple4<Long, Long, Double, Integer> result = new Tuple4<>(triplet.getSrcVertex().getId(),
-          triplet.getTrgVertex().getId(),
-          triplet.getEdge().getValue().getEdgeSimilarity(),
-          1);
-
-      LOG.info("noticable tuple: " + result.toString());
-      return result;
-    }
   }
 }

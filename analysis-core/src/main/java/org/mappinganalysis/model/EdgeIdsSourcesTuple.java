@@ -2,11 +2,11 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.api.java.tuple.Tuple4;
 
-public class EdgeIdsVertexValueTuple extends Tuple4<Long, Long, String, String> {
-  public EdgeIdsVertexValueTuple() {
+public class EdgeIdsSourcesTuple extends Tuple4<Long, Long, String, String> {
+  public EdgeIdsSourcesTuple() {
   }
 
-  public EdgeIdsVertexValueTuple(Long srcId, Long trgId, String srcSource, String trgSource) {
+  public EdgeIdsSourcesTuple(Long srcId, Long trgId, String srcSource, String trgSource) {
     super(srcId, trgId, srcSource, trgSource);
   }
 
