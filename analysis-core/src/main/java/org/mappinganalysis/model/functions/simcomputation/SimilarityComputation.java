@@ -22,9 +22,9 @@ import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
-import org.mappinganalysis.model.functions.simsort.SimSort;
-import org.mappinganalysis.model.functions.simsort.TripletToEdgeMapFunction;
-import org.mappinganalysis.model.functions.typegroupby.TypeGroupBy;
+import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
+import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
@@ -211,6 +211,7 @@ public class SimilarityComputation {
    * @param processingMode if 'default', both methods are executed
    * @param env env  @return result
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> executeAdvanced(Graph<Long, ObjectMap, ObjectMap> graph,
                                                                   String processingMode, ExecutionEnvironment env,
                                                                   ExampleOutput out) throws Exception {
@@ -245,20 +246,6 @@ public class SimilarityComputation {
       String outName = Constants.LL_MODE + "PreprocGraph";
       Utils.writeGraphToJSONFile(graph, outName);
       out.print();
-    } else if (Constants.PROC_MODE.equals(Constants.ANALYSIS)){
-      if (Constants.IS_SIMSORT_ENABLED) {
-        graph = SimSort.execute(graph, 100);
-      } else if (Constants.IS_SIMSORT_ALT_ENABLED) {
-        graph = SimSort.executeAlternative(graph, env); // not yet implemented
-      }
-      graph = SimSort.excludeLowSimVertices(graph, env);
-
-    /*
-     * At this point, all edges within components are computed. Therefore we can delete links where
-     * entities link several times to the same data source (e.g., geonames, linkedgeodata)
-     * (remove 1:n links)
-     */
-      graph = GraphUtils.applyLinkFilter(graph, env);
     }
     return graph;
 

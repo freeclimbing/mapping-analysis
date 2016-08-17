@@ -1,23 +1,23 @@
 package org.mappinganalysis.model.functions;
 
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.representative.MajorityPropertiesGroupReduceFunction;
+import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * work in progress
- */
 public class RepresentativeTest {
+  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
   private static final Logger LOG = Logger.getLogger(RepresentativeTest.class);
 
   // todo wrong notype
@@ -35,6 +35,24 @@ public class RepresentativeTest {
       "(v5)-[e1:sameAs {aggSimValue = 0.9428090453147888D}]->(v2)" +
       "(v5)-[e1:sameAs {aggSimValue = 0.9428090453147888D}]->(v3)" +
       "(v5)-[e2:sameAs {aggSimValue = 0.9428090453147888D}]->(v4)]";
+
+
+
+//  @Test
+//  public void repTest() throws Exception {
+//    String graphPath = RepresentativeTest.class
+//        .getResource("/data/preprocessing/general/").getFile();
+//    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+//
+//    DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices = graph.getVertices()
+//        .groupBy(new HashCcIdKeySelector())
+//        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
+//
+//    for (Vertex<Long, ObjectMap> vertex : mergedClusterVertices.collect()) {
+//      LOG.info("result: " + vertex);
+//    }
+//  }
+
 
   // todo use representative haiti test files
   @Test

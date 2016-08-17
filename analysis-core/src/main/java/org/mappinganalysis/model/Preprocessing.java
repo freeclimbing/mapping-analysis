@@ -28,34 +28,28 @@ public class Preprocessing {
 
   /**
    * Execute all preprocessing steps with the given options
-   * @param graph input graph
-   * @param env execution environment  @return graph   @throws Exception
    */
-  public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> graph,
+  public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> inGraph,
                                                                ExampleOutput out,
                                                                ExecutionEnvironment env) throws Exception {
-    if (Constants.PROC_MODE.equals(Constants.ANALYSIS)) {
-      return (Graph<Long, ObjectMap, ObjectMap>) graph;
-    }
-    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
-
-    preGraph = removeEqualSourceLinks(
-        preGraph.getEdgeIds(),
-        applyTypeToInternalTypeMapping(preGraph),
+    Graph<Long, ObjectMap, NullValue> graph = GraphUtils.mapEdgesToNullValue(inGraph);
+    graph = removeEqualSourceLinks(
+        graph.getEdgeIds(),
+        applyTypeToInternalTypeMapping(graph),
         env);
 
     // stats start
-    preGraph = GraphUtils.addCcIdsToGraph(preGraph, env); // only needed for stats
-    out.addPreClusterSizes("1 cluster sizes input graph", preGraph.getVertices(), Constants.CC_ID);
+    graph = GraphUtils.addCcIdsToGraph(graph, env); // only needed for stats
+    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
     // stats end
 
     /*
      * restrict graph to direct links with matching type information
      */
-    preGraph = applyTypeMissMatchCorrection(preGraph, true, env);
+    graph = applyTypeMissMatchCorrection(graph, true, env);
     Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
-        preGraph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(preGraph, Constants.DEFAULT_VALUE),
+        graph.getVertices(),
+        SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
     // todo not needed?
     simGraph = GraphUtils.addCcIdsToGraph(simGraph, env);

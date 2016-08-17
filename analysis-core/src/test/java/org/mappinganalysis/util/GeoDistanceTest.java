@@ -32,12 +32,5 @@ public class GeoDistanceTest {
     double notEqual = GeoDistance.distance(latitudePrague, longitudePrague, latitudePrague, longitudePrague,
         testEle, testEleBerlin);
     assertNotEquals(notEqual, 0.0, 0.0);
-
-    final double one = 34.4167;
-    final double lonOne = 19.25;
-    final double two = -34.4166667;
-    final double lonTwo = 19.2333333;
-    double foo = GeoDistance.distance(one, lonOne, two, lonTwo);
-    System.out.println(foo);
   }
 }

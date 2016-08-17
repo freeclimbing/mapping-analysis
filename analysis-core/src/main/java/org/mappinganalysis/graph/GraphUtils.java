@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.model.functions.clustering.EdgeExtractCoGroupFunction;
+import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
 
 public class GraphUtils {
