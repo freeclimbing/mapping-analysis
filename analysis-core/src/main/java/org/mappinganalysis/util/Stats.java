@@ -21,6 +21,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.EdgeIdsVertexValueTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.stats.*;
@@ -285,6 +286,29 @@ public class Stats {
     out.addVertices("changedWhileMerging", changedWhileMerging);
   }
 
+
+  public static DataSet<EdgeIdsVertexValueTuple> getLinksWithSameSource(Graph<Long, ObjectMap, ObjectMap> graph) {
+
+    DataSet<Vertex<Long, ObjectMap>> gnVertices = graph.getVertices()
+        .filter(new SourceFilterFunction(Constants.GN_NS));
+
+    return graph.getEdgeIds()
+        .map(new MapFunction<Tuple2<Long,Long>, EdgeIdsVertexValueTuple>() {
+          @Override
+          public EdgeIdsVertexValueTuple map(Tuple2<Long, Long> edge) throws Exception {
+            return new EdgeIdsVertexValueTuple(edge.f0, edge.f1, new ObjectMap(), new ObjectMap());
+          }
+        })
+        .leftOuterJoin(gnVertices)
+        .where(0)
+        .equalTo(0)
+        .with(new VertexValueForEdgeIdsFunction(0))
+        .leftOuterJoin(gnVertices)
+        .where(1)
+        .equalTo(0)
+        .with(new VertexValueForEdgeIdsFunction(1));
+  }
+
   /**
    * Get vertex count having correct geo coordinates / type: (geo, type)
    * @param isAbsolutePath default false, needed for test
@@ -400,6 +424,9 @@ public class Stats {
                            Collector<Tuple4<Long, Long, String, String>> out) throws Exception {
             if (left != null) {
 //                LOG.info("second1: " + left.toString() + " "  + right.toString());
+              if (left.f2.equals(right.getValue().getOntology())) {
+                LOG.info("###anomaly: " + left + " " + right);
+              }
               out.collect(new Tuple4<>(left.f0, left.f1, left.f2, right.getValue().getOntology()));
             }
           }
@@ -455,5 +482,42 @@ public class Stats {
           }
         })
         .print();
+  }
+
+
+
+  private static class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
+    private final String source;
+
+    public SourceFilterFunction(String source) {
+      this.source = source;
+    }
+
+    @Override
+    public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+      return vertex.getValue().getOntology().equals(source);
+    }
+  }
+
+  private static class VertexValueForEdgeIdsFunction
+      implements FlatJoinFunction<EdgeIdsVertexValueTuple,
+      Vertex<Long,ObjectMap>,
+      EdgeIdsVertexValueTuple> {
+    private final int side;
+
+    public VertexValueForEdgeIdsFunction(int side) {
+      this.side = side;
+    }
+
+    @Override
+    public void join(EdgeIdsVertexValueTuple left,
+                     Vertex<Long, ObjectMap> right,
+                     Collector<EdgeIdsVertexValueTuple> out) throws Exception {
+      if (left != null && right != null) {
+        left.checkSideAndUpdate(side, right.getValue());
+        LOG.info("VVFE: " + side + " left: " + left.toString());
+        out.collect(left);
+      }
+    }
   }
 }

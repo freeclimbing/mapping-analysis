@@ -126,6 +126,7 @@ public class Constants {
   public static final String STATS_VERTEX_PREPROC = "stats-vertex-preproc";
   public static final String INIT_CLUST = "2-initial-clustering";
   public static final String MISS = "miss";
+  public static final String TEST = "test";
 
   /**
    * Command line option names.

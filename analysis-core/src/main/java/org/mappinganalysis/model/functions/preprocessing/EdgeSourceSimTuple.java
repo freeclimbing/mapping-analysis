@@ -2,11 +2,11 @@ package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.java.tuple.Tuple6;
 
-public class LinkTuple extends Tuple6<Long, Long, Long, String, String, Double> {
-  public LinkTuple() {
+public class EdgeSourceSimTuple extends Tuple6<Long, Long, Long, String, String, Double> {
+  public EdgeSourceSimTuple() {
   }
 
-  public LinkTuple(Long ccId, Long source, Long target, String srcOntology, String trgOntology, Double edgeSim) {
+  public EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcOntology, String trgOntology, Double edgeSim) {
     this.f0 = ccId;
     this.f1 = source;
     this.f2 = target;

@@ -13,6 +13,10 @@ import org.mappinganalysis.util.Constants;
 public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
   private final boolean ignoreMissingProperties;
 
+  /**
+   * Aggregate all similarity values, either based on weight based metric
+   * or simply by existence (missing properties are ignored).
+   */
   public AggSimValueEdgeMapFunction(boolean ignoreMissingProperties) {
     this.ignoreMissingProperties = ignoreMissingProperties;
   }

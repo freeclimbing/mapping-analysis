@@ -1,7 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.NeighborsFunctionWithVertexValue;
 import org.apache.flink.graph.Vertex;
@@ -14,23 +13,22 @@ import org.mappinganalysis.model.ObjectMap;
  */
 public class SecondNeighborOntologyFunction
     implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
-    LinkTuple> {
+    EdgeSourceSimTuple> {
   private static final Logger LOG = Logger.getLogger(SecondNeighborOntologyFunction.class);
 
 
   @Override
   public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
-                               Iterable<Tuple2<Edge<Long, ObjectMap>,
-                                   Vertex<Long, ObjectMap>>> neighbors,
-                               Collector<LinkTuple> collector)
+                               Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
+                               Collector<EdgeSourceSimTuple> collector)
       throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
       String ontology = neighbor.f1.getValue().getOntology();
       Double edgeSim = edge.getValue().getEdgeSimilarity();
 
-      LinkTuple resultTuple
-          = new LinkTuple(vertex.getValue().getCcId(),
+      EdgeSourceSimTuple resultTuple
+          = new EdgeSourceSimTuple(vertex.getValue().getCcId(),
           edge.getSource(),
           edge.getTarget(),
           vertex.getValue().getOntology(),

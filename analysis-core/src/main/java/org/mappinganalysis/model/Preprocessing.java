@@ -333,32 +333,29 @@ public class Preprocessing {
   }
 
   /**
-   * currently in use simple 1:n removal todo fix cc not needed
-   * @param graph
-   * @param env
-   * @param isDeleteSingleVertices
-   * @return
+   * currently in use simple 1:n removal
+   * TODO grouping based on ccId still used for creating independent blocks, how to avoid?
    */
   private static Graph<Long, ObjectMap, ObjectMap> secondLinkFilter(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
       Boolean isDeleteSingleVertices) {
-    // Tuple6(ccId, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
-    DataSet<LinkTuple> neighborTuples = graph
+    // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
+    DataSet<EdgeSourceSimTuple> neighborTuples = graph
         .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
 
     DataSet<Tuple3<Long, Long, Long>> edgeTuples = neighborTuples.groupBy(0)
         .sortGroup(5, Order.DESCENDING)
         .sortGroup(1, Order.ASCENDING)
         .sortGroup(2, Order.ASCENDING)
-        .reduceGroup(new GroupReduceFunction<LinkTuple,
+        .reduceGroup(new GroupReduceFunction<EdgeSourceSimTuple,
             Tuple3<Long, Long, Long>>() {
           @Override
-          public void reduce(Iterable<LinkTuple> values,
+          public void reduce(Iterable<EdgeSourceSimTuple> values,
                              Collector<Tuple3<Long, Long, Long>> out) throws Exception {
             HashMap<Long, ComponentSourceTuple> sourcesMap = Maps.newHashMap();
             // ccid, e.src, e.trg, v.src, e.src, sim
-            for (LinkTuple link : values) {
+            for (EdgeSourceSimTuple link : values) {
 //              LOG.info("###nnof: " + link.toString());
               Tuple3<Long, Long, Long> tmpResult
                   = new Tuple3<>(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
@@ -429,7 +426,7 @@ public class Preprocessing {
 //      ExecutionEnvironment env,
 //      Boolean isDeleteSingleVertices) {
 //    // Tuple6(ccId, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
-//    final DataSet<LinkTuple> neighborTuples = graph
+//    final DataSet<EdgeSourceSimTuple> neighborTuples = graph
 //        .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
 //
 //
@@ -437,17 +434,17 @@ public class Preprocessing {
 //        .sortGroup(5, Order.DESCENDING)
 ////        .sortGroup(1, Order.DESCENDING)
 ////        .sortGroup(2, Order.DESCENDING)
-//        .reduceGroup(new GroupReduceFunction<LinkTuple,
+//        .reduceGroup(new GroupReduceFunction<EdgeSourceSimTuple,
 //            Tuple3<Long, Long, Long>>() {
 //          @Override
-//          public void reduce(Iterable<LinkTuple> values,
+//          public void reduce(Iterable<EdgeSourceSimTuple> values,
 //                             Collector<Tuple3<Long, Long, Long>> out) throws Exception {
 //
 //            HashMap<Long, ComponentSourceTuple> sourcesMap = Maps.newHashMap();
 //            HashMap<Long, String> ownType = Maps.newHashMap();
 //            // ccid, e.src, e.trg, v.src, e.src, sim
 //
-//            for (LinkTuple link : values) {
+//            for (EdgeSourceSimTuple link : values) {
 //              Tuple3<Long, Long, Long> tmpResult
 //                  = new Tuple3<>(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
 //              ComponentSourceTuple srcCst = sourcesMap.get(link.getSrcId());
