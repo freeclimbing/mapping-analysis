@@ -1,17 +1,12 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.*;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
@@ -47,11 +42,15 @@ public class Preprocessing {
     }
     Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
 
-    preGraph = applyTypeToInternalTypeMapping(preGraph, env);
+    preGraph = removeEqualSourceLinks(
+        preGraph.getEdgeIds(),
+        applyTypeToInternalTypeMapping(preGraph),
+        env);
 
-    preGraph = GraphUtils.addCcIdsToGraph(preGraph, env);
-//    Utils.writeToFile(graph.getVertices(), "1_input_graph_withCc");
+    // stats start
+    preGraph = GraphUtils.addCcIdsToGraph(preGraph, env); // only needed for stats
     out.addPreClusterSizes("1 cluster sizes input graph", preGraph.getVertices(), Constants.CC_ID);
+    // stats end
 
     /*
      * restrict graph to direct links with matching type information
@@ -70,6 +69,50 @@ public class Preprocessing {
     simGraph = applyLinkFilterStrategy(simGraph, env, true);
 
     return GraphUtils.addCcIdsToGraph(simGraph, env);
+  }
+
+  /**
+   * Remove links where source and target dataset name are equal, remove duplicate links
+   */
+  public static Graph<Long, ObjectMap, NullValue> removeEqualSourceLinks(
+      DataSet<Tuple2<Long, Long>> edgeIds,
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      ExecutionEnvironment env) {
+    DataSet<Edge<Long, NullValue>> edges = getEdgeIdSourceValues(edgeIds, vertices)
+        .filter(edge -> {
+          if (edge.getSrcSource().equals(edge.getTrgSource())) {
+            LOG.info("###anomaly: " + edge.toString());
+          }
+          return !edge.getSrcSource().equals(edge.getTrgSource());
+        })
+        .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
+        .returns(new TypeHint<Edge<Long, NullValue>>() {})
+        .distinct();
+
+    return Graph.fromDataSet(vertices, edges, env);
+  }
+
+  /**
+   * Create a dataset of edge ids with the associated dataset source values like "http://dbpedia.org/
+   */
+  public static DataSet<EdgeIdsVertexValueTuple> getEdgeIdSourceValues(
+      DataSet<Tuple2<Long, Long>> edgeIds,
+      DataSet<Vertex<Long, ObjectMap>> gnVertices) {
+    return edgeIds
+        .map(new MapFunction<Tuple2<Long,Long>, EdgeIdsVertexValueTuple>() {
+          @Override
+          public EdgeIdsVertexValueTuple map(Tuple2<Long, Long> edge) throws Exception {
+            return new EdgeIdsVertexValueTuple(edge.f0, edge.f1, "", "");
+          }
+        })
+        .leftOuterJoin(gnVertices)
+        .where(0)
+        .equalTo(0)
+        .with(new VertexValueForEdgeIdsFunction(0))
+        .leftOuterJoin(gnVertices)
+        .where(1)
+        .equalTo(0)
+        .with(new VertexValueForEdgeIdsFunction(1));
   }
 
   /**
@@ -372,12 +415,10 @@ public class Preprocessing {
               if (!src.contains(link.getTrgOntology())
                   && !trg.contains(link.getSrcOntology())) {
                 src.addSource(link.getTrgOntology());
-//                LOG.info("add To srcMap: " + src.getCcId() + " " + src.getSources().toString());
                 sourcesMap.put(link.getSrcId(), src);
                 tmpResult.f1 = link.getSrcId();
 
                 trg.addSource(link.getSrcOntology());
-//                LOG.info("add To srcMap: " + trg.getCcId() + " " + trg.getSources().toString());
                 sourcesMap.put(link.getTrgId(), trg);
                 tmpResult.f2 = link.getTrgId();
 
@@ -507,84 +548,14 @@ public class Preprocessing {
 //  }
 
   /**
-   * old version of link filter method
-   * @param graph
-   * @param env
-   * @param isDeleteSingleVertices
-   * @return
-   */
-  @Deprecated
-  private static Graph<Long, ObjectMap, ObjectMap> firstLinkFilter(Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env, Boolean isDeleteSingleVertices) {
-    // Tuple6(edge src, edge trg, VertexId, Ontology, 1, EdgeSim)
-    final DataSet<Tuple6<Long, Long, Long, String, Integer, Double>> basicOneToManyTuples = graph
-        .groupReduceOnNeighbors(new NeighborOntologyFunction(), EdgeDirection.ALL);
-
-    DataSet<Tuple3<Long, String, Double>> maxRandomTuples = basicOneToManyTuples
-        .groupBy(2, 3)
-        .sum(4).andMax(5)
-        .filter(tuple -> tuple.f4 > 1)
-        .map(tuple -> {
-          LOG.info("maxRandomTuple: " + tuple.f2 + ", " + tuple.f3 + ", " + tuple.f5);
-          return new Tuple3<>(tuple.f2, tuple.f3, tuple.f5);
-        })
-        .returns(new TypeHint<Tuple3<Long, String, Double>>() {});
-
-    DataSet<Edge<Long, ObjectMap>> maxOneToManyEdges = maxRandomTuples
-        .leftOuterJoin(basicOneToManyTuples)
-        .where(0, 1, 2)
-        .equalTo(2, 3, 5)
-        .with((first, second) -> new Tuple2<>(second.f0, second.f1))
-        .returns(new TypeHint<Tuple2<Long, Long>>() {})
-        .leftOuterJoin(graph.getEdges())
-        .where(0, 1)
-        .equalTo(0, 1)
-        .with((first, second) -> {
-          LOG.info("###maxRandomTuple### " + second.toString());
-          return second;
-        })
-        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
-        .distinct(0,1);
-
-    DataSet<Edge<Long, ObjectMap>> newEdges = graph.getEdges()
-        .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
-        .where(0)
-        .equalTo(0)
-        .with(new LinkFilterExcludeEdgeFlatJoinFunction())
-        .leftOuterJoin(maxRandomTuples.<Tuple1<Long>>project(0))
-        .where(1)
-        .equalTo(0)
-        .with(new LinkFilterExcludeEdgeFlatJoinFunction())
-        .union(maxOneToManyEdges);
-
-    DataSet<Vertex<Long, ObjectMap>> resultVertices = graph.getVertices();
-    if (isDeleteSingleVertices) {
-      resultVertices = deleteVerticesWithoutAnyEdges(
-          graph.getVertices(),
-          newEdges.<Tuple2<Long, Long>>project(0, 1));
-    }
-
-    return Graph.fromDataSet(resultVertices, newEdges, env);
-  }
-
-  /**
    * Harmonize available type information with a common dictionary.
    * @param graph input graph
-   * @param env environment
    * @return graph with additional internal type property
    */
-  public static Graph<Long, ObjectMap, NullValue> applyTypeToInternalTypeMapping(
-      Graph<Long, ObjectMap, NullValue> graph,
-      ExecutionEnvironment env) {
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph
-        .getVertices()
-        .map(new InternalTypeMapFunction())
-        .map(value -> {
-          LOG.info(value.toString());
-          return value;
-        })
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-
-    return Graph.fromDataSet(vertices, graph.getEdges(), env);
+  public static DataSet<Vertex<Long, ObjectMap>> applyTypeToInternalTypeMapping(
+      Graph<Long, ObjectMap, NullValue> graph) {
+    return graph.getVertices()
+        .map(new InternalTypeMapFunction());
   }
 
   /**
@@ -632,26 +603,25 @@ public class Preprocessing {
     return graph;
   }
 
-  private static class LinkFilterExcludeEdgeFlatJoinFunction extends RichFlatJoinFunction<Edge<Long,ObjectMap>,
-      Tuple1<Long>, Edge<Long, ObjectMap>> {
-    private LongCounter filteredLinks = new LongCounter();
 
-    @Override
-    public void open(final Configuration parameters) throws Exception {
-      super.open(parameters);
-      getRuntimeContext().addAccumulator(Constants.PREPROC_LINK_FILTER_ACCUMULATOR, filteredLinks);
+  private static class VertexValueForEdgeIdsFunction
+      implements FlatJoinFunction<EdgeIdsVertexValueTuple,
+      Vertex<Long,ObjectMap>,
+      EdgeIdsVertexValueTuple> {
+    private final int side;
+
+    public VertexValueForEdgeIdsFunction(int side) {
+      this.side = side;
     }
 
     @Override
-    public void join(Edge<Long, ObjectMap> left, Tuple1<Long> right,
-                     Collector<Edge<Long, ObjectMap>> collector) throws Exception {
-      if (right == null) {
-        LOG.info("LFExclude: " + left.toString());
-        collector.collect(left);
-      } else {
-        filteredLinks.add(1L);
+    public void join(EdgeIdsVertexValueTuple left,
+                     Vertex<Long, ObjectMap> right,
+                     Collector<EdgeIdsVertexValueTuple> out) throws Exception {
+      if (left != null && right != null) {
+        left.checkSideAndUpdate(side, right.getValue().getOntology());
+        out.collect(left);
       }
     }
   }
-
 }

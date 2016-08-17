@@ -46,10 +46,17 @@ public class SimilarityMapperTest extends BasicTest {
     }
   }
 
+  /**
+   * JDBC test, not working
+   * @throws Exception
+   */
   @Test
   public void typeSimilarityTest() throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-    graph = Preprocessing.applyTypeToInternalTypeMapping(graph, env);
+    graph = Graph.fromDataSet(
+        Preprocessing.applyTypeToInternalTypeMapping(graph),
+        graph.getEdges(),
+        env);
 
     final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
 

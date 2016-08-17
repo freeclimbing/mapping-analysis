@@ -2,12 +2,12 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.api.java.tuple.Tuple4;
 
-public class EdgeIdsVertexValueTuple extends Tuple4<Long, Long, ObjectMap, ObjectMap> {
+public class EdgeIdsVertexValueTuple extends Tuple4<Long, Long, String, String> {
   public EdgeIdsVertexValueTuple() {
   }
 
-  public EdgeIdsVertexValueTuple(Long srcId, Long trgId, ObjectMap srcMap, ObjectMap trgMap) {
-    super(srcId, trgId, srcMap, trgMap);
+  public EdgeIdsVertexValueTuple(Long srcId, Long trgId, String srcSource, String trgSource) {
+    super(srcId, trgId, srcSource, trgSource);
   }
 
   public Long getSrcId() {
@@ -18,25 +18,25 @@ public class EdgeIdsVertexValueTuple extends Tuple4<Long, Long, ObjectMap, Objec
     return f1;
   }
 
-  public ObjectMap getSrcMap() {
+  public String getSrcSource() {
     return f2;
   }
 
-  public ObjectMap getTrgMap() {
+  public String getTrgSource() {
     return f3;
   }
 
-  public void checkSideAndUpdate(int side, ObjectMap value) {
-    if (getSrcMap().isEmpty() && getTrgMap().isEmpty()) {
+  public void checkSideAndUpdate(int side, String sourceValue) {
+    if (getSrcSource().isEmpty() && getTrgSource().isEmpty()) {
       if (side == 0) {
-        this.f2 = value;
+        this.f2 = sourceValue;
       } else  if (side == 1){
-        this.f3 = value;
+        this.f3 = sourceValue;
       }
-    } else if (getSrcMap().isEmpty() && side == 0) {
-      this.f2 = value;
-    } else if (getTrgMap().isEmpty() && side == 1) {
-      this.f3 = value;
+    } else if (getSrcSource().isEmpty() && side == 0) {
+      this.f2 = sourceValue;
+    } else if (getTrgSource().isEmpty() && side == 1) {
+      this.f3 = sourceValue;
     }
 
   }

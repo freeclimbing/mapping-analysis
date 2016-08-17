@@ -8,6 +8,7 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -286,27 +287,18 @@ public class Stats {
     out.addVertices("changedWhileMerging", changedWhileMerging);
   }
 
-
-  public static DataSet<EdgeIdsVertexValueTuple> getLinksWithSameSource(Graph<Long, ObjectMap, ObjectMap> graph) {
+  /**
+   * helper
+   * @param graph
+   * @return
+   */
+  @Deprecated
+  public static DataSet<EdgeIdsVertexValueTuple> getLinksWithSrcAndTrgGnSource(Graph<Long, ObjectMap, ObjectMap> graph) {
 
     DataSet<Vertex<Long, ObjectMap>> gnVertices = graph.getVertices()
         .filter(new SourceFilterFunction(Constants.GN_NS));
 
-    return graph.getEdgeIds()
-        .map(new MapFunction<Tuple2<Long,Long>, EdgeIdsVertexValueTuple>() {
-          @Override
-          public EdgeIdsVertexValueTuple map(Tuple2<Long, Long> edge) throws Exception {
-            return new EdgeIdsVertexValueTuple(edge.f0, edge.f1, new ObjectMap(), new ObjectMap());
-          }
-        })
-        .leftOuterJoin(gnVertices)
-        .where(0)
-        .equalTo(0)
-        .with(new VertexValueForEdgeIdsFunction(0))
-        .leftOuterJoin(gnVertices)
-        .where(1)
-        .equalTo(0)
-        .with(new VertexValueForEdgeIdsFunction(1));
+    return Preprocessing.getEdgeIdSourceValues(graph.getEdgeIds(), gnVertices);
   }
 
   /**
@@ -321,9 +313,8 @@ public class Stats {
         = Utils.readFromJSONFile(path, env, isAbsolutePath);
     Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
 
-    preGraph = Preprocessing.applyTypeToInternalTypeMapping(preGraph, env);
-
-    DataSet<Tuple2<Integer, Integer>> geoTypeTuples = preGraph.getVertices()
+    DataSet<Tuple2<Integer, Integer>> geoTypeTuples = Preprocessing
+        .applyTypeToInternalTypeMapping(preGraph)
         .map(vertex -> {
           int geo = 0;
           if (vertex.getValue().hasGeoPropertiesValid()) {
@@ -496,28 +487,6 @@ public class Stats {
     @Override
     public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
       return vertex.getValue().getOntology().equals(source);
-    }
-  }
-
-  private static class VertexValueForEdgeIdsFunction
-      implements FlatJoinFunction<EdgeIdsVertexValueTuple,
-      Vertex<Long,ObjectMap>,
-      EdgeIdsVertexValueTuple> {
-    private final int side;
-
-    public VertexValueForEdgeIdsFunction(int side) {
-      this.side = side;
-    }
-
-    @Override
-    public void join(EdgeIdsVertexValueTuple left,
-                     Vertex<Long, ObjectMap> right,
-                     Collector<EdgeIdsVertexValueTuple> out) throws Exception {
-      if (left != null && right != null) {
-        left.checkSideAndUpdate(side, right.getValue());
-        LOG.info("VVFE: " + side + " left: " + left.toString());
-        out.collect(left);
-      }
     }
   }
 }
