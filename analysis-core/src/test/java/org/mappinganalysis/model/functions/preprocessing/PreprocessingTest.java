@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -98,10 +99,10 @@ public class PreprocessingTest {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-    graph = SimilarityComputation.computeTransitiveClosureEdgeSimilarities(graph, env);
+    graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
     assertEquals(21, graph.getEdgeIds().count());
 
-    graph = SimilarityComputation.removeOneToManyVertices(graph, env);
+    graph = Clustering.removeOneToManyVertices(graph, env);
     for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
       LOG.info(vertex.toString());
       assertTrue(vertex.getId() == 60191L

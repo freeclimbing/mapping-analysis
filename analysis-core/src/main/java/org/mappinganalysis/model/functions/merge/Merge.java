@@ -25,6 +25,9 @@ import org.mappinganalysis.util.functions.filter.RefineIdExcludeFilterFunction;
 import org.mappinganalysis.util.functions.filter.RefineIdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
 
+/**
+ * previously Refinement
+ */
 public class Merge {
   private static final Logger LOG = Logger.getLogger(Merge.class);
 

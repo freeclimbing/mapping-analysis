@@ -57,9 +57,7 @@ public class Preprocessing {
     /*
      * restrict (direct) links to 1:1 in terms of sources from one entity to another
      */
-    simGraph = applyLinkFilterStrategy(simGraph, env, true);
-
-    return GraphUtils.addCcIdsToGraph(simGraph, env);
+    return applyLinkFilterStrategy(simGraph, env, true);
   }
 
   /**
@@ -106,6 +104,7 @@ public class Preprocessing {
       ExecutionEnvironment env,
       ExampleOutput out)
       throws Exception {
+
     DataLoader loader = new DataLoader(env);
     final String vertexFile = "concept.csv";
     final String edgeFile = "linksWithIDs.csv";
@@ -116,7 +115,10 @@ public class Preprocessing {
         .getVerticesFromCsv(Constants.INPUT_DIR + vertexFile, Constants.INPUT_DIR + propertyFile);
 
     if (Constants.INPUT_DIR.contains("linklion")) {
-      if (Constants.LL_MODE.equals("nyt")) {
+      if (Constants.LL_MODE.equals("nyt")
+          || Constants.LL_MODE.equals("write")
+          || Constants.LL_MODE.equals("print")
+          || Constants.LL_MODE.equals("plan")) {
         vertices = getNytVerticesLinklion(env, ccFile, vertices, out);
       } else if (Constants.LL_MODE.equals("random")) {
         vertices = getRandomCcsFromLinklion(env, ccFile, vertices, 50000);
@@ -184,12 +186,14 @@ public class Preprocessing {
    *
    * Second option: take random ccs, WIP
    */
-  private static DataSet<Vertex<Long, ObjectMap>> getNytVerticesLinklion(ExecutionEnvironment env,
-                                                                         String ccFile,
-                                                                         DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out) throws Exception {
+  private static DataSet<Vertex<Long, ObjectMap>> getNytVerticesLinklion(
+      ExecutionEnvironment env,
+      String ccFile,
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      ExampleOutput out) throws Exception {
     DataSet<Vertex<Long, ObjectMap>> nytVertices = vertices.filter(vertex ->
         vertex.getValue().getOntology().equals(Constants.NYT_NS));
-    out.addDataSetCount("nyt vertices", nytVertices);
+//    out.addDataSetCount("nyt vertices", nytVertices);
 
     DataSet<Tuple2<Long, Long>> vertexCcs = getBaseVertexCcs(env, ccFile);
 
@@ -211,7 +215,9 @@ public class Preprocessing {
         .equalTo(0)
         .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple2<Long, Long>>() {
           @Override
-          public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple2<Long, Long>> out) throws Exception {
+          public void join(Tuple2<Long, Long> left,
+                           Tuple1<Long> right,
+                           Collector<Tuple2<Long, Long>> out) throws Exception {
             if (right == null) {
               out.collect(left);
             }
@@ -229,7 +235,8 @@ public class Preprocessing {
         .equalTo(0)
         .with(new FlatJoinFunction<Tuple1<Long>, ComponentSourceTuple, Tuple1<Long>>() {
           @Override
-          public void join(Tuple1<Long> left, ComponentSourceTuple right,
+          public void join(Tuple1<Long> left,
+                           ComponentSourceTuple right,
                            Collector<Tuple1<Long>> out) throws Exception {
             if (right != null && right.getSourceCount() >= 3) {
               out.collect(left);

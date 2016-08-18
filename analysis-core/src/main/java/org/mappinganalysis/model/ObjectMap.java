@@ -16,7 +16,7 @@ import java.util.*;
  * because a Flink Vertex can only have POJOs as value.
  */
 public class ObjectMap implements Map<String, Object>, Serializable {
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 42L;
 
   private Map<String, Object> map = null;
 
@@ -32,8 +32,12 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     map = Maps.newHashMap();
   }
 
-  public ObjectMap getMap() {
-    return (ObjectMap) map;
+  public Map<String, Object> getMap() {
+    return map;
+  }
+
+  public void setMap(Map<String, Object> map) {
+    this.map = map;
   }
 
   public void setMap(ObjectMap map) {

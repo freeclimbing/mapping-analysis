@@ -1,9 +1,7 @@
 package org.mappinganalysis.model.functions.decomposition;
 
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.graph.GraphUtils;
@@ -13,8 +11,10 @@ import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
+/**
+ * Executes TypeGroupBy and SimSort method and returns the resulting graph.
+ */
 public class Decomposition {
-
 
   public static Graph<Long, ObjectMap, ObjectMap> executeDecomposition(
       Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) throws Exception {
