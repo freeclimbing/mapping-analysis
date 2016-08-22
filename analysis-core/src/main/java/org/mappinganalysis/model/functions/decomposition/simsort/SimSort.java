@@ -79,8 +79,9 @@ public class SimSort {
    * SimSort post processing exclude low sim vertices
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                                        ExecutionEnvironment env) throws Exception {
+  public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env) throws Exception {
     // only edges are interesting
     Graph<Long, ObjectMap, ObjectMap> componentGraph = graph
         .filterOnVertices(new SimSortExcludeLowSimFilterFunction(true));

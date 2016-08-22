@@ -31,9 +31,7 @@ import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
@@ -126,6 +124,19 @@ public class Utils {
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
 
     return jsonDataSource.getGraph();
+  }
+
+  /**
+   * Sort a hash map by descending values
+   */
+  public static <T> HashMap<T, Integer> sortByValue(HashMap<T, Integer> map) {
+    HashMap<T, Integer> result = new LinkedHashMap<>();
+    map.entrySet()
+        .stream()
+        .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+        .forEachOrdered(value -> result.put(value.getKey(), value.getValue()));
+
+    return result;
   }
 
   public static class DataSetTextFormatter<V> implements

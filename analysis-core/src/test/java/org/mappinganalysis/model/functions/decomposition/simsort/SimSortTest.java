@@ -53,6 +53,7 @@ public class SimSortTest {
 
     graph = SimSort.execute(graph, 100);
     graph = SimSort.excludeLowSimVertices(graph, env);
+    // TODO check if still relevant
     graph = GraphUtils.applyLinkFilter(graph, env);
     // old default result: 7115
     //graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);

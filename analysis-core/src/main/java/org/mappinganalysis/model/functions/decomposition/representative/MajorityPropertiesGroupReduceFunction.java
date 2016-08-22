@@ -11,6 +11,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.merge.Merge;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -65,14 +66,14 @@ public class MajorityPropertiesGroupReduceFunction
       resultProps.setGeoProperties(geoMap);
     }
     if (!labelMap.isEmpty()) {
-      resultProps.put(Constants.LABEL, getFinalValue(labelMap, Constants.LABEL));
+      resultProps.put(Constants.LABEL, Merge.getFinalValue(labelMap, Constants.LABEL));
     }
     if (!clusterTypeSet.isEmpty()) {
 //      Set<String> finalValue = getFinalValue(typeSet, Constants.TYPE_INTERN);
       resultProps.put(Constants.TYPE_INTERN, clusterTypeSet);
     }
-    resultProps.put(Constants.ONTOLOGIES, clusterOntologies);
-    resultProps.put(Constants.CL_VERTICES, clusterVertices);
+    resultProps.setClusterSources(clusterOntologies);
+    resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
@@ -111,6 +112,7 @@ public class MajorityPropertiesGroupReduceFunction
 
       Double latitude = vertex.getValue().getLatitude();
       Double longitude = vertex.getValue().getLongitude();
+
       if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
         geoMap.put(vertex.getValue().getOntology(),
             new GeoCode(latitude, longitude));
@@ -139,29 +141,5 @@ public class MajorityPropertiesGroupReduceFunction
     if (!vertex.getValue().hasTypeNoType(Constants.TYPE_INTERN)) {
       cTypeSet.addAll(vertex.getValue().getTypes(Constants.TYPE_INTERN));
     }
-  }
-
-  /**
-   * Get the hash map value having the highest count of occurrence.
-   * For label property, if count is equal, a longer string is preferred.
-   * @param map containing value options with count of occurrence
-   * @param propertyName special behavior if label
-   * @return resulting value
-   */
-  private <T> T getFinalValue(HashMap<T, Integer> map, String propertyName) {
-    Map.Entry<T, Integer> finalEntry = null;
-    for (Map.Entry<T, Integer> entry : map.entrySet()) {
-      if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
-        finalEntry = entry;
-      } else if (entry.getKey() instanceof String && propertyName.equals(Constants.LABEL)) {
-        String labelKey = entry.getKey().toString();
-        if (labelKey.length() > finalEntry.getKey().toString().length()) {
-          finalEntry = entry;
-        }
-      }
-    }
-
-    checkArgument(finalEntry != null, "Entry must not be null");
-    return finalEntry.getKey();
   }
 }

@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.merge;
 
+import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -19,11 +20,17 @@ import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapF
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.RightSideOnlyJoinFunction;
 import org.mappinganalysis.util.functions.filter.OldHashCcFilterFunction;
 import org.mappinganalysis.util.functions.filter.RefineIdExcludeFilterFunction;
 import org.mappinganalysis.util.functions.filter.RefineIdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * previously Refinement
@@ -51,7 +58,9 @@ public class Merge {
      * @param vertices prepared dataset
      * @return refined dataset
      */
-  public static DataSet<Vertex<Long, ObjectMap>> execute(DataSet<Vertex<Long, ObjectMap>> vertices, ExampleOutput out)
+  public static DataSet<Vertex<Long, ObjectMap>> execute(
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
     if (Constants.INPUT_DIR.contains("linklion")) {
@@ -72,7 +81,8 @@ public class Merge {
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
         .computeSimilarities(triplets, Constants.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, Constants.MIN_LABEL_PRIORITY_SIM))
+        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
+            Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
 
@@ -195,7 +205,8 @@ public class Merge {
    * @param column search for vertex id in triplets source (0) or target (1)
    * @return resulting triplets
    */
-  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> getDuplicateTriplets(DataSet<Triplet<Long, ObjectMap,
+  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> getDuplicateTriplets(
+      DataSet<Triplet<Long, ObjectMap,
       ObjectMap>> similarTriplets, int column) {
 
     DataSet<Tuple2<Long, Long>> duplicateTuples = similarTriplets
@@ -227,20 +238,36 @@ public class Merge {
     // vertices with min sim, some triplets get omitted -> error cause
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = SimilarityComputation
         .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, Constants.MIN_LABEL_PRIORITY_SIM))
+        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
+            Constants.MIN_LABEL_PRIORITY_SIM))
+        .map(value -> {
+          LOG.info("newBaseTriplet: " + value.toString());
+          return value;
+        })
+        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {})
         .withForwardedFields("f0;f1;f2;f3");
 
 //    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
-//    Utils.writeToFile(newBaseTriplets, "6_init_newBaseTriplets");
+//    Utils.writeToFile(newBaseTriplets, "6-init-newBaseTriplets");
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
-        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
+        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM))
+        .map(value -> {
+          LOG.info("filteredtriplet: " + value.toString());
+          return value;
+        })
+        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
 
     // reduce to single representative, some vertices are now missing
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())
         .groupBy(new OldHashCcKeySelector())
-        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
+        .reduceGroup(new MajorityPropertiesGroupReduceFunction())
+        .map(value -> {
+          LOG.info("newRepr: " + value.toString());
+          return value;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     return newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())
@@ -252,4 +279,33 @@ public class Merge {
         .with(new RightSideOnlyJoinFunction<>())
         .union(newRepresentativeVertices);
   }
+
+  /**
+   * Get the hash map value having the highest count of occurrence.
+   * For label property, if count is equal, a longer string is preferred.
+   * @param map containing value options with count of occurrence
+   * @param propertyName if label, for same occurrence count the longer string is taken
+   * @return resulting value
+   */
+  public static <T> T getFinalValue(HashMap<T, Integer> map, String propertyName) {
+    Map.Entry<T, Integer> finalEntry = null;
+    map = Utils.sortByValue(map);
+
+    for (Map.Entry<T, Integer> entry : map.entrySet()) {
+      if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
+        finalEntry = entry;
+      } else if (entry.getKey() instanceof String
+          && propertyName.equals(Constants.LABEL)
+          && Ints.compare(entry.getValue(), finalEntry.getValue()) >= 0) {
+        String labelKey = entry.getKey().toString();
+        if (labelKey.length() > finalEntry.getKey().toString().length()) {
+          finalEntry = entry;
+        }
+      }
+    }
+
+    checkArgument(finalEntry != null, "Entry must not be null");
+    return finalEntry.getKey();
+  }
+
 }

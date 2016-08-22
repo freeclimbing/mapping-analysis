@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -17,8 +18,9 @@ import java.util.*;
  */
 public class ObjectMap implements Map<String, Object>, Serializable {
   private static final long serialVersionUID = 42L;
+  private static final Logger LOG = Logger.getLogger(ObjectMap.class);
 
-  private Map<String, Object> map = null;
+  private Map<String, Object> map;
 
   public ObjectMap(ObjectMap map) {
     this.map = map;
@@ -54,7 +56,9 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return true if type has value not available or not found
    */
   public boolean hasTypeNoType(String type) {
-    return map.containsKey(type) && getTypes(type).contains(Constants.NO_TYPE);
+    return map.containsKey(type)
+        && getTypes(type).contains(Constants.NO_TYPE);
+//        && getTypes(type).size() == 1;
   }
 
   /**
@@ -176,6 +180,12 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  public void setClusterVertices(Set<Long> vertexIds) {
+    if (!vertexIds.isEmpty()) {
+      map.put(Constants.CL_VERTICES, vertexIds);
+    }
+  }
+
   /**
    * Get aggregated similarity of vertex property values such as label, geo coordinates, type.
    */
@@ -227,6 +237,12 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  public void setClusterSources(Set<String> sources) {
+    if (!sources.isEmpty()) {
+      map.put(Constants.ONTOLOGIES, sources);
+    }
+  }
+
   /**
    * Add a key value pair, if key already exists, a set of values is created or extended.
    * @param key property name
@@ -244,13 +260,24 @@ public class ObjectMap implements Map<String, Object>, Serializable {
 
 
     if (map.containsKey(key)) {
+      if (value.toString().equals(Constants.NO_TYPE)) {
+        return;
+      }
       Object oldValue = map.get(key);
+
       if (oldValue instanceof Set) {
         Set<Object> values = Sets.newHashSet((Set<Object>) oldValue);
+        if (values.contains(Constants.NO_TYPE)) {
+          values.remove(Constants.NO_TYPE);
+        }
         values.add(value);
         map.put(key, values);
       } else {
-        map.put(key, Sets.newHashSet(oldValue, value));
+        if (oldValue.toString().equals(Constants.NO_TYPE)) {
+          map.put(key, value);
+        } else {
+          map.put(key, Sets.newHashSet(oldValue, value));
+        }
       }
     } else {
       map.put(key, value);

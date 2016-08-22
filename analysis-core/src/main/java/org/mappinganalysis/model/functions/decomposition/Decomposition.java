@@ -35,7 +35,7 @@ public class Decomposition {
      * (remove 1:n links)
      */
       // todo not needed anymore!?
-      graph = GraphUtils.applyLinkFilter(graph, env);
+//      graph = GraphUtils.applyLinkFilter(graph, env);
 
     return graph;
   }

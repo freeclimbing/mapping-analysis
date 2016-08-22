@@ -58,7 +58,9 @@ public class GraphUtils {
 //    return graph;
   }
 
-  private static <T> Graph<Long, Long, NullValue> prepareForCc(Graph<Long, ObjectMap, T> graph, ExecutionEnvironment env) {
+  private static <T> Graph<Long, Long, NullValue> prepareForCc(
+      Graph<Long, ObjectMap, T> graph,
+      ExecutionEnvironment env) {
     DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
         .map(value -> new Vertex<>(value.getId(), value.getId()))
         .returns(new TypeHint<Vertex<Long, Long>>() {});
@@ -66,23 +68,22 @@ public class GraphUtils {
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {});
-
-    Graph<Long, Long, NullValue> workingGraph = Graph.fromDataSet(vertices, edges, env);
-
-    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() { // don't replace
-      @Override
-      public boolean filter(Vertex<Long, Long> value) throws Exception {
-        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
-        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
-        return true;
-      }
-    });
-    return workingGraph;
+    //    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() { // don't replace
+//      @Override
+//      public boolean filter(Vertex<Long, Long> value) throws Exception {
+//        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
+//        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
+//        return true;
+//      }
+//    });
+    return Graph.fromDataSet(vertices, edges, env);
   }
 
   /**
    * For a set of vertices, create all single distinct edges which can be
-   * created within a connected component.
+   * created within a connected component and restrict them:
+   * - only one edge between 2 vertices
+   * - no edge from a -> a
    * @param vertices vertices set
    * @param keySelector selector represents the connected components
    * @return edge set
@@ -90,29 +91,9 @@ public class GraphUtils {
   public static DataSet<Edge<Long, NullValue>> getTransitiveClosureEdges(
       DataSet<Vertex<Long, ObjectMap>> vertices,
       KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
-    return computeComponentEdges(vertices, keySelector, true);
-  }
-
-  /**
-   * Within a set of vertices, compute all edges for each contained component,
-   * restrict to simple edges with boolean
-   * @param vertices vertices set
-   * @param keySelector select the cc id selector, most likely hash or cc id
-   * @param isSimpleDistinctEdgeSet specify if result set should be restricted (most likely to be true)
-   * @return edge set
-   */
-  private static DataSet<Edge<Long, NullValue>> computeComponentEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
-      KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
-      boolean isSimpleDistinctEdgeSet) {
-
     DataSet<Edge<Long, NullValue>> edgeSet = computeComponentEdges(vertices, keySelector);
 
-    if (isSimpleDistinctEdgeSet) {
-      return getDistinctSimpleEdges(edgeSet);
-    } else {
-      return edgeSet;
-    }
+    return getDistinctSimpleEdges(edgeSet);
   }
 
   /**

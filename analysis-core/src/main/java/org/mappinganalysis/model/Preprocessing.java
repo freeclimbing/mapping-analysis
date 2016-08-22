@@ -51,12 +51,11 @@ public class Preprocessing {
         graph.getVertices(),
         SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
-    // todo not needed?
-    simGraph = GraphUtils.addCcIdsToGraph(simGraph, env);
 
     /*
      * restrict (direct) links to 1:1 in terms of sources from one entity to another
      */
+
     return applyLinkFilterStrategy(simGraph, env, true);
   }
 
