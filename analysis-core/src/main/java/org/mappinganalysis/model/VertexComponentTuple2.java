@@ -16,4 +16,5 @@ public class VertexComponentTuple2 extends Tuple2<Long, Long> {
 
   public Long getComponentId() {
     return f1;
-  }}
+  }
+}

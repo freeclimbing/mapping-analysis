@@ -33,7 +33,6 @@ public class Constants {
   public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
   public static final String SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
-  public static final String REFINEMENT_MERGE_ACCUMULATOR = "merged-cluster-counter";
   public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
@@ -132,6 +131,7 @@ public class Constants {
    * Command line option names.
    */
   public static String INPUT_DIR;
+  public static Integer SOURCE_COUNT;
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
   public static String VERBOSITY;

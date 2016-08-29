@@ -18,6 +18,7 @@ import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
@@ -201,7 +202,8 @@ public class Preprocessing {
         .equalTo(0)
         .with(new FlatJoinFunction<Tuple2<Long, Long>, Vertex<Long, ObjectMap>, Tuple1<Long>>() {
           @Override
-          public void join(Tuple2<Long, Long> first, Vertex<Long, ObjectMap> second, Collector<Tuple1<Long>> out) throws Exception {
+          public void join(Tuple2<Long, Long> first, Vertex<Long, ObjectMap> second,
+                           Collector<Tuple1<Long>> out) throws Exception {
             out.collect(new Tuple1<>(first.f1));
           }
         });
@@ -237,7 +239,7 @@ public class Preprocessing {
           public void join(Tuple1<Long> left,
                            ComponentSourceTuple right,
                            Collector<Tuple1<Long>> out) throws Exception {
-            if (right != null && right.getSourceCount() >= 3) {
+            if (right != null && SourcesUtils.getSourceCount(right) >= 3) {
               out.collect(left);
             }
           }
@@ -251,16 +253,20 @@ public class Preprocessing {
       DataSet<Vertex<Long, ObjectMap>> vertices,
       DataSet<Tuple2<Long, Long>> ccs) {
 
-    vertices = vertices.leftOuterJoin(ccs)
-        .where(0)
-        .equalTo(0)
-        .with(new FlatJoinFunction<Vertex<Long,ObjectMap>, Tuple2<Long,Long>, Vertex<Long, ObjectMap>>() {
-          @Override
-          public void join(Vertex<Long, ObjectMap> left, Tuple2<Long, Long> right, Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-            left.getValue().addProperty(Constants.CC_ID, right.f1);
-            out.collect(left);
-          }
-        });
+    if (ccs != null) {
+      vertices = vertices.leftOuterJoin(ccs)
+          .where(0)
+          .equalTo(0)
+          .with(new FlatJoinFunction<Vertex<Long, ObjectMap>,
+              Tuple2<Long, Long>,
+              Vertex<Long, ObjectMap>>() {
+            @Override
+            public void join(Vertex<Long, ObjectMap> left, Tuple2<Long, Long> right, Collector<Vertex<Long, ObjectMap>> out) throws Exception {
+              left.getValue().addProperty(Constants.CC_ID, right.f1);
+              out.collect(left);
+            }
+          });
+    }
 
     return vertices.groupBy(new CcIdKeySelector())
         .reduceGroup(new GroupReduceFunction<Vertex<Long,ObjectMap>, ComponentSourceTuple>() {
@@ -518,7 +524,7 @@ public class Preprocessing {
       boolean isTypeMissMatchCorrectionActive,
       ExecutionEnvironment env) throws Exception {
     if (isTypeMissMatchCorrectionActive) {
-      DataSet<Tuple2<Long, String>> vertexIdAndTypeList = graph.getVertices()
+      DataSet<IdTypeTuple> vertexIdAndTypeList = graph.getVertices()
           .flatMap(new VertexIdTypeTupleMapper());
 
       DataSet<Tuple4<Long, Long, String, String>> edgeTypes = graph.getEdges()

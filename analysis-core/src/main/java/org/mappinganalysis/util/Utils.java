@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -356,6 +357,18 @@ public class Utils {
     return result;
   }
 
+  public static String getBlockingLabel(String label) {
+    if (label.length() < 3) {
+      label += StringUtils.repeat("#", 3 - label.length());
+    }
+
+    label = label.substring(0, 3);
+    if (!label.substring(0, 1).matches("[a-z]")) {
+      label = "###";
+    }
+    return label;
+  }
+
   /**
    * Remove non-words and write the value as lower case to the new object.
    * @param value input string
@@ -367,22 +380,12 @@ public class Utils {
     return Simplifiers.toLowerCase().simplify(value.trim());
   }
 
-  /**
-   * Get basic trigram string metric.
-   * @return metric
-   */
-  public static StringMetric getBasicTrigramMetric() {
-    return with(new CosineSimilarity<>())
-        .tokenize(Tokenizers.qGram(3))
-        .build();
-  }
-
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<>())
         .simplify(Simplifiers.removeAll("[\\(|,].*"))
 //        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
         .simplify(Simplifiers.toLowerCase())
-        .tokenize(Tokenizers.qGram(3))
+        .tokenize(Tokenizers.qGramWithPadding(3))
         .build();
   }
 

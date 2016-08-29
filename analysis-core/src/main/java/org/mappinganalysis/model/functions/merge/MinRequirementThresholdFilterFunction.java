@@ -35,14 +35,14 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
     boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Constants.SIM_TRIGRAM) > 0.8);
 
     if (hasHighThreshold && hasMinTwoSimValues) {
-      LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
-          + triplet.getSrcVertex().getValue().toString() + "\n"
-          + triplet.getTrgVertex().getValue().toString());
+//      LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
+//          + triplet.getSrcVertex().getValue().toString() + "\n"
+//          + triplet.getTrgVertex().getValue().toString());
       return true;
     } else if (hasOnlyHighLabel && hasNoOrHighDistanceSim && hasNoOrHighTypeSim) {
-      LOG.info("Merge HIGH LABEL" + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
-          + triplet.getSrcVertex().getValue().toString() + "\n"
-          + triplet.getTrgVertex().getValue().toString());
+//      LOG.info("Merge HIGH LABEL" + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
+//          + triplet.getSrcVertex().getValue().toString() + "\n"
+//          + triplet.getTrgVertex().getValue().toString());
       return true;
     } else {
       return false;

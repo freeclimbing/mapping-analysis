@@ -9,7 +9,7 @@ import org.mappinganalysis.util.Constants;
 /**
  * Key Selector connected component id
  */
-public class  CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
+public class CcIdKeySelector implements KeySelector<Vertex<Long, ObjectMap>, Long> {
   @Override
   public Long getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
 //    int tmp = (int) ; // TODO fix, needed for test

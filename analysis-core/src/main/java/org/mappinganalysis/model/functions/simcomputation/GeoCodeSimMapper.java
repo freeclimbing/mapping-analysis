@@ -44,10 +44,10 @@ public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, Nu
       property.put(Constants.SIM_DISTANCE, result);
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.info("geoSim: " + triplet.getSrcVertex().getId() + " "
-          + triplet.getTrgVertex().getId() + " " + property.get(Constants.SIM_DISTANCE));
-    }
+//    if (LOG.isDebugEnabled()) {
+//      LOG.info("geoSim: " + triplet.getSrcVertex().getId() + " "
+//          + triplet.getTrgVertex().getId() + " " + property.get(Constants.SIM_DISTANCE));
+//    }
 
     return new Triplet<>(
         triplet.getSrcVertex(),

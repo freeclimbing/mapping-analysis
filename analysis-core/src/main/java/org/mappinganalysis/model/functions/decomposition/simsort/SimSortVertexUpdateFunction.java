@@ -25,8 +25,9 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
   @Override
   public void updateVertex(Vertex<Long, ObjectMap> vertex,
                            MessageIterator<AggSimValueTuple> inMessages) throws Exception {
-    double vertexAggSim = vertex.getValue().getVertexSimilarity();
-    boolean hasNoVertexState = !vertex.getValue().containsKey(Constants.VERTEX_STATUS);
+    ObjectMap properties = vertex.getValue();
+    double vertexAggSim = properties.getVertexSimilarity();
+    boolean hasNoVertexState = !properties.containsKey(Constants.VERTEX_STATUS);
 //        || (boolean) vertex.getValue().get(Utils.VERTEX_STATUS);
 
     if (hasNoVertexState || Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) == 0) {
@@ -42,16 +43,16 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
       BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
       iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
 
-      vertex.getValue().setVertexSimilarity(iterationAggSim);
+      properties.setVertexSimilarity(iterationAggSim);
 
       if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
         if (iterationAggSim < threshold) {
-          vertex.getValue().put(Constants.VERTEX_STATUS, Boolean.FALSE);
-          vertex.getValue().put(Constants.OLD_HASH_CC, vertex.getValue().get(Constants.HASH_CC));
-          vertex.getValue().put(Constants.HASH_CC, Utils.getHash(vertex.getId().toString() + "false"));
+          properties.put(Constants.VERTEX_STATUS, Boolean.FALSE);
+          properties.put(Constants.OLD_HASH_CC, properties.get(Constants.HASH_CC));
+          properties.put(Constants.HASH_CC, Utils.getHash(vertex.getId().toString() + "false"));
         } else {
-          vertex.getValue().put(Constants.VERTEX_STATUS, Boolean.TRUE);
+          properties.put(Constants.VERTEX_STATUS, Boolean.TRUE);
         }
       }
 
@@ -59,7 +60,7 @@ public class SimSortVertexUpdateFunction extends VertexUpdateFunction<Long, Obje
 //      if ((long) vertex.getValue().get(Utils.CC_ID) == 2430L) {
 //          LOG.info(" setting new value: " + vertex.getId() + "   " + iterationAggSim);
 //        }
-      setNewVertexValue(vertex.getValue());
+      setNewVertexValue(properties);
 //      }
     }
   }

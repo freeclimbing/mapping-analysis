@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.decomposition;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -18,6 +19,16 @@ public class Decomposition {
 
   public static Graph<Long, ObjectMap, ObjectMap> executeDecomposition(
       Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) throws Exception {
+
+    // cleanup vertex for following steps
+    graph = graph.mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
+      @Override
+      public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
+        vertex.getValue().remove(Constants.DB_URL_FIELD);
+
+        return vertex.getValue();
+      }
+    });
 
     // typegroupby
 

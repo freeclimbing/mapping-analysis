@@ -7,6 +7,7 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
@@ -173,11 +174,17 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   public Set<Long> getVerticesList() {
     Object clusteredVertices = map.get(Constants.CL_VERTICES);
 
-    if (clusteredVertices instanceof Set) {
+    if (clusteredVertices == null) {
+      return null;
+    } else if (clusteredVertices instanceof Set) {
       return (Set<Long>) clusteredVertices;
     } else {
       return Sets.newHashSet((long) clusteredVertices);
     }
+  }
+
+  public Integer getVerticesCount() {
+    return getVerticesList().size();
   }
 
   public void setClusterVertices(Set<Long> vertexIds) {
@@ -241,6 +248,21 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     if (!sources.isEmpty()) {
       map.put(Constants.ONTOLOGIES, sources);
     }
+  }
+
+  /**
+   * Get internal represenation of several ontologies in a cluster.
+   */
+  public Integer getSourcesAsInt() {
+    Object ontologies = map.get(Constants.ONTOLOGIES);
+    Set<String> sources;
+    if (ontologies instanceof Set) {
+      sources = (Set<String>) ontologies;
+    } else {
+      sources = Sets.newHashSet(ontologies.toString());
+    }
+
+    return SourcesUtils.getSourcesInt(sources);
   }
 
   /**

@@ -1,7 +1,10 @@
 package org.mappinganalysis.model.functions.merge;
 
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.IterativeDataSet;
@@ -12,14 +15,19 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.SrcTrgTuple;
 import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.RightSideOnlyJoinFunction;
 import org.mappinganalysis.util.functions.filter.OldHashCcFilterFunction;
@@ -28,6 +36,7 @@ import org.mappinganalysis.util.functions.filter.RefineIdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -55,24 +64,43 @@ public class Merge {
 
   /**
      * Execute the refinement step - compare clusters with each other and combine similar clusters.
-     * @param vertices prepared dataset
+     * @param baseClusters prepared dataset
      * @return refined dataset
      */
   public static DataSet<Vertex<Long, ObjectMap>> execute(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
+      DataSet<Vertex<Long, ObjectMap>> baseClusters,
       ExampleOutput out)
       throws Exception {
     int maxClusterSize = 4;
     if (Constants.INPUT_DIR.contains("linklion")) {
       maxClusterSize = 5;
     }
-    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = vertices.iterate(Integer.MAX_VALUE);
+    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
 
+    // base input data
     DataSet<Vertex<Long, ObjectMap>> left = workingSet
         .filter(new ClusterSizeFilterFunction(maxClusterSize));
     left = printSuperstep(left);
-    DataSet<Vertex<Long, ObjectMap>> right = workingSet
-        .filter(new ClusterSizeFilterFunction(maxClusterSize));
+    DataSet<Vertex<Long, ObjectMap>> right = left;
+
+    // restrict triplets to restrict problem
+
+    DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = left
+        .map(new AddShadingTypeMapFunction())
+        .flatMap(new MergeTupleMapper())
+        .groupBy(1, 2)
+        .reduceGroup(new BaseTripletCreateFunction());
+
+    baseTriplets.leftOuterJoin(left)
+        .where(0)
+        .equalTo(0)
+        .with(new AdvancedTripletCreateFunction(0))
+        .leftOuterJoin(left)
+        .where(1)
+        .equalTo(0)
+        .with(new AdvancedTripletCreateFunction(1));
+
+    // todo sim computation + optimize sim comp
 
     DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = left.cross(right)
         .with(new TripletCreateCrossFunction(maxClusterSize))
@@ -118,7 +146,7 @@ public class Merge {
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .filter(new RefineIdExcludeFilterFunction()) // EXCLUDE_VERTEX_ACCUMULATOR counter
         .union(filteredNoticableTriplets)
-        .map(new SimilarClusterMergeMapFunction()); // REFINEMENT_MERGE_ACCUMULATOR - new cluster count
+        .map(new SimilarClusterMergeMapFunction());
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
 
@@ -166,7 +194,7 @@ public class Merge {
   /**
    * Exclude
    * 1. tuples where duplicate ontologies are found
-   * 2. tuples where more than one match occures
+   * 2. tuples where more than one match occurs
    */
   private static DataSet<Tuple4<Long, Long, Long, Double>> extractNoticableTriplets(
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets) throws Exception {
@@ -240,34 +268,19 @@ public class Merge {
         .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
         .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
             Constants.MIN_LABEL_PRIORITY_SIM))
-        .map(value -> {
-          LOG.info("newBaseTriplet: " + value.toString());
-          return value;
-        })
-        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {})
         .withForwardedFields("f0;f1;f2;f3");
 
 //    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
 //    Utils.writeToFile(newBaseTriplets, "6-init-newBaseTriplets");
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
-        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM))
-        .map(value -> {
-          LOG.info("filteredtriplet: " + value.toString());
-          return value;
-        })
-        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
+        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
 
     // reduce to single representative, some vertices are now missing
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())
         .groupBy(new OldHashCcKeySelector())
-        .reduceGroup(new MajorityPropertiesGroupReduceFunction())
-        .map(value -> {
-          LOG.info("newRepr: " + value.toString());
-          return value;
-        })
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
 
     return newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())
@@ -308,4 +321,64 @@ public class Merge {
     return finalEntry.getKey();
   }
 
+  private static class BaseTripletCreateFunction
+      implements GroupReduceFunction<MergeTuple, Triplet<Long, ObjectMap, NullValue>> {
+    private final Triplet<Long, ObjectMap, NullValue> reuseTriplet;
+
+    public BaseTripletCreateFunction() {
+      reuseTriplet = new Triplet<>();
+    }
+
+    @Override
+    public void reduce(Iterable<MergeTuple> values,
+                       Collector<Triplet<Long, ObjectMap, NullValue>> out) throws Exception {
+      HashSet<MergeTuple> leftSide = Sets.newHashSet(values);
+      HashSet<MergeTuple> rightSide = Sets.newHashSet(leftSide);
+
+      for (MergeTuple leftTuple : leftSide) {
+        Integer leftSources = leftTuple.getIntSources();
+        reuseTriplet.f0 = leftTuple.getVertexId();
+
+        rightSide.remove(leftTuple);
+        for (MergeTuple rightTuple : rightSide) {
+          int summedSources = SourcesUtils.getSourceCount(leftSources)
+              + SourcesUtils.getSourceCount(rightTuple.getIntSources());
+          if (summedSources <= Constants.SOURCE_COUNT
+              && !SourcesUtils.hasOverlap(leftSources, rightTuple.getIntSources())) {
+            reuseTriplet.f1 = rightTuple.getVertexId();
+
+            out.collect(reuseTriplet);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * We should not use reuseTriplet here because we have to walk twice over the triplet
+   */
+  private static class AdvancedTripletCreateFunction
+      implements JoinFunction<Triplet<Long, ObjectMap, NullValue>,
+      Vertex<Long,ObjectMap>,
+      Triplet<Long, ObjectMap, NullValue>> {
+//    private final Triplet<Long, ObjectMap, ObjectMap> reuseTriplet;
+    private final int side;
+
+    public AdvancedTripletCreateFunction(int side) {
+//      this.reuseTriplet = new Triplet<>();
+      this.side = side;
+    }
+    @Override
+    public Triplet<Long, ObjectMap, NullValue> join(Triplet<Long, ObjectMap, NullValue> left,
+                                                    Vertex<Long, ObjectMap> right) throws Exception {
+      if (side == 0) {
+        left.f2 = right.getValue();
+        left.f4 = NullValue.getInstance();
+      } else if (side == 1) {
+        left.f3 = right.getValue();
+      }
+
+      return left;
+    }
+  }
 }

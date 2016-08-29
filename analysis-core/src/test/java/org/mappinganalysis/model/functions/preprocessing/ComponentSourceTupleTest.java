@@ -3,9 +3,12 @@ package org.mappinganalysis.model.functions.preprocessing;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.SourcesUtils;
 
 import static org.junit.Assert.*;
 
+/** todo use assert!
+ */
 public class ComponentSourceTupleTest {
   private static final Logger LOG = Logger.getLogger(ComponentSourceTupleTest.class);
 
@@ -50,7 +53,7 @@ public class ComponentSourceTupleTest {
     tuple5.addSource(Constants.FB_NS);
     tuple5.addSource(Constants.LGD_NS);
 
-    LOG.info(tuple.toString() + " sourceCount: " + tuple.getSourceCount()
+    LOG.info(tuple.toString() + " sourceCount: " + SourcesUtils.getSourceCount(tuple)
     + " sources: " + tuple.getSources());
     LOG.info(tuple2.toString());
     LOG.info(tuple3.toString());

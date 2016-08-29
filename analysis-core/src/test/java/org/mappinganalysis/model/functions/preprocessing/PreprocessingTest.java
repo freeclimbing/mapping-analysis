@@ -17,6 +17,7 @@ import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
@@ -34,12 +35,14 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
+    graph.getVertices().print();
+
     DataSet<ComponentSourceTuple> resultTuples = Preprocessing
         .getComponentSourceTuples(graph.getVertices(), null);
 
     for (ComponentSourceTuple result : resultTuples.collect()) {
       assertEquals(60190L, result.getCcId().longValue());
-      assertEquals(5, result.getSourceCount().intValue());
+      assertEquals(5, SourcesUtils.getSourceCount(result).intValue());
       Set<String> sources = result.getSources();
       for (String source : sources) {
         assertTrue(source.equals(Constants.DBP_NS)
@@ -54,17 +57,14 @@ public class PreprocessingTest {
   @Test
   public void linkFilterStrategyTest() throws Exception {
     String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/general/").getFile();
+        .getResource("/data/preprocessing/linkFilter/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
     graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
-//    graph.getEdges().print(); // 2 edges
-//    graph.getVertices().print(); // 4 vertices
 
     graph = graph.filterOnEdges(new FilterFunction<Edge<Long, ObjectMap>>() {
       @Override
       public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
-
         if (edge.getSource() == 617158L) {
           assertEquals(617159L, edge.getTarget().longValue());
           return true;
@@ -80,19 +80,16 @@ public class PreprocessingTest {
     assertEquals(4, graph.getVertices().count());
   }
 
-  @Test
-  public void nullValueTest() throws Exception {
-    String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/nullValueLinkFilter/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
-//    graph.getEdges().print(); // 2 edges
-//    graph.getVertices().print(); // 4 vertices
-
-    graph.getVertices().print();
-  }
-
+  // todo no test, working code
+//  @Test
+//  public void nullValueTest() throws Exception {
+//    String graphPath = PreprocessingTest.class
+//        .getResource("/data/preprocessing/nullValueLinkFilter/").getFile();
+//    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+//    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
+//
+//    graph.getVertices().print();
+//  }
 
   @Test
   public void finalOneToManyTest() throws Exception {
