@@ -33,6 +33,11 @@ public class SimilarClusterMergeMapFunction
     Set<Long> trgVertices = trgVal.getVerticesList();
     Set<Long> srcVertices = srcVal.getVerticesList();
 
+    if (triplet.getSrcVertex().getId() == 1981L || triplet.getSrcVertex().getId() == 1982L
+        && triplet.getTrgVertex().getId() == 1981L || triplet.getTrgVertex().getId() == 1982L) {
+      LOG.info("###wei: " + triplet.toString());
+    }
+
     if (srcVertices.size() >= trgVertices.size()) {
       reuseVertex.setFields(triplet.getSrcVertex().getId(), compareAndReturnBest(srcVal, trgVal));
     } else {

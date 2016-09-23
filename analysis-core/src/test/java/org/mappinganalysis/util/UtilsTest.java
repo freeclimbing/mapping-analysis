@@ -29,6 +29,26 @@ public class UtilsTest {
   }
 
   @Test
+  public void testTypeSim() throws Exception {
+    Set<String> first = Sets.newHashSet("ArchitecturalStructure");
+    Set<String> second = Sets.newHashSet("Country", "AdministrativeRegion");
+    assertEquals(0d, Utils.getTypeSim(first, second), 0.01);
+
+    second.add("School");
+    assertEquals(1d, Utils.getTypeSim(first, second), 0.01);
+
+    first = Sets.newHashSet("Settlement");
+    second = Sets.newHashSet("Country");
+    assertEquals(1d, Utils.getTypeSim(first, second), 0.01);
+
+    second = Sets.newHashSet(Constants.NO_TYPE);
+    assertEquals(0d, Utils.getTypeSim(first, second), 0.01);
+
+    first = Sets.newHashSet(Constants.NO_TYPE);
+    assertEquals(0d, Utils.getTypeSim(first, second), 0.01);
+  }
+
+  @Test
   public void testGetHash() throws Exception {
 
   }

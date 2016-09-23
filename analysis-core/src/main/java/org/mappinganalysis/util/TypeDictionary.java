@@ -1,8 +1,10 @@
 package org.mappinganalysis.util;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Manually created type dictionary to handle rdf:type value over different data sets.
@@ -251,6 +253,15 @@ public class TypeDictionary {
     SECONDARY_TYPE.put("http://rdf.freebase.com/ns/protected_sites.site_listing_category", "Park");
   }
 
+  public static final HashSet<String> SHADED_TYPES;
+  static {
+    SHADED_TYPES = Sets.newHashSet();
+    SHADED_TYPES.add("ArchitecturalStructure");
+    SHADED_TYPES.add("Mountain");
+    SHADED_TYPES.add("AdministrativeRegion");
+    SHADED_TYPES.add("BodyOfWater");
+    SHADED_TYPES.add("Park");
+  }
 
   public static final HashMap<String, String> TYPE_SHADINGS;
   static {

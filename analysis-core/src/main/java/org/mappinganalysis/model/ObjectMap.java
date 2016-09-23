@@ -97,6 +97,24 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     }
   }
 
+  public void setTypes(String typeName, Set<String> types) {
+    map.put(typeName, types);
+  }
+
+  public void addTypes(String typeName, Set<String> types) {
+    if (types.contains(Constants.NO_TYPE)) {
+      return;
+    }
+
+    Set<String> existingTypes = getTypes(typeName);
+    if (!existingTypes.contains(Constants.NO_TYPE)) {
+      existingTypes.addAll(types);
+      setTypes(typeName, existingTypes);
+    } else {
+      setTypes(typeName, types);
+    }
+  }
+
   /**
    * Get the hash cc id from an object map - no check if hash is available
    * @return hashCcId

@@ -8,6 +8,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Data source related helper classes. Currently, only 5 sources are supported:
+ * DBpedia, GeoNames, LinkedGeoData, Freebase, Nyt
+ */
 public class SourcesUtils {
   private static final HashMap<String, Integer> SOURCES_MAP;
   static {
@@ -23,6 +27,9 @@ public class SourcesUtils {
     return SOURCES_MAP;
   }
 
+  /**
+   * Return an integer representation of the used data sources for easy use in tuples.
+   */
   public static Integer getSourcesInt(Set<String> sources) {
     int result = 0;
     for (String source : sources) {

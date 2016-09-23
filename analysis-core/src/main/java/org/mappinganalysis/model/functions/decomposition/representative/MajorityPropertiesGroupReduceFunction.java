@@ -2,7 +2,6 @@ package org.mappinganalysis.model.functions.decomposition.representative;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
 import org.apache.flink.configuration.Configuration;
@@ -16,10 +15,7 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Merge properties for representative.
@@ -44,7 +40,7 @@ public class MajorityPropertiesGroupReduceFunction
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
-    Set<String> clusterTypeSet = Sets.newHashSet();
+//    Set<String> clusterTypeSet = Sets.newHashSet();
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> vertex : vertices) {
@@ -53,7 +49,9 @@ public class MajorityPropertiesGroupReduceFunction
       updateClusterOntologies(clusterOntologies, vertex);
 
       addLabelToMap(labelMap, vertex);
-      addTypesToSet(clusterTypeSet, vertex);
+
+      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
+//      addTypesToSet(clusterTypeSet, vertex);
       addGeoToMap(geoMap, vertex);
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
@@ -68,10 +66,10 @@ public class MajorityPropertiesGroupReduceFunction
     if (!labelMap.isEmpty()) {
       resultProps.put(Constants.LABEL, Merge.getFinalValue(labelMap, Constants.LABEL));
     }
-    if (!clusterTypeSet.isEmpty()) {
+//    if (!clusterTypeSet.isEmpty()) {
 //      Set<String> finalValue = getFinalValue(typeSet, Constants.TYPE_INTERN);
-      resultProps.put(Constants.TYPE_INTERN, clusterTypeSet);
-    }
+//      resultProps.put(Constants.TYPE_INTERN, clusterTypeSet);
+//    }
     resultProps.setClusterSources(clusterOntologies);
     resultProps.setClusterVertices(clusterVertices);
 
@@ -133,13 +131,6 @@ public class MajorityPropertiesGroupReduceFunction
       } else {
         labelMap.put(label, 1);
       }
-    }
-  }
-
-  private void addTypesToSet(Set<String> cTypeSet,
-                             Vertex<Long, ObjectMap> vertex) {
-    if (!vertex.getValue().hasTypeNoType(Constants.TYPE_INTERN)) {
-      cTypeSet.addAll(vertex.getValue().getTypes(Constants.TYPE_INTERN));
     }
   }
 }

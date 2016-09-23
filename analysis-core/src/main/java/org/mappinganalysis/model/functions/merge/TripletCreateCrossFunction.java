@@ -37,7 +37,7 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
             null,
             null,
             null);
-
+        LOG.info(reuseTriplet.toString());
         return reuseTriplet;
       }
     }
@@ -46,6 +46,7 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
     // TODO check if this is correct
     if ((long) left.getId() == right.getId() || left.getId() > right.getId()) {
       reuseTriplet.setFields(0L, 0L, null, null, null);
+      LOG.info(reuseTriplet.toString());
 
       return reuseTriplet;
     } else if (left.getValue().getVerticesList().size() + right.getValue().getVerticesList().size() <= maxClusterSize) {
@@ -54,6 +55,7 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
           left.getValue(),
           right.getValue(),
           NullValue.getInstance());
+      LOG.info(reuseTriplet.toString());
 
       return reuseTriplet;
     } else {
@@ -63,6 +65,7 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
           null,
           null,
           null);
+      LOG.info(reuseTriplet.toString());
 
       return reuseTriplet;
     }

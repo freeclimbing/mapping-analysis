@@ -10,7 +10,8 @@ import org.mappinganalysis.util.Constants;
  * Only filter triplets which have at least 2 similar enough
  * properties and a high enough aggregated similarity value.
  */
-public class MinRequirementThresholdFilterFunction implements FilterFunction<Triplet<Long, ObjectMap, ObjectMap>> {
+public class MinRequirementThresholdFilterFunction
+    implements FilterFunction<Triplet<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MinRequirementThresholdFilterFunction.class);
   private final double threshold;
 
@@ -38,8 +39,10 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
 //      LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
 //          + triplet.getSrcVertex().getValue().toString() + "\n"
 //          + triplet.getTrgVertex().getValue().toString());
+//      LOG.info("h thres && mtsv " + triplet.toString());
       return true;
     } else if (hasOnlyHighLabel && hasNoOrHighDistanceSim && hasNoOrHighTypeSim) {
+//      LOG.info("only h label && nohds && nohts " + triplet.toString());
 //      LOG.info("Merge HIGH LABEL" + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"
 //          + triplet.getSrcVertex().getValue().toString() + "\n"
 //          + triplet.getTrgVertex().getValue().toString());
@@ -47,7 +50,5 @@ public class MinRequirementThresholdFilterFunction implements FilterFunction<Tri
     } else {
       return false;
     }
-
-//    return hasHighThreshold && hasMinTwoSimValues;
   }
 }

@@ -357,12 +357,60 @@ public class Utils {
     return result;
   }
 
+  /**
+   * Get type similarity for two sets of type strings, indirect type shading sim is also computed.
+   * TODO rework if type shading sim is <1
+   * TODO inefficient always to check type shadings
+   *
+   * Returns 0 if one of the types is empty
+   */
+  public static double getTypeSim(Set<String> srcTypes, Set<String> trgTypes) {
+    if (srcTypes.contains(Constants.NO_TYPE) || trgTypes.contains(Constants.NO_TYPE)) {
+      return 0;
+    }
+
+    for (String srcType : srcTypes) {
+      if (trgTypes.contains(srcType)) {
+        return 1;
+      } else {
+        for (String trgType : trgTypes) {
+          double check = checkTypeShadingSimilarity(srcType, trgType);
+          if (Doubles.compare(check, 0d) != 0) {
+            return check;
+          }
+        }
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * return double because of option to reduce the result value according to shading type sim (default: 1)
+   */
+  private static double checkTypeShadingSimilarity(String srcType, String trgType) {
+    if (TypeDictionary.TYPE_SHADINGS.containsKey(srcType)
+        && TypeDictionary.TYPE_SHADINGS.get(srcType).equals(trgType)
+        || TypeDictionary.TYPE_SHADINGS.containsKey(trgType)
+        && TypeDictionary.TYPE_SHADINGS.get(trgType).equals(srcType)) {
+      return Constants.SHADING_TYPE_SIM;
+    } else {
+      return 0d;
+    }
+  }
+
+  public static boolean hasNoEmptyType(Set<String> srcType, Set<String> trgType) {
+    return !srcType.contains(Constants.NO_TYPE) && !trgType.contains(Constants.NO_TYPE);
+  }
+
+  /**
+   * Get the first 3 chars of string. If label is shorter, fill up with '#'.
+   */
   public static String getBlockingLabel(String label) {
     if (label.length() < 3) {
       label += StringUtils.repeat("#", 3 - label.length());
     }
 
-    label = label.substring(0, 3);
+    label = label.substring(0, 3).toLowerCase();
     if (!label.substring(0, 1).matches("[a-z]")) {
       label = "###";
     }

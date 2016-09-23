@@ -22,19 +22,6 @@ public class ExcludeDuplicateOntologyTripletFlatJoinFunction
       left.getSrcVertex().getValue().put(Constants.REFINE_ID, right.f2);
       left.getTrgVertex().getValue().put(Constants.REFINE_ID, right.f2);
 
-      if (left.getSrcVertex().getId() == 14L ||
-          left.getSrcVertex().getId() == 15L ||
-          left.getSrcVertex().getId() == 3252L ||
-          left.getSrcVertex().getId() == 3811L) {
-        LOG.info("src exclude candidate vertex: " + left.getSrcVertex().toString());
-      }
-      if (left.getTrgVertex().getId() == 14L ||
-          left.getTrgVertex().getId() == 15L ||
-          left.getTrgVertex().getId() == 3252L ||
-          left.getTrgVertex().getId() == 3811L) {
-        LOG.info("trg exclude candidate vertex: " + left.getTrgVertex().toString());
-      }
-
       collector.collect(left);
     }
   }

@@ -1,0 +1,2 @@
+{"id":1981,"data":{"clusteredVertices":[1981, 1982],"typeIntern":["Settlement"],"lon":11.3167,"label":"weimar","lat":50.9833,"ontologies":["http:\/\/linkedgeodata.org\/", "http:\/\/data.nytimes.com\/"]}}
+{"id":5488,"data":{"clusteredVertices":[5488, 6166],"typeIntern":["AdministrativeRegion"],"lon":13.4,"label":"weimar republic","ontologies":["http:\/\/sws.geonames.org\/", "http:\/\/rdf.freebase.com\/"],"lat":52.5167}}
