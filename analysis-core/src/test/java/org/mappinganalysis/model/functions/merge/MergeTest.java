@@ -58,58 +58,32 @@ public class MergeTest {
 
   @Test
   public void testExecute() throws Exception {
-    Configuration conf = new Configuration();
-    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
-    env = new LocalEnvironment(conf);
-    env.setParallelism(Runtime.getRuntime().availableProcessors());
-    env.getConfig().disableSysoutLogging();
-
-    Constants.MIN_CLUSTER_SIM = 0.5;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
-    Constants.INPUT_DIR = "linklion";
-    Constants.SOURCE_COUNT = 5;
+    setupLocalEnvironment();
+    setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
         .getVertices();
-//    vertices = vertices.filter(value -> value.getId() == 23L || value.getId() == 42L || value.getId() == 60191);
 
     vertices = Merge.execute(vertices, 5, null, env);
 
     vertices.print();
-//    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-//      LOG.info(vertex.toString());
-//    }
   }
 
   @Test
   public void testExecute2() throws Exception {
-    Configuration conf = new Configuration();
-    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
-    env = new LocalEnvironment(conf);
-    env.setParallelism(Runtime.getRuntime().availableProcessors());
-    env.getConfig().disableSysoutLogging();
-
-    Constants.MIN_CLUSTER_SIM = 0.5;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
-    Constants.INPUT_DIR = "linklion";
-    Constants.SOURCE_COUNT = 5;
+    setupLocalEnvironment();
+    setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
         .getVertices();
-//    vertices = vertices.filter(value -> value.getId() == 23L || value.getId() == 42L || value.getId() == 60191);
 
     vertices = Merge.execute(vertices, 5, null, env);
 
     vertices.print();
-//    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-//      LOG.info(vertex.toString());
-//    }
   }
 
   @Test
@@ -150,4 +124,21 @@ public class MergeTest {
 
     assertTrue("Leipzig".equals(finalValue));
   }
+
+  private void setupConstants() {
+    Constants.MIN_CLUSTER_SIM = 0.5;
+    Constants.IGNORE_MISSING_PROPERTIES = true;
+    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
+    Constants.INPUT_DIR = "linklion";
+    Constants.SOURCE_COUNT = 5;
+  }
+
+  private void setupLocalEnvironment() {
+    Configuration conf = new Configuration();
+    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
+    env = new LocalEnvironment(conf);
+    env.setParallelism(Runtime.getRuntime().availableProcessors());
+    env.getConfig().disableSysoutLogging();
+  }
+
 }

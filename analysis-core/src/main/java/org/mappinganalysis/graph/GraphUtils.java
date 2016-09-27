@@ -68,14 +68,6 @@ public class GraphUtils {
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {});
-    //    workingGraph = workingGraph.filterOnVertices(new FilterFunction<Vertex<Long, Long>>() { // don't replace
-//      @Override
-//      public boolean filter(Vertex<Long, Long> value) throws Exception {
-//        Preconditions.checkArgument(value.getId() != null, "id " + value.toString());
-//        Preconditions.checkArgument(value.getValue() != null, "value " + value.toString());
-//        return true;
-//      }
-//    });
     return Graph.fromDataSet(vertices, edges, env);
   }
 
