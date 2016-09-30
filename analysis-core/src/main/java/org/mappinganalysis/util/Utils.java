@@ -52,7 +52,7 @@ public class Utils {
   /**
    * Write a Gelly graph to JSON
    */
-  public static <EV> void writeGraphToJSONFile(Graph<Long, ObjectMap, EV> graph, String outDir) {
+  public static <VV, EV> void writeGraphToJSONFile(Graph<Long, VV, EV> graph, String outDir) {
       String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/vertices/";
       String edgeOutFile = Constants.INPUT_DIR + "output/" + outDir + "/edges/";
       JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
@@ -104,8 +104,6 @@ public class Utils {
    * Read Gelly graph from JSON file
    * @param graphPath absolute or relative path
    * @param env execution environment
-   * @param isAbsolutePath
-   * @return
    */
   public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(
       String graphPath,
@@ -124,7 +122,7 @@ public class Utils {
 
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
 
-    return jsonDataSource.getGraph();
+    return jsonDataSource.getGraph(ObjectMap.class, ObjectMap.class);
   }
 
   /**

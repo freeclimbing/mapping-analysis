@@ -1,27 +1,19 @@
 package org.mappinganalysis.io.impl.json;
 
-import com.google.common.collect.Lists;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
-import org.s1ck.gdl.GDLHandler;
-
-import java.util.Collection;
 
 public class JSONTest {
   private static final Logger LOG = Logger.getLogger(JSONTest.class);
 
-  private ExecutionEnvironment env;
+  private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();;
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -36,10 +28,24 @@ public class JSONTest {
 
   @Test
   public void readJSONTest() throws Exception {
+    String vertexInFile =
+        JSONTest.class.getResource("/data/vertices.json").getFile();
+    String edgeInFile =
+        JSONTest.class.getResource("/data/edges.json").getFile();
+    JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
+
+    Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph(ObjectMap.class, ObjectMap.class);
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices();
+    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+      LOG.info("in result: " + vertex);
+    }
+  }
+
+  @Test
+  public void readWriteJSONTest() throws Exception {
     /**
      * Read file
      */
-    env = ExecutionEnvironment.getExecutionEnvironment();
     String vertexInFile =
         JSONTest.class.getResource("/data/vertices.json").getFile();
     String edgeInFile =

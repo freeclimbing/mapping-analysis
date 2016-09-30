@@ -28,7 +28,7 @@ public class BasicVertexCreator extends RichMapFunction<Tuple3<Integer, String, 
 
   public Vertex<Long, ObjectMap> map(Tuple3<Integer, String, String> tuple) throws Exception {
     reuseVertex.setId((long) tuple.f0);
-    reuseVertex.getValue().put(Constants.DB_URL_FIELD, tuple.f1);
+//    reuseVertex.getValue().put(Constants.DB_URL_FIELD, tuple.f1);
     reuseVertex.getValue().put(Constants.ONTOLOGY, tuple.f2);
 
     vertexCounter.add(1L);

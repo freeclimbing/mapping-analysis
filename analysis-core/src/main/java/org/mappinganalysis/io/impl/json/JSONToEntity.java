@@ -32,28 +32,29 @@ public class JSONToEntity {
       Constants.TARGET
   );
 
-  protected ObjectMap getProperties(JSONObject object) throws JSONException {
-    HashMap<String, Object> props =
-        Maps.newHashMapWithExpectedSize(object.length() * 2);
-    object = object.getJSONObject(Constants.DATA);
-    Iterator<?> keys = object.keys();
-    while (keys.hasNext()) {
-      String key = keys.next().toString();
-      //    Caused by: java.lang.ClassCastException: java.lang.String cannot be cast to org.codehaus.jettison.json.JSONArray
-      //    typeIntern = AdministrativeRegion
-      if (arrayOptions.contains(key) && !(object.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
-        Set subProps = getArrayValues(key, (JSONArray) object.get(key));
-        props.put(key, subProps);
-      } else if (longOptions.contains(key)) {
-        Long longValue = object.getLong(key);
-        props.put(key, longValue);
-      } else {
-        Object o = object.get(key);
-        props.put(key, o);
-      }
-    }
+  protected <VV> VV getProperties(JSONObject object, Class<VV> entityClass) throws JSONException {
 
-    return new ObjectMap(props);
+    HashMap<String, Object> props =
+          Maps.newHashMapWithExpectedSize(object.length() * 2);
+      object = object.getJSONObject(Constants.DATA);
+      Iterator<?> keys = object.keys();
+      while (keys.hasNext()) {
+        String key = keys.next().toString();
+        //    Caused by: java.lang.ClassCastException: java.lang.String cannot be cast to org.codehaus.jettison.json.JSONArray
+        //    typeIntern = AdministrativeRegion
+        if (arrayOptions.contains(key) && !(object.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
+          Set subProps = getArrayValues(key, (JSONArray) object.get(key));
+          props.put(key, subProps);
+        } else if (longOptions.contains(key)) {
+          Long longValue = object.getLong(key);
+          props.put(key, longValue);
+        } else {
+          Object o = object.get(key);
+          props.put(key, o);
+        }
+      }
+
+      return (VV) new ObjectMap(props);
   }
 
   private Set getArrayValues(String key, JSONArray array) throws JSONException {

@@ -10,25 +10,25 @@ import org.codehaus.jettison.json.JSONObject;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
-public class JSONToEdgeFormatter
+public class JSONToEdgeFormatter<EV>
     extends JSONToEntity
-    implements MapFunction<String, Edge<Long, ObjectMap>> {
+    implements MapFunction<String, Edge<Long, EV>> {
 
   private static final Logger LOG = Logger.getLogger(JSONToVertexFormatter.class);
+  Class edgeClass;
 
   @Override
-  public Edge<Long, ObjectMap> map(String value) throws Exception {
+  public Edge<Long, EV> map(String value) throws Exception {
     JSONObject jsonEdge = new JSONObject(value);
 
     Long source = jsonEdge.getLong(Constants.SOURCE);
     Long target = jsonEdge.getLong(Constants.TARGET);
 //    LOG.info("#####source: " + source + " target: " + target);
+
     if (jsonEdge.has(Constants.DATA)) {
-      return new Edge<>(source, target, getProperties(jsonEdge));
+      return new Edge<>(source, target, (EV) getProperties(jsonEdge, edgeClass));
     } else {
-      ObjectMap tmp = new ObjectMap();
-      tmp.addProperty("foo", "bar"); // TODO dirty
-      return new Edge<>(source, target, tmp);
+      return new Edge<>(source, target, (EV) NullValue.getInstance());
     }
 //    LOG.info("#####properties: " + properties.toString());
   }

@@ -4,6 +4,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
@@ -27,7 +28,7 @@ public class JSONDataSink {
   /**
    * TODO What happens with empty edge collection?
    */
-  public <EV> void writeGraph(Graph<Long, ObjectMap, EV> graph) {
+  public <VV, EV> void writeGraph(Graph<Long, VV, EV> graph) {
     graph.getVertices()
         .writeAsFormattedText(vertexPath,
             FileSystem.WriteMode.OVERWRITE,

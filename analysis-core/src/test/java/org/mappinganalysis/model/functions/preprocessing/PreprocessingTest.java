@@ -110,6 +110,10 @@ public class PreprocessingTest {
     }
   }
 
+  /**
+   * vertex lat/lon data is irrelevant, similarities are already computed in edges
+   * @throws Exception
+   */
   @Test
   public void oneToManyTest() throws Exception {
     String graphPath = PreprocessingTest.class
@@ -125,6 +129,7 @@ public class PreprocessingTest {
     }
 
     for (Long vertex : resultDeleteVerticesGraph.getVertexIds().collect()) {
+      LOG.info(vertex.toString());
       assertTrue(vertex == 2642L || vertex == 46584L);
     }
 
@@ -158,8 +163,6 @@ public class PreprocessingTest {
 
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(inGraph.getVertices(), edges, env);
 
-//    graph = Preprocessing.applyTypeMissMatchCorrection(graph, true, env);
-
     Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
         graph.getVertices(),
         SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
@@ -191,6 +194,7 @@ public class PreprocessingTest {
 
   @Test
   //AskTimeoutException
+  // FIXME: 9/28/16
   public void getInputGraphFromCSVTest() throws Exception {
     DataLoader loader = new DataLoader(env);
     final String vertexFile = "concept.csv";

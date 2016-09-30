@@ -10,7 +10,7 @@ import org.mappinganalysis.util.Constants;
 /**
  * Vertex to JSON Formatter
  */
-public class VertexToJSONFormatter<V extends Vertex<Long, ObjectMap>>
+public class VertexToJSONFormatter<V extends Vertex<Long, ?>>
     extends EntityToJSON
     implements TextOutputFormat.TextFormatter<V> {
   @Override
@@ -18,7 +18,11 @@ public class VertexToJSONFormatter<V extends Vertex<Long, ObjectMap>>
     JSONObject json = new JSONObject();
     try {
       json.put(Constants.ID, v.getId());
-      json.put(Constants.DATA, writeProperties(v.getValue()));
+      if (v.getValue() instanceof ObjectMap) {
+        json.put(Constants.DATA, writeProperties((ObjectMap) v.getValue()));
+      } else if (v.getValue() instanceof Long) {
+        json.put(Constants.DATA, v.getValue());
+      }
     } catch (JSONException e) {
       e.printStackTrace();
     }

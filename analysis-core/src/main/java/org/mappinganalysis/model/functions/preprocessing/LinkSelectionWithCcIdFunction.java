@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 
 import java.util.HashMap;
 
@@ -14,14 +15,16 @@ import java.util.HashMap;
  * To reduce complexity to ccid groups, ccid is still used.
  * todo Test version with sort partition.
  */
-public class LinkSelectionWithCcIdFunction implements GroupReduceFunction<EdgeSourceSimTuple, Tuple2<Long, Long>> {
+public class LinkSelectionWithCcIdFunction
+    implements GroupReduceFunction<EdgeSourceSimTuple, Tuple2<Long, Long>> {
+  private static final Logger LOG = Logger.getLogger(LinkSelectionWithCcIdFunction.class);
+
   @Override
   public void reduce(Iterable<EdgeSourceSimTuple> values,
                      Collector<Tuple2<Long, Long>> out) throws Exception {
     HashMap<Long, ComponentSourceTuple> entitySourceMap = Maps.newHashMap();
     // ccid, e.src, e.trg, v.src, e.src, sim
     for (EdgeSourceSimTuple link : values) {
-//              LOG.info("###nnof: " + link.toString());
       ComponentSourceTuple src = entitySourceMap.get(link.getSrcId());
       ComponentSourceTuple trg = entitySourceMap.get(link.getTrgId());
       if (src == null) {
@@ -39,7 +42,6 @@ public class LinkSelectionWithCcIdFunction implements GroupReduceFunction<EdgeSo
         trg.addSource(link.getSrcOntology());
         entitySourceMap.put(link.getTrgId(), trg);
 
-//                LOG.info("###sec: result: " + tmpResult.toString());
         out.collect(new Tuple2<>(link.getSrcId(), link.getTrgId()));
       }
     }

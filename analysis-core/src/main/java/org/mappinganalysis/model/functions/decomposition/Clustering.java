@@ -33,11 +33,15 @@ public class Clustering {
    */
   public static Graph<Long, ObjectMap, ObjectMap> createInitialClustering(
       Graph<Long, ObjectMap, ObjectMap> graph,
-      ExampleOutput out, ExecutionEnvironment env) throws Exception {
+      String verbosity,
+      ExampleOutput out,
+      ExecutionEnvironment env) throws Exception {
 
     graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
     graph = Clustering.removeOneToManyVertices(graph, env);
-    out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);
+    if (verbosity.equals(Constants.DEBUG)) {
+      out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);
+    }
 
     return graph;
   }
@@ -77,88 +81,37 @@ public class Clustering {
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env) {
     DataSet<Tuple3<Long, String, Double>> oneToManyCandidates = graph
-        .groupReduceOnNeighbors(
-        new NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
-            Tuple3<Long, String, Double>>() {
-          @Override
-          public void iterateNeighbors(
-              Vertex<Long, ObjectMap> vertex,
-              Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighborEdgeVertices,
-              Collector<Tuple3<Long, String, Double>> out) throws Exception {
-            String ontology = vertex.getValue().getOntology();
-            int neighborCount = 0;
-            double vertexAggSim = 0d;
-            boolean isRelevant = false;
-
-            for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> edgeVertex : neighborEdgeVertices) {
-              Edge<Long, ObjectMap> edge = edgeVertex.f0;
-              Vertex<Long, ObjectMap> neighbor = edgeVertex.f1;
-              ++neighborCount;
-              if (!isRelevant && neighbor.getValue().getOntology().equals(ontology)) {
-                isRelevant = true;
-              }
-              vertexAggSim += edge.getValue().getEdgeSimilarity();
-            }
-
-            if (isRelevant) {
-              vertexAggSim /= neighborCount;
-              out.collect(new Tuple3<>(vertex.getId(), ontology, vertexAggSim));
-            }
-          }
-        }, EdgeDirection.ALL);
+        .groupReduceOnNeighbors(new FinalOneToManyRemovalFunction(), EdgeDirection.ALL);
 
     DataSet<Vertex<Long, ObjectMap>> bestCandidates = oneToManyCandidates.groupBy(1)
         .max(2).andMin(0)
-        .map(tuple -> new Tuple2<>(tuple.f1, tuple.f2)) // string double
-        .returns(new TypeHint<Tuple2<String, Double>>() {
-        })
-        .leftOuterJoin(oneToManyCandidates)
+        .map(tuple -> new Tuple2<>(tuple.f1, tuple.f2)) // string, double
+        .returns(new TypeHint<Tuple2<String, Double>>() {})
+        .join(oneToManyCandidates)
         .where(0, 1)
         .equalTo(1, 2)
-        .with(new FlatJoinFunction<Tuple2<String, Double>,
-            Tuple3<Long, String, Double>, Tuple1<Long>>() {
-          @Override
-          public void join(Tuple2<String, Double> left,
-                           Tuple3<Long, String, Double> right,
-                           Collector<Tuple1<Long>> out) throws Exception {
-            if (left != null) {
-              out.collect(new Tuple1<>(right.f0));
-            }
-          }
-        })
-        .leftOuterJoin(graph.getVertices())
+        .with((Tuple2<String, Double> left,
+               Tuple3<Long, String, Double> right,
+               Collector<Tuple1<Long>> out) -> new Tuple1<>(right.f0))
+        .returns(new TypeHint<Tuple1<Long>>() {})
+        .join(graph.getVertices())
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<Tuple1<Long>,
-            Vertex<Long, ObjectMap>,
-            Vertex<Long, ObjectMap>>() {
-          @Override
-          public void join(Tuple1<Long> left,
-                           Vertex<Long, ObjectMap> right,
-                           Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-            if (left != null) {
-              LOG.info("vertex best candidate: " + right.toString());
-              out.collect(right);
-            }
-          }
-        });
+        .with((tuple, vertex) -> vertex)
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> resultVertices = graph.getVertices()
         .leftOuterJoin(oneToManyCandidates)
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<Vertex<Long, ObjectMap>,
-            Tuple3<Long, String, Double>,
-            Vertex<Long, ObjectMap>>() {
-          @Override
-          public void join(Vertex<Long, ObjectMap> left,
-                           Tuple3<Long, String, Double> right,
-                           Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-            if (right == null) {
-              out.collect(left);
-            }
+        .with((Vertex<Long, ObjectMap> left,
+               Tuple3<Long, String, Double> right,
+               Collector<Vertex<Long, ObjectMap>> out) -> {
+          if (right == null) {
+            out.collect(left);
           }
         })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .union(bestCandidates);
 
     DataSet<Edge<Long, ObjectMap>> resultEdges = Preprocessing.deleteEdgesWithoutSourceOrTarget(
@@ -166,5 +119,35 @@ public class Clustering {
         resultVertices);
 
     return Graph.fromDataSet(resultVertices, resultEdges, env);
+  }
+
+  private static class FinalOneToManyRemovalFunction
+      implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
+        Tuple3<Long, String, Double>> {
+    @Override
+    public void iterateNeighbors(
+        Vertex<Long, ObjectMap> vertex,
+        Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighborEdgeVertices,
+        Collector<Tuple3<Long, String, Double>> out) throws Exception {
+      String ontology = vertex.getValue().getOntology();
+      int neighborCount = 0;
+      double vertexAggSim = 0d;
+      boolean isRelevant = false;
+
+      for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> edgeVertex : neighborEdgeVertices) {
+        Edge<Long, ObjectMap> edge = edgeVertex.f0;
+        Vertex<Long, ObjectMap> neighbor = edgeVertex.f1;
+        ++neighborCount;
+        if (!isRelevant && neighbor.getValue().getOntology().equals(ontology)) {
+          isRelevant = true;
+        }
+        vertexAggSim += edge.getValue().getEdgeSimilarity();
+      }
+
+      if (isRelevant) {
+        vertexAggSim /= neighborCount;
+        out.collect(new Tuple3<>(vertex.getId(), ontology, vertexAggSim));
+      }
+    }
   }
 }

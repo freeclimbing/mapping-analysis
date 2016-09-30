@@ -1,19 +1,25 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.common.functions.*;
+import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.graph.*;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
-import org.mappinganalysis.io.functions.VertexRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -31,6 +37,7 @@ public class Preprocessing {
    * Execute all preprocessing steps with the given options
    */
   public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> inGraph,
+                                                               String verbosity,
                                                                ExampleOutput out,
                                                                ExecutionEnvironment env) throws Exception {
     Graph<Long, ObjectMap, NullValue> graph = GraphUtils.mapEdgesToNullValue(inGraph);
@@ -40,8 +47,11 @@ public class Preprocessing {
         env);
 
     // stats start
-    graph = GraphUtils.addCcIdsToGraph(graph, env); // only needed for stats
-    out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
+    // TODO cc computation produces memory an out exception, dont use
+    if (verbosity.equals(Constants.DEBUG)) {
+      graph = GraphUtils.addCcIdsToGraph(graph, env); // only needed for stats
+      out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
+    }
     // stats end
 
     /*
@@ -85,14 +95,22 @@ public class Preprocessing {
     return edgeIds
         .map(edge -> new EdgeIdsSourcesTuple(edge.f0, edge.f1, "", ""))
         .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
-        .leftOuterJoin(vertices)
+        .join(vertices)
         .where(0)
         .equalTo(0)
-        .with(new EdgeIdsSourceNamesFunction(0))
-        .leftOuterJoin(vertices)
+        .with((tuple, vertex) -> {
+          tuple.checkSideAndUpdate(0, vertex.getValue().getOntology());
+          return tuple;
+        })
+        .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
+        .join(vertices)
         .where(1)
         .equalTo(0)
-        .with(new EdgeIdsSourceNamesFunction(1));
+        .with((tuple, vertex) -> {
+          tuple.checkSideAndUpdate(1, vertex.getValue().getOntology());
+          return tuple;
+        })
+        .returns(new TypeHint<EdgeIdsSourcesTuple>() {});
   }
 
   /**
@@ -119,7 +137,7 @@ public class Preprocessing {
           || Constants.LL_MODE.equals("write")
           || Constants.LL_MODE.equals("print")
           || Constants.LL_MODE.equals("plan")) {
-        vertices = getNytVerticesLinklion(env, ccFile, vertices, out);
+        vertices = getNytVerticesLinklion(env, ccFile, vertices, out); // only 500!!
       } else if (Constants.LL_MODE.equals("random")) {
         vertices = getRandomCcsFromLinklion(env, ccFile, vertices, 50000);
       }
@@ -185,6 +203,8 @@ public class Preprocessing {
    * where nyt entities are contained (~6000 entities).
    *
    * Second option: take random ccs, WIP
+   *
+   * TODO test lambdas
    */
   private static DataSet<Vertex<Long, ObjectMap>> getNytVerticesLinklion(
       ExecutionEnvironment env,
@@ -231,19 +251,25 @@ public class Preprocessing {
      * now based on sources count in component, we want at least 3 different sources
      */
     additionalCcs = additionalCcs
-        .leftOuterJoin(componentSourceTuples)
+        .join(componentSourceTuples)
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<Tuple1<Long>, ComponentSourceTuple, Tuple1<Long>>() {
-          @Override
-          public void join(Tuple1<Long> left,
-                           ComponentSourceTuple right,
-                           Collector<Tuple1<Long>> out) throws Exception {
-            if (right != null && SourcesUtils.getSourceCount(right) >= 3) {
-              out.collect(left);
-            }
+        .with((Tuple1<Long> tuple, ComponentSourceTuple compTuple, Collector<Tuple1<Long>> collector) -> {
+          if (SourcesUtils.getSourceCount(compTuple) >= 3) {
+            collector.collect(tuple);
           }
         })
+        .returns(new TypeHint<Tuple1<Long>>() {})
+//        .with(new FlatJoinFunction<Tuple1<Long>, ComponentSourceTuple, Tuple1<Long>>() {
+//          @Override
+//          public void join(Tuple1<Long> left,
+//                           ComponentSourceTuple right,
+//                           Collector<Tuple1<Long>> out) throws Exception {
+//            if (right != null && SourcesUtils.getSourceCount(right) >= 3) {
+//              out.collect(left);
+//            }
+//          }
+//        })
         .first(500);
 
     return restrictVerticesToGivenCcs(vertices, vertexCcs, relevantCcs.union(additionalCcs));
@@ -288,17 +314,36 @@ public class Preprocessing {
 
   /**
    * Delete edges where source or target vertex are not in the vertex set.
-   * // TODO handle unchecked
+   * TODO fix lambdas not working because of type erasure, even with TypeHint
    */
   public static <EV> DataSet<Edge<Long, EV>> deleteEdgesWithoutSourceOrTarget(
       DataSet<Edge<Long, EV>> edges, DataSet<Vertex<Long, ObjectMap>> vertices) {
-    return edges.leftOuterJoin(vertices)
-        .where(0).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction())
-        .leftOuterJoin(vertices)
-        .where(1).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction())
+
+    return edges.join(vertices)
+        .where(0)
+        .equalTo(0)
+        .with(new JoinFunction<Edge<Long,EV>, Vertex<Long,ObjectMap>, Edge<Long, EV>>() {
+          @Override
+          public Edge<Long, EV> join(Edge<Long, EV> first, Vertex<Long, ObjectMap> second) throws Exception {
+            return first;
+          }
+        })
+        .join(vertices)
+        .where(1)
+        .equalTo(0)
+        .with(new JoinFunction<Edge<Long, EV>, Vertex<Long, ObjectMap>, Edge<Long, EV>>() {
+          @Override
+          public Edge<Long, EV> join(Edge<Long, EV> first, Vertex<Long, ObjectMap> second) throws Exception {
+            return first;
+          }
+        })
         .distinct(0,1);
+    // not working
+//        .with((edge, vertex) -> edge)
+//        .returns(new TypeHint<Edge<Long, EV>>() {
+//        });
+    // old
+//        .with(new EdgeRestrictFlatJoinFunction())
   }
 
   /**
@@ -311,14 +356,18 @@ public class Preprocessing {
       DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
 
     DataSet<Vertex<Long, ObjectMap>> left = vertices
-        .leftOuterJoin(edges)
-        .where(0).equalTo(0)
-        .with(new VertexRestrictFlatJoinFunction());
+        .join(edges)
+        .where(0)
+        .equalTo(0)
+        .with((vertex, edge) -> vertex)
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     return vertices
-        .leftOuterJoin(edges)
-        .where(0).equalTo(1)
-        .with(new VertexRestrictFlatJoinFunction())
+        .join(edges)
+        .where(0)
+        .equalTo(1)
+        .with((vertex, edge) -> vertex)
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .union(left)
         .distinct(0);
   }
@@ -326,11 +375,10 @@ public class Preprocessing {
   /**
    * Create the input graph for further analysis,
    * restrict to edges where source and target are in vertices set.
-   * @return graph with vertices and edges.
-   * @throws Exception
    * @param fullDbString complete server+port+db string
    * @deprecated load from db too slow
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, NullValue> getInputGraph(String fullDbString, ExecutionEnvironment env)
       throws Exception {
     DataLoader loader = new DataLoader(env);
@@ -362,7 +410,7 @@ public class Preprocessing {
   public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilterStrategy(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
-      Boolean isDeleteSingleVertices) {
+      Boolean isDeleteSingleVertices) throws Exception {
     return secondLinkFilter(graph, env, isDeleteSingleVertices);
   }
 
@@ -373,7 +421,10 @@ public class Preprocessing {
   private static Graph<Long, ObjectMap, ObjectMap> secondLinkFilter(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env,
-      Boolean isDeleteSingleVertices) {
+      Boolean isDeleteSingleVertices) throws Exception {
+
+    graph = GraphUtils.addCcIdsToGraph(graph, env);
+
     // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
         .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
@@ -384,26 +435,19 @@ public class Preprocessing {
         .sortGroup(2, Order.ASCENDING)
         .reduceGroup(new LinkSelectionWithCcIdFunction());
 
-    DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.leftOuterJoin(graph.getEdges())
+    DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)
         .equalTo(0, 1)
-        .with(new FlatJoinFunction<Tuple2<Long, Long>,
-            Edge<Long, ObjectMap>,
-            Edge<Long, ObjectMap>>() {
-          @Override
-          public void join(Tuple2<Long, Long> left,
-                           Edge<Long, ObjectMap> right,
-                           Collector<Edge<Long, ObjectMap>> out) throws Exception {
-            if (right != null)
-              out.collect(right);
-          }
-        });
+        .with((tuple, edge) -> edge)
+        .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
-            DataSet < Vertex < Long, ObjectMap >> resultVertices = graph.getVertices();
+    DataSet<Vertex<Long, ObjectMap>> resultVertices;
     if (isDeleteSingleVertices) {
       resultVertices = deleteVerticesWithoutAnyEdges(
           graph.getVertices(),
           newEdges.<Tuple2<Long, Long>>project(0, 1));
+    } else {
+      resultVertices = graph.getVertices();
     }
 
     return Graph.fromDataSet(resultVertices, newEdges, env);
@@ -523,6 +567,7 @@ public class Preprocessing {
       Graph<Long, ObjectMap, NullValue> graph,
       boolean isTypeMissMatchCorrectionActive,
       ExecutionEnvironment env) throws Exception {
+
     if (isTypeMissMatchCorrectionActive) {
       DataSet<IdTypeTuple> vertexIdAndTypeList = graph.getVertices()
           .flatMap(new VertexIdTypeTupleMapper());

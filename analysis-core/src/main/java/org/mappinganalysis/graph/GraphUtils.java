@@ -1,6 +1,5 @@
 package org.mappinganalysis.graph;
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -11,13 +10,14 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.library.GSAConnectedComponents;
-import org.apache.flink.hadoop.shaded.com.google.common.base.Preconditions;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
 
 public class GraphUtils {
@@ -34,8 +34,11 @@ public class GraphUtils {
 
     Graph<Long, Long, NullValue> workingGraph = prepareForCc(graph, env);
 
+    String outName = Constants.LL_MODE.concat("CcInput");
+    Utils.writeGraphToJSONFile(graph, outName);
+
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
-        .run(new GSAConnectedComponents<>(1000))
+        .run(new GSAConnectedComponents<>(5))
         .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
@@ -43,7 +46,7 @@ public class GraphUtils {
   }
 
   public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilter(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                                  ExecutionEnvironment env) {
+                                                                  ExecutionEnvironment env) throws Exception {
   //TODO
 //    DataSet<Tuple3<Long, String, Long>> vertices = graph.getVertices()
 //        .map(vertex -> new Tuple3<>(vertex.getId(), vertex.getValue().getOntology(), vertex.getValue().getHashCcId()));
@@ -58,7 +61,7 @@ public class GraphUtils {
 //    return graph;
   }
 
-  private static <T> Graph<Long, Long, NullValue> prepareForCc(
+  public static <T> Graph<Long, Long, NullValue> prepareForCc(
       Graph<Long, ObjectMap, T> graph,
       ExecutionEnvironment env) {
     DataSet<Vertex<Long, Long>> vertices = graph.getVertices()
@@ -68,6 +71,7 @@ public class GraphUtils {
     DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {});
+
     return Graph.fromDataSet(vertices, edges, env);
   }
 

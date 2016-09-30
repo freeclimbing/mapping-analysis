@@ -84,8 +84,7 @@ public class TypeGroupBy {
           right.getValue().put(Constants.HASH_CC, left.getCompId());
           return right;
         })
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
-        });
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
         .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
@@ -93,19 +92,14 @@ public class TypeGroupBy {
         .equalTo(0)
         .with((unchanged, updated) -> {
           if (updated == null) {
-//              LOG.info("final: unchanged: " + unchanged.toString());
             return unchanged;
           } else {
-//              LOG.info("final: unchanged: " + unchanged.toString() + " updated: " + updated.toString());
             return updated;
           }
         })
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
-
-    graph = Graph.fromDataSet(newVertices, graph.getEdges(), env);
-
-    return graph;
+    return Graph.fromDataSet(newVertices, graph.getEdges(), env);
   }
 
   private static DataSet<NeighborTuple> getMaxNeighborSims(
@@ -116,7 +110,7 @@ public class TypeGroupBy {
 
     return typeVals
             .groupBy(0).max(1)
-            .leftOuterJoin(typeVals)
+            .join(typeVals)
             .where(0,1)
             .equalTo(0,1)
             .with((left, right) -> right)
