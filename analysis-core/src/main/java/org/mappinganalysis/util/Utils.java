@@ -78,7 +78,7 @@ public class Utils {
 
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, env);
 
-    return jsonDataSource.getVertices();
+    return jsonDataSource.getVertices(ObjectMap.class);
   }
 
   public static String getFinalPath(String verticesPath, boolean isAbsolutePath) {

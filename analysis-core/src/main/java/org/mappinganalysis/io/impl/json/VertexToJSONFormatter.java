@@ -14,14 +14,14 @@ public class VertexToJSONFormatter<V extends Vertex<Long, ?>>
     extends EntityToJSON
     implements TextOutputFormat.TextFormatter<V> {
   @Override
-  public String format(V v) {
+  public String format(V vertex) {
     JSONObject json = new JSONObject();
     try {
-      json.put(Constants.ID, v.getId());
-      if (v.getValue() instanceof ObjectMap) {
-        json.put(Constants.DATA, writeProperties((ObjectMap) v.getValue()));
-      } else if (v.getValue() instanceof Long) {
-        json.put(Constants.DATA, v.getValue());
+      json.put(Constants.ID, vertex.getId());
+      if (vertex.getValue() instanceof ObjectMap) {
+        json.put(Constants.DATA, writeProperties((ObjectMap) vertex.getValue()));
+      } else if (vertex.getValue() instanceof Long) {
+        json.put(Constants.DATA, vertex.getValue());
       }
     } catch (JSONException e) {
       e.printStackTrace();

@@ -2,8 +2,10 @@ package org.mappinganalysis.io.impl.json;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +29,7 @@ public class JSONTest {
       "]";
 
   @Test
+  // todo test, method already working
   public void readJSONTest() throws Exception {
     String vertexInFile =
         JSONTest.class.getResource("/data/vertices.json").getFile();
@@ -34,10 +37,14 @@ public class JSONTest {
         JSONTest.class.getResource("/data/edges.json").getFile();
     JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
 
-    Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph(ObjectMap.class, ObjectMap.class);
+    Graph<Long, ObjectMap, NullValue> graph = dataSource.getGraph(ObjectMap.class, NullValue.class);
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-      LOG.info("in result: " + vertex);
+      LOG.info("vertex: " + vertex);
+    }
+
+    for (Edge<Long, NullValue> longObjectMapEdge : graph.getEdges().collect()) {
+      LOG.info("edge: " + longObjectMapEdge.toString());
     }
   }
 
@@ -52,7 +59,7 @@ public class JSONTest {
         JSONTest.class.getResource("/data/edges.json").getFile();
     JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
 
-    Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph();
+    Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph(ObjectMap.class, ObjectMap.class);
 
     // todo do sth
 
@@ -71,7 +78,7 @@ public class JSONTest {
      */
     JSONDataSource testSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
 
-    Graph<Long, ObjectMap, ObjectMap> inOutGraph = testSource.getGraph();
+    Graph<Long, ObjectMap, ObjectMap> inOutGraph = testSource.getGraph(ObjectMap.class, ObjectMap.class);
 
     DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {

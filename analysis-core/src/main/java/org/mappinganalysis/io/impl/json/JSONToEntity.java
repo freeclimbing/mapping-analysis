@@ -1,6 +1,7 @@
 package org.mappinganalysis.io.impl.json;
 
 import com.google.common.collect.Maps;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -32,29 +33,46 @@ public class JSONToEntity {
       Constants.TARGET
   );
 
-  protected <VV> VV getProperties(JSONObject object, Class<VV> entityClass) throws JSONException {
+  protected <V> V getProperties(JSONObject data, Class<V> entityClass) throws JSONException {
 
-    HashMap<String, Object> props =
-          Maps.newHashMapWithExpectedSize(object.length() * 2);
-      object = object.getJSONObject(Constants.DATA);
-      Iterator<?> keys = object.keys();
+    if (entityClass.equals(ObjectMap.class)) {
+      HashMap<String, Object> properties =
+          Maps.newHashMapWithExpectedSize(data.length() * 2);
+      data = data.getJSONObject(Constants.DATA);
+
+      Iterator<?> keys = data.keys();
       while (keys.hasNext()) {
         String key = keys.next().toString();
         //    Caused by: java.lang.ClassCastException: java.lang.String cannot be cast to org.codehaus.jettison.json.JSONArray
         //    typeIntern = AdministrativeRegion
-        if (arrayOptions.contains(key) && !(object.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
-          Set subProps = getArrayValues(key, (JSONArray) object.get(key));
-          props.put(key, subProps);
+        if (arrayOptions.contains(key) && !(data.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
+          Set subProps = getArrayValues(key, (JSONArray) data.get(key));
+          LOG.info(key + " set value: " + subProps.toString());
+          properties.put(key, subProps);
         } else if (longOptions.contains(key)) {
-          Long longValue = object.getLong(key);
-          props.put(key, longValue);
+          Long longValue = data.getLong(key);
+          LOG.info(key + " long value: " + longValue.toString());
+          properties.put(key, longValue);
         } else {
-          Object o = object.get(key);
-          props.put(key, o);
+          Object o = data.get(key);
+          LOG.info(key + " o value: " + o.toString() + " entity class " + entityClass.toString());
+          properties.put(key, o);
         }
       }
 
-      return (VV) new ObjectMap(props);
+      LOG.info(" ####### " + properties.toString());
+
+      return (V) new ObjectMap(properties);
+    } else if (entityClass.equals(Long.class)) {
+      Long property = data.getLong(Constants.DATA);
+
+      return  (V) property;
+
+    } else if (entityClass.equals(NullValue.class)) {
+      return (V) NullValue.getInstance();
+    } else {
+      return null;
+    }
   }
 
   private Set getArrayValues(String key, JSONArray array) throws JSONException {
