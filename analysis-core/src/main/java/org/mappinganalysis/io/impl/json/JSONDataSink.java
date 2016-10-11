@@ -1,10 +1,10 @@
 package org.mappinganalysis.io.impl.json;
 
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
@@ -43,5 +43,11 @@ public class JSONDataSink {
     vertices.writeAsFormattedText(vertexPath,
         FileSystem.WriteMode.OVERWRITE,
         new VertexToJSONFormatter<>());
+  }
+
+  public <T extends Tuple> void writeTuples(DataSet<T> tuples) {
+    tuples.writeAsFormattedText(vertexPath,
+        FileSystem.WriteMode.OVERWRITE,
+        new TupleToJSONFormatter<>());
   }
 }

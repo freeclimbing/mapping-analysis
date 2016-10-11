@@ -114,9 +114,17 @@ public class Constants {
   public static final String EDGE = "edge";
   public static final String INPUT_GRAPH = "InputGraph";
   public static final String PREPROC_GRAPH = "PreprocGraph";
+  public static final String DECOMP_GRAPH = "DecompGraph";
+  public static final String LF_GRAPH = "LfGraph";
+  public static final String IC_GRAPH = "IcGraph";
+  public static final String SIMSORT_GRAPH = "SimSortGraph";
 
   public static final String INPUT = "input";
   public static final String PREPROC = "preproc";
+  public static final String DECOMP = "decomp";
+  public static final String LF = "lf";
+  public static final String IC = "ic";
+  public static final String SIMSORT = "simsort";
   public static final String ANALYSIS = "analysis";
   public static final String EVAL = "eval";
   public static final String STATS_EDGE_INPUT = "stats-edge-input";
@@ -126,6 +134,7 @@ public class Constants {
   public static final String INIT_CLUST = "2-initial-clustering";
   public static final String MISS = "miss";
   public static final String TEST = "test";
+  public static final String COMPLEX = "complex";
 
   /**
    * Command line option names.

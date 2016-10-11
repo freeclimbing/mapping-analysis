@@ -47,21 +47,21 @@ public class JSONToEntity {
         //    typeIntern = AdministrativeRegion
         if (arrayOptions.contains(key) && !(data.get(key) instanceof String)) { //&& object.get(key) instanceof JSONArray) {
           Set subProps = getArrayValues(key, (JSONArray) data.get(key));
-          LOG.info(key + " set value: " + subProps.toString());
+//          LOG.info(key + " set value: " + subProps.toString());
           properties.put(key, subProps);
         } else if (longOptions.contains(key)) {
           Long longValue = data.getLong(key);
-          LOG.info(key + " long value: " + longValue.toString());
+//          LOG.info(key + " long value: " + longValue.toString());
           properties.put(key, longValue);
         } else {
           Object o = data.get(key);
-          LOG.info(key + " o value: " + o.toString() + " entity class " + entityClass.toString());
+//          LOG.info(key + " o value: " + o.toString() + " entity class " + entityClass.toString());
           properties.put(key, o);
         }
       }
 
-      LOG.info(" ####### " + properties.toString());
-
+//      LOG.info(" ####### " + properties.toString());
+      //TODO fix these unchecked casts
       return (V) new ObjectMap(properties);
     } else if (entityClass.equals(Long.class)) {
       Long property = data.getLong(Constants.DATA);

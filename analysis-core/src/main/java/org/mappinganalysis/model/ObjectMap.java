@@ -120,7 +120,39 @@ public class ObjectMap implements Map<String, Object>, Serializable {
    * @return hashCcId
    */
   public Long getHashCcId() {
-    return (long) map.get(Constants.HASH_CC);
+    if (map.containsKey(Constants.HASH_CC)) {
+      return (long) map.get(Constants.HASH_CC);
+    } else {
+      return null;
+    }
+  }
+
+  public void setHashCcId(Long value) {
+    map.put(Constants.HASH_CC, value);
+  }
+
+  public Long getOldHashCcId() {
+    if (map.containsKey(Constants.OLD_HASH_CC)) {
+      return (long) map.get(Constants.OLD_HASH_CC);
+    } else {
+      return null;
+    }
+  }
+
+  public void setOldHashCcId(Long value) {
+    map.put(Constants.OLD_HASH_CC, value);
+  }
+
+  public Boolean getVertexStatus() {
+    if (map.containsKey(Constants.VERTEX_STATUS)) {
+      return (boolean) map.get(Constants.VERTEX_STATUS);
+    } else {
+      return Boolean.TRUE;
+    }
+  }
+
+  public void setVertexStatus(Boolean value) {
+    map.put(Constants.VERTEX_STATUS, value);
   }
 
   public boolean hasGeoPropertiesValid() {

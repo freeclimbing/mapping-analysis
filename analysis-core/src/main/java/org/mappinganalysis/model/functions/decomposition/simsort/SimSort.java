@@ -1,12 +1,9 @@
 package org.mappinganalysis.model.functions.decomposition.simsort;
 
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.*;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
@@ -36,14 +33,14 @@ public class SimSort {
         .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
             Constants.SIM_GEO_LABEL_STRATEGY);
 
-    return Graph.fromDataSet(graph.getVertices(), simEdges, env)
-        .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() { // do not use lambda
-          @Override
-          public ObjectMap map(Vertex<Long, ObjectMap> value) throws Exception {
-            value.getValue().put(Constants.VERTEX_AGG_SIM_VALUE, Constants.DEFAULT_VERTEX_SIM);
-            return value.getValue();
-          }
-        });
+    return Graph.fromDataSet(graph.getVertices(), simEdges, env);
+//        .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() { // do not use lambda
+//          @Override
+//          public ObjectMap map(Vertex<Long, ObjectMap> value) throws Exception {
+//            value.getValue().put(Constants.VERTEX_AGG_SIM_VALUE, Constants.DEFAULT_VERTEX_SIM);
+//            return value.getValue();
+//          }
+//        });
   }
 
   /**
@@ -51,14 +48,90 @@ public class SimSort {
    * @param maxIterations max vertex-centric-iteration count
    */
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          Integer maxIterations) {
+                                                          Integer maxIterations,
+                                                          ExecutionEnvironment env) {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("SimSort");
     aggParameters.setDirection(EdgeDirection.ALL);
+    aggParameters.setSolutionSetUnmanagedMemory(true);
 
-    return graph.runVertexCentricIteration(
-        new SimSortVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
-        new SimSortMessagingFunction(), maxIterations, aggParameters);
+//    Graph<Long, ObjectMap, ObjectMap> workingGraph = graph
+//        .mapVertices(new MapFunction<Vertex<Long, ObjectMap>, ObjectMap>() {
+//          @Override
+//          public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
+//            ObjectMap properties = vertex.getValue();
+//            properties.remove(Constants.LABEL);
+//            properties.remove(Constants.TYPE_INTERN);
+//            properties.remove(Constants.ONTOLOGY);
+//            properties.remove(Constants.LON);
+//            properties.remove(Constants.LAT);
+//            properties.remove(Constants.CC_ID);
+//
+//            return properties;
+//          }
+//        });
+
+    // TODO SimSortOptimized: remove all strings and use tuples only
+
+    // TODO workaround to test upper boundaries for "setSolutionSetUnmanagedMemory" false: 700k working, 800 not anymore
+
+    DataSet<Vertex<Long, ObjectMap>> preVertices = graph.getVertices();
+//        .first(1400000);
+
+    DataSet<Edge<Long, SimSortEdgeTuple>> inputEdges = graph.getEdges()
+//        Preprocessing
+//        .deleteEdgesWithoutSourceOrTarget(graph.getEdges(), preVertices)
+        .map(edge -> new Edge<>(edge.getSource(),
+            edge.getTarget(),
+            new SimSortEdgeTuple(edge.getValue().getEdgeSimilarity())))
+        .returns(new TypeHint<Edge<Long, SimSortEdgeTuple>>() {});
+
+    DataSet<Vertex<Long, SimSortVertexTuple>> inputVertices = preVertices
+        .map(vertex -> new Vertex<>(vertex.getId(),
+            new SimSortVertexTuple(vertex.getValue().getCcId(),
+                Long.MIN_VALUE, // not safe to assume
+                -1D,
+                Boolean.TRUE)))
+        .returns(new TypeHint<Vertex<Long, SimSortVertexTuple>>() {});
+
+
+//    workingGraph = Graph.fromDataSet(wVertices,
+//        Preprocessing.deleteEdgesWithoutSourceOrTarget(graph.getEdges(), wVertices),
+//        env);
+
+    Graph<Long, SimSortVertexTuple, SimSortEdgeTuple> inputGraph
+        = Graph.fromDataSet(inputVertices, inputEdges, env);
+
+    DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = inputGraph
+        .runVertexCentricIteration(
+            new SimSortOptVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
+            new SimSortOptMessagingFunction(), maxIterations, aggParameters)
+        .getVertices();
+
+    // todo old version
+//    DataSet<Vertex<Long, ObjectMap>> workingVertices = workingGraph
+//        .runVertexCentricIteration(
+//            new SimSortVertexUpdateFunction(Constants.MIN_SIMSORT_SIM), // TODO set default sim value!
+//            new SimSortMessagingFunction(), maxIterations, aggParameters)
+//        .getVertices();
+
+    DataSet<Vertex<Long, ObjectMap>> resultingVertices = graph
+        .getVertices()
+        .join(workingVertices)
+        .where(0)
+        .equalTo(0)
+        .with((vertex, workingVertex) -> {
+          vertex.getValue().setHashCcId(workingVertex.getValue().getHash());
+          if (workingVertex.getValue().getOldHash() != Long.MIN_VALUE) {
+            vertex.getValue().setOldHashCcId(workingVertex.getValue().getOldHash());
+          }
+          vertex.getValue().setVertexStatus(workingVertex.getValue().isActive());
+
+          return vertex;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+    return Graph.fromDataSet(resultingVertices, graph.getEdges(), env);
   }
 
   /**
@@ -85,6 +158,8 @@ public class SimSort {
     // only edges are interesting
     Graph<Long, ObjectMap, ObjectMap> componentGraph = graph
         .filterOnVertices(new SimSortExcludeLowSimFilterFunction(true));
+
+    // todo map vertices remove checked property from filter
 
     return Graph.fromDataSet(graph.getVertices(),
         componentGraph.getEdges(), env);

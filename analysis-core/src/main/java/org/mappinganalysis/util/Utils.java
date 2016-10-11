@@ -6,13 +6,14 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -41,6 +42,9 @@ public class Utils {
 
   private static final HashFunction HF = Hashing.md5();
 
+  /**
+   * Write any dataset to disk, not working currently.
+   */
   public static <T> void writeToFile(DataSet<T> data, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
       data.writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
@@ -48,7 +52,16 @@ public class Utils {
           new DataSetTextFormatter<>());
     }
   }
+  /**
+   * Write any dataset to disk, not working currently.
+   */
+  public static <T extends Tuple> void writeTuplesToFile(DataSet<T> data, String outDir) {
 
+    String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
+    JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
+
+    dataSink.writeTuples(data);
+  }
   /**
    * Write a Gelly graph to JSON
    */
@@ -96,8 +109,30 @@ public class Utils {
    * Read Gelly graph from JSON file
    * @param inDir path is not absolute
    */
-  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir, ExecutionEnvironment env) {
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir,
+                                                                   ExecutionEnvironment env) {
     return readFromJSONFile(inDir, env, false);
+  }
+
+  /**
+   * Read Gelly graph from JSON file
+   * compatibility method for old reader, edge and vertex class are both ObjectMap.class
+   */
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir,
+                                                                   ExecutionEnvironment env,
+                                                                   boolean isAbsolute) {
+    return readFromJSONFile(inDir, ObjectMap.class, ObjectMap.class, env, isAbsolute);
+  }
+
+  /**
+   * Read Gelly graph from JSON file, specify resulting vertex and edge class.
+   */
+  public static <VV, EV> Graph<Long, VV, EV> readFromJSONFile(
+      String graphPath,
+      Class<VV> vertexClass,
+      Class<EV> edgeClass,
+      ExecutionEnvironment env) {
+        return readFromJSONFile(graphPath, vertexClass, edgeClass, env, false);
   }
 
   /**
@@ -105,8 +140,10 @@ public class Utils {
    * @param graphPath absolute or relative path
    * @param env execution environment
    */
-  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(
+  public static <VV, EV> Graph<Long, VV, EV> readFromJSONFile(
       String graphPath,
+      Class<VV> vertexClass,
+      Class<EV> edgeClass,
       ExecutionEnvironment env,
       boolean isAbsolutePath) {
 
@@ -122,7 +159,7 @@ public class Utils {
 
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
 
-    return jsonDataSource.getGraph(ObjectMap.class, ObjectMap.class);
+    return jsonDataSource.getGraph(vertexClass, edgeClass);
   }
 
   /**
@@ -147,11 +184,13 @@ public class Utils {
   }
 
   public static boolean isValidLatitude(Double latitude) {
-    return latitude != null && Doubles.compare(latitude, 90) <= 0 && Doubles.compare(latitude, -90) >= 0;
+    return latitude != null
+        && Doubles.compare(latitude, 90) <= 0 && Doubles.compare(latitude, -90) >= 0;
   }
 
   public static boolean isValidLongitude(Double longitude) {
-    return longitude != null && Doubles.compare(longitude, 180) <= 0 && Doubles.compare(longitude, -180) >= 0;
+    return longitude != null
+        && Doubles.compare(longitude, 180) <= 0 && Doubles.compare(longitude, -180) >= 0;
   }
 
   @Deprecated
@@ -176,12 +215,8 @@ public class Utils {
           .with(new AggregateBaseDeletedEdgesJoinFunction())
           .groupBy(0)
           .sum(1).and(Aggregations.SUM, 2)
-          .filter(new FilterFunction<Tuple3<Long, Integer, Integer>>() {
-            @Override
-            public boolean filter(Tuple3<Long, Integer, Integer> tuple) throws Exception {
-              return tuple.f1 != 0;
-            }
-          });
+          .filter(tuple -> tuple.f1 != 0)
+          .returns(new TypeHint<Tuple3<Long, Integer, Integer>>() {});
       Utils.writeToFile(tmpResult, "rmEdgesPerCompAndEdgeCount");
 
       DataSet<Tuple3<Integer, Integer, Integer>> result = getAggCount(tmpResult);

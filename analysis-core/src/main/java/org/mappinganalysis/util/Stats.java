@@ -306,9 +306,9 @@ public class Stats {
   public static DataSet<Tuple2<Integer, Integer>> countMissingGeoAndTypeProperties(
       String path, boolean isAbsolutePath, ExecutionEnvironment env) throws Exception {
 
-    Graph<Long, ObjectMap, ObjectMap> graph
-        = Utils.readFromJSONFile(path, env, isAbsolutePath);
-    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
+    Graph<Long, ObjectMap, NullValue> preGraph
+        = Utils.readFromJSONFile(path, ObjectMap.class, NullValue.class, env, isAbsolutePath);
+//    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
 
     DataSet<Tuple2<Integer, Integer>> geoTypeTuples = Preprocessing
         .applyTypeToInternalTypeMapping(preGraph)

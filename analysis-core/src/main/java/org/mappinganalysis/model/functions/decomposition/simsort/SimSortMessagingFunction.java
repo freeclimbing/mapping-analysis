@@ -8,6 +8,7 @@ import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
+@Deprecated
 public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap, AggSimValueTuple, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(SimSortMessagingFunction.class);
 
@@ -26,8 +27,12 @@ public class SimSortMessagingFunction extends MessagingFunction<Long, ObjectMap,
             vertex.getValue().getVertexSimilarity(),
             edge.getValue().getEdgeSimilarity());
         if (vertex.getId() == edge.getSource().longValue()) {
+//          if (vertex.getId() < 100)
+//          LOG.info("AggSim " +vertex.getId() + " send to " + edge.getTarget() + " " + message.toString());
           sendMessageTo(edge.getTarget(), message);
         } else {
+//          if (vertex.getId() < 100)
+//            LOG.info("AggSim " +vertex.getId() + " send to " + edge.getSource() + " " + message.toString());
           sendMessageTo(edge.getSource(), message);
         }
       }

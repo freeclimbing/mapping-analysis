@@ -20,13 +20,13 @@ public class SimSortTest {
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   private static final String SORT_SIMPLE = "g[" +
-      "(v1 {typeIntern = \"Settlement\", label = \"bajaur\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
-      "(v2 {typeIntern = \"Settlement\", label = \"Bajaur Agency\", lat = 34.6833D, lon = 71.5D, hashCc = 23L})" +
-      "(v3 {typeIntern = \"AdministrativeRegion\", lat = 34.8333333D, lon = 71.5D, hashCc = 23L})" +
-      "(v4 {label = \"Bajaur (Pakistan)\", lat = 34.8333D, lon = 71.5D, hashCc = 23L})]" +
-      "(v4)-[e1:sameAs]->(v1)" +
-      "(v4)-[e2:sameAs]->(v2)" +
-      "(v3)-[e3:sameAs]->(v3)";
+      "(v1 {ccId = 1L, typeIntern = \"Settlement\", label = \"bajaur\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
+      "(v2 {ccId = 1L, typeIntern = \"Settlement\", label = \"Bajaur Agency\", lat = 34.6833D, lon = 71.5D, hashCc = 23L})" +
+      "(v3 {ccId = 1L, typeIntern = \"AdministrativeRegion\", lat = 34.8333333D, lon = 71.5D, hashCc = 23L})" +
+      "(v4 {ccId = 1L, label = \"Bajaur (Pakistan)\", lat = 34.8333D, lon = 71.5D, hashCc = 23L})]" +
+      "(v4)-[e1:sameAs {foo = \"bar\"}]->(v1)" +
+      "(v4)-[e2:sameAs {foo = \"bar\"}]->(v2)" +
+      "(v3)-[e3:sameAs {foo = \"bar\"}]->(v3)";
 
   private static final String SORT_CANAIMA = "g[" +
       "(v1 {typeIntern = \"no_type_available\", label = \"Canaima (Venezuela)\", lat = 10.6311D, lon = -63.1917D, ccId = 284L})" +
@@ -51,7 +51,7 @@ public class SimSortTest {
 
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = SimSort.execute(graph, 100);
+    graph = SimSort.execute(graph, 100, env);
     graph = SimSort.excludeLowSimVertices(graph, env);
     // TODO check if still relevant
     graph = GraphUtils.applyLinkFilter(graph, env);
@@ -66,6 +66,7 @@ public class SimSortTest {
   public void simSortTest() throws Exception {
     Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
     Constants.IGNORE_MISSING_PROPERTIES = true;
+    Constants.MIN_SIMSORT_SIM = 0.9;
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
@@ -73,15 +74,14 @@ public class SimSortTest {
 
     // ?? needed?
     Constants.MIN_CLUSTER_SIM = 0.75D;
-    firstGraph = SimSort.execute(firstGraph, 100);
+    firstGraph = SimSort.execute(firstGraph, 100, env);
 
     // TODO Test
-    for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {
-      LOG.info(vertex);
-    }
-//    for (Edge<Long, ObjectMap> edge : firstGraph.getEdges().collect()) {
-//      LOG.info(edge);
-//    }
+    firstGraph.getVertices()
+        .collect()
+        .stream()
+        .filter(vertex -> vertex.getId() == 1L)
+        .forEach(vertex -> assertTrue(vertex.getValue().getHashCcId() != 1L));
   }
 
   /**
@@ -97,7 +97,7 @@ public class SimSortTest {
 
     firstGraph = SimSort.prepare(firstGraph, env, null);
     Constants.MIN_CLUSTER_SIM = 0.75D;
-    firstGraph = SimSort.execute(firstGraph, 200);
+    firstGraph = SimSort.execute(firstGraph, 200, env);
 
     for (int i = 0; i < 20; i++) {
       for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {

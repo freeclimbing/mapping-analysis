@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
@@ -10,7 +11,8 @@ import org.mappinganalysis.util.Constants;
  * Aggregate all similarity values, either based on weight based metric
  * or simply by existence (missing properties are ignored).
  */
-public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
+public class AggSimValueEdgeMapFunction
+    implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
   private final boolean ignoreMissingProperties;
 
   /**
@@ -34,8 +36,13 @@ public class AggSimValueEdgeMapFunction implements MapFunction<Edge<Long, Object
     } else {
       aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
     }
-
     edgeValue.setEdgeSimilarity(aggregatedSim);
+
+    // aggregated value is saved, we don't need the simple similarities anymore
+    edgeValue.remove(Constants.SIM_TRIGRAM);
+    edgeValue.remove(Constants.SIM_TYPE);
+    edgeValue.remove(Constants.SIM_DISTANCE);
+
     return edge;
   }
 }

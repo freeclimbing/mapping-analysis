@@ -50,12 +50,13 @@ public class MappingAnalysisExampleTest {
 
     // create Gelly edges and vertices -> graph
     for (org.s1ck.gdl.model.Vertex vertex : handler.getVertices()) {
-      ObjectMap map = new ObjectMap();
-      map.putAll(vertex.getProperties());
-      vertexList.add(new Vertex<>(vertex.getId(), map));
+      ObjectMap properties = new ObjectMap();
+      properties.putAll(vertex.getProperties());
+      vertexList.add(new Vertex<>(vertex.getId(), properties));
     }
     for (org.s1ck.gdl.model.Edge edge : handler.getEdges()) {
       ObjectMap map = new ObjectMap();
+      // edges shall not be null
       map.putAll(edge.getProperties());
       edgeList.add(new Edge<>(edge.getSourceVertexId(),
           edge.getTargetVertexId(), map));

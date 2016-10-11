@@ -27,7 +27,7 @@ public class SimSortExcludeLowSimFilterFunction extends RichFilterFunction<Verte
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
     boolean isVertexStatusActive = !vertex.getValue().containsKey(Constants.VERTEX_STATUS)
-        || (boolean) vertex.getValue().get(Constants.VERTEX_STATUS);
+        || vertex.getValue().getVertexStatus();
     if (isVertexStatusActive && !wantActiveVertices) {
       filterMatches.add(1L);
     }

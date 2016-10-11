@@ -20,7 +20,7 @@ public class Decomposition {
 
     // simsort
       if (Constants.IS_SIMSORT_ENABLED) {
-        graph = SimSort.execute(graph, 100);
+        graph = SimSort.execute(graph, 100, env);
       } else if (Constants.IS_SIMSORT_ALT_ENABLED) {
         graph = SimSort.executeAlternative(graph, env); // not yet implemented
       }

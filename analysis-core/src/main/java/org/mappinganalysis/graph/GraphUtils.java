@@ -34,9 +34,6 @@ public class GraphUtils {
 
     Graph<Long, Long, NullValue> workingGraph = prepareForCc(graph, env);
 
-    String outName = Constants.LL_MODE.concat("CcInput");
-    Utils.writeGraphToJSONFile(graph, outName);
-
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
         .run(new GSAConnectedComponents<>(5))
         .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
@@ -61,6 +58,10 @@ public class GraphUtils {
 //    return graph;
   }
 
+  /**
+   * Replace the vertex values for an existing graph by the vertex id as
+   * starting value for connected components computation.
+   */
   public static <T> Graph<Long, Long, NullValue> prepareForCc(
       Graph<Long, ObjectMap, T> graph,
       ExecutionEnvironment env) {
@@ -111,6 +112,7 @@ public class GraphUtils {
    * sometimes (e.g., testing) you don't want edge values.
    * @return graph with edge NullValues
    */
+  @Deprecated
   public static <EV> Graph<Long, ObjectMap, NullValue> mapEdgesToNullValue(
       Graph<Long, ObjectMap, EV> graph) {
     return graph
@@ -132,10 +134,6 @@ public class GraphUtils {
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();
-//        .filter(edge -> {
-//            LOG.info("distinctSimpleEdge: " + edge.toString());
-//            return true;
-//        });
   }
 
   /**

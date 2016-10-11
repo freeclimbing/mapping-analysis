@@ -36,11 +36,10 @@ public class Preprocessing {
   /**
    * Execute all preprocessing steps with the given options
    */
-  public static <EV> Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, EV> inGraph,
-                                                               String verbosity,
-                                                               ExampleOutput out,
-                                                               ExecutionEnvironment env) throws Exception {
-    Graph<Long, ObjectMap, NullValue> graph = GraphUtils.mapEdgesToNullValue(inGraph);
+  public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
+                                                          String verbosity,
+                                                          ExampleOutput out,
+                                                          ExecutionEnvironment env) throws Exception {
     graph = removeEqualSourceLinks(
         graph.getEdgeIds(),
         applyTypeToInternalTypeMapping(graph),
@@ -67,7 +66,7 @@ public class Preprocessing {
      * restrict (direct) links to 1:1 in terms of sources from one entity to another
      */
 
-    return applyLinkFilterStrategy(simGraph, env, true);
+    return simGraph; //applyLinkFilterStrategy(simGraph, env, true); // excluded to other method
   }
 
   /**

@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.decomposition;
 
-import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -60,7 +59,7 @@ public class Clustering {
       ExecutionEnvironment env) throws Exception {
 
     graph = GraphUtils.addCcIdsToGraph(graph, env);
-    Utils.writeGraphToJSONFile(graph, Constants.INIT_CLUST);
+//    Utils.writeGraphToJSONFile(graph, Constants.INIT_CLUST);
 
     final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());

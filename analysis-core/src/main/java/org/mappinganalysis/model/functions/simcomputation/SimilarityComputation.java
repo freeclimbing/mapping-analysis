@@ -42,7 +42,8 @@ public class SimilarityComputation {
   }
 
   /**
-   * Compute similarities based on the existing vertex properties, save aggregated similarity as edge property
+   * Compute similarities based on the existing vertex properties,
+   * save aggregated similarity as edge property
    * @param graph input graph
    * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
    * @return graph with edge similarities
