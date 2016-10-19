@@ -25,6 +25,7 @@ import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.SourcesUtils;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
@@ -114,10 +115,9 @@ public class Preprocessing {
 
   /**
    * CSV Reader
-   * @return graph with vertices and edges.
    * @throws Exception
    */
-  public static Graph<Long, ObjectMap, NullValue> getInputGraphFromCsv(
+  public static void createInputGraphFromCsv(
       ExecutionEnvironment env,
       ExampleOutput out)
       throws Exception {
@@ -148,7 +148,9 @@ public class Preprocessing {
     vertices = deleteVerticesWithoutAnyEdges(
         vertices, edges.<Tuple2<Long, Long>>project(0, 1));
 
-    return Graph.fromDataSet(vertices, edges, env);
+    Utils.writeGraphToJSONFile(Graph.fromDataSet(vertices, edges, env),
+        Constants.LL_MODE.concat("InputGraph"));
+    env.execute();
   }
 
   /**

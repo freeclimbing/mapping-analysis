@@ -35,7 +35,7 @@ public class GraphUtils {
     Graph<Long, Long, NullValue> workingGraph = prepareForCc(graph, env);
 
     DataSet<Tuple2<Long, Long>> verticesWithMinIds = workingGraph
-        .run(new GSAConnectedComponents<>(5))
+        .run(new GSAConnectedComponents<>(1000))
         .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
@@ -95,8 +95,8 @@ public class GraphUtils {
 
   /**
    * Within a set of vertices, compute all edges for each contained component.
-   * @param vertices vertices set
-   * @return edge set
+   *
+   * For internal and test use.
    */
   public static DataSet<Edge<Long, NullValue>> computeComponentEdges(
       DataSet<Vertex<Long, ObjectMap>> vertices,
@@ -108,24 +108,9 @@ public class GraphUtils {
   }
 
   /**
-   * Maps any edge value in a graph to NullValue. JSON imports graphs with edge values,
-   * sometimes (e.g., testing) you don't want edge values.
-   * @return graph with edge NullValues
-   */
-  @Deprecated
-  public static <EV> Graph<Long, ObjectMap, NullValue> mapEdgesToNullValue(
-      Graph<Long, ObjectMap, EV> graph) {
-    return graph
-        .mapEdges(new MapFunction<Edge<Long, EV>, NullValue>() { // dont replace
-          @Override
-          public NullValue map(Edge<Long, EV> value) throws Exception {
-            return NullValue.getInstance();
-          }
-        });
-  }
-
-  /**
    * Example: (1, 2), (2, 1), (1, 3), (1, 1) as input will result in (1, 2), (1,3)
+   *
+   * Used internally in GraphUtils and tests.
    */
   public static DataSet<Edge<Long, NullValue>> getDistinctSimpleEdges(
       DataSet<Edge<Long, NullValue>> input) {
@@ -137,12 +122,15 @@ public class GraphUtils {
   }
 
   /**
-   * TODO Uses parts of getDistinctSimpleEdges, rewrite and test
-   * only used in cluster computation test
+   * Restrict given set to edges which are not in the input edges set.
+   * @param input edges in this dataset should no longer be in the result set
+   * @param processEdges remove edges from input edge dataset from these and return
+   *
+   * Used for tests.
    */
   public static DataSet<Edge<Long, NullValue>> restrictToNewEdges(DataSet<Edge<Long, NullValue>> input,
-                                                                  DataSet<Edge<Long, NullValue>> tmpResult) {
-    return tmpResult
+                                                                  DataSet<Edge<Long, NullValue>> processEdges) {
+    return processEdges
         .filter(edge -> edge.getSource().longValue() != edge.getTarget())
         .leftOuterJoin(input)
         .where(0, 1)

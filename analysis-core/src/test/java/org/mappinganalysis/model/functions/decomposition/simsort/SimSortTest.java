@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
@@ -42,6 +43,7 @@ public class SimSortTest {
    * @throws Exception
    */
   @Test
+  // TODO not working atm
   public void simSortJSONTest() throws Exception {
     Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
     Constants.IGNORE_MISSING_PROPERTIES = true;
@@ -52,7 +54,7 @@ public class SimSortTest {
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
     graph = SimSort.execute(graph, 100, env);
-    graph = SimSort.excludeLowSimVertices(graph, env);
+    graph = SimSort.excludeLowSimVertices(graph);
     // TODO check if still relevant
     graph = GraphUtils.applyLinkFilter(graph, env);
     // old default result: 7115
@@ -67,21 +69,25 @@ public class SimSortTest {
     Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
     Constants.IGNORE_MISSING_PROPERTIES = true;
     Constants.MIN_SIMSORT_SIM = 0.9;
+
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
-    Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
+    Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = SimSort.prepare(firstGraph, env, null);
+    graph = SimSort.prepare(graph, env);
+    graph = SimSort.execute(graph, 100, env);
 
-    // ?? needed?
-    Constants.MIN_CLUSTER_SIM = 0.75D;
-    firstGraph = SimSort.execute(firstGraph, 100, env);
-
-    // TODO Test
-    firstGraph.getVertices()
+    graph.getVertices()
         .collect()
         .stream()
         .filter(vertex -> vertex.getId() == 1L)
-        .forEach(vertex -> assertTrue(vertex.getValue().getHashCcId() != 1L));
+        .forEach(vertex -> assertTrue(vertex.getValue().getHashCcId() == -2267417504034380670L));
+
+    // TODO useless test, no need to exclude vertices
+//    graph = SimSort.excludeLowSimVertices(graph);
+//
+//    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+//      LOG.info(vertex.toString());
+//    }
   }
 
   /**
@@ -95,7 +101,7 @@ public class SimSortTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_CANAIMA);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    firstGraph = SimSort.prepare(firstGraph, env, null);
+    firstGraph = SimSort.prepare(firstGraph, env);
     Constants.MIN_CLUSTER_SIM = 0.75D;
     firstGraph = SimSort.execute(firstGraph, 200, env);
 

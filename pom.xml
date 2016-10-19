@@ -51,7 +51,7 @@
         <dep.mysql.version>5.1.6</dep.mysql.version>
         <dep.guava.version>18.0</dep.guava.version>
         <dep.junit.version>4.11</dep.junit.version>
-        <dep.log4j.version>1.2.17</dep.log4j.version>
+        <dep.log4j.version>2.6.2</dep.log4j.version>
         <dep.mongodb.version>3.0.3</dep.mongodb.version>
         <dep.jgrapht.version>0.9.1</dep.jgrapht.version>
         <dep.jena.version>2.10.0</dep.jena.version>
@@ -61,6 +61,10 @@
     </properties>
 
     <repositories>
+        <repository>
+            <id>maven-central</id>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
         <repository>
             <id>apache.snapshots</id>
             <name>Apache Development Snapshot Repository</name>
@@ -127,10 +131,14 @@
             </dependency>
 
             <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
                 <version>${dep.log4j.version}</version>
-                <!--<scope>provided</scope>-->
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${dep.log4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>

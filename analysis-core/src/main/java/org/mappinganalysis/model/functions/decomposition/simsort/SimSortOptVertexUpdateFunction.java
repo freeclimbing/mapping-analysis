@@ -32,28 +32,29 @@ public class SimSortOptVertexUpdateFunction
     // default value is -1, changes with each run
     double vertexAggSim = properties.getSim();
 
-//    LOG.info("Working on vertex: " + vertex.getId());
+//    LOG.debug("Working on vertex: " + vertex.getId());
     if (properties.isActive() || Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) == 0) {
       double iterationAggSim = 0;
       long messageCount = 0;
       List<Double> neighborList = Lists.newArrayList();
 
       for (AggSimValueTuple message : inMessages) {
-//        LOG.info("Got msg: " + message.toString());
+//        LOG.debug("Got msg: " + message.toString());
         ++messageCount;
         neighborList.add(message.getVertexSim());
         iterationAggSim += message.getEdgeSim();
       }
       BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
       iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-//      LOG.info(vertex.getId() + " itAggSim: " + iterationAggSim);
+//      LOG.debug(vertex.getId() + " itAggSim: " + iterationAggSim + " old: " + vertex.getValue().getSim());
+
       if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0
           && !isLowerSimInList(iterationAggSim, neighborList)) {
 
-//        LOG.info("deact sequ: " +iterationAggSim + " <> " + threshold + " vertex: " + vertex.toString());
+//        LOG.debug("deact sequ: " +iterationAggSim + " <> " + threshold + " vertex: " + vertex.toString());
         // deactivate vertex if below threshold and no neighbor has lower sim
         if (iterationAggSim < threshold) {
-//          LOG.info("DEACT VERTEX: " + vertex.getId());
+//          LOG.debug("DEACT VERTEX: " + vertex.getId());
           properties.setActive(Boolean.FALSE);
           properties.setOldHash(properties.getHash());
           properties.setHash(Utils.getHash(vertex.getId().toString() + "false"));
@@ -62,9 +63,9 @@ public class SimSortOptVertexUpdateFunction
         }
       }
 
-      if (Doubles.compare(properties.getSim(), iterationAggSim) != 0 && !properties.isActive()) {
+      if (Doubles.compare(properties.getSim(), iterationAggSim) != 0 && properties.isActive()) {
         properties.setSim(iterationAggSim);
-
+//        LOG.debug("update vertex to: " + properties.toString());
         setNewVertexValue(properties);
       }
     }

@@ -74,7 +74,6 @@ public class Clustering {
    * After simple 1:n eliminating, still 1:n can reoccur after creating transitive closure
    * in components. The best candidate of the 1:n vertices remains in the vertex dataset,
    * others are removed.
-   * // TODO refactor
    */
   public static Graph<Long, ObjectMap, ObjectMap> removeOneToManyVertices(
       Graph<Long, ObjectMap, ObjectMap> graph,

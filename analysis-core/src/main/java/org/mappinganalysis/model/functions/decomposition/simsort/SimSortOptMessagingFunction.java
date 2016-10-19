@@ -15,8 +15,6 @@ public class SimSortOptMessagingFunction
 
   @Override
   public void sendMessages(Vertex<Long, SimSortVertexTuple> vertex) throws Exception {
-//    boolean hasNoVertexState = !vertex.getValue().containsKey(Constants.VERTEX_STATUS);
-
     if (vertex.getValue().isActive()) {
       for (Edge<Long, SimSortEdgeTuple> edge : getEdges()) {
 

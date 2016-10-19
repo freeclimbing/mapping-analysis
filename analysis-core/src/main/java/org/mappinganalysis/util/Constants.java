@@ -126,6 +126,7 @@ public class Constants {
   public static final String IC = "ic";
   public static final String SIMSORT = "simsort";
   public static final String ANALYSIS = "analysis";
+  public static final String ALL = "all";
   public static final String EVAL = "eval";
   public static final String STATS_EDGE_INPUT = "stats-edge-input";
   public static final String STATS_EDGE_PREPROC = "stats-edge-preproc";
