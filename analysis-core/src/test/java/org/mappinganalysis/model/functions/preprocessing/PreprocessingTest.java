@@ -17,7 +17,7 @@ import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.SourcesUtils;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
@@ -35,14 +35,13 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph.getVertices().print();
-
+//    graph.getVertices().print();
     DataSet<ComponentSourceTuple> resultTuples = Preprocessing
         .getComponentSourceTuples(graph.getVertices(), null);
 
     for (ComponentSourceTuple result : resultTuples.collect()) {
       assertEquals(60190L, result.getCcId().longValue());
-      assertEquals(5, SourcesUtils.getSourceCount(result).intValue());
+      assertEquals(5, AbstractionUtils.getSourceCount(result).intValue());
       Set<String> sources = result.getSources();
       for (String source : sources) {
         assertTrue(source.equals(Constants.DBP_NS)

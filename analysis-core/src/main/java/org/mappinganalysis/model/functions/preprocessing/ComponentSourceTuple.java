@@ -1,11 +1,10 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.SourcesUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +12,7 @@ import java.util.Set;
 
 public class ComponentSourceTuple extends Tuple2<Long, Integer> {
   private static final Logger LOG = Logger.getLogger(ComponentSourceTuple.class);
-  private static final HashMap<String, Integer> SOURCES = SourcesUtils.getSourceMap();
+  private static final HashMap<String, Integer> SOURCES = AbstractionUtils.getSourceMap();
 
   public ComponentSourceTuple() {
     this.f1 = 0;

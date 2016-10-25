@@ -81,13 +81,6 @@ public class SimSortTest {
         .stream()
         .filter(vertex -> vertex.getId() == 1L)
         .forEach(vertex -> assertTrue(vertex.getValue().getHashCcId() == -2267417504034380670L));
-
-    // TODO useless test, no need to exclude vertices
-//    graph = SimSort.excludeLowSimVertices(graph);
-//
-//    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
-//      LOG.info(vertex.toString());
-//    }
   }
 
   /**

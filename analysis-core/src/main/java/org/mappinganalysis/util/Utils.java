@@ -391,7 +391,11 @@ public class Utils {
   }
 
   /**
-   * Get type similarity for two sets of type strings, indirect type shading sim is also computed.
+   * Get type similarity for two sets of type strings,
+   * indirect type shading sim is also computed.
+   *
+   * no type check included
+   *
    * TODO rework if type shading sim is <1
    * TODO inefficient always to check type shadings
    *
@@ -431,8 +435,11 @@ public class Utils {
     }
   }
 
-  public static boolean hasNoEmptyType(Set<String> srcType, Set<String> trgType) {
-    return !srcType.contains(Constants.NO_TYPE) && !trgType.contains(Constants.NO_TYPE);
+  /**
+   * If src or trg has "no_type" type, true is returned.
+   */
+  public static boolean hasEmptyType(Set<String> srcType, Set<String> trgType) {
+    return srcType.contains(Constants.NO_TYPE) || trgType.contains(Constants.NO_TYPE);
   }
 
   /**

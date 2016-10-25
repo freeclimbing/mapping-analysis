@@ -6,8 +6,8 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
@@ -312,9 +312,24 @@ public class ObjectMap implements Map<String, Object>, Serializable {
       sources = Sets.newHashSet(ontologies.toString());
     }
 
-    return SourcesUtils.getSourcesInt(sources);
+    return AbstractionUtils.getSourcesInt(sources);
   }
 
+  /**
+   * Get types as single int for merge.
+   */
+  public Integer getTypesAsInt() {
+    Object typeProperty = map.get(Constants.COMP_TYPE);
+    Set<String> types;
+    if (typeProperty instanceof Set) {
+      types = (Set<String>) typeProperty;
+    } else {
+      types = Sets.newHashSet(typeProperty.toString());
+    }
+
+    LOG.info("types ####### " + types.toString());
+    return AbstractionUtils.getTypesInt(types);
+  }
   /**
    * Add a key value pair, if key already exists, a set of values is created or extended.
    * @param key property name

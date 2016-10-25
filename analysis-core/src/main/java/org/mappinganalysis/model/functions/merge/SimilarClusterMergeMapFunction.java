@@ -33,10 +33,10 @@ public class SimilarClusterMergeMapFunction
     Set<Long> trgVertices = trgVal.getVerticesList();
     Set<Long> srcVertices = srcVal.getVerticesList();
 
-    if (triplet.getSrcVertex().getId() == 1981L || triplet.getSrcVertex().getId() == 1982L
-        && triplet.getTrgVertex().getId() == 1981L || triplet.getTrgVertex().getId() == 1982L) {
-      LOG.info("###wei: " + triplet.toString());
-    }
+//    if (triplet.getSrcVertex().getId() == 1981L || triplet.getSrcVertex().getId() == 1982L
+//        && triplet.getTrgVertex().getId() == 1981L || triplet.getTrgVertex().getId() == 1982L) {
+//      LOG.info("###wei: " + triplet.toString());
+//    }
 
     if (srcVertices.size() >= trgVertices.size()) {
       reuseVertex.setFields(triplet.getSrcVertex().getId(), compareAndReturnBest(srcVal, trgVal));
@@ -51,18 +51,21 @@ public class SimilarClusterMergeMapFunction
     resultOnts.addAll(trgVal.getOntologiesList());
     reuseVertex.getValue().put(Constants.ONTOLOGIES, resultOnts);
 
-    LOG.info("new cluster: " + reuseVertex.toString());
+//    LOG.info("new cluster: " + reuseVertex.toString());
     return reuseVertex;
   }
 
   private ObjectMap compareAndReturnBest(ObjectMap priority, ObjectMap minor) {
-    if (!priority.containsKey(Constants.LABEL) && minor.containsKey(Constants.LABEL)) {
+    if (!priority.containsKey(Constants.LABEL)
+        && minor.containsKey(Constants.LABEL)) {
       priority.put(Constants.LABEL, minor.getLabel());
     }
-    if (!priority.hasTypeNoType(Constants.TYPE_INTERN) && minor.hasTypeNoType(Constants.TYPE_INTERN)) {
+    if (priority.hasTypeNoType(Constants.TYPE_INTERN)
+        && !minor.hasTypeNoType(Constants.TYPE_INTERN)) {
       priority.put(Constants.TYPE_INTERN, minor.getTypes(Constants.TYPE_INTERN));
     }
-    if (!priority.hasGeoPropertiesValid() && minor.hasGeoPropertiesValid()) {
+    if (!priority.hasGeoPropertiesValid()
+        && minor.hasGeoPropertiesValid()) {
       priority.put(Constants.LAT, minor.getLatitude());
       priority.put(Constants.LON, minor.getLongitude());
     }

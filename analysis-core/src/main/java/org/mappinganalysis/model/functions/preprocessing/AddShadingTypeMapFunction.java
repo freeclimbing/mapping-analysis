@@ -2,7 +2,6 @@ package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -12,16 +11,12 @@ import java.util.Set;
 public class AddShadingTypeMapFunction
     implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
 
-  private static final Logger LOG = Logger.getLogger(AddShadingTypeMapFunction.class);
+//  private static final Logger LOG = Logger.getLogger(AddShadingTypeMapFunction.class);
 
   @Override
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
     Set<String> types = vertex.getValue().getTypes(Constants.TYPE_INTERN);
     vertex.getValue().put(Constants.COMP_TYPE, Utils.getShadingTypes(types));
-
-    if (vertex.getId() == 1981L || vertex.getId() == 1982L) {
-      LOG.info("###wei " + vertex.toString());
-    }
 
     return vertex;
   }

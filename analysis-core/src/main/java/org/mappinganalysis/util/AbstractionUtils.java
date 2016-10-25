@@ -11,8 +11,10 @@ import java.util.Set;
 /**
  * Data source related helper classes. Currently, only 5 sources are supported:
  * DBpedia, GeoNames, LinkedGeoData, Freebase, Nyt
+ *
+ * TODO added type equivalent, needs testing
  */
-public class SourcesUtils {
+public class AbstractionUtils {
   private static final HashMap<String, Integer> SOURCES_MAP;
   static {
     SOURCES_MAP = Maps.newHashMap();
@@ -21,6 +23,18 @@ public class SourcesUtils {
     SOURCES_MAP.put(Constants.LGD_NS, 4);
     SOURCES_MAP.put(Constants.FB_NS, 8);
     SOURCES_MAP.put(Constants.NYT_NS, 16);
+  }
+
+  // todo check no type compatibility
+  private static final HashMap<String, Integer> TYPES_MAP;
+  static {
+    TYPES_MAP = Maps.newHashMap();
+    TYPES_MAP.put(Constants.NO_TYPE, 0);
+    TYPES_MAP.put(Constants.P, 1);
+    TYPES_MAP.put(Constants.B, 2);
+    TYPES_MAP.put(Constants.AR, 4);
+    TYPES_MAP.put(Constants.M, 8);
+    TYPES_MAP.put(Constants.AS, 16);
   }
 
   public static HashMap<String, Integer> getSourceMap() {
@@ -39,26 +53,38 @@ public class SourcesUtils {
     return result;
   }
 
-  private static Set<Integer> getSourcesIntSet(Integer sourcesValue) {
+  /**
+   * Return an integer representation of the type property.
+   */
+  public static Integer getTypesInt(Set<String> types) {
+    int result = 0;
+    for (String type : types) {
+      result += TYPES_MAP.get(type);
+    }
+
+    return result;
+  }
+
+  private static Set<Integer> getValuesIntSet(Integer value) {
     HashSet<Integer> result = Sets.newHashSet();
 
-    if (sourcesValue - 16 >= 0) {
-      sourcesValue -= 16;
+    if (value - 16 >= 0) {
+      value -= 16;
       result.add(16);
     }
-    if (sourcesValue - 8 >= 0) {
-      sourcesValue -= 8;
+    if (value - 8 >= 0) {
+      value -= 8;
       result.add(8);
     }
-    if (sourcesValue - 4 >= 0) {
-      sourcesValue -= 4;
+    if (value - 4 >= 0) {
+      value -= 4;
       result.add(4);
     }
-    if (sourcesValue - 2 >= 0) {
-      sourcesValue -= 2;
+    if (value - 2 >= 0) {
+      value -= 2;
       result.add(2);
     }
-    if (sourcesValue - 1 >= 0) {
+    if (value - 1 >= 0) {
       result.add(1);
     }
 
@@ -69,6 +95,9 @@ public class SourcesUtils {
     return getSourceCount(tuple.getSourcesInt());
   }
 
+  /**
+   * Given the int abstraction of a property, resolve the number of contained elements.
+   */
   public static Integer getSourceCount(Integer srcInt) {
     if (srcInt == 1 || srcInt == 2 || srcInt == 4 || srcInt == 8 || srcInt == 16) {
       return 1;
@@ -87,9 +116,16 @@ public class SourcesUtils {
     }
   }
 
+  /**
+   * Check if overlap in sources or types can be found.
+   * For types, the special case "0" equals "no type" corresponding to an overlap.
+   */
   public static boolean hasOverlap(Integer left, Integer right) {
-    Set<Integer> rightSide = getSourcesIntSet(right);
-    for (Integer leftValue : getSourcesIntSet(left)) {
+    if (left == 0 || right == 0) {
+      return true;
+    }
+    Set<Integer> rightSide = getValuesIntSet(right);
+    for (Integer leftValue : getValuesIntSet(left)) {
       if (rightSide.contains(leftValue)) {
         return true;
       }

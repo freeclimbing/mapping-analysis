@@ -110,6 +110,15 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
+  /**
+   * types
+   */
+  public static final String AS = "ArchitecturalStructure";
+  public static final String M = "Mountain";
+  public static final String AR = "AdministrativeRegion";
+  public static final String B = "BodyOfWater";
+  public static final String P = "Park";
+
   public static final String VERTEX = "vertex";
   public static final String EDGE = "edge";
   public static final String INPUT_GRAPH = "InputGraph";

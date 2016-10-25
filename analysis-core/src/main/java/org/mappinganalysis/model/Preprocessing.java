@@ -23,8 +23,8 @@ import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.SourcesUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
@@ -256,7 +256,7 @@ public class Preprocessing {
         .where(0)
         .equalTo(0)
         .with((Tuple1<Long> tuple, ComponentSourceTuple compTuple, Collector<Tuple1<Long>> collector) -> {
-          if (SourcesUtils.getSourceCount(compTuple) >= 3) {
+          if (AbstractionUtils.getSourceCount(compTuple) >= 3) {
             collector.collect(tuple);
           }
         })
@@ -266,7 +266,7 @@ public class Preprocessing {
 //          public void join(Tuple1<Long> left,
 //                           ComponentSourceTuple right,
 //                           Collector<Tuple1<Long>> out) throws Exception {
-//            if (right != null && SourcesUtils.getSourceCount(right) >= 3) {
+//            if (right != null && AbstractionUtils.getSourceCount(right) >= 3) {
 //              out.collect(left);
 //            }
 //          }

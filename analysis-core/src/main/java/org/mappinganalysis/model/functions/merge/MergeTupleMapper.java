@@ -22,30 +22,11 @@ public class MergeTupleMapper implements FlatMapFunction<Vertex<Long, ObjectMap>
   public void flatMap(Vertex<Long, ObjectMap> vertex, Collector<MergeTuple> out) throws Exception {
     ObjectMap properties = vertex.getValue();
     reuseTuple.setVertexId(vertex.getId());
+    reuseTuple.setType(properties.getTypesAsInt());
     reuseTuple.setSize(properties.getVerticesCount());
     reuseTuple.setIntSources(properties.getSourcesAsInt());
     reuseTuple.setLabel(Utils.getBlockingLabel(properties.getLabel()));
 
-    if (vertex.getId() == 1981L || vertex.getId() == 1982L) {
-      LOG.info("###wei " + vertex.toString());
-    }
-    // no type entities get associated to every block,
-    // normal entities only to blocks where they have the type
-
-    reuseTuple.setType("temp");
     out.collect(reuseTuple);
-
-    // todo wip
-//    if (properties.hasTypeNoType(Constants.COMP_TYPE)) {
-//      for (String type : TypeDictionary.SHADED_TYPES) {
-//        reuseTuple.setType(type);
-//        out.collect(reuseTuple);
-//      }
-//    } else {
-//      for (String type : properties.getTypes(Constants.COMP_TYPE)) {
-//        reuseTuple.setType(type);
-//        out.collect(reuseTuple);
-//      }
-//    }
   }
 }

@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 
 public class MergeTest {
-  private static ExecutionEnvironment env;// = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(MergeTest.class);
 
   /**
@@ -31,14 +31,13 @@ public class MergeTest {
    */
   @Test
   public void testInit() throws Exception {
-    Constants.MIN_CLUSTER_SIM = 0.5;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
+    setupLocalEnvironment();
+    setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeInit/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
-        .getVertices();
+    DataSet<Vertex<Long, ObjectMap>> vertices =
+        Utils.readVerticesFromJSONFile(graphPath, env, true);
 
     vertices = Merge.init(vertices, null);
 
@@ -57,7 +56,10 @@ public class MergeTest {
   }
 
   @Test
-  public void testExecute() throws Exception {
+  /**
+   * Long Island, real data mixed with fake data.
+   */
+  public void testExecuteMerge() throws Exception {
     setupLocalEnvironment();
     setupConstants();
 
@@ -68,11 +70,23 @@ public class MergeTest {
 
     vertices = Merge.execute(vertices, 5, null, env);
 
-    vertices.print();
+    int i = 0;
+    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+      assertFalse(vertex.getValue().getTypes(Constants.TYPE_INTERN).contains(Constants.NO_TYPE));
+      ++i;
+    }
+    assertEquals(3, i);
+
+//    vertices.print();
+    // result:
+    // (42,({typeIntern=[Island], lon=-73.0662, label=Long Island (NY), clusteredVertices=[42], ontologies=[http://data.nytimes.com/], lat=40.8168}))
+    //(395207,({typeIntern=[Island], lon=-73.1134, label=Long Island, lat=41.2182, ontologies=[http://linkedgeodata.org/, http://sws.geonames.org/, http://data.nytimes.com/], clusteredVertices=[395207, 513732, 1010272]}))
+    //(23,({typeIntern=[Island], lon=-73.0662, label=Long Island, clusteredVertices=[252016, 1268005, 23, 60190, 60191], ontologies=[http://dbpedia.org/, http://linkedgeodata.org/, http://sws.geonames.org/, http://rdf.freebase.com/, http://data.nytimes.com/], lat=40.8168}))
   }
 
   @Test
-  public void testExecute2() throws Exception {
+  // weimar + weimar republic, lake louise
+  public void testExecuteNoMerge() throws Exception {
     setupLocalEnvironment();
     setupConstants();
 
@@ -83,7 +97,8 @@ public class MergeTest {
 
     vertices = Merge.execute(vertices, 5, null, env);
 
-    vertices.print();
+    assertEquals(4, vertices.count());
+//    vertices.print();
   }
 
   @Test

@@ -20,7 +20,7 @@ public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap
     Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Constants.TYPE_INTERN);
     Triplet<Long, ObjectMap, ObjectMap> resultTriplet = SimilarityComputation.initResultTriplet(triplet);
 
-    if (Utils.hasNoEmptyType(srcTypes, trgTypes)) {
+    if (Utils.hasEmptyType(srcTypes, trgTypes)) {
       resultTriplet.getEdge()
           .getValue()
           .put(Constants.SIM_TYPE, Utils.getTypeSim(srcTypes, trgTypes));
