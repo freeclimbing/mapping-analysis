@@ -70,14 +70,14 @@ public class MergeTest {
 
     vertices = Merge.execute(vertices, 5, null, env);
 
-    int i = 0;
-    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-      assertFalse(vertex.getValue().getTypes(Constants.TYPE_INTERN).contains(Constants.NO_TYPE));
-      ++i;
-    }
-    assertEquals(3, i);
+//    int i = 0;
+//    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+//      assertFalse(vertex.getValue().getTypes(Constants.TYPE_INTERN).contains(Constants.NO_TYPE));
+//      ++i;
+//    }
+//    assertEquals(3, i);
 
-//    vertices.print();
+    vertices.print();
     // result:
     // (42,({typeIntern=[Island], lon=-73.0662, label=Long Island (NY), clusteredVertices=[42], ontologies=[http://data.nytimes.com/], lat=40.8168}))
     //(395207,({typeIntern=[Island], lon=-73.1134, label=Long Island, lat=41.2182, ontologies=[http://linkedgeodata.org/, http://sws.geonames.org/, http://data.nytimes.com/], clusteredVertices=[395207, 513732, 1010272]}))

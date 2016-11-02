@@ -35,7 +35,6 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-//    graph.getVertices().print();
     DataSet<ComponentSourceTuple> resultTuples = Preprocessing
         .getComponentSourceTuples(graph.getVertices(), null);
 
@@ -77,6 +76,23 @@ public class PreprocessingTest {
     });
 
     assertEquals(4, graph.getVertices().count());
+  }
+
+  @Test
+  // 819;label;Łęgowo;string
+  // sometimes the following line is created
+  // ����gowo
+  // todo fix dont write to target folder
+  public void writeToDiskEncodingTest() throws Exception {
+        String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/general/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+
+
+    // write to disk works like suspected with UTF8
+    Utils.writeVerticesToJSONFile(graph.getVertices(), graphPath, true);
+
+    graph.getVertices().print();
   }
 
   // todo no test, working code

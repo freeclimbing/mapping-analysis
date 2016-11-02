@@ -5,6 +5,7 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -16,6 +17,8 @@ import java.util.HashSet;
  */
 class BaseTripletCreateFunction
     implements GroupReduceFunction<MergeTuple, Triplet<Long, ObjectMap, NullValue>> {
+  private static final Logger LOG = Logger.getLogger(BaseTripletCreateFunction.class);
+
   private final Triplet<Long, ObjectMap, NullValue> reuseTriplet;
   private final int sourcesCount;
 
@@ -45,7 +48,7 @@ class BaseTripletCreateFunction
             && AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes())) {
           reuseTriplet.f1 = rightTuple.getVertexId();
           reuseTriplet.f4 = NullValue.getInstance();
-//            LOG.info("###MERGE TRIPLE: " + reuseTriplet.toString());
+            LOG.info("### baseTriplet: " + reuseTriplet.toString());
 
           out.collect(reuseTriplet);
         }

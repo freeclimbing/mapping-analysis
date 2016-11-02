@@ -1,14 +1,16 @@
 package org.mappinganalysis.model.functions.decomposition.simsort;
 
+import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.*;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
-import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Constants;
@@ -62,6 +64,7 @@ public class SimSort {
         .where(0)
         .equalTo(0)
         .with((vertex, workingVertex) -> {
+//          LOG.info("v: " + vertex.toString() + " wv: " + workingVertex.toString());
           vertex.getValue().setHashCcId(workingVertex.getValue().getHash());
           if (workingVertex.getValue().getOldHash() != Long.MIN_VALUE) {
             vertex.getValue().setOldHashCcId(workingVertex.getValue().getOldHash());

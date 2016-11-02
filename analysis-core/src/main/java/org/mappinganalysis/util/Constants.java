@@ -34,6 +34,7 @@ public class Constants {
   public static final String SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
   public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
+  public static final String TMP_ACCUMULATOR = "tmp-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
   public static final String AGG_PREFIX = "aggregated-";

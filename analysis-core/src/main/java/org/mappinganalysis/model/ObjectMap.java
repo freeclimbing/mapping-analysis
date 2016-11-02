@@ -327,7 +327,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
       types = Sets.newHashSet(typeProperty.toString());
     }
 
-    LOG.info("types ####### " + types.toString());
+//    LOG.info("types ####### " + types.toString());
     return AbstractionUtils.getTypesInt(types);
   }
   /**

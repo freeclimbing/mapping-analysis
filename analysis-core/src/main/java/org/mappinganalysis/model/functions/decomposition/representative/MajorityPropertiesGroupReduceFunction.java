@@ -40,7 +40,6 @@ public class MajorityPropertiesGroupReduceFunction
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
-//    Set<String> clusterTypeSet = Sets.newHashSet();
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> vertex : vertices) {
@@ -51,7 +50,6 @@ public class MajorityPropertiesGroupReduceFunction
       addLabelToMap(labelMap, vertex);
 
       resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
-//      addTypesToSet(clusterTypeSet, vertex);
       addGeoToMap(geoMap, vertex);
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
@@ -66,10 +64,7 @@ public class MajorityPropertiesGroupReduceFunction
     if (!labelMap.isEmpty()) {
       resultProps.put(Constants.LABEL, Merge.getFinalValue(labelMap, Constants.LABEL));
     }
-//    if (!clusterTypeSet.isEmpty()) {
-//      Set<String> finalValue = getFinalValue(typeSet, Constants.TYPE_INTERN);
-//      resultProps.put(Constants.TYPE_INTERN, clusterTypeSet);
-//    }
+
     resultProps.setClusterSources(clusterOntologies);
     resultProps.setClusterVertices(clusterVertices);
 

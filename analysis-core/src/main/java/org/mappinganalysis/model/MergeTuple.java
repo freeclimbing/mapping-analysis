@@ -4,11 +4,11 @@ import org.apache.flink.api.java.tuple.Tuple5;
 
 /**
  * MergeTuple consists of
- * 1. vertex id
- * 2. type (as int)
- * 3. label
- * 4. size
- * 5. sources (as int)
+ * 0. vertex id
+ * 1. type (as int)
+ * 2. label
+ * 3. size
+ * 4. sources (as int)
  */
 public class MergeTuple extends Tuple5<Long, Integer, String, Integer, Integer> {
   public MergeTuple() {

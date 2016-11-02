@@ -1,0 +1,6 @@
+{"source":2756,"target":2757,"data":{"aggSimValue":0.5}}
+{"source":2756,"target":5564,"data":{"aggSimValue":0.707107}}
+{"source":2756,"target":6645,"data":{"aggSimValue":0.8535535}}
+{"source":2757,"target":5564,"data":{"aggSimValue":0}}
+{"source":2757,"target":6645,"data":{"aggSimValue":0.5}}
+{"source":5564,"target":6645,"data":{"aggSimValue":1}}

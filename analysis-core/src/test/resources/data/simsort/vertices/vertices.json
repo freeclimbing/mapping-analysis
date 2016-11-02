@@ -1,0 +1,4 @@
+{"id":6645,"data":{"typeIntern":["Settlement"],"ccId":2756,"lon":-71.9665,"hashCc":-2122972323836064432,"label":"Mystic","ontology":"http:\/\/sws.geonames.org\/","lat":41.3543}}
+{"id":2757,"data":{"typeIntern":["AdministrativeRegion"],"ccId":2756,"lon":-71.9665,"hashCc":-2122972323836064432,"label":"jamie.nytdataid.N17632379615920316561","ontology":"http:\/\/rdf.freebase.com\/","lat":41.3543}}
+{"id":5564,"data":{"typeIntern":["Settlement"],"ccId":2756,"hashCc":-2122972323836064432,"label":"Mystic, Connecticut","ontology":"http:\/\/dbpedia.org\/"}}
+{"id":2756,"data":{"typeIntern":["no_type"],"ccId":2756,"lon":-71.9665,"hashCc":-2122972323836064432,"label":"Mystic (Conn)","ontology":"http:\/\/data.nytimes.com\/","lat":41.3543}}

@@ -77,10 +77,23 @@ public class Utils {
    * Write a DataSet of vertices to JSON
    */
   public static void writeVerticesToJSONFile(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir) {
-      String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
-      JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
+    writeVerticesToJSONFile(vertices, outDir, false);
+  }
 
-      dataSink.writeVertices(vertices);
+  public static void writeVerticesToJSONFile(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir, Boolean isAbsolute) {
+    String vertexOutFile;
+    if (!isAbsolute) {
+      vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
+    } else {
+      vertexOutFile = outDir + "output/";
+    }
+    LOG.info("################" + vertexOutFile);
+
+    // TODO use discarding output format to check encoding?
+
+    JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
+
+    dataSink.writeVertices(vertices);
   }
 
   public static DataSet<Vertex<Long, ObjectMap>> readVerticesFromJSONFile(

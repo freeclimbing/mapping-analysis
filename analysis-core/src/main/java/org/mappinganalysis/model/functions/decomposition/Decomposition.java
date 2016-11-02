@@ -29,7 +29,7 @@ public class Decomposition {
     }
 
     // TODO why should vertices be excluded here?
-      graph = SimSort.excludeLowSimVertices(graph);
+//      graph = SimSort.excludeLowSimVertices(graph);
 
     /*
      * At this point, all edges within components are computed. Therefore we can delete links where
