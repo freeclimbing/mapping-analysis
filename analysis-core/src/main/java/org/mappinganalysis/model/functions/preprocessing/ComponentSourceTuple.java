@@ -13,6 +13,7 @@ import java.util.Set;
 public class ComponentSourceTuple extends Tuple2<Long, Integer> {
   private static final Logger LOG = Logger.getLogger(ComponentSourceTuple.class);
   private static final HashMap<String, Integer> SOURCES = AbstractionUtils.getSourceMap();
+  private static final HashMap<String, Integer> TYPES = AbstractionUtils.getTypesMap();
 
   public ComponentSourceTuple() {
     this.f1 = 0;

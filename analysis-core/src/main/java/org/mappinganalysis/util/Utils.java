@@ -196,6 +196,13 @@ public class Utils {
     }
   }
 
+  public static boolean isValidGeoObject(Double latitude, Double longitude) {
+    if (latitude == null || longitude == null) {
+      return Boolean.FALSE;
+    }
+    return isValidLatitude(latitude) && isValidLongitude(longitude);
+  }
+
   public static boolean isValidLatitude(Double latitude) {
     return latitude != null
         && Doubles.compare(latitude, 90) <= 0 && Doubles.compare(latitude, -90) >= 0;

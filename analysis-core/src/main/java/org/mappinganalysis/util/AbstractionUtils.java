@@ -2,6 +2,7 @@ package org.mappinganalysis.util;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.sun.xml.bind.v2.TODO;
 import org.mappinganalysis.model.functions.preprocessing.ComponentSourceTuple;
 
 import java.util.HashMap;
@@ -41,6 +42,37 @@ public class AbstractionUtils {
     return SOURCES_MAP;
   }
 
+  public static HashMap<String, Integer> getTypesMap() {
+    return TYPES_MAP;
+  }
+
+//  public boolean contains(String source) {
+//    int maxSources = 5; // todo check
+//    int sourcesValue = f1;
+//    int input = SOURCES.get(source);
+//    int startValue = (int) (Math.pow(2, maxSources - 1) + 0.5);
+//    if (sourcesValue == 0) {
+//      return false;
+//    }
+//
+//    for (int i = startValue ; i > 0; i -= i/2) {
+//      if (sourcesValue - i >= 0) {
+//        sourcesValue -= i;
+//        if (i == input) {
+//          return true;
+//        }
+//      }
+//      if (i == 1 && sourcesValue == 1) {
+//        return true;
+//      }
+//      if (i == 1 && sourcesValue < 1) {
+//        return false;
+//      }
+//    }
+//
+//    return false;
+//  }
+
   /**
    * Return an integer representation of the used data sources for easy use in tuples.
    */
@@ -63,6 +95,16 @@ public class AbstractionUtils {
     }
 
     return result;
+  }
+
+  /**
+   * Merge two int representations of values into a single one.
+   */
+  public static Integer mergeIntValues(Integer left, Integer right) {
+    Set<Integer> valuesIntSet = getValuesIntSet(left);
+    valuesIntSet.addAll(getValuesIntSet(right));
+
+    return valuesIntSet.stream().mapToInt(i -> i).sum();
   }
 
   private static Set<Integer> getValuesIntSet(Integer value) {

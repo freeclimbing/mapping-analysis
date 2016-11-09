@@ -17,7 +17,8 @@ import java.util.*;
  * Custom map for representing properties for vertices. This is needed
  * because a Flink Vertex can only have POJOs as value.
  */
-public class ObjectMap implements Map<String, Object>, Serializable {
+public class ObjectMap
+    implements Map<String, Object>, Serializable {
   private static final long serialVersionUID = 42L;
   private static final Logger LOG = Logger.getLogger(ObjectMap.class);
 
@@ -155,6 +156,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
     map.put(Constants.VERTEX_STATUS, value);
   }
 
+  // todo duplicate in utils
   public boolean hasGeoPropertiesValid() {
     if (Utils.isValidLatitude(getLatitude()) && Utils.isValidLongitude(getLongitude())) {
       return Boolean.TRUE;
@@ -303,7 +305,7 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   /**
    * Get internal represenation of several ontologies in a cluster.
    */
-  public Integer getSourcesAsInt() {
+  public Integer getIntSources() {
     Object ontologies = map.get(Constants.ONTOLOGIES);
     Set<String> sources;
     if (ontologies instanceof Set) {
@@ -316,9 +318,9 @@ public class ObjectMap implements Map<String, Object>, Serializable {
   }
 
   /**
-   * Get types as single int for merge.
+   * Get (comp) types as single int for merge.
    */
-  public Integer getTypesAsInt() {
+  public Integer getIntTypes() {
     Object typeProperty = map.get(Constants.COMP_TYPE);
     Set<String> types;
     if (typeProperty instanceof Set) {
@@ -327,7 +329,6 @@ public class ObjectMap implements Map<String, Object>, Serializable {
       types = Sets.newHashSet(typeProperty.toString());
     }
 
-//    LOG.info("types ####### " + types.toString());
     return AbstractionUtils.getTypesInt(types);
   }
   /**

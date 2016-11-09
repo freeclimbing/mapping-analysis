@@ -19,6 +19,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
@@ -73,10 +74,13 @@ public class Merge {
       ExecutionEnvironment env)
       throws Exception {
 
-    // todo remove triplets, at all!
-    DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = createBaseTriplets(
-        sourcesCount,
-        baseClusters.filter(new ClusterSizeFilterFunction(sourcesCount)));
+    DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = null;
+//    = createBaseTriplets(
+//        sourcesCount,
+//        baseClusters.filter(new ClusterSizeFilterFunction(sourcesCount)));
+
+
+    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
 
     // - similarity on intriplets + threshold
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
@@ -85,9 +89,6 @@ public class Merge {
             Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3")
         .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
-
-
-    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
 
     DataSet<Vertex<Long, ObjectMap>> stepVertices = workingSet
         .filter(new ClusterSizeFilterFunction(sourcesCount));
@@ -108,6 +109,7 @@ public class Merge {
         .equalTo(0,1)
         .with((triplet, tuple) -> triplet)
         .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
+    // end hack
 
     DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
         .map(new SimilarClusterMergeMapFunction());
@@ -154,44 +156,18 @@ public class Merge {
   /**
    * Process input vertices and create base triplets for comparison using the type/source restrictions
    * according the merge procedure
+   *
+   * Execute only once, not in every iteration.
    */
-  private static DataSet<Triplet<Long, ObjectMap, NullValue>> createBaseTriplets(
+  private static DataSet<MergeTriplet> createBaseTriplets(
       int sourcesCount,
-      DataSet<Vertex<Long, ObjectMap>> stepVertices) {
+      DataSet<Vertex<Long, ObjectMap>> vertices) {
 
-//    DataSet<Tuple2<Long, String>> blockedLabels = stepVertices
-//        .map(vertex -> new Tuple2<>(
-//            vertex.getId(),
-//            Utils.getBlockingLabel(vertex.getValue().getLabel())))
-//        .returns(new TypeHint<Tuple2<Long, String>>() {});
-//
-//    DataSet<Tuple2<Long, Long>> blockedTuples = blockedLabels
-//        .groupBy(1)
-//        .reduceGroup(new LabelBlockingGroupReduceFunction());
-
-    return stepVertices
-          .map(new AddShadingTypeMapFunction())
-          .flatMap(new MergeTupleMapper(sourcesCount)) // create merge tuples, MANY results
-          .groupBy(2) // group by label
-          .reduceGroup(new BaseTripletCreateFunction(sourcesCount)) // little bit reduction, still MANY
-          // at this point, blocking needs to be completed
-          .join(stepVertices)
-          .where(0)
-          .equalTo(0)
-          .with((triplet, vertex) -> {
-            triplet.f2 = vertex.getValue();
-            return triplet;
-          })
-          .returns(new TypeHint<Triplet<Long, ObjectMap, NullValue>>() {})
-          .join(stepVertices)
-          .where(1)
-          .equalTo(0)
-          .with((triplet, vertex) -> {
-            triplet.f3 = vertex.getValue();  // ... even more inflation
-            return triplet;
-          })
-          .returns(new TypeHint<Triplet<Long, ObjectMap, NullValue>>() {});
-//          .distinct(0, 1);
+    return vertices
+        .map(new AddShadingTypeMapFunction())
+        .flatMap(new BlockingKeyMergeTripletCreator(sourcesCount))
+        .groupBy(8) // group by blocking label
+        .reduceGroup(new BaseTripletCreateFunction(sourcesCount)); // multiple triplets per group can be created
   }
 
   /**
