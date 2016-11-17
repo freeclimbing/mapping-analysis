@@ -7,10 +7,7 @@ import org.mappinganalysis.model.ObjectMap;
 
 /**
  * Abstract class for all similarity functions.
- * @deprecated
  */
-public abstract class SimilarityFunction<OUT> implements
-    MapFunction<Triplet<Long, ObjectMap, NullValue>, OUT> {
-
-
+public abstract class SimilarityFunction<T>
+    implements MapFunction<T, T> {
 }

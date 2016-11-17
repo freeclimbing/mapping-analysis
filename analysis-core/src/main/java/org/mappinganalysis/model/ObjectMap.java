@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
+import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -24,29 +25,36 @@ public class ObjectMap
 
   private Map<String, Object> map;
 
+  /**
+   * Constructor for given object map
+   */
   public ObjectMap(ObjectMap map) {
     this.map = map;
   }
 
+  /**
+   * Constructor for hash map
+   */
   public ObjectMap(HashMap<String, Object> map) {
     this.map = map;
   }
 
+  /**
+   * Default constructor
+   */
   public ObjectMap() {
     map = Maps.newHashMap();
   }
 
-  public Map<String, Object> getMap() {
-    return map;
-  }
-
-  public void setMap(Map<String, Object> map) {
-    this.map = map;
-  }
-
-  public void setMap(ObjectMap map) {
-    this.map = map;
-  }
+//  public Map<String, Object> getMap() {
+//    return map;
+//  }
+//  public void setMap(Map<String, Object> map) {
+//    this.map = map;
+//  }
+//  public void setMap(ObjectMap map) {
+//    this.map = map;
+//  }
 
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
@@ -73,6 +81,10 @@ public class ObjectMap
     } else {
       return Constants.NO_LABEL_FOUND;
     }
+  }
+
+  public void setLabel(String label) {
+    map.put(Constants.LABEL, label);
   }
 
   public Long getCcId() {
@@ -167,6 +179,19 @@ public class ObjectMap
 
   public Double getLatitude() {
     return getGeoValue(Constants.LAT);
+  }
+
+  private void setLatitude(Double latitude) {
+    map.put(Constants.LAT, latitude);
+  }
+
+  private void setLongitude(Double longitude) {
+    map.put(Constants.LON, longitude);
+  }
+
+  public void setGeoProperties(Double latitude, Double longitude) {
+    setLatitude(latitude);
+    setLongitude(longitude);
   }
 
   public Double getLongitude() {

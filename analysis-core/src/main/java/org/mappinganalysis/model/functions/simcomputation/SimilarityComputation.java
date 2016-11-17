@@ -3,20 +3,55 @@ package org.mappinganalysis.model.functions.simcomputation;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.AggregationMode;
+import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
+import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 
 import java.math.BigDecimal;
 
-public class SimilarityComputation {
+public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T, T> {
   private static final Logger LOG = Logger.getLogger(SimilarityComputation.class);
+
+  private SimilarityFunction<T> function;
+  private AggregationMode<T> mode;
+  private DataSet<T> inputData;
+  private SimilarityStrategy strategy;
+
+  public SimilarityComputation(SimilarityFunction<T> function, SimilarityStrategy strategy) {
+    this.function = function;
+    this.strategy = strategy;
+  }
+
+  @Override
+  public void setInput(DataSet<T> inputData) {
+    this.inputData = inputData;
+  }
+
+  /**
+   * Execution of previously defined operators and aggregations to compute similarities.
+   */
+  @Override
+  public DataSet<T> createResult() {
+    if (inputData == null) {
+			throw new IllegalStateException("The input data set has not been set.");
+		}
+
+    if (strategy == SimilarityStrategy.MERGE) {
+      return inputData.map(function);
+    } else {
+      throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+    }
+  }
 
   /**
    * Decide which similarities should be computed based on filter
@@ -188,5 +223,44 @@ public class SimilarityComputation {
     Preconditions.checkArgument(object instanceof Double, "Error (should not occur)" + object.getClass().toString());
 
     return (Double) object;
+  }
+
+  /**
+   * Used for building the similarity computation operator instance.
+   * @param <T> data type merge triple (working) or normal triple (to be implemented)
+   */
+  public static final class SimilarityComputationBuilder<T> {
+
+    private SimilarityFunction<T> function;
+    private AggregationMode<T> mode = null;
+    private SimilarityStrategy strategy;
+
+    public SimilarityComputationBuilder<T> setStrategy(SimilarityStrategy strategy) {
+      this.strategy = strategy;
+      return this;
+    }
+
+    public SimilarityComputationBuilder<T> setSimilarityFunction(SimilarityFunction<T> function) {
+      this.function = function;
+      return this;
+    }
+
+    public SimilarityComputationBuilder<T> setAggregationMode(AggregationMode<T> mode) {
+      this.mode = mode;
+      return this;
+    }
+
+    /**
+     * Creates similarity computation operator based on the configured parameters.
+     * @return similarity computation operator
+     */
+    public SimilarityComputation<T> build() {
+      // return different implementation for mergetriplet and normal triple
+      if (strategy == SimilarityStrategy.MERGE) {
+        return new MergeSimilarityComputation<>(function, strategy);
+      } else {
+        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+      }
+    }
   }
 }

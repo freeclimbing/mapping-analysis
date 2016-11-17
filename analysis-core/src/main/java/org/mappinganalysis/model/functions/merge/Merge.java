@@ -7,6 +7,8 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.aggregation.Aggregations;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.*;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -20,14 +22,18 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.MergeTriplet;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
+import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
 import org.mappinganalysis.util.functions.RightSideOnlyJoinFunction;
 import org.mappinganalysis.util.functions.filter.OldHashCcFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
@@ -80,50 +86,216 @@ public class Merge {
 //        baseClusters.filter(new ClusterSizeFilterFunction(sourcesCount)));
 
 
-    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
+    // initial solution set
+    DataSet<MergeTuple> clusters = baseClusters
+        .map(new AddShadingTypeMapFunction())
+        .map(new MergeTupleCreator());
 
-    // - similarity on intriplets + threshold
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
-        .computeSimilarities(baseTriplets, Constants.SIM_GEO_LABEL_STRATEGY)
-        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
-            Constants.MIN_LABEL_PRIORITY_SIM))
-        .withForwardedFields("f0;f1;f2;f3")
-        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
+    MeanAggregationMode mode = new MeanAggregationMode();
+    MergeTripletGeoLabelSimilarity simFunction = new MergeTripletGeoLabelSimilarity(mode);
 
-    DataSet<Vertex<Long, ObjectMap>> stepVertices = workingSet
-        .filter(new ClusterSizeFilterFunction(sourcesCount));
-    stepVertices = printSuperstep(stepVertices);
+    SimilarityComputation<MergeTriplet> similarityComputation = new SimilarityComputation
+        .SimilarityComputationBuilder<MergeTriplet>()
+        .setSimilarityFunction(simFunction)
+        .setStrategy(SimilarityStrategy.MERGE)
+        .build();
 
+    // initial working set
+    DataSet<MergeTriplet> initialWorkingSet = clusters
+        .filter(value -> AbstractionUtils.getSourceCount(value.getIntSources()) < sourcesCount)
+        .groupBy(7)
+        .reduceGroup(new MergeTripletCreator(sourcesCount))
+        .runOperation(similarityComputation);
 
-    // TODO restrict to only best value merging
-    // FIXME: 11/1/16 hacky hack
-    // simply use blocking keys to reduce computational effort
-    ReduceOperator<Tuple3<Long, Long, Double>> tmp = similarTriplets
-        .map(triplet -> new Tuple3<>(triplet.f0, triplet.f1, triplet.f4.getEdgeSimilarity()))
-        .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
+    // initialize the iteration
+    DeltaIteration<MergeTuple, MergeTriplet> iteration = clusters
+        .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
+
+    // step function
+
+    // 1. changed tuples, merged into solution set at end of iteration step
+    // TODO
+
+    // get best from cluster mappings
+    DataSet<MergeTriplet> workset = iteration.getWorkset();
+
+    DataSet<Tuple2<Double, String>> maxFilter = workset
+        .groupBy(5)
+        .max(4)
+        .map(triplet -> new Tuple2<>(triplet.getSimilarity(),
+            triplet.getSrcTuple().getBlockingLabel()))
+        .returns(new TypeHint<Tuple2<Double, String>>() {})
+        .distinct();
+
+    DataSet<MergeTriplet> maxTriplets = workset.join(maxFilter)
+        .where(4)
+        .equalTo(0)
+        .with((triplet, tuple) -> {
+          LOG.info("filtered max triplet: " + triplet.toString());
+          return triplet;
         })
-        .maxBy(2); // not safe to assume!
+        .returns(new TypeHint<MergeTriplet>() {})
+        .groupBy(5)
+        .maxBy(4)
+        .returns(new TypeHint<MergeTriplet>() {});
 
-    similarTriplets = similarTriplets.join(tmp)
+    DataSet<MergeTuple> delta = maxTriplets
+        .map(new MergeMapFunction());
+
+
+    // TODO find changed triplets and addapt
+
+    DataSet<Tuple2<Long, Long>> transitions = maxTriplets
+        .flatMap(new FlatMapFunction<MergeTriplet, Tuple2<Long, Long>>() {
+          @Override
+          public void flatMap(MergeTriplet triplet, Collector<Tuple2<Long, Long>> out)
+              throws Exception {
+            Long min = triplet.getSrcId() < triplet.getTrgId()
+                ? triplet.getSrcId() : triplet.getTrgId();
+            out.collect(new Tuple2<>(triplet.getSrcId(), min));
+            out.collect(new Tuple2<>(triplet.getTrgId(), min));
+          }
+        });
+
+    // remove max triplets from workset, they are getting merged anyway
+    workset = workset.leftOuterJoin(maxTriplets)
         .where(0,1)
         .equalTo(0,1)
-        .with((triplet, tuple) -> triplet)
-        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
-    // end hack
+        .with((left, right) -> left);
 
-    DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
-        .map(new SimilarClusterMergeMapFunction());
+    // TODO count recomputed triples in each iteration
+    DataSet<MergeTriplet> leftChanges = workset.join(transitions)
+        .where(0)
+        .equalTo(0)
+        .with((triplet, transition) -> {
+          triplet.setSrcId(transition.f1);
+          return triplet;
+        })
+        .returns(new TypeHint<MergeTriplet>() {});
 
-    DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
+    DataSet<MergeTriplet> rightChanges = workset.join(transitions)
+        .where(1)
+        .equalTo(0)
+        .with((triplet, transition) -> {
+          triplet.setTrgId(transition.f1);
+          return triplet;
+        })
+        .returns(new TypeHint<MergeTriplet>() {});
 
-    return workingSet.closeWith(newClusters
-                                  .union(newVertices)
-                                  .distinct(0),
-                                newClusters);
+    // todo check SOURCE_COUNT
+    DataSet<MergeTriplet> changesWithNewSimilarities = leftChanges.union(rightChanges)
+        .join(delta)
+        .where(0)
+        .equalTo(0)
+        .with((triplet, newTuple) -> {
+          triplet.setSrcTuple(newTuple);
+          return triplet;
+        })
+        .returns(new TypeHint<MergeTriplet>() {
+        })
+        .join(delta)
+        .where(1)
+        .equalTo(0)
+        .with((triplet, newTuple) -> {
+          triplet.setSrcTuple(newTuple);
+          return triplet;
+        })
+        .returns(new TypeHint<MergeTriplet>() {
+        })
+        .filter(triplet -> {
+          boolean hasSourceOverlap = AbstractionUtils.hasOverlap(
+              triplet.getSrcTuple().getIntSources(),
+              triplet.getTrgTuple().getIntSources());
+          boolean isSourceCountChecked = Constants.SOURCE_COUNT >=
+              (AbstractionUtils.getSourceCount(triplet.getSrcTuple().getIntSources())
+                  + AbstractionUtils.getSourceCount(triplet.getTrgTuple().getIntSources()));
+          return !hasSourceOverlap && isSourceCountChecked;
+        })
+        .runOperation(similarityComputation);
+
+    DataSet<MergeTriplet> leftWorkset = workset.leftOuterJoin(transitions)
+        .where(0)
+        .equalTo(0)
+        .with(new LeftSideOnlyJoinFunction<>());
+
+    DataSet<MergeTriplet> nonChangedWorksetPart = workset.leftOuterJoin(transitions)
+        .where(1)
+        .equalTo(0)
+        .with(new LeftSideOnlyJoinFunction<>())
+        .union(leftWorkset);
+
+    // merge triplets to tuple, adapt existing cluster mappings
+
+
+    // final
+    DataSet<MergeTuple> mergedTuples = iteration.closeWith(
+        delta,
+        nonChangedWorksetPart.union(changesWithNewSimilarities));
+
+
+//    /*
+//     * OLD METHOD bulk iteration
+//     */
+//    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
+//
+//    // - similarity on intriplets + threshold
+//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
+//        .computeSimilarities(baseTriplets, Constants.SIM_GEO_LABEL_STRATEGY)
+//        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
+//            Constants.MIN_LABEL_PRIORITY_SIM))
+//        .withForwardedFields("f0;f1;f2;f3")
+//        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
+//
+//    DataSet<Vertex<Long, ObjectMap>> stepVertices = workingSet
+//        .filter(new ClusterSizeFilterFunction(sourcesCount));
+//    stepVertices = printSuperstep(stepVertices);
+//
+//
+//    // TODO restrict to only best value merging
+//    // FIXME: 11/1/16 hacky hack
+//    // simply use blocking keys to reduce computational effort
+//    ReduceOperator<Tuple3<Long, Long, Double>> tmp = similarTriplets
+//        .map(triplet -> new Tuple3<>(triplet.f0, triplet.f1, triplet.f4.getEdgeSimilarity()))
+//        .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
+//        })
+//        .maxBy(2); // not safe to assume!
+//
+//    similarTriplets = similarTriplets.join(tmp)
+//        .where(0,1)
+//        .equalTo(0,1)
+//        .with((triplet, tuple) -> triplet)
+//        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
+//    // end hack
+//
+//    DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
+//        .map(new SimilarClusterMergeMapFunction());
+//
+//    DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
+//
+//    return workingSet.closeWith(newClusters
+//                                  .union(newVertices)
+//                                  .distinct(0),
+//                                newClusters);
+
+    return mergedTuples.leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with((tuple, vertex) -> {
+          ObjectMap map = new ObjectMap();
+          map.setLabel(tuple.getLabel());
+          map.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
+          map.setClusterSources(AbstractionUtils.getSourcesStringSet(tuple.getIntSources()));
+          map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(tuple.getIntTypes()));
+          map.setClusterVertices(Sets.newHashSet(tuple.getClusteredElements()));
+
+          return new Vertex<>(tuple.getId(), map);
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
   }
 
   // wtf?
   // currently executed AFTER sim comp
+  @Deprecated
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> restrictWithBlocking(
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets) {
     // tuple mapper get blocking label key
@@ -159,15 +331,16 @@ public class Merge {
    *
    * Execute only once, not in every iteration.
    */
+  @Deprecated
   private static DataSet<MergeTriplet> createBaseTriplets(
       int sourcesCount,
       DataSet<Vertex<Long, ObjectMap>> vertices) {
 
     return vertices
         .map(new AddShadingTypeMapFunction())
-        .flatMap(new BlockingKeyMergeTripletCreator(sourcesCount))
-        .groupBy(8) // group by blocking label
-        .reduceGroup(new BaseTripletCreateFunction(sourcesCount)); // multiple triplets per group can be created
+        .flatMap(new BlockingKeyMergeTripletCreator(sourcesCount));
+//        .groupBy(8) // group by blocking label
+//        .reduceGroup(new MergeTripletCreator(sourcesCount)); // multiple triplets per group can be created
   }
 
   /**
@@ -391,4 +564,5 @@ public class Merge {
       }
     }
   }
+
 }

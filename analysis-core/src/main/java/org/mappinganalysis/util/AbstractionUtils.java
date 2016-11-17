@@ -2,11 +2,11 @@ package org.mappinganalysis.util;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.sun.xml.bind.v2.TODO;
 import org.mappinganalysis.model.functions.preprocessing.ComponentSourceTuple;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -133,6 +133,30 @@ public class AbstractionUtils {
     return result;
   }
 
+  public static Set<String> getSourcesStringSet(Integer value) {
+    Set<Integer> valuesIntSet = getValuesIntSet(value);
+    Set<String> result = Sets.newHashSet();
+    for (Map.Entry<String, Integer> entry : SOURCES_MAP.entrySet()) {
+      if (valuesIntSet.contains(entry.getValue())) {
+        result.add(entry.getKey());
+      }
+    }
+
+    return result;
+  }
+
+  public static Set<String> getTypesStringSet(Integer value) {
+    Set<Integer> valuesIntSet = getValuesIntSet(value);
+    Set<String> result = Sets.newHashSet();
+    for (Map.Entry<String, Integer> entry : TYPES_MAP.entrySet()) {
+      if (valuesIntSet.contains(entry.getValue())) {
+        result.add(entry.getKey());
+      }
+    }
+
+    return result;
+  }
+
   public static Integer getSourceCount(ComponentSourceTuple tuple) {
     return getSourceCount(tuple.getSourcesInt());
   }
@@ -174,5 +198,16 @@ public class AbstractionUtils {
     }
 
     return false;
+  }
+
+  /**
+   * Check if certain int sources representation contains a specific source value.
+   */
+  public static boolean containsSrc(Integer sources, String checkSrc) {
+    Set<Integer> values = getValuesIntSet(sources);
+
+    Integer checkInt = SOURCES_MAP.get(checkSrc);
+
+    return checkInt != null && values.contains(checkInt);
   }
 }

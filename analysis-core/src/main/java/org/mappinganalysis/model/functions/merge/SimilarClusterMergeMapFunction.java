@@ -1,10 +1,7 @@
 package org.mappinganalysis.model.functions.merge;
 
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -17,6 +14,7 @@ import java.util.Set;
  * Merge similar triplets into a vertex containing information of
  * both source and target triplet vertex.
  */
+@Deprecated
 public class SimilarClusterMergeMapFunction
     implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(SimilarClusterMergeMapFunction.class);

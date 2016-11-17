@@ -9,6 +9,10 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Utils;
 
+@Deprecated
+/**
+ * ?? deprecated
+ */
 public class BlockingKeyMergeTripletCreator
     implements FlatMapFunction<Vertex<Long, ObjectMap>, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(BlockingKeyMergeTripletCreator.class);
@@ -27,14 +31,14 @@ public class BlockingKeyMergeTripletCreator
   public void flatMap(Vertex<Long, ObjectMap> vertex, Collector<MergeTriplet> out) throws Exception {
     ObjectMap properties = vertex.getValue();
     if (AbstractionUtils.getSourceCount(properties.getIntSources()) < sourcesCount) {
-      reuseTriplet.setId(vertex.getId());
-      reuseTriplet.setLatitude(properties.getLatitude());
-      reuseTriplet.setLongitude(properties.getLongitude());
-      reuseTriplet.setIntTypes(properties.getIntTypes());
-      reuseTriplet.setIntSources(properties.getIntSources());
-      reuseTriplet.setLabel(properties.getLabel());
-      reuseTriplet.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
-      reuseTriplet.addClusteredElements(properties.getVerticesList());
+//      reuseTriplet.setId(vertex.getId());
+//      reuseTriplet.setLatitude(properties.getLatitude());
+//      reuseTriplet.setLongitude(properties.getLongitude());
+//      reuseTriplet.setIntTypes(properties.getIntTypes());
+//      reuseTriplet.setIntSources(properties.getIntSources());
+//      reuseTriplet.setLabel(properties.getLabel());
+//      reuseTriplet.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
+//      reuseTriplet.addClusteredElements(properties.getVerticesList());
 
       LOG.info("reuseTriplet: " + reuseTriplet.toString());
       out.collect(reuseTriplet);

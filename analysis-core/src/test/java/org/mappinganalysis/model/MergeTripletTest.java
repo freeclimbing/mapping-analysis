@@ -13,11 +13,11 @@ public class MergeTripletTest {
   public void testGetLatitude() throws Exception {
     MergeTriplet triplet = new MergeTriplet();
 
-    if (triplet.getLatitude() != null) {
-      LOG.info(triplet.getLatitude());
-    } else {
-      LOG.info("working");
-    }
+//    if (triplet.getLatitude() != null) {
+//      LOG.info(triplet.getLatitude());
+//    } else {
+//      LOG.info("working");
+//    }
 
   }
 

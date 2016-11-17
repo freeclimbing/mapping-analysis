@@ -24,9 +24,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.EdgeComponentTuple3;
-import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.VertexComponentTuple2;
+import org.mappinganalysis.model.*;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.simplifiers.Simplifiers;
@@ -194,6 +192,24 @@ public class Utils {
     public String format(V v) {
       return v.toString();
     }
+  }
+
+  public static MergeTuple isOnlyOneValidGeoObject(MergeTuple left, MergeTuple right) {
+    if (isValidGeoObject(left) && !isValidGeoObject(right)) {
+      return left;
+    } else if (!isValidGeoObject(left) && isValidGeoObject(right)) {
+      return right;
+    } else {
+      return null;
+    }
+  }
+
+  public static boolean isValidGeoObject(MergeTuple triplet) {
+
+    if (triplet.getLatitude() == null || triplet.getLongitude() == null) {
+      return Boolean.FALSE;
+    }
+    return isValidLatitude(triplet.getLatitude()) && isValidLongitude(triplet.getLongitude());
   }
 
   public static boolean isValidGeoObject(Double latitude, Double longitude) {

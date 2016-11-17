@@ -19,9 +19,21 @@ import java.util.Set;
  * 7. blocking label
  */
 public class MergeTuple
-    extends Tuple8<Long, String, Double, Double, Integer, Integer, LongArrayList, String>
+    extends Tuple8<Long, String, Double, Double, Integer, Integer, LongSet, String>
     implements ClusteredEntity {
   public MergeTuple() {
+    f6 = new LongSet();
+  }
+
+  public MergeTuple(MergeTuple tuple) {
+    this.f0 = tuple.f0;
+    this.f1 = tuple.f1;
+    this.f2 = tuple.f2;
+    this.f3 = tuple.f3;
+    this.f4 = tuple.f4;
+    this.f5 = tuple.f5;
+    this.f6 = tuple.f6;
+    this.f7 = tuple.f7;
   }
 
   @Override
@@ -42,6 +54,11 @@ public class MergeTuple
   @Override
   public void setLabel(String label) {
     f1 = label;
+  }
+
+  public void setGeoProperties(MergeTuple input) {
+    f2 = input.getLatitude();
+    f3 = input.getLongitude();
   }
 
   @Override
@@ -84,14 +101,12 @@ public class MergeTuple
     f5 = intSources;
   }
 
-  public LongArrayList getClusteredElements() {
+  public LongSet getClusteredElements() {
     return f6;
   }
 
   public void addClusteredElements(Set<Long> elements) {
-    for (Long element : elements) {
-      f6.add(element);
-    }
+    f6.addAll(elements);
   }
 
   public Integer size() {
