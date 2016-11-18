@@ -51,7 +51,8 @@ class MergeTripletCreator
           reuseTriplet.setTrgId(rightTuple.getId());
           reuseTriplet.setTrgTuple(rightTuple);
 
-          LOG.info("### baseTriplet: " + reuseTriplet.toString());
+//          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
+//          LOG.info(reuseTriplet.toString());
           out.collect(reuseTriplet);
         }
       }

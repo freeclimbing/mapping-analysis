@@ -1,6 +1,7 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.java.tuple.Tuple8;
+import org.apache.flink.api.java.tuple.Tuple9;
 import org.apache.flink.runtime.util.LongArrayList;
 import org.mappinganalysis.model.api.*;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -17,12 +18,16 @@ import java.util.Set;
  * 5. sources (as int)
  * 6. clustered elements list
  * 7. blocking label
+ * 8. activity flag
  */
 public class MergeTuple
-    extends Tuple8<Long, String, Double, Double, Integer, Integer, LongSet, String>
+    extends Tuple9<Long, String, Double, Double, Integer, Integer, LongSet, String, Boolean>
     implements ClusteredEntity {
   public MergeTuple() {
-    f6 = new LongSet();
+    this.f6 = new LongSet();
+    this.f2 = 1000D;
+    this.f3 = 1000D;
+    this.f8 = true;
   }
 
   public MergeTuple(MergeTuple tuple) {
@@ -34,6 +39,18 @@ public class MergeTuple
     this.f5 = tuple.f5;
     this.f6 = tuple.f6;
     this.f7 = tuple.f7;
+  }
+
+  public MergeTuple(Long id, boolean isActive) {
+    this.f0 = id;
+    this.f1 = "";
+    this.f2 = 1000D;
+    this.f3 = 1000D;
+    this.f4 = 0;
+    this.f5 = 0;
+    this.f6 = new LongSet(id);
+    this.f7 = "";
+    this.f8 = isActive;
   }
 
   @Override
@@ -101,7 +118,7 @@ public class MergeTuple
     f5 = intSources;
   }
 
-  public LongSet getClusteredElements() {
+  public Set<Long> getClusteredElements() {
     return f6;
   }
 
@@ -119,5 +136,13 @@ public class MergeTuple
 
   public String getBlockingLabel() {
     return f7;
+  }
+
+  public boolean isActive() {
+    return f8;
+  }
+
+  public void setActive(Boolean value) {
+    f8 = value;
   }
 }

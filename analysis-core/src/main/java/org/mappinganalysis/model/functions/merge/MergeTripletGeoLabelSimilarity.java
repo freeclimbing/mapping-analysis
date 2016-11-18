@@ -29,6 +29,8 @@ class MergeTripletGeoLabelSimilarity
     this.mode = mode;
   }
 
+  // TODO add min sim check + agg mode
+
   @Override
   public MergeTriplet map(MergeTriplet triplet) throws Exception {
     Double labelSimilarity = getLabelSimilarity(triplet.getSrcTuple().getLabel(),
@@ -44,12 +46,15 @@ class MergeTripletGeoLabelSimilarity
 //    Double similarity;
     if (geoSimilarity != null) {
       triplet.setSimilarity((geoSimilarity + labelSimilarity) / 2);
+//      LOG.info("geo: " + geoSimilarity + " label: " + labelSimilarity + " agg: " + triplet.getSimilarity());
+
     } else {
       triplet.setSimilarity(labelSimilarity);
-    }
-//    LOG.info(triplet.f0.getId() + " " + triplet.f1.getId() + " EDGE " + edge.toString());
-//    triplet.setEdge(edge);
+//      LOG.info("geo: null label: " + labelSimilarity + " agg: " + triplet.getSimilarity());
 
+    }
+
+//    LOG.info(triplet.toString());
     return triplet;
   }
 

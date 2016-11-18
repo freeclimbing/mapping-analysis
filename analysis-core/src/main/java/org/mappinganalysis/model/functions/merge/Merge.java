@@ -80,12 +80,6 @@ public class Merge {
       ExecutionEnvironment env)
       throws Exception {
 
-    DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = null;
-//    = createBaseTriplets(
-//        sourcesCount,
-//        baseClusters.filter(new ClusterSizeFilterFunction(sourcesCount)));
-
-
     // initial solution set
     DataSet<MergeTuple> clusters = baseClusters
         .map(new AddShadingTypeMapFunction())
@@ -105,19 +99,28 @@ public class Merge {
         .filter(value -> AbstractionUtils.getSourceCount(value.getIntSources()) < sourcesCount)
         .groupBy(7)
         .reduceGroup(new MergeTripletCreator(sourcesCount))
-        .runOperation(similarityComputation);
+        .runOperation(similarityComputation)
+        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+          @Override
+          public MergeTriplet map(MergeTriplet value) throws Exception {
+//            LOG.info("CREATE INIT WORK SET: " + value.toString());
+            return value;
+          }
+        });
 
     // initialize the iteration
     DeltaIteration<MergeTuple, MergeTriplet> iteration = clusters
-        .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
+        .iterateDelta(initialWorkingSet, 1000, 0);
 
     // step function
-
-    // 1. changed tuples, merged into solution set at end of iteration step
-    // TODO
-
-    // get best from cluster mappings
-    DataSet<MergeTriplet> workset = iteration.getWorkset();
+    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset().distinct(0,1))
+        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+          @Override
+          public MergeTriplet map(MergeTriplet value) throws Exception {
+//            LOG.info("START ITERATION ROUND" + value.toString());
+            return value;
+          }
+        });
 
     DataSet<Tuple2<Double, String>> maxFilter = workset
         .groupBy(5)
@@ -125,25 +128,44 @@ public class Merge {
         .map(triplet -> new Tuple2<>(triplet.getSimilarity(),
             triplet.getSrcTuple().getBlockingLabel()))
         .returns(new TypeHint<Tuple2<Double, String>>() {})
-        .distinct();
+        .distinct()
+        .map(new MapFunction<Tuple2<Double, String>, Tuple2<Double, String>>() {
+          @Override
+          public Tuple2<Double, String> map(Tuple2<Double, String> value) throws Exception {
+            LOG.info("MAX FILTER: " + value.toString());
+            return value;
+          }
+        });
 
     DataSet<MergeTriplet> maxTriplets = workset.join(maxFilter)
         .where(4)
         .equalTo(0)
         .with((triplet, tuple) -> {
-          LOG.info("filtered max triplet: " + triplet.toString());
+//          LOG.info("filtered max triplet: " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {})
+        .distinct(0,1)
         .groupBy(5)
         .maxBy(4)
-        .returns(new TypeHint<MergeTriplet>() {});
+        .returns(new TypeHint<MergeTriplet>() {})
+        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+          @Override
+          public MergeTriplet map(MergeTriplet value) throws Exception {
+            LOG.info("MAX TRIPLETS: " + value.toString());
+            return value;
+          }
+        });
 
     DataSet<MergeTuple> delta = maxTriplets
-        .map(new MergeMapFunction());
-
-
-    // TODO find changed triplets and addapt
+        .flatMap(new MergeMapFunction())
+        .map(new MapFunction<MergeTuple, MergeTuple>() {
+          @Override
+          public MergeTuple map(MergeTuple value) throws Exception {
+            LOG.info("DELTA: " + value.toString());
+            return value;
+          }
+        });
 
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets
         .flatMap(new FlatMapFunction<MergeTriplet, Tuple2<Long, Long>>() {
@@ -152,6 +174,7 @@ public class Merge {
               throws Exception {
             Long min = triplet.getSrcId() < triplet.getTrgId()
                 ? triplet.getSrcId() : triplet.getTrgId();
+            LOG.info(triplet.getSrcId() + " " + triplet.getTrgId() + " " + min);
             out.collect(new Tuple2<>(triplet.getSrcId(), min));
             out.collect(new Tuple2<>(triplet.getTrgId(), min));
           }
@@ -161,7 +184,7 @@ public class Merge {
     workset = workset.leftOuterJoin(maxTriplets)
         .where(0,1)
         .equalTo(0,1)
-        .with((left, right) -> left);
+        .with(new LeftSideOnlyJoinFunction<>());
 
     // TODO count recomputed triples in each iteration
     DataSet<MergeTriplet> leftChanges = workset.join(transitions)
@@ -169,39 +192,56 @@ public class Merge {
         .equalTo(0)
         .with((triplet, transition) -> {
           triplet.setSrcId(transition.f1);
+//          LOG.info("LEFT CHANGES: " + triplet.toString());
           return triplet;
         })
-        .returns(new TypeHint<MergeTriplet>() {});
+        .returns(new TypeHint<MergeTriplet>() {})
+//        .distinct(0,1);
+        .join(delta.filter(MergeTuple::isActive))
+        .where(0)
+        .equalTo(0)
+        .with((triplet, newTuple) -> {
+          triplet.setSrcTuple(newTuple);
+          LOG.info("LEFT DELTA JOIN " + triplet.toString());
+
+//          if (triplet.getSrcId() == 1010272 && triplet.getTrgId() == 395207) {
+//            for (Long aLong : triplet.getSrcTuple().getClusteredElements()) {
+//              LOG.info("LDJ src: " + aLong);
+//            }
+//            for (Long aLong : triplet.getTrgTuple().getClusteredElements()) {
+//              LOG.info("LDJ trg: " + aLong);
+//            }
+//          }
+          return triplet;
+        })
+        .returns(new TypeHint<MergeTriplet>() {
+        });
 
     DataSet<MergeTriplet> rightChanges = workset.join(transitions)
         .where(1)
         .equalTo(0)
         .with((triplet, transition) -> {
           triplet.setTrgId(transition.f1);
+//          LOG.info("RIGHT CHANGES: " + triplet.toString());
           return triplet;
         })
-        .returns(new TypeHint<MergeTriplet>() {});
-
-    // todo check SOURCE_COUNT
-    DataSet<MergeTriplet> changesWithNewSimilarities = leftChanges.union(rightChanges)
-        .join(delta)
-        .where(0)
-        .equalTo(0)
-        .with((triplet, newTuple) -> {
-          triplet.setSrcTuple(newTuple);
-          return triplet;
-        })
-        .returns(new TypeHint<MergeTriplet>() {
-        })
-        .join(delta)
+        .returns(new TypeHint<MergeTriplet>() {})
+//        .distinct(0,1);
+        .join(delta.filter(MergeTuple::isActive))
         .where(1)
         .equalTo(0)
         .with((triplet, newTuple) -> {
-          triplet.setSrcTuple(newTuple);
+          triplet.setTrgTuple(newTuple);
+          LOG.info("RIGHT DELTA JOIN " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {
-        })
+        });
+
+    // todo check SOURCE_COUNT
+    DataSet<MergeTriplet> changesWithNewSimilarities = leftChanges.union(rightChanges)
+        .distinct(0,1) // distinct may not be needed
+
         .filter(triplet -> {
           boolean hasSourceOverlap = AbstractionUtils.hasOverlap(
               triplet.getSrcTuple().getIntSources(),
@@ -213,19 +253,18 @@ public class Merge {
         })
         .runOperation(similarityComputation);
 
+    // throw out everything with transition elements left
     DataSet<MergeTriplet> leftWorkset = workset.leftOuterJoin(transitions)
         .where(0)
         .equalTo(0)
         .with(new LeftSideOnlyJoinFunction<>());
 
+    // throw out everything with transition elements right
     DataSet<MergeTriplet> nonChangedWorksetPart = workset.leftOuterJoin(transitions)
         .where(1)
         .equalTo(0)
         .with(new LeftSideOnlyJoinFunction<>())
         .union(leftWorkset);
-
-    // merge triplets to tuple, adapt existing cluster mappings
-
 
     // final
     DataSet<MergeTuple> mergedTuples = iteration.closeWith(
@@ -249,23 +288,6 @@ public class Merge {
 //    DataSet<Vertex<Long, ObjectMap>> stepVertices = workingSet
 //        .filter(new ClusterSizeFilterFunction(sourcesCount));
 //    stepVertices = printSuperstep(stepVertices);
-//
-//
-//    // TODO restrict to only best value merging
-//    // FIXME: 11/1/16 hacky hack
-//    // simply use blocking keys to reduce computational effort
-//    ReduceOperator<Tuple3<Long, Long, Double>> tmp = similarTriplets
-//        .map(triplet -> new Tuple3<>(triplet.f0, triplet.f1, triplet.f4.getEdgeSimilarity()))
-//        .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
-//        })
-//        .maxBy(2); // not safe to assume!
-//
-//    similarTriplets = similarTriplets.join(tmp)
-//        .where(0,1)
-//        .equalTo(0,1)
-//        .with((triplet, tuple) -> triplet)
-//        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
-//    // end hack
 //
 //    DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
 //        .map(new SimilarClusterMergeMapFunction());
@@ -346,24 +368,24 @@ public class Merge {
   /**
    * Helper method to write the current iteration superstep to the log.
    */
-  private static DataSet<Vertex<Long, ObjectMap>> printSuperstep(DataSet<Vertex<Long, ObjectMap>> left) {
-    DataSet<Vertex<Long, ObjectMap>> superstepPrinter = left
+  private static DataSet<MergeTriplet> printSuperstep(DataSet<MergeTriplet> iteration) {
+    DataSet<MergeTriplet> superstepPrinter = iteration
         .first(1)
-        .filter(new RichFilterFunction<Vertex<Long, ObjectMap>>() {
+        .filter(new RichFilterFunction<MergeTriplet>() {
           private Integer superstep = null;
           @Override
           public void open(Configuration parameters) throws Exception {
             this.superstep = getIterationRuntimeContext().getSuperstepNumber();
           }
           @Override
-          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
+          public boolean filter(MergeTriplet vertex) throws Exception {
             LOG.info("Superstep: " + superstep);
             return false;
           }
         });
 
-    left = left.union(superstepPrinter);
-    return left;
+    iteration = iteration.union(superstepPrinter);
+    return iteration;
   }
 
   /**

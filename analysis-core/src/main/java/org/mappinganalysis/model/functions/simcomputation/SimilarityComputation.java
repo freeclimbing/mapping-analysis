@@ -2,6 +2,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Edge;
@@ -11,9 +12,11 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
+import org.mappinganalysis.model.functions.merge.MinThresholdFilterFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 
@@ -47,7 +50,9 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
 		}
 
     if (strategy == SimilarityStrategy.MERGE) {
-      return inputData.map(function);
+      return inputData
+          .map(function)
+          .filter((FilterFunction<T>) new MinThresholdFilterFunction());
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }

@@ -1,7 +1,9 @@
 package org.mappinganalysis.model;
 
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -18,6 +20,14 @@ public class LongSet implements Set<Long>, Serializable {
 
   public LongSet() {
     this.set = Sets.newHashSet();
+  }
+
+  public LongSet(Long id) {
+    this.set = Sets.newHashSet(id);
+  }
+
+  public String toString() {
+    return Joiner.on(";").join(set);
   }
 
   private Set<Long> getLongSet() {
