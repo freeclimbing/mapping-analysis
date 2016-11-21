@@ -8,26 +8,26 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
 
 class MergeTupleCreator implements MapFunction<Vertex<Long, ObjectMap>, MergeTuple> {
-  MergeTuple reuseTuple;
   private static final Logger LOG = Logger.getLogger(MergeTupleCreator.class);
 
-  public MergeTupleCreator() {
-    this.reuseTuple = new MergeTuple();
-  }
+  // dont use reuseTuple here
+  //    this.reuseTuple = new MergeTuple();
 
   @Override
   public MergeTuple map(Vertex<Long, ObjectMap> vertex) throws Exception {
+    MergeTuple tuple = new MergeTuple();
     ObjectMap properties = vertex.getValue();
-    LOG.info(properties.toString());
-    reuseTuple.setId(vertex.getId());
-    reuseTuple.setLabel(properties.getLabel());
-    reuseTuple.setLatitude(properties.getLatitude());
-    reuseTuple.setLongitude(properties.getLongitude());
-    reuseTuple.setIntTypes(properties.getIntTypes());
-    reuseTuple.setIntSources(properties.getIntSources());
-    reuseTuple.addClusteredElements(properties.getVerticesList());
-    reuseTuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
+//    LOG.info("PROPERTIES: " + properties.toString() + " " + vertex.getId());
+    tuple.setId(vertex.getId());
+    tuple.setLabel(properties.getLabel());
+    tuple.setLatitude(properties.getLatitude());
+    tuple.setLongitude(properties.getLongitude());
+    tuple.setIntTypes(properties.getIntTypes());
+    tuple.setIntSources(properties.getIntSources());
+    tuple.addClusteredElements(properties.getVerticesList());
+    tuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
 
-    return reuseTuple;
+    LOG.info("CREATE: " + tuple.toString());
+    return tuple;
   }
 }

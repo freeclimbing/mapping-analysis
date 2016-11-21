@@ -1,6 +1,5 @@
 package org.mappinganalysis.graph;
 
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -16,9 +15,7 @@ import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
-import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
+import org.mappinganalysis.util.functions.LeftSideIntersectFunction;
 
 public class GraphUtils {
   private static final Logger LOG = Logger.getLogger(GraphUtils.class);
@@ -135,11 +132,11 @@ public class GraphUtils {
         .leftOuterJoin(input)
         .where(0, 1)
         .equalTo(0, 1)
-        .with(new LeftSideOnlyJoinFunction<>())
+        .with(new LeftSideIntersectFunction<>())
         .leftOuterJoin(input)
         .where(0, 1)
         .equalTo(1, 0)
-        .with(new LeftSideOnlyJoinFunction<>())
+        .with(new LeftSideIntersectFunction<>())
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();

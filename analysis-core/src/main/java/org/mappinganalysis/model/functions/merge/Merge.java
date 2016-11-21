@@ -7,12 +7,9 @@ import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.aggregation.Aggregations;
-import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.*;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Triplet;
@@ -33,8 +30,9 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
-import org.mappinganalysis.util.functions.LeftSideOnlyJoinFunction;
-import org.mappinganalysis.util.functions.RightSideOnlyJoinFunction;
+import org.mappinganalysis.util.functions.LeftMinusRightFunction;
+import org.mappinganalysis.util.functions.LeftSideIntersectFunction;
+import org.mappinganalysis.util.functions.RightSideIntersectFunction;
 import org.mappinganalysis.util.functions.filter.OldHashCcFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
 
@@ -103,7 +101,7 @@ public class Merge {
         .map(new MapFunction<MergeTriplet, MergeTriplet>() {
           @Override
           public MergeTriplet map(MergeTriplet value) throws Exception {
-//            LOG.info("CREATE INIT WORK SET: " + value.toString());
+              LOG.info("INITIAL WS###: " + value.toString());
             return value;
           }
         });
@@ -122,20 +120,22 @@ public class Merge {
           }
         });
 
+    // look for each excluded triplet anywhere, 60191,1010272 missing after initial WS
+
     DataSet<Tuple2<Double, String>> maxFilter = workset
         .groupBy(5)
         .max(4)
         .map(triplet -> new Tuple2<>(triplet.getSimilarity(),
             triplet.getSrcTuple().getBlockingLabel()))
         .returns(new TypeHint<Tuple2<Double, String>>() {})
-        .distinct()
-        .map(new MapFunction<Tuple2<Double, String>, Tuple2<Double, String>>() {
-          @Override
-          public Tuple2<Double, String> map(Tuple2<Double, String> value) throws Exception {
-            LOG.info("MAX FILTER: " + value.toString());
-            return value;
-          }
-        });
+        .distinct();
+//        .map(new MapFunction<Tuple2<Double, String>, Tuple2<Double, String>>() {
+//          @Override
+//          public Tuple2<Double, String> map(Tuple2<Double, String> value) throws Exception {
+//            LOG.info("MAX FILTER: " + value.toString());
+//            return value;
+//          }
+//        });
 
     DataSet<MergeTriplet> maxTriplets = workset.join(maxFilter)
         .where(4)
@@ -158,14 +158,14 @@ public class Merge {
         });
 
     DataSet<MergeTuple> delta = maxTriplets
-        .flatMap(new MergeMapFunction())
-        .map(new MapFunction<MergeTuple, MergeTuple>() {
-          @Override
-          public MergeTuple map(MergeTuple value) throws Exception {
-            LOG.info("DELTA: " + value.toString());
-            return value;
-          }
-        });
+        .flatMap(new MergeMapFunction());
+//        .map(new MapFunction<MergeTuple, MergeTuple>() {
+//          @Override
+//          public MergeTuple map(MergeTuple value) throws Exception {
+//            LOG.info("DELTA: " + value.toString());
+//            return value;
+//          }
+//        });
 
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets
         .flatMap(new FlatMapFunction<MergeTriplet, Tuple2<Long, Long>>() {
@@ -184,7 +184,15 @@ public class Merge {
     workset = workset.leftOuterJoin(maxTriplets)
         .where(0,1)
         .equalTo(0,1)
-        .with(new LeftSideOnlyJoinFunction<>());
+        .with(new LeftSideIntersectFunction<>())
+//    .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+//      @Override
+//      public MergeTriplet map(MergeTriplet value) throws Exception {
+//        LOG.info("HOLD THIS: " + value.toString());
+//        return value;
+//      }
+//    })
+    ;
 
     // TODO count recomputed triples in each iteration
     DataSet<MergeTriplet> leftChanges = workset.join(transitions)
@@ -192,57 +200,54 @@ public class Merge {
         .equalTo(0)
         .with((triplet, transition) -> {
           triplet.setSrcId(transition.f1);
-//          LOG.info("LEFT CHANGES: " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {})
-//        .distinct(0,1);
+        .distinct(0,1)
         .join(delta.filter(MergeTuple::isActive))
         .where(0)
         .equalTo(0)
         .with((triplet, newTuple) -> {
           triplet.setSrcTuple(newTuple);
-          LOG.info("LEFT DELTA JOIN " + triplet.toString());
-
-//          if (triplet.getSrcId() == 1010272 && triplet.getTrgId() == 395207) {
-//            for (Long aLong : triplet.getSrcTuple().getClusteredElements()) {
-//              LOG.info("LDJ src: " + aLong);
-//            }
-//            for (Long aLong : triplet.getTrgTuple().getClusteredElements()) {
-//              LOG.info("LDJ trg: " + aLong);
-//            }
-//          }
+//          LOG.info("LEFT DELTA JOIN " + triplet.toString());
           return triplet;
         })
-        .returns(new TypeHint<MergeTriplet>() {
-        });
+        .returns(new TypeHint<MergeTriplet>() {});
 
     DataSet<MergeTriplet> rightChanges = workset.join(transitions)
         .where(1)
         .equalTo(0)
         .with((triplet, transition) -> {
           triplet.setTrgId(transition.f1);
-//          LOG.info("RIGHT CHANGES: " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {})
-//        .distinct(0,1);
+        .distinct(0,1)
         .join(delta.filter(MergeTuple::isActive))
         .where(1)
         .equalTo(0)
         .with((triplet, newTuple) -> {
           triplet.setTrgTuple(newTuple);
-          LOG.info("RIGHT DELTA JOIN " + triplet.toString());
+//          LOG.info("RIGHT DELTA JOIN " + triplet.toString());
           return triplet;
         })
-        .returns(new TypeHint<MergeTriplet>() {
-        });
+        .returns(new TypeHint<MergeTriplet>() {});
 
     // todo check SOURCE_COUNT
     DataSet<MergeTriplet> changesWithNewSimilarities = leftChanges.union(rightChanges)
-        .distinct(0,1) // distinct may not be needed
-
+        .map(triplet -> {
+          if (triplet.getSrcId() > triplet.getTrgId()) {
+            MergeTuple tmp = triplet.getSrcTuple();
+            triplet.setSrcId(triplet.getTrgId());
+            triplet.setSrcTuple(triplet.getTrgTuple());
+            triplet.setTrgId(tmp.getId());
+            triplet.setTrgTuple(tmp);
+          }
+          return triplet;
+        })
+        .distinct(0,1) // is needed
         .filter(triplet -> {
+          LOG.info("CHANGED AND GETS NEW SIM " + triplet.toString());
           boolean hasSourceOverlap = AbstractionUtils.hasOverlap(
               triplet.getSrcTuple().getIntSources(),
               triplet.getTrgTuple().getIntSources());
@@ -257,47 +262,34 @@ public class Merge {
     DataSet<MergeTriplet> leftWorkset = workset.leftOuterJoin(transitions)
         .where(0)
         .equalTo(0)
-        .with(new LeftSideOnlyJoinFunction<>());
+        .with(new LeftMinusRightFunction<>("---trans---"))
+        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+          @Override
+          public MergeTriplet map(MergeTriplet value) throws Exception {
+            LOG.info("LEFT NON CHNGD WS: " + value.toString());
+            return value;
+          }
+        })
+        ;
 
     // throw out everything with transition elements right
-    DataSet<MergeTriplet> nonChangedWorksetPart = workset.leftOuterJoin(transitions)
+    DataSet<MergeTriplet> nonChangedWorksetPart = leftWorkset.leftOuterJoin(transitions)
         .where(1)
         .equalTo(0)
-        .with(new LeftSideOnlyJoinFunction<>())
-        .union(leftWorkset);
+        .with(new LeftMinusRightFunction<>("---trans---"))
+        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+          @Override
+          public MergeTriplet map(MergeTriplet value) throws Exception {
+            LOG.info("RIGHT NON CHNGD WS: " + value.toString());
+            return value;
+          }
+        })
+    ;
 
     // final
     DataSet<MergeTuple> mergedTuples = iteration.closeWith(
         delta,
         nonChangedWorksetPart.union(changesWithNewSimilarities));
-
-
-//    /*
-//     * OLD METHOD bulk iteration
-//     */
-//    IterativeDataSet<Vertex<Long, ObjectMap>> workingSet = baseClusters.iterate(Integer.MAX_VALUE);
-//
-//    // - similarity on intriplets + threshold
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> similarTriplets = SimilarityComputation
-//        .computeSimilarities(baseTriplets, Constants.SIM_GEO_LABEL_STRATEGY)
-//        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
-//            Constants.MIN_LABEL_PRIORITY_SIM))
-//        .withForwardedFields("f0;f1;f2;f3")
-//        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
-//
-//    DataSet<Vertex<Long, ObjectMap>> stepVertices = workingSet
-//        .filter(new ClusterSizeFilterFunction(sourcesCount));
-//    stepVertices = printSuperstep(stepVertices);
-//
-//    DataSet<Vertex<Long, ObjectMap>> newClusters = similarTriplets
-//        .map(new SimilarClusterMergeMapFunction());
-//
-//    DataSet<Vertex<Long, ObjectMap>> newVertices = excludeClusteredVerticesFromInput(workingSet, similarTriplets);
-//
-//    return workingSet.closeWith(newClusters
-//                                  .union(newVertices)
-//                                  .distinct(0),
-//                                newClusters);
 
     return mergedTuples.leftOuterJoin(baseClusters)
         .where(0)
@@ -403,7 +395,7 @@ public class Merge {
           .distinct()
           .rightOuterJoin(baseVertexSet)
           .where(0).equalTo(0)
-          .with(new RightSideOnlyJoinFunction<>());
+          .with(new RightSideIntersectFunction<>());
   }
 
 
@@ -470,7 +462,7 @@ public class Merge {
         .rightOuterJoin(representativeVertices)
         .where(0)
         .equalTo(0)
-        .with(new RightSideOnlyJoinFunction<>())
+        .with(new RightSideIntersectFunction<>())
         .union(newRepresentativeVertices);
   }
 

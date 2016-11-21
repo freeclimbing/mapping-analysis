@@ -35,26 +35,23 @@ class MergeTripletGeoLabelSimilarity
   public MergeTriplet map(MergeTriplet triplet) throws Exception {
     Double labelSimilarity = getLabelSimilarity(triplet.getSrcTuple().getLabel(),
         triplet.getTrgTuple().getLabel());
-    Preconditions.checkNotNull(labelSimilarity);
 
     Double geoSimilarity = getGeoSimilarity(triplet.getSrcTuple().getLatitude(),
         triplet.getSrcTuple().getLongitude(),
         triplet.getTrgTuple().getLatitude(),
         triplet.getTrgTuple().getLongitude());
 
-//    MergeEdge edge = new MergeEdge();#
-//    Double similarity;
+//    if (triplet.getSrcId() == 42L && triplet.getTrgId() == 1010272L) {
+//      LOG.info(triplet.getSrcTuple().getLabel() + " xxx " + triplet.getTrgTuple().getLabel());
+//      LOG.info(triplet.getSrcId() + " " + triplet.getTrgId() + " " + labelSimilarity + " " + geoSimilarity);
+//    }
+
     if (geoSimilarity != null) {
       triplet.setSimilarity((geoSimilarity + labelSimilarity) / 2);
-//      LOG.info("geo: " + geoSimilarity + " label: " + labelSimilarity + " agg: " + triplet.getSimilarity());
-
     } else {
       triplet.setSimilarity(labelSimilarity);
-//      LOG.info("geo: null label: " + labelSimilarity + " agg: " + triplet.getSimilarity());
-
     }
 
-//    LOG.info(triplet.toString());
     return triplet;
   }
 
@@ -81,8 +78,7 @@ class MergeTripletGeoLabelSimilarity
     Preconditions.checkNotNull(left);
     Preconditions.checkNotNull(right);
 
-    double similarity = Utils
-        .getTrigramMetricAndSimplifyStrings()
+    double similarity = Utils.getTrigramMetricAndSimplifyStrings()
         .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
     BigDecimal tmpResult = new BigDecimal(similarity);
 

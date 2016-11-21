@@ -506,8 +506,9 @@ public class Utils {
 
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<>())
-        .simplify(Simplifiers.removeAll("[\\(|,].*"))
-//        .simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
+        .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
+        .simplify(Simplifiers.removeAll("\\s"))
+        //.simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
         .simplify(Simplifiers.toLowerCase())
         .tokenize(Tokenizers.qGramWithPadding(3))
         .build();

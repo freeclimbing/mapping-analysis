@@ -30,17 +30,6 @@ public class MergeTuple
     this.f8 = true;
   }
 
-  public MergeTuple(MergeTuple tuple) {
-    this.f0 = tuple.f0;
-    this.f1 = tuple.f1;
-    this.f2 = tuple.f2;
-    this.f3 = tuple.f3;
-    this.f4 = tuple.f4;
-    this.f5 = tuple.f5;
-    this.f6 = tuple.f6;
-    this.f7 = tuple.f7;
-  }
-
   public MergeTuple(Long id, boolean isActive) {
     this.f0 = id;
     this.f1 = "";
