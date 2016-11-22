@@ -14,10 +14,10 @@ public class LeftMinusRightFunction<O, T> implements FlatJoinFunction<O, T, O> {
 
   @Override
   public void join(O left, T right, Collector<O> collector) throws Exception {
-//    if (right != null) {
-//      LOG.info("EXCLUDE " + s + left.toString());
-//    }
     if (right != null) {
+      LOG.info("EXCLUDE " + s + left.toString());
+    }
+    if (right == null) {
       collector.collect(left);
     }
   }

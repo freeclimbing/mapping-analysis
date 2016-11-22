@@ -12,9 +12,9 @@ public class MinThresholdFilterFunction implements FilterFunction<MergeTriplet> 
 
   @Override
   public boolean filter(MergeTriplet value) throws Exception {
-    if (value.getSimilarity() < 0.8) {
+    if (value.getSimilarity() < 0.7) {
       LOG.info("excluded triplet: " + value.toString());
     }
-    return value.getSimilarity() >= 0.8;
+    return value.getSimilarity() >= 0.7;
   }
 }

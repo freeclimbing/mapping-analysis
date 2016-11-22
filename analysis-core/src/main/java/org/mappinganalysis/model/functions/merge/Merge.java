@@ -94,7 +94,7 @@ public class Merge {
 
     // initial working set
     DataSet<MergeTriplet> initialWorkingSet = clusters
-        .filter(value -> AbstractionUtils.getSourceCount(value.getIntSources()) < sourcesCount)
+        .filter(tuple -> AbstractionUtils.getSourceCount(tuple.getIntSources()) < sourcesCount)
         .groupBy(7)
         .reduceGroup(new MergeTripletCreator(sourcesCount))
         .runOperation(similarityComputation)
@@ -115,7 +115,7 @@ public class Merge {
         .map(new MapFunction<MergeTriplet, MergeTriplet>() {
           @Override
           public MergeTriplet map(MergeTriplet value) throws Exception {
-//            LOG.info("START ITERATION ROUND" + value.toString());
+            LOG.info("START ITERATION ROUND" + value.toString());
             return value;
           }
         });
@@ -128,20 +128,20 @@ public class Merge {
         .map(triplet -> new Tuple2<>(triplet.getSimilarity(),
             triplet.getSrcTuple().getBlockingLabel()))
         .returns(new TypeHint<Tuple2<Double, String>>() {})
-        .distinct();
-//        .map(new MapFunction<Tuple2<Double, String>, Tuple2<Double, String>>() {
-//          @Override
-//          public Tuple2<Double, String> map(Tuple2<Double, String> value) throws Exception {
-//            LOG.info("MAX FILTER: " + value.toString());
-//            return value;
-//          }
-//        });
+        .distinct()
+        .map(new MapFunction<Tuple2<Double, String>, Tuple2<Double, String>>() {
+          @Override
+          public Tuple2<Double, String> map(Tuple2<Double, String> value) throws Exception {
+            LOG.info("MAX FILTER: " + value.toString());
+            return value;
+          }
+        });
 
     DataSet<MergeTriplet> maxTriplets = workset.join(maxFilter)
         .where(4)
         .equalTo(0)
         .with((triplet, tuple) -> {
-//          LOG.info("filtered max triplet: " + triplet.toString());
+          LOG.info("filtered max triplet: " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {})
@@ -158,14 +158,14 @@ public class Merge {
         });
 
     DataSet<MergeTuple> delta = maxTriplets
-        .flatMap(new MergeMapFunction());
-//        .map(new MapFunction<MergeTuple, MergeTuple>() {
-//          @Override
-//          public MergeTuple map(MergeTuple value) throws Exception {
-//            LOG.info("DELTA: " + value.toString());
-//            return value;
-//          }
-//        });
+        .flatMap(new MergeMapFunction())
+        .map(new MapFunction<MergeTuple, MergeTuple>() {
+          @Override
+          public MergeTuple map(MergeTuple value) throws Exception {
+            LOG.info("DELTA: " + value.toString());
+            return value;
+          }
+        });
 
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets
         .flatMap(new FlatMapFunction<MergeTriplet, Tuple2<Long, Long>>() {
@@ -185,13 +185,13 @@ public class Merge {
         .where(0,1)
         .equalTo(0,1)
         .with(new LeftSideIntersectFunction<>())
-//    .map(new MapFunction<MergeTriplet, MergeTriplet>() {
-//      @Override
-//      public MergeTriplet map(MergeTriplet value) throws Exception {
-//        LOG.info("HOLD THIS: " + value.toString());
-//        return value;
-//      }
-//    })
+    .map(new MapFunction<MergeTriplet, MergeTriplet>() {
+      @Override
+      public MergeTriplet map(MergeTriplet value) throws Exception {
+        LOG.info("HOLD THIS: " + value.toString());
+        return value;
+      }
+    })
     ;
 
     // TODO count recomputed triples in each iteration
@@ -209,7 +209,7 @@ public class Merge {
         .equalTo(0)
         .with((triplet, newTuple) -> {
           triplet.setSrcTuple(newTuple);
-//          LOG.info("LEFT DELTA JOIN " + triplet.toString());
+          LOG.info("LEFT DELTA JOIN " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {});
@@ -228,7 +228,7 @@ public class Merge {
         .equalTo(0)
         .with((triplet, newTuple) -> {
           triplet.setTrgTuple(newTuple);
-//          LOG.info("RIGHT DELTA JOIN " + triplet.toString());
+          LOG.info("RIGHT DELTA JOIN " + triplet.toString());
           return triplet;
         })
         .returns(new TypeHint<MergeTriplet>() {});
@@ -262,7 +262,7 @@ public class Merge {
     DataSet<MergeTriplet> leftWorkset = workset.leftOuterJoin(transitions)
         .where(0)
         .equalTo(0)
-        .with(new LeftMinusRightFunction<>("---trans---"))
+        .with(new LeftMinusRightFunction<>("---transLEFT---"))
         .map(new MapFunction<MergeTriplet, MergeTriplet>() {
           @Override
           public MergeTriplet map(MergeTriplet value) throws Exception {
@@ -276,7 +276,7 @@ public class Merge {
     DataSet<MergeTriplet> nonChangedWorksetPart = leftWorkset.leftOuterJoin(transitions)
         .where(1)
         .equalTo(0)
-        .with(new LeftMinusRightFunction<>("---trans---"))
+        .with(new LeftMinusRightFunction<>("---transRIGHT---"))
         .map(new MapFunction<MergeTriplet, MergeTriplet>() {
           @Override
           public MergeTriplet map(MergeTriplet value) throws Exception {
@@ -294,17 +294,32 @@ public class Merge {
     return mergedTuples.leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
-        .with((tuple, vertex) -> {
-          ObjectMap map = new ObjectMap();
-          map.setLabel(tuple.getLabel());
-          map.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
-          map.setClusterSources(AbstractionUtils.getSourcesStringSet(tuple.getIntSources()));
-          map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(tuple.getIntTypes()));
-          map.setClusterVertices(Sets.newHashSet(tuple.getClusteredElements()));
+        .with(new FlatJoinFunction<MergeTuple, Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public void join(MergeTuple left, Vertex<Long, ObjectMap> second, Collector<Vertex<Long, ObjectMap>> out) throws Exception {
+            if (left.isActive()) {
+              ObjectMap map = new ObjectMap();
+              map.setLabel(left.getLabel());
+              map.setGeoProperties(left.getLatitude(), left.getLongitude());
+              map.setClusterSources(AbstractionUtils.getSourcesStringSet(left.getIntSources()));
+              map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(left.getIntTypes()));
+              map.setClusterVertices(Sets.newHashSet(left.getClusteredElements()));
 
-          return new Vertex<>(tuple.getId(), map);
-        })
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+              out.collect(new Vertex<>(left.getId(), map));
+            }
+          }
+        });
+//        .with((tuple, vertex) -> {
+//          ObjectMap map = new ObjectMap();
+//          map.setLabel(tuple.getLabel());
+//          map.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
+//          map.setClusterSources(AbstractionUtils.getSourcesStringSet(tuple.getIntSources()));
+//          map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(tuple.getIntTypes()));
+//          map.setClusterVertices(Sets.newHashSet(tuple.getClusteredElements()));
+//
+//          return new Vertex<>(tuple.getId(), map);
+//        })
+//        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
   }
 
   // wtf?

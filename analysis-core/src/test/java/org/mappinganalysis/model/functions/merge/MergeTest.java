@@ -67,6 +67,8 @@ public class MergeTest {
   @Test
   /**
    * Long Island, real data mixed with fake data.
+   *
+   * one degree longitude reduces geo sim by ~50%
    */
   public void testExecuteMerge() throws Exception {
     setupLocalEnvironment();

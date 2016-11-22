@@ -49,9 +49,7 @@ class MergeTripletCreator
       for (MergeTuple rightTuple : rightSide) {
         int summedSources = AbstractionUtils.getSourceCount(leftSources)
             + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
-        if (rightTuple.getClusteredElements().contains(252016L)) {
-          LOG.info(rightTuple.getClusteredElements());
-        }
+
         if (summedSources <= sourcesCount
             && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())
             && AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes())) {
