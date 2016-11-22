@@ -7,11 +7,15 @@ import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
 
+/**
+ * Create basic merge tuples for merge process, properties are transferred from
+ * Gelly vertices.
+ *
+ * Care: Initial MergeTuples have some values set to avoid null pointer exceptions.
+ * - therefore, dont use reuse tuples here
+ */
 class MergeTupleCreator implements MapFunction<Vertex<Long, ObjectMap>, MergeTuple> {
   private static final Logger LOG = Logger.getLogger(MergeTupleCreator.class);
-
-  // dont use reuseTuple here
-  //    this.reuseTuple = new MergeTuple();
 
   @Override
   public MergeTuple map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -27,7 +31,7 @@ class MergeTupleCreator implements MapFunction<Vertex<Long, ObjectMap>, MergeTup
     tuple.addClusteredElements(properties.getVerticesList());
     tuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
 
-    LOG.info("CREATE: " + tuple.toString());
+//    LOG.info("CREATE: " + tuple.toString());
     return tuple;
   }
 }

@@ -5,16 +5,23 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeTriplet;
 
 /**
- * Created by markus on 11/18/16.
+ * Basic minimal threshold function to reduce merge triplets in merge process.
+ *
+ * Temporary solution, should be integrated in similarity computation process.
  */
 public class MinThresholdFilterFunction implements FilterFunction<MergeTriplet> {
     private static final Logger LOG = Logger.getLogger(MinThresholdFilterFunction.class);
+  private final Double threshold;
+
+  public MinThresholdFilterFunction(Double threshold) {
+    this.threshold = threshold;
+  }
 
   @Override
   public boolean filter(MergeTriplet value) throws Exception {
-    if (value.getSimilarity() < 0.7) {
-      LOG.info("excluded triplet: " + value.toString());
-    }
-    return value.getSimilarity() >= 0.7;
+//    if (value.getSimilarity() < threshold) {
+//      LOG.info("excluded triplet: " + value.toString());
+//    }
+    return value.getSimilarity() >= threshold;
   }
 }

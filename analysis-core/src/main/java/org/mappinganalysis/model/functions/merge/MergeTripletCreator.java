@@ -12,20 +12,22 @@ import java.util.HashSet;
 
 /**
  * Create triplets for merge, properties are added after checking restrictions,
- * similarity is not added in creation process.
+ * similarity is not added in this creation process.
  *
- * smaller id is always srcTuple
+ * Careful:
+ * - MergeTriplets have some properties which contain a start value to
+ * avoid null pointer exceptions.
+ * - reuse objects side effects, don't use here
+ * - smaller id is always srcTuple
  */
 class MergeTripletCreator
     implements GroupReduceFunction<MergeTuple, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(MergeTripletCreator.class);
 
-//  private final MergeTriplet reuseTriplet;
   private final int sourcesCount;
 
   public MergeTripletCreator(int sourcesCount) {
     this.sourcesCount = sourcesCount;
-//    this.reuseTriplet = new MergeTriplet();
   }
 
   @Override
@@ -33,13 +35,8 @@ class MergeTripletCreator
                      Collector<MergeTriplet> out) throws Exception {
     HashSet<MergeTuple> leftSide = Sets.newHashSet(values);
     HashSet<MergeTuple> rightSide = Sets.newHashSet(leftSide);
-    HashSet<MergeTuple> logSide = Sets.newHashSet(rightSide);
-    for (MergeTuple mergeTuple : logSide) {
-      LOG.info("LOGSIDE: " + mergeTuple.toString());
-    }
 
     for (MergeTuple leftTuple : leftSide) {
-      LOG.info("LEFT SIDE MT CREATE: " + leftTuple.toString());
       MergeTriplet reuseTriplet = new MergeTriplet();
       Integer leftSources = leftTuple.getIntSources();
       Integer leftTypes = leftTuple.getIntTypes();
@@ -66,10 +63,6 @@ class MergeTripletCreator
             reuseTriplet.setSrcTuple(rightTuple);
           }
 
-          if (reuseTriplet.getSrcId() == 60191L && reuseTriplet.getTrgId() == 252016L
-              || reuseTriplet.getSrcId() == 252016L && reuseTriplet.getTrgId() == 60191L) {
-            LOG.info("MT CREATE: " + reuseTriplet.toString());
-          }
 //          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
 //          LOG.info(reuseTriplet.toString());
           out.collect(reuseTriplet);

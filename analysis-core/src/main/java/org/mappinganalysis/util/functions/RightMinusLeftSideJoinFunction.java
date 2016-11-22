@@ -5,14 +5,14 @@ import org.apache.flink.util.Collector;
 
 /**
  * Return all elements which have a match partner on the right dataset side.
- * @param <T>
  * @param <O>
+ * @param <T>
  */
-public class LeftSideIntersectFunction<T, O> implements FlatJoinFunction<T, O, T> {
+public class RightMinusLeftSideJoinFunction<O, T> implements FlatJoinFunction<O, T, T> {
   @Override
-  public void join(T left, O right, Collector<T> collector) throws Exception {
-    if (right == null) {
-      collector.collect(left);
+  public void join(O left, T right, Collector<T> collector) throws Exception {
+    if (left == null) {
+      collector.collect(right);
     }
   }
 }

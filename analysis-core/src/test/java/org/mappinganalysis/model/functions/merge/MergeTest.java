@@ -68,7 +68,7 @@ public class MergeTest {
   /**
    * Long Island, real data mixed with fake data.
    *
-   * one degree longitude reduces geo sim by ~50%
+   * Note: one degree longitude reduces geo sim by ~50%
    */
   public void testExecuteMerge() throws Exception {
     setupLocalEnvironment();
@@ -89,10 +89,6 @@ public class MergeTest {
 //    assertEquals(3, i);
 
     vertices.print();
-    // result:
-    // (42,({typeIntern=[Island], lon=-73.0662, label=Long Island (NY), clusteredVertices=[42], ontologies=[http://data.nytimes.com/], lat=40.8168}))
-    //(395207,({typeIntern=[Island], lon=-73.1134, label=Long Island, lat=41.2182, ontologies=[http://linkedgeodata.org/, http://sws.geonames.org/, http://data.nytimes.com/], clusteredVertices=[395207, 513732, 1010272]}))
-    //(23,({typeIntern=[Island], lon=-73.0662, label=Long Island, clusteredVertices=[252016, 1268005, 23, 60190, 60191], ontologies=[http://dbpedia.org/, http://linkedgeodata.org/, http://sws.geonames.org/, http://rdf.freebase.com/, http://data.nytimes.com/], lat=40.8168}))
   }
 
   @Test

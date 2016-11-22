@@ -12,7 +12,9 @@ import org.simmetrics.StringMetric;
  */
 public class MergeSimilarityComputation<T> extends SimilarityComputation<T> {
 
-  MergeSimilarityComputation(SimilarityFunction<T> function, SimilarityStrategy strategy) {
-    super(function, strategy);
+  MergeSimilarityComputation(SimilarityFunction<T> function,
+                             SimilarityStrategy strategy,
+                             Double threshold) {
+    super(function, strategy, threshold);
   }
 }

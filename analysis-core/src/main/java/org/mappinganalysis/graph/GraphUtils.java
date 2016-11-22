@@ -15,7 +15,7 @@ import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
-import org.mappinganalysis.util.functions.LeftSideIntersectFunction;
+import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
 public class GraphUtils {
   private static final Logger LOG = Logger.getLogger(GraphUtils.class);
@@ -132,11 +132,11 @@ public class GraphUtils {
         .leftOuterJoin(input)
         .where(0, 1)
         .equalTo(0, 1)
-        .with(new LeftSideIntersectFunction<>())
+        .with(new LeftMinusRightSideJoinFunction<>())
         .leftOuterJoin(input)
         .where(0, 1)
         .equalTo(1, 0)
-        .with(new LeftSideIntersectFunction<>())
+        .with(new LeftMinusRightSideJoinFunction<>())
         .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();

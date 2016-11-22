@@ -171,7 +171,7 @@ public class Stats {
     LOG.info("[3] ### Representatives created: "
         + jobExecResult.getAccumulatorResult(Constants.REPRESENTATIVE_ACCUMULATOR)); // MajorityPropertiesGRFunction
     LOG.info("[3] ### Excluded vertex counter: "
-        + jobExecResult.getAccumulatorResult(Constants.EXCLUDE_VERTEX_ACCUMULATOR)); // RightSideIntersectFunction
+        + jobExecResult.getAccumulatorResult(Constants.EXCLUDE_VERTEX_ACCUMULATOR)); // RightMinusLeftSideJoinFunction
 
 
     // todo this working?

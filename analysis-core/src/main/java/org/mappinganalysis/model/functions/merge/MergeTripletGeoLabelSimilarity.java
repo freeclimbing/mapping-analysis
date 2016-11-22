@@ -41,11 +41,6 @@ class MergeTripletGeoLabelSimilarity
         triplet.getTrgTuple().getLatitude(),
         triplet.getTrgTuple().getLongitude());
 
-//    if (triplet.getSrcId() == 42L && triplet.getTrgId() == 1010272L) {
-//      LOG.info(triplet.getSrcTuple().getLabel() + " xxx " + triplet.getTrgTuple().getLabel());
-//      LOG.info(triplet.getSrcId() + " " + triplet.getTrgId() + " " + labelSimilarity + " " + geoSimilarity);
-//    }
-
     if (geoSimilarity != null) {
       triplet.setSimilarity((geoSimilarity + labelSimilarity) / 2);
     } else {

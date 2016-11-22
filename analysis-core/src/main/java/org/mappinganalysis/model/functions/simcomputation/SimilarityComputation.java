@@ -12,7 +12,6 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
@@ -25,14 +24,18 @@ import java.math.BigDecimal;
 public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T, T> {
   private static final Logger LOG = Logger.getLogger(SimilarityComputation.class);
 
+  private final Double threshold;
   private SimilarityFunction<T> function;
   private AggregationMode<T> mode;
   private DataSet<T> inputData;
   private SimilarityStrategy strategy;
 
-  public SimilarityComputation(SimilarityFunction<T> function, SimilarityStrategy strategy) {
+  public SimilarityComputation(SimilarityFunction<T> function,
+                               SimilarityStrategy strategy,
+                               Double threshold) {
     this.function = function;
     this.strategy = strategy;
+    this.threshold = threshold;
   }
 
   @Override
@@ -52,7 +55,7 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
     if (strategy == SimilarityStrategy.MERGE) {
       return inputData
           .map(function)
-          .filter((FilterFunction<T>) new MinThresholdFilterFunction());
+          .filter((FilterFunction<T>) new MinThresholdFilterFunction(threshold));
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
@@ -239,6 +242,7 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
     private SimilarityFunction<T> function;
     private AggregationMode<T> mode = null;
     private SimilarityStrategy strategy;
+    private double threshold;
 
     public SimilarityComputationBuilder<T> setStrategy(SimilarityStrategy strategy) {
       this.strategy = strategy;
@@ -255,6 +259,11 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
       return this;
     }
 
+    public SimilarityComputationBuilder<T> setThreshold(double threshold) {
+      this.threshold = threshold;
+      return this;
+    }
+
     /**
      * Creates similarity computation operator based on the configured parameters.
      * @return similarity computation operator
@@ -262,10 +271,11 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
     public SimilarityComputation<T> build() {
       // return different implementation for mergetriplet and normal triple
       if (strategy == SimilarityStrategy.MERGE) {
-        return new MergeSimilarityComputation<>(function, strategy);
+        return new MergeSimilarityComputation<>(function, strategy, threshold);
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
     }
+
   }
 }
