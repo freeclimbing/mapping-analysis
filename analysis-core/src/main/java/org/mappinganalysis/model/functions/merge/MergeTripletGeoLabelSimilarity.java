@@ -44,7 +44,12 @@ class MergeTripletGeoLabelSimilarity
     if (geoSimilarity != null) {
       triplet.setSimilarity((geoSimilarity + labelSimilarity) / 2);
     } else {
-      triplet.setSimilarity(labelSimilarity);
+      // todo fix this
+      if (labelSimilarity < 0.7) {
+        triplet.setSimilarity(0D);
+      } else {
+        triplet.setSimilarity(labelSimilarity);
+      }
     }
 
     return triplet;

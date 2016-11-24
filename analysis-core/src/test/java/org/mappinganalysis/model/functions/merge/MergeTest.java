@@ -69,6 +69,8 @@ public class MergeTest {
    * Long Island, real data mixed with fake data.
    *
    * Note: one degree longitude reduces geo sim by ~50%
+   *
+   * 1, 2, 3: two have only one geo attribute
    */
   public void testExecuteMerge() throws Exception {
     setupLocalEnvironment();
@@ -79,7 +81,7 @@ public class MergeTest {
     DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
         .getVertices();
 
-    vertices = Merge.execute(vertices, 5, null, env);
+    vertices = Merge.execute(vertices, 5);
 
 //    int i = 0;
 //    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
@@ -102,7 +104,7 @@ public class MergeTest {
     DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
         .getVertices();
 
-    vertices = Merge.execute(vertices, 5, null, env);
+    vertices = Merge.execute(vertices, 5);
 
     assertEquals(4, vertices.count());
 //    vertices.print();

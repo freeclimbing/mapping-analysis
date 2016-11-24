@@ -84,6 +84,7 @@ public class SimSort {
   private static Graph<Long, SimSortVertexTuple, SimSortEdgeTuple> createSimSortInputGraph(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env) {
+
     DataSet<Edge<Long, SimSortEdgeTuple>> edges = graph.getEdges()
         .map(edge -> new Edge<>(edge.getSource(),
               edge.getTarget(),

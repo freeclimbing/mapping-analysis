@@ -111,7 +111,11 @@ public class ObjectMap
   }
 
   public void setTypes(String typeName, Set<String> types) {
-    map.put(typeName, types);
+    if (types.isEmpty()) {
+      map.put(typeName, Sets.newHashSet(Constants.NO_TYPE));
+    } else {
+      map.put(typeName, types);
+    }
   }
 
   public void addTypes(String typeName, Set<String> types) {
@@ -168,7 +172,9 @@ public class ObjectMap
     map.put(Constants.VERTEX_STATUS, value);
   }
 
-  // todo duplicate in utils
+  /**
+   * Check if current latitude and longitude of the vertex are valid.
+   */
   public boolean hasGeoPropertiesValid() {
     if (Utils.isValidLatitude(getLatitude()) && Utils.isValidLongitude(getLongitude())) {
       return Boolean.TRUE;
@@ -190,8 +196,10 @@ public class ObjectMap
   }
 
   public void setGeoProperties(Double latitude, Double longitude) {
-    setLatitude(latitude);
-    setLongitude(longitude);
+    if (Utils.isValidGeoObject(latitude, longitude)) {
+      setLatitude(latitude);
+      setLongitude(longitude);
+    }
   }
 
   public Double getLongitude() {
@@ -204,6 +212,7 @@ public class ObjectMap
     if (geoValue == null) {
       return null;
     }
+    // old check, perhaps deprecated? only single latitude/longitude allowed
     Preconditions.checkArgument(!(geoValue instanceof Set)
         && !(geoValue instanceof List), "lat or lon instance of Set or List - should not happen: " + geoValue);
     Preconditions.checkArgument(!(geoValue instanceof String), "string value: " + geoValue);

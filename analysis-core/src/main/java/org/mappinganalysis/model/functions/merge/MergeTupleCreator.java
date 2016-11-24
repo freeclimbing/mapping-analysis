@@ -24,14 +24,16 @@ class MergeTupleCreator implements MapFunction<Vertex<Long, ObjectMap>, MergeTup
 //    LOG.info("PROPERTIES: " + properties.toString() + " " + vertex.getId());
     tuple.setId(vertex.getId());
     tuple.setLabel(properties.getLabel());
-    tuple.setLatitude(properties.getLatitude());
-    tuple.setLongitude(properties.getLongitude());
+    if (properties.hasGeoPropertiesValid()) {
+      tuple.setLatitude(properties.getLatitude());
+      tuple.setLongitude(properties.getLongitude());
+    }
     tuple.setIntTypes(properties.getIntTypes());
     tuple.setIntSources(properties.getIntSources());
     tuple.addClusteredElements(properties.getVerticesList());
     tuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
 
-//    LOG.info("CREATE: " + tuple.toString());
+//    LOG.info("### CREATE: " + tuple.toString());
     return tuple;
   }
 }

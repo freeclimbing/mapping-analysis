@@ -7,8 +7,6 @@ public class Constants {
   /**
    * Database property names.
    */
-  public static final String CMD_LL = "linklion";
-  public static final String CMD_GEO = "geo";
   public static final String DEFAULT_VALUE = "default";
   public static final String DEBUG = "debug";
   public static final String INFO = "info";
@@ -34,7 +32,6 @@ public class Constants {
   public static final String SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
   public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
   public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
-  public static final String TMP_ACCUMULATOR = "tmp-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
   public static final String AGG_PREFIX = "aggregated-";
@@ -120,8 +117,6 @@ public class Constants {
   public static final String B = "BodyOfWater";
   public static final String P = "Park";
 
-  public static final String VERTEX = "vertex";
-  public static final String EDGE = "edge";
   public static final String INPUT_GRAPH = "InputGraph";
   public static final String PREPROC_GRAPH = "PreprocGraph";
   public static final String DECOMP_GRAPH = "DecompGraph";
@@ -145,7 +140,6 @@ public class Constants {
   public static final String INIT_CLUST = "2-initial-clustering";
   public static final String MISS = "miss";
   public static final String TEST = "test";
-  public static final String COMPLEX = "complex";
 
   /**
    * Command line option names.
@@ -165,5 +159,4 @@ public class Constants {
   public static Double MIN_SIMSORT_SIM;
   public static boolean IGNORE_MISSING_PROPERTIES;
   public static String PRE_CLUSTER_STRATEGY;
-  public static boolean IS_LINK_FILTER_ACTIVE;
 }

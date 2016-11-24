@@ -64,11 +64,11 @@ public class MergeMapFunction
         minor.getIntTypes()));
     mergedCluster.setBlockingLabel(priority.getBlockingLabel());
 
-    LOG.info("### new cluster: " + mergedCluster.toString());
+//    LOG.info("### new cluster: " + mergedCluster.toString());
     MergeTuple fakeCluster = new MergeTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId(),
         false);
-    LOG.info("### fake cluster: " + fakeCluster.toString());
+//    LOG.info("### fake cluster: " + fakeCluster.toString());
 
     out.collect(fakeCluster);
     out.collect(mergedCluster);

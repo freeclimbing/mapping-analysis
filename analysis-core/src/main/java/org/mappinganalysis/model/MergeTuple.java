@@ -1,9 +1,7 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.java.tuple.Tuple8;
 import org.apache.flink.api.java.tuple.Tuple9;
-import org.apache.flink.runtime.util.LongArrayList;
-import org.mappinganalysis.model.api.*;
+import org.mappinganalysis.model.api.ClusteredEntity;
 import org.mappinganalysis.util.AbstractionUtils;
 
 import java.util.Set;

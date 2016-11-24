@@ -186,8 +186,8 @@ public class Utils {
     return result;
   }
 
-  public static class DataSetTextFormatter<V> implements
-      TextOutputFormat.TextFormatter<V> {
+  public static class DataSetTextFormatter<V>
+      implements TextOutputFormat.TextFormatter<V> {
     @Override
     public String format(V v) {
       return v.toString();
@@ -260,34 +260,6 @@ public class Utils {
 
       out.addTuples("removed edges, edges in component, count", result);
     }
-  }
-
-  @Deprecated
-  public static DataSet<Tuple2<Long, Integer>> writeVertexComponentsToHDFS(
-      Graph<Long, ObjectMap, ObjectMap> graph, final String compId, String prefix) {
-
-    // single line per vertex
-    DataSet<Tuple3<Long, Long, Integer>> vertexComponents = graph.getVertices()
-        .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple3<Long, Long, Integer>>() {
-          @Override
-          public Tuple3<Long, Long, Integer> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple3<>((long) vertex.getValue().get(Constants.HASH_CC),
-                (long) vertex.getValue().get(compId), 1);
-          }
-        });
-
-    DataSet<Tuple3<Long, Integer, Integer>> aggVertexComponents = vertexComponents
-        .groupBy(1) // compId
-        .sum(2)
-        .and(Aggregations.MIN, 0) //hash cc
-        .map(new MapFunction<Tuple3<Long, Long, Integer>, Tuple3<Long, Integer, Integer>>() {
-          @Override
-          public Tuple3<Long, Integer, Integer> map(Tuple3<Long, Long, Integer> idCompCountTuple) throws Exception {
-            return new Tuple3<>(idCompCountTuple.f0, idCompCountTuple.f2, 1);
-          }
-        });
-
-    return aggVertexComponents.project(0, 1);
   }
 
   public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {
@@ -500,8 +472,8 @@ public class Utils {
    */
   public static String simplify(String value) {
     value = Simplifiers.removeAll("[\\(|,].*").simplify(value);
-//    value = Simplifiers.removeNonWord().simplify(value);
-    return Simplifiers.toLowerCase().simplify(value.trim());
+
+    return value.toLowerCase().trim();
   }
 
   public static StringMetric getTrigramMetricAndSimplifyStrings() {

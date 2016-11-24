@@ -30,10 +30,6 @@ public class SimSortExcludeLowSimFilterFunction extends RichFilterFunction<Verte
 
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-//    if (!vertex.getValue().getVertexStatus()) {
-//      LOG.info("checksim : " + vertex.toString());
-//    }
-
     LOG.info(vertex.toString() + " want active verts? " + wantActiveVertices
         + " return: " + (wantActiveVertices == vertex.getValue().getVertexStatus()));
     Boolean isVertexActive = vertex.getValue().getVertexStatus();

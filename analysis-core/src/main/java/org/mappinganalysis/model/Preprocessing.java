@@ -25,6 +25,7 @@ import org.mappinganalysis.model.functions.preprocessing.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.ElementCounter;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
@@ -131,6 +132,11 @@ public class Preprocessing {
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVerticesFromCsv(Constants.INPUT_DIR + vertexFile, Constants.INPUT_DIR + propertyFile);
 
+    if (LOG.isDebugEnabled()) {
+      vertices = vertices
+        .map(new ElementCounter("csv-vertex-count"));
+    }
+
     if (Constants.INPUT_DIR.contains("linklion")) {
       if (Constants.LL_MODE.equals("nyt")
           || Constants.LL_MODE.equals("write")
@@ -150,7 +156,7 @@ public class Preprocessing {
 
     Utils.writeGraphToJSONFile(Graph.fromDataSet(vertices, edges, env),
         Constants.LL_MODE.concat("InputGraph"));
-    env.execute();
+    env.execute("Read input graph from csv");
   }
 
   /**
@@ -339,12 +345,6 @@ public class Preprocessing {
           }
         })
         .distinct(0,1);
-    // not working
-//        .with((edge, vertex) -> edge)
-//        .returns(new TypeHint<Edge<Long, EV>>() {
-//        });
-    // old
-//        .with(new EdgeRestrictFlatJoinFunction())
   }
 
   /**
@@ -602,6 +602,4 @@ public class Preprocessing {
 
     return graph;
   }
-
-
 }

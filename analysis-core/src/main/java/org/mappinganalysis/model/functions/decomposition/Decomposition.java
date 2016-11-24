@@ -20,24 +20,12 @@ public class Decomposition {
   public static Graph<Long, ObjectMap, ObjectMap> executeDecomposition(
       Graph<Long, ObjectMap, ObjectMap> graph, ExecutionEnvironment env) throws Exception {
     // typegroupby already done
-    LOG.info("checksims: " + Constants.IS_SIMSORT_ENABLED + " is simsort enabled");
-    // simsort
+    // simsort execute
     if (Constants.IS_SIMSORT_ENABLED) {
       graph = SimSort.execute(graph, 1000, env);
     } else if (Constants.IS_SIMSORT_ALT_ENABLED) {
       graph = SimSort.executeAlternative(graph, env); // not yet implemented
     }
-
-    // TODO why should vertices be excluded here?
-//      graph = SimSort.excludeLowSimVertices(graph);
-
-    /*
-     * At this point, all edges within components are computed. Therefore we can delete links where
-     * entities link several times to the same data source (e.g., geonames, linkedgeodata)
-     * (remove 1:n links)
-     */
-      // todo not needed anymore!? done somewhere else?
-//      graph = GraphUtils.applyLinkFilter(graph, env);
 
     return graph;
   }
