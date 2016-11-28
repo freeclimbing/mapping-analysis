@@ -39,22 +39,6 @@ public class GraphUtils {
     return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
   }
 
-  public static Graph<Long, ObjectMap, ObjectMap> applyLinkFilter(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                                  ExecutionEnvironment env) throws Exception {
-  //TODO
-//    DataSet<Tuple3<Long, String, Long>> vertices = graph.getVertices()
-//        .map(vertex -> new Tuple3<>(vertex.getId(), vertex.getValue().getOntology(), vertex.getValue().getHashCcId()));
-//    DataSet<Tuple3<Long, Long, Double>> edges = graph.getEdges()
-//        .map(edge -> new Tuple3<>(edge.getSource(), edge.getTarget(), edge.getValue().getEdgeSimilarity()));
-//
-//    DeltaIteration<Tuple3<Long, Long, Double>, Tuple3<Long, Long, Double>> iteration = edges
-//    .iterateDelta(edges, 1000);
-//
-//    vertices.groupBy(2);
-    return Preprocessing.applyLinkFilterStrategy(graph, env, Boolean.FALSE);
-//    return graph;
-  }
-
   /**
    * Replace the vertex values for an existing graph by the vertex id as
    * starting value for connected components computation.

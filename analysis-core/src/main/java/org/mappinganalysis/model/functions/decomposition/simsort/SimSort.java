@@ -116,17 +116,4 @@ public class SimSort {
 
     return graph;
   }
-
-  /**
-   * SimSort post processing exclude low sim vertices
-   * TODO why does this method even exist?
-   * @throws Exception
-   */
-  @Deprecated
-  public static Graph<Long, ObjectMap, ObjectMap> excludeLowSimVertices(
-      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-    // todo map vertices remove checked property from filter
-
-    return graph.filterOnVertices(new SimSortExcludeLowSimFilterFunction(true));
-  }
 }

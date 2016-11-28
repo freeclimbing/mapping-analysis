@@ -16,6 +16,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Utils;
@@ -58,22 +59,27 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/linkFilter/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
 
-    graph = graph.filterOnEdges(new FilterFunction<Edge<Long, ObjectMap>>() {
-      @Override
-      public boolean filter(Edge<Long, ObjectMap> edge) throws Exception {
-        if (edge.getSource() == 617158L) {
-          assertEquals(617159L, edge.getTarget().longValue());
-          return true;
-        } else if (edge.getSource() == 1022884L) {
-          assertEquals(1375705L, edge.getTarget().longValue());
-          return true;
-        } else {
-          return false;
-        }
-      }
-    });
+    graph = graph
+        .run(linkFilter)
+        .filterOnEdges(edge -> {
+          if (edge.getSource() == 617158L) {
+            // 3 edges to lgd get reduced to the best option
+            assertEquals(617159L, edge.getTarget().longValue());
+            return true;
+          } else if (edge.getSource() == 1022884L) {
+            // 2 edges to geonames to best option
+            assertEquals(1375705L, edge.getTarget().longValue());
+            return true;
+          } else {
+            return false;
+          }
+        });
 
     assertEquals(4, graph.getVertices().count());
   }
@@ -114,8 +120,13 @@ public class PreprocessingTest {
     graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
     assertEquals(21, graph.getEdgeIds().count());
 
-    graph = Clustering.removeOneToManyVertices(graph, env);
-    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setStrategy(LinkFilterStrategy.CLUSTERING)
+        .build();
+
+    for (Vertex<Long, ObjectMap> vertex : graph.run(linkFilter).getVertices().collect()) {
       LOG.info(vertex.toString());
       assertTrue(vertex.getId() == 60191L
           || vertex.getId() == 252016L
@@ -135,27 +146,39 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/oneToMany/").getFile();
     Graph<Long, ObjectMap, ObjectMap> inputGraph = Utils.readFromJSONFile(graphPath, env, true);
 
-    Graph<Long, ObjectMap, ObjectMap> resultDeleteVerticesGraph = Preprocessing
-        .applyLinkFilterStrategy(inputGraph, env, true);
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setRemoveIsolatedVertices(true)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
 
+    Graph<Long, ObjectMap, ObjectMap> resultDeleteVerticesGraph = inputGraph.run(linkFilter);
+
+    // test - one edge, two vertices
     for (Tuple2<Long, Long> edge : resultDeleteVerticesGraph.getEdgeIds().collect()) {
       assertEquals(2642L, edge.f0.longValue());
       assertEquals(46584L, edge.f1.longValue());
     }
-
     for (Long vertex : resultDeleteVerticesGraph.getVertexIds().collect()) {
-      LOG.info(vertex.toString());
+//      LOG.info(vertex.toString());
       assertTrue(vertex == 2642L || vertex == 46584L);
     }
 
-    Graph<Long, ObjectMap, ObjectMap> resultNoDeleteVerticesGraph = Preprocessing
-        .applyLinkFilterStrategy(inputGraph, env, false);
+    linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setRemoveIsolatedVertices(false)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
 
+    Graph<Long, ObjectMap, ObjectMap> resultNoDeleteVerticesGraph = inputGraph.run(linkFilter);
+
+    // test - same edge, but all vertices still in graph
     for (Tuple2<Long, Long> edge : resultNoDeleteVerticesGraph.getEdgeIds().collect()) {
       assertEquals(2642L, edge.f0.longValue());
       assertEquals(46584L, edge.f1.longValue());
     }
-
     assertEquals(7, resultNoDeleteVerticesGraph.getVertices().count());
   }
 
@@ -183,9 +206,16 @@ public class PreprocessingTest {
         SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
 
-    simGraph = Preprocessing.applyLinkFilterStrategy(simGraph, env, true);
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setRemoveIsolatedVertices(true)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
 
-    simGraph.getVertices().print();
+    simGraph.run(linkFilter)
+        .getVertices()
+        .print();
 
 //    DataSet<Vertex<Long, ObjectMap>> result = Preprocessing.deleteVerticesWithoutAnyEdges(
 //        inGraph.getVertices(),
