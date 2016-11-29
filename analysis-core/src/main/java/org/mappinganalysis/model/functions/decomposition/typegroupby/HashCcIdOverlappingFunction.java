@@ -1,5 +1,7 @@
 package org.mappinganalysis.model.functions.decomposition.typegroupby;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
@@ -10,14 +12,15 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 /**
  * new group reduce filters vertices with overlapping
  * types correctly together into one hashCc
  *
- * TODO test
  */
 class HashCcIdOverlappingFunction implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(HashCcIdOverlappingFunction.class);
@@ -27,6 +30,7 @@ class HashCcIdOverlappingFunction implements GroupReduceFunction<Vertex<Long, Ob
     Set<Vertex<Long, ObjectMap>> tmpVertices = Sets.newHashSet(input);
     HashMap<String, Long> hashDictionary = Maps.newHashMap();
 
+    // NOTE: hash changes for different runs because of use of set, but result is correct
     for (Vertex<Long, ObjectMap> tmpVertex : tmpVertices) {
 //      LOG.info(tmpVertex.getId() + " #######################");
       Set<String> types = tmpVertex.getValue().getTypes(Constants.COMP_TYPE);

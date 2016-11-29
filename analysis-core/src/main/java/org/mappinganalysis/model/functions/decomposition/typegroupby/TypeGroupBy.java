@@ -1,9 +1,11 @@
 package org.mappinganalysis.model.functions.decomposition.typegroupby;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -33,51 +35,51 @@ public class TypeGroupBy {
         .map(new AddShadingTypeMapFunction())
         .groupBy(new CcIdKeySelector())
         .reduceGroup(new HashCcIdOverlappingFunction());
-    // TODO needed?
     graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
     // end preprocessing
 
     /**
      * Start typed grouping
      */
-    final DataSet<NeighborTuple> neighborSimTypes = graph
+    final DataSet<NeighborTuple> allTypeOptionsForUntyped = graph
         .groupReduceOnNeighbors(new NeighborTupleCreator(), EdgeDirection.ALL);
 
-    final DataSet<NeighborTuple> maxTypedSimValues = getMaxNeighborSims(neighborSimTypes);
+    final DataSet<NeighborTuple> maxTypedSimValues = getMaxNeighborSims(allTypeOptionsForUntyped);
 
     // all tuples minus max tuple ids with type
-    DataSet<NeighborTuple> noTypedNeighborsCandidates = neighborSimTypes
+    DataSet<Vertex<Long, ObjectMap>> noTypeVerticesWithNoTypeNeighbors = allTypeOptionsForUntyped
         .leftOuterJoin(maxTypedSimValues)
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<NeighborTuple,
-            NeighborTuple, NeighborTuple>() {
+        .with(new FlatJoinFunction<NeighborTuple, NeighborTuple, NeighborTuple>() {
           @Override
           public void join(NeighborTuple first, NeighborTuple second,
                            Collector<NeighborTuple> out) throws Exception {
             if (second == null) {
-//                LOG.info("noTypeCandidate: " + first.toString());
+//              LOG.info("noT " + first);
               out.collect(first);
             }
           }
-        });
-
-    DataSet<Vertex<Long, ObjectMap>> noTypedNeighbors = noTypedNeighborsCandidates
-        .groupBy(0)
-        .min(3)
+        })
+//        .groupBy(0)
+//        .min(3)
+        .distinct(0)
         .leftOuterJoin(vertices)
         .where(0)
         .equalTo(0)
         .with((left, right) -> {
           if (right.getValue().getHashCcId() < left.getCompId()) {
+//            LOG.info("add: " + right.toString() + " leftcompid: " + left.getCompId());
             right.getValue().put(Constants.HASH_CC, left.getCompId());
+
           }
+//          LOG.info("end: " + right.toString() + " left: " + left.toString());
           return right;
         })
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> typedNeighbors = maxTypedSimValues
-        .leftOuterJoin(graph.getVertices())
+        .joinWithHuge(graph.getVertices())
         .where(0)
         .equalTo(0)
         .with((left, right) -> {
@@ -87,7 +89,7 @@ public class TypeGroupBy {
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = graph.getVertices()
-        .leftOuterJoin(noTypedNeighbors.union(typedNeighbors))
+        .leftOuterJoin(noTypeVerticesWithNoTypeNeighbors.union(typedNeighbors))
         .where(0)
         .equalTo(0)
         .with((unchanged, updated) -> {

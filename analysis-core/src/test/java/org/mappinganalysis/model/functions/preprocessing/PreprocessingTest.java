@@ -161,7 +161,6 @@ public class PreprocessingTest {
       assertEquals(46584L, edge.f1.longValue());
     }
     for (Long vertex : resultDeleteVerticesGraph.getVertexIds().collect()) {
-//      LOG.info(vertex.toString());
       assertTrue(vertex == 2642L || vertex == 46584L);
     }
 
@@ -235,25 +234,5 @@ public class PreprocessingTest {
         graph.getEdges().<Tuple2<Long, Long>>project(0, 1));
 
     assertEquals(4, result.count());
-  }
-
-  @Test
-  //AskTimeoutException
-  // FIXME: 9/28/16
-  public void getInputGraphFromCSVTest() throws Exception {
-    DataLoader loader = new DataLoader(env);
-    final String vertexFile = "concept.csv";
-    final String propertyFile = "concept_attributes.csv";
-    final String path = PreprocessingTest.class
-        .getResource("/data/preprocessing/tmp/").getFile();
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = loader
-        .getVerticesFromCsv(path.concat(vertexFile), path.concat(propertyFile));
-
-
-    DataSet<Vertex<Long, ObjectMap>> nytFbVertices = vertices.filter(vertex ->
-        vertex.getValue().getOntology().equals(Constants.NYT_NS));
-
-    LOG.info(nytFbVertices.count());
   }
 }

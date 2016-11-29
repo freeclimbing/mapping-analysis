@@ -1,19 +1,14 @@
 package org.mappinganalysis.model.functions.decomposition;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.tuple.Tuple1;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.graph.*;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;

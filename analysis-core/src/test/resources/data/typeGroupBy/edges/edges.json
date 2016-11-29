@@ -1,0 +1,15 @@
+{"source":617158,"target":1375705,"data":{"aggSimValue":0.70018335}}
+{"source":617158,"target":617159,"data":{"aggSimValue":0.749982}}
+{"source":617158,"target":1022884,"data":{"aggSimValue":0.54361305}}
+{"source":617159,"target":1375705,"data":{"aggSimValue":0.70016775}}
+{"source":617158,"target":1022884,"data":{"aggSimValue":0.54362625}}
+{"source":1022884,"target":1375705,"data":{"aggSimValue":0.593442}}
+{"source":122,"target":123,"data":{"aggSimValue":0.5902563}}
+{"source":122,"target":1181,"data":{"aggSimValue":0.75}}
+{"source":122,"target":2060,"data":{"aggSimValue":0.45}}
+{"source":123,"target":2060,"data":{"aggSimValue":0.2980197}}
+{"source":123,"target":1181,"data":{"aggSimValue":0.5902563}}
+{"source":1181,"target":2060,"data":{"aggSimValue":0.45}}
+{"source":1,"target":2,"data":{"aggSimValue":0.0}}
+{"source":1,"target":3,"data":{"aggSimValue":0.0}}
+{"source":2,"target":3,"data":{"aggSimValue":0.0}}
