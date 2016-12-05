@@ -93,9 +93,6 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
    */
   public static DataSet<Edge<Long, ObjectMap>> computeGraphEdgeSim(Graph<Long, ObjectMap, NullValue> graph,
                                                                    String matchCombination) {
-    LOG.info("Compute Edge similarities based on vertex values, ignore missing properties: "
-        + Constants.IGNORE_MISSING_PROPERTIES);
-
     return computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES));

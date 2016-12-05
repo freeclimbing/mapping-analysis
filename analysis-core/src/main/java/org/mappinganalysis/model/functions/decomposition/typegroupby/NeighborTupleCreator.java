@@ -18,12 +18,21 @@ class NeighborTupleCreator
   public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
                                Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
                                Collector<NeighborTuple> out) throws Exception {
-    String vertexType = vertex.getValue().getTypes(Constants.TYPE_INTERN).stream().findFirst().get();
-    if (vertexType.equals(Constants.NO_TYPE)) {
+    if (hasNoType(vertex)) {
       neighbors.forEach(neighbor -> out.collect(new NeighborTuple(vertex.getId(),
           neighbor.f0.getValue().getEdgeSimilarity(),
           neighbor.f1.getValue().getTypes(Constants.TYPE_INTERN),
           neighbor.f1.getValue().getHashCcId())));
     }
+  }
+
+  private boolean hasNoType(Vertex<Long, ObjectMap> vertex) {
+    return vertex
+        .getValue()
+        .getTypes(Constants.TYPE_INTERN)
+        .stream()
+        .findFirst()
+        .get()
+        .equals(Constants.NO_TYPE);
   }
 }

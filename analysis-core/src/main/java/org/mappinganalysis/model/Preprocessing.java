@@ -60,16 +60,11 @@ public class Preprocessing {
      * restrict graph to direct links with matching type information
      */
     graph = applyTypeMissMatchCorrection(graph, true, env);
-    Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
+
+    return Graph.fromDataSet(
         graph.getVertices(),
         SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
-
-    /*
-     * restrict (direct) links to 1:1 in terms of sources from one entity to another
-     */
-
-    return simGraph; //applyLinkFilterStrategy(simGraph, env, true); // excluded to other method
   }
 
   /**

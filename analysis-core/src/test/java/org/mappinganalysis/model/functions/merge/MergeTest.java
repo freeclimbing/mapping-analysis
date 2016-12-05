@@ -112,24 +112,37 @@ public class MergeTest {
 
   @Test
   public void testAddBlockingLabel() throws Exception {
-    String input = "foobar";
-    String blockingLabel = Utils.getBlockingLabel(input);
+    String testLabel = "foobar";
+    String blockingLabel = Utils.getBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("foo"));
-    blockingLabel = Utils.getBlockingLabel(input.substring(0, 3));
-    assertTrue(blockingLabel.equals("foo"));
-    blockingLabel = Utils.getBlockingLabel(input.substring(0, 1));
+    blockingLabel = Utils.getBlockingLabel(testLabel.substring(0, 1));
     assertTrue(blockingLabel.equals("f##"));
+    testLabel = "+5";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("#5#"));
 
-    input = "5";
-    blockingLabel = Utils.getBlockingLabel(input);
-    assertTrue(blockingLabel.equals("###"));
-    input = "5555";
-    blockingLabel = Utils.getBlockingLabel(input);
-    assertTrue(blockingLabel.equals("###"));
-
-    input = "Long Island, NY";
-    blockingLabel = Utils.getBlockingLabel(input);
+    testLabel = "Long Island, NY";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("lon"));
+
+    testLabel = "N123";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("n12"));
+    testLabel = "1ABC";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("1ab"));
+
+    testLabel = "安市";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("###"));
+
+    testLabel = "ﻚﻓﺭ ﺐﻬﻣ";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("###"));
+
+    testLabel = "Pułaczów";
+    blockingLabel = Utils.getBlockingLabel(testLabel);
+    assertTrue(blockingLabel.equals("pu#"));
   }
 
   @Test

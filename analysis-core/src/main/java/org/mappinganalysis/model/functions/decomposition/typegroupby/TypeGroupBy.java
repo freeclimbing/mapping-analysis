@@ -5,10 +5,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.*;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
@@ -18,17 +15,21 @@ import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFuncti
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
-public class TypeGroupBy {
+public class TypeGroupBy implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
+  private ExecutionEnvironment env;
+
+  public TypeGroupBy(ExecutionEnvironment env) {
+    this.env = env;
+  }
 
   /**
    * For a given graph, assign all vertices with no type to the component where the best similarity can be found.
    * @param graph input graph
    * @return graph where non-type vertices are assigned to best matching component
    */
-  public static Graph<Long, ObjectMap, ObjectMap> execute(
-      Graph<Long, ObjectMap, ObjectMap> graph,
-      ExecutionEnvironment env, ExampleOutput out)
+  @Override
+  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph)
       throws Exception {
     // start preprocessing
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
@@ -70,8 +71,7 @@ public class TypeGroupBy {
         .with((left, right) -> {
           if (right.getValue().getHashCcId() < left.getCompId()) {
 //            LOG.info("add: " + right.toString() + " leftcompid: " + left.getCompId());
-            right.getValue().put(Constants.HASH_CC, left.getCompId());
-
+            right.getValue().setHashCcId(left.getCompId());
           }
 //          LOG.info("end: " + right.toString() + " left: " + left.toString());
           return right;
@@ -83,7 +83,7 @@ public class TypeGroupBy {
         .where(0)
         .equalTo(0)
         .with((left, right) -> {
-          right.getValue().put(Constants.HASH_CC, left.getCompId());
+          right.getValue().setHashCcId(left.getCompId());
           return right;
         })
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
@@ -104,9 +104,19 @@ public class TypeGroupBy {
     return Graph.fromDataSet(newVertices, graph.getEdges(), env);
   }
 
+
+  public static Graph<Long, ObjectMap, ObjectMap> execute(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env, ExampleOutput out)
+      throws Exception {
+    return null;
+  }
+
+  /**
+   * helper method
+   */
   private static DataSet<NeighborTuple> getMaxNeighborSims(
       DataSet<NeighborTuple> neighborSimTypes) {
-
     final DataSet<NeighborTuple> typeVals = neighborSimTypes
         .filter(value -> !value.getTypes().contains(Constants.NO_TYPE));
 
@@ -121,4 +131,28 @@ public class TypeGroupBy {
             .min(3);
   }
 
+  /**
+   * Used for building a TypeGroupBy instance.
+   */
+  public static final class TypeGroupByBuilder {
+    private ExecutionEnvironment env;
+
+    public TypeGroupByBuilder setEnvironment(ExecutionEnvironment env) {
+      this.env = env;
+      return this;
+    }
+
+    /**
+     * Creates link filter based on the configured parameters.
+     * @return link filter
+     */
+    public TypeGroupBy build() {
+      if (env != null) {
+        return new TypeGroupBy(env);
+      } else {
+        throw new IllegalArgumentException("Execution environment null");
+      }
+    }
+
+  }
 }

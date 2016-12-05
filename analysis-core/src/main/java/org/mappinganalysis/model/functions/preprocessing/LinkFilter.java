@@ -35,7 +35,7 @@ public abstract class LinkFilter
   public static final class LinkFilterBuilder {
     private LinkFilterStrategy strategy;
     private Boolean removeIsolatedVertices = true;
-    private ExecutionEnvironment env;
+    private ExecutionEnvironment env = null;
 
     public LinkFilterBuilder setStrategy(LinkFilterStrategy strategy) {
       this.strategy = strategy;
@@ -57,12 +57,16 @@ public abstract class LinkFilter
      * @return link filter
      */
     public LinkFilter build() {
-      if (strategy == LinkFilterStrategy.BASIC) {
-        return new BasicLinkFilter(removeIsolatedVertices, env);
-      } else if (strategy == LinkFilterStrategy.CLUSTERING) {
-        return new ClusteringLinkFilter(env);
+      if (env != null) {
+        if (strategy == LinkFilterStrategy.BASIC) {
+          return new BasicLinkFilter(removeIsolatedVertices, env);
+        } else if (strategy == LinkFilterStrategy.CLUSTERING) {
+          return new ClusteringLinkFilter(env);
+        } else {
+          throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+        }
       } else {
-        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+        throw new IllegalArgumentException("Execution environment null");
       }
     }
 

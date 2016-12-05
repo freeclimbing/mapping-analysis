@@ -70,7 +70,8 @@ public class Merge {
       DataSet<Vertex<Long, ObjectMap>> baseClusters,
       int sourcesCount)
       throws Exception {
-    MeanAggregationMode mode = new MeanAggregationMode();
+
+    MeanAggregationMode mode = new MeanAggregationMode(); // not used atm, rework
     MergeTripletGeoLabelSimilarity simFunction = new MergeTripletGeoLabelSimilarity(mode);
 
     SimilarityComputation<MergeTriplet> similarityComputation = new SimilarityComputation

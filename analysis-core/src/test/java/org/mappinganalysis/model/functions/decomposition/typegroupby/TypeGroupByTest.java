@@ -23,7 +23,7 @@ public class TypeGroupByTest {
 
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = TypeGroupBy.execute(graph, env, null);
+    TypeGroupBy typeGroupBy = new TypeGroupBy(env);
 
     // little workaround needed because hash in HashCcIdOverlappingFunction may change for different runs
     // --> but resulting grouping is always correct
@@ -36,7 +36,7 @@ public class TypeGroupByTest {
     long resultLake2 = 0;
     long resultFake = 0; // all no_type -> same hash
 
-    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+    for (Vertex<Long, ObjectMap> vertex : graph.run(typeGroupBy).getVertices().collect()) {
       if (vertex.getId() == 1375705L || vertex.getId() == 617158L
           || vertex.getId() == 617159L || vertex.getId() == 1022884L) {
         if (!isKarl) {

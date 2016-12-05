@@ -14,6 +14,11 @@ import java.util.HashSet;
  * Create triplets for merge, properties are added after checking restrictions,
  * similarity is not added in this creation process.
  *
+ * restrictions:
+ * - type of two vertices have an overlap
+ * - sources of two vertices do not overlap
+ * - size of resulting cluster is not bigger than numbers of data sources
+ *
  * Careful:
  * - MergeTriplets have some properties which contain a start value to
  * avoid null pointer exceptions.

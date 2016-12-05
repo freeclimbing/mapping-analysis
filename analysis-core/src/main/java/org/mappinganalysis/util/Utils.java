@@ -31,6 +31,7 @@ import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.*;
 
 import static org.simmetrics.builders.StringMetricBuilder.with;
@@ -459,9 +460,13 @@ public class Utils {
     }
 
     label = label.substring(0, 3).toLowerCase();
-    if (!label.substring(0, 1).matches("[a-z]")) {
-      label = "###";
+    label = label.replaceAll("[^a-zA-Z0-9#]+","#");
+
+    // needed for chinese chars for example
+    if (label.length() < 3) {
+      label += StringUtils.repeat("#", 3 - label.length());
     }
+
     return label;
   }
 
