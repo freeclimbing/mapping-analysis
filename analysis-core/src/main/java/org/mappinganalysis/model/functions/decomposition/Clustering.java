@@ -32,15 +32,15 @@ public class Clustering {
       ExampleOutput out,
       ExecutionEnvironment env) throws Exception {
 
-    graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
-
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()
         .setEnvironment(env)
+        .setRemoveIsolatedVertices(true)
         .setStrategy(LinkFilterStrategy.CLUSTERING)
         .build();
 
-    graph.run(linkFilter);
+    graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env)
+              .run(linkFilter);
 
     if (verbosity.equals(Constants.DEBUG)) {
       out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);

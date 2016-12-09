@@ -126,12 +126,15 @@ public class Constants {
 
   public static final String INPUT = "input";
   public static final String PREPROC = "preproc";
-  public static final String DECOMP = "decomp";
   public static final String LF = "lf";
+  public static final String PRECOMPLETE = "pc";
   public static final String IC = "ic";
+  public static final String DECOMP = "decomp";
   public static final String SIMSORT = "simsort";
+  public static final String DECCOMPLETE = "dc";
   public static final String ANALYSIS = "analysis";
-  public static final String ALL = "all";
+  public static final String ALL = "all"; // all parts in a row, multiple jobs
+  public static final String COMPLETE = "c"; // all parts together
   public static final String EVAL = "eval";
   public static final String STATS_EDGE_INPUT = "stats-edge-input";
   public static final String STATS_EDGE_PREPROC = "stats-edge-preproc";
