@@ -1,8 +1,18 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.java.tuple.Tuple6;
 
-public class EdgeSourceSimTuple extends Tuple6<Long, Long, Long, String, String, Double> {
+/**
+ *  Tuple representation for an edge with contained information
+ *  - source vertex id
+ *  - target vertex id
+ *  - starting vertex data source (ontology)
+ *  - neighbor vertex data source (ontology)
+ *  - edge similarity
+ */
+public class EdgeSourceSimTuple
+    extends Tuple6<Long, Long, Long, String, String, Double> {
+
   public EdgeSourceSimTuple() {
   }
 

@@ -1,9 +1,7 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.accumulators.ListAccumulator;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
@@ -14,9 +12,9 @@ import java.util.Set;
 
 /**
  * Map types of imported resources to an internal dictionary of harmonized type values.
- * TODO richmap no longer needed
  */
-public class InternalTypeMapFunction extends RichMapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+public class InternalTypeMapFunction
+    implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(InternalTypeMapFunction.class);
 
   @Override

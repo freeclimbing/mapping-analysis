@@ -63,9 +63,8 @@ public class ClusteringLinkFilterFunction extends LinkFilterFunction {
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .union(bestCandidates);
 
-    DataSet<Edge<Long, ObjectMap>> resultEdges = Preprocessing.deleteEdgesWithoutSourceOrTarget(
-        graph.getEdges(),
-        resultVertices);
+    DataSet<Edge<Long, ObjectMap>> resultEdges = graph.getEdges()
+        .runOperation(new IsolatedEdgeRemover<>(resultVertices));
 
     return Graph.fromDataSet(resultVertices, resultEdges, env);  }
 }

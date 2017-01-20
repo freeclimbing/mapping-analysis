@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;

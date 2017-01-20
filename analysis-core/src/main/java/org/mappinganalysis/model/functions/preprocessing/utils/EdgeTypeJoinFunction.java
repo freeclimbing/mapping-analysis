@@ -1,11 +1,15 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.mappinganalysis.model.IdTypeTuple;
 
-public class EdgeTypeJoinFunction implements JoinFunction<Tuple4<Long, Long, String, String>,
+/**
+ * Used in TypeMisMatchCorrection, tuple position 0 needs to be filled first.
+ */
+public class EdgeTypeJoinFunction
+    implements JoinFunction<Tuple4<Long, Long, String, String>,
     IdTypeTuple, Tuple4<Long, Long, String, String>> {
   private final int tuplePosition;
 

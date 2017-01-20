@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -10,10 +10,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ComponentSourceTuple extends Tuple2<Long, Integer> {
+/**
+ * For a clustered view for entities (component), retrieve the different data sources.
+ * A single integer value is used to represent (currently) 5 different types.
+ *
+ * Types as well as count of different types can be retrieved.
+ */
+public class ComponentSourceTuple
+    extends Tuple2<Long, Integer> {
+
   private static final Logger LOG = Logger.getLogger(ComponentSourceTuple.class);
   private static final HashMap<String, Integer> SOURCES = AbstractionUtils.getSourceMap();
-  private static final HashMap<String, Integer> TYPES = AbstractionUtils.getTypesMap();
 
   public ComponentSourceTuple() {
     this.f1 = 0;

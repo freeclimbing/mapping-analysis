@@ -16,6 +16,7 @@
         <module>property-enrichment</module>
         <module>analysis-clique</module>
         <module>analysis-core</module>
+        <module>analysis-examples</module>
     </modules>
 
     <developers>
@@ -136,11 +137,7 @@
                 <artifactId>log4j-core</artifactId>
                 <version>${dep.log4j.version}</version>
             </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${dep.junit.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -155,6 +152,13 @@
                 <groupId>org.jgrapht</groupId>
                 <artifactId>jgrapht-core</artifactId>
                 <version>${dep.jgrapht.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${dep.junit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

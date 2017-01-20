@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
 import org.mappinganalysis.util.Constants;
 
 import java.util.List;
@@ -72,8 +73,8 @@ public class BasicTest {
         .equalTo(0)
         .with((longTuple1, vertex) -> vertex).returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
-    DataSet<Edge<Long, NullValue>> newEdges = Preprocessing
-        .deleteEdgesWithoutSourceOrTarget(graph.getEdges(), newVertices);
+    DataSet<Edge<Long, NullValue>> newEdges = graph.getEdges()
+        .runOperation(new IsolatedEdgeRemover<>(newVertices));
 
     graph = Graph.fromDataSet(newVertices.distinct(0), newEdges.distinct(0,1), env);
     return graph;

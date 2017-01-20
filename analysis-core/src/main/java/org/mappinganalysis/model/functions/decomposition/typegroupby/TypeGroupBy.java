@@ -15,7 +15,9 @@ import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFuncti
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
-public class TypeGroupBy implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
+public class TypeGroupBy
+    implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
+
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
   private ExecutionEnvironment env;
 

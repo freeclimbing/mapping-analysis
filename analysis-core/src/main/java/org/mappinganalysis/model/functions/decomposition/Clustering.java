@@ -55,7 +55,7 @@ public class Clustering {
    * 1. Compute transitive closure for a given graph and add the computed edges to the graph.
    * Direction of edges may change, two vertices have exactly one edge.
    * 2. For each of the computed edges, we compute a similarity value based on
-   * label and geo coorodinates.
+   * label and geo coordinates.
    * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> computeTransitiveClosureEdgeSimilarities(
@@ -64,6 +64,7 @@ public class Clustering {
 
     graph = GraphUtils.addCcIdsToGraph(graph, env);
 
+    // CcIdKeySelector!
     final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
     final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation

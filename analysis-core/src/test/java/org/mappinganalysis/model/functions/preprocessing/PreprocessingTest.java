@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -11,10 +10,10 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
-import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
+import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
@@ -229,9 +228,8 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/deleteVerticesWithoutEdges/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    DataSet<Vertex<Long, ObjectMap>> result = Preprocessing.deleteVerticesWithoutAnyEdges(
-        graph.getVertices(),
-        graph.getEdges().<Tuple2<Long, Long>>project(0, 1));
+    DataSet<Vertex<Long, ObjectMap>> result = graph.getVertices()
+        .runOperation(new IsolatedVertexRemover<>(graph.getEdges()));
 
     assertEquals(4, result.count());
   }

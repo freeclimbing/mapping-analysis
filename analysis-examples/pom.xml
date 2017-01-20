@@ -10,24 +10,14 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>analysis-core</artifactId>
+    <artifactId>analysis-examples</artifactId>
     <packaging>jar</packaging>
-
-    <name>Mapping-Analysis Core</name>
-    <description>Mapping-Analysis core classes</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.github.mpkorstanje</groupId>
-            <artifactId>simmetrics-core</artifactId>
-            <version>4.0.1</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.s1ck</groupId>
-            <artifactId>gdl</artifactId>
-            <version>${dep.gdl.version}</version>
+            <groupId>org.mappinganalysis</groupId>
+            <artifactId>analysis-core</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -37,24 +27,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients_2.10</artifactId>
-            <version>${dep.flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
             <artifactId>flink-gelly</artifactId>
             <version>${dep.flinkSnapshot.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-jdbc</artifactId>
-            <version>${dep.flinkSnapshot.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gradoop</groupId>
-            <artifactId>gradoop-flink</artifactId>
-            <version>${dep.gradoop.version}</version>
         </dependency>
 
         <dependency>
@@ -68,4 +42,5 @@
             <version>${dep.log4j.version}</version>
         </dependency>
     </dependencies>
+
 </project>

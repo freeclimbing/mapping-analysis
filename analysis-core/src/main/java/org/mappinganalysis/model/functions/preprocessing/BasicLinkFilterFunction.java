@@ -13,6 +13,9 @@ import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.graph.LinkFilterFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.preprocessing.utils.EdgeSourceSimTuple;
+import org.mappinganalysis.model.functions.preprocessing.utils.LinkSelectionWithCcIdFunction;
+import org.mappinganalysis.model.functions.preprocessing.utils.SecondNeighborOntologyFunction;
 
 /**
  * Actual implementation for basic link filter.
@@ -20,7 +23,8 @@ import org.mappinganalysis.model.Preprocessing;
  * preprocessing: currently in use simple 1:n removal
  * TODO grouping based on ccId still used for creating independent blocks, how to avoid?
  */
-public class BasicLinkFilterFunction extends LinkFilterFunction {
+public class BasicLinkFilterFunction
+    extends LinkFilterFunction {
   private Boolean removeIsolatedVertices;
   private ExecutionEnvironment env;
 
@@ -52,9 +56,8 @@ public class BasicLinkFilterFunction extends LinkFilterFunction {
 
     DataSet<Vertex<Long, ObjectMap>> resultVertices;
     if (removeIsolatedVertices) {
-      resultVertices = Preprocessing.deleteVerticesWithoutAnyEdges(
-          graph.getVertices(),
-          newEdges.<Tuple2<Long, Long>>project(0, 1));
+      resultVertices = graph.getVertices()
+          .runOperation(new IsolatedVertexRemover<>(newEdges));
     } else {
       resultVertices = graph.getVertices();
     }

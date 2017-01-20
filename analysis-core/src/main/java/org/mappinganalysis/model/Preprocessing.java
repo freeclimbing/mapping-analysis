@@ -3,7 +3,6 @@ package org.mappinganalysis.model;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -11,7 +10,6 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -21,9 +19,11 @@ import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.functions.preprocessing.*;
+import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
+import org.mappinganalysis.model.functions.preprocessing.IsolatedVertexRemover;
+import org.mappinganalysis.model.functions.preprocessing.TypeMisMatchCorrection;
+import org.mappinganalysis.model.functions.preprocessing.utils.*;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ElementCounter;
@@ -59,7 +59,11 @@ public class Preprocessing {
     /*
      * restrict graph to direct links with matching type information
      */
-    graph = applyTypeMissMatchCorrection(graph, true, env);
+    TypeMisMatchCorrection correction = new TypeMisMatchCorrection
+        .TypeMisMatchCorrectionBuilder()
+        .setEnvironment(env)
+        .build();
+    graph = graph.run(correction);
 
     return Graph.fromDataSet(
         graph.getVertices(),
@@ -144,11 +148,10 @@ public class Preprocessing {
       }
     }
 
-    DataSet<Edge<Long, NullValue>> edges = deleteEdgesWithoutSourceOrTarget(
-        loader.getEdgesFromCsv(Constants.INPUT_DIR + edgeFile), vertices);
+    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(Constants.INPUT_DIR + edgeFile)
+        .runOperation(new IsolatedEdgeRemover<>(vertices));
 
-    vertices = deleteVerticesWithoutAnyEdges(
-        vertices, edges.<Tuple2<Long, Long>>project(0, 1));
+    vertices = vertices.runOperation(new IsolatedVertexRemover<>(edges));
 
     Utils.writeGraphToJSONFile(Graph.fromDataSet(vertices, edges, env),
         Constants.LL_MODE.concat("InputGraph"));
@@ -316,87 +319,6 @@ public class Preprocessing {
   }
 
   /**
-   * Delete edges where source or target vertex are not in the vertex set.
-   * TODO fix lambdas not working because of type erasure, even with TypeHint
-   */
-  public static <EV> DataSet<Edge<Long, EV>> deleteEdgesWithoutSourceOrTarget(
-      DataSet<Edge<Long, EV>> edges, DataSet<Vertex<Long, ObjectMap>> vertices) {
-
-    return edges.join(vertices)
-        .where(0)
-        .equalTo(0)
-        .with(new JoinFunction<Edge<Long,EV>, Vertex<Long,ObjectMap>, Edge<Long, EV>>() {
-          @Override
-          public Edge<Long, EV> join(Edge<Long, EV> first, Vertex<Long, ObjectMap> second) throws Exception {
-            return first;
-          }
-        })
-        .join(vertices)
-        .where(1)
-        .equalTo(0)
-        .with(new JoinFunction<Edge<Long, EV>, Vertex<Long, ObjectMap>, Edge<Long, EV>>() {
-          @Override
-          public Edge<Long, EV> join(Edge<Long, EV> first, Vertex<Long, ObjectMap> second) throws Exception {
-            return first;
-          }
-        })
-        .distinct(0,1);
-  }
-
-  /**
-   * Delete vertices which are not source or target of an edge.
-   * @param vertices (reduced) set of input vertices
-   * @param edges corresponding edge set
-   * @return vertices
-   */
-  public static DataSet<Vertex<Long, ObjectMap>> deleteVerticesWithoutAnyEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices, DataSet<Tuple2<Long, Long>> edges) {
-
-    DataSet<Vertex<Long, ObjectMap>> left = vertices
-        .join(edges)
-        .where(0)
-        .equalTo(0)
-        .with((vertex, edge) -> vertex)
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-
-    return vertices
-        .join(edges)
-        .where(0)
-        .equalTo(1)
-        .with((vertex, edge) -> vertex)
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-        .union(left)
-        .distinct(0);
-  }
-
-  /**
-   * Create the input graph for further analysis,
-   * restrict to edges where source and target are in vertices set.
-   * @param fullDbString complete server+port+db string
-   * @deprecated load from db too slow
-   */
-  @Deprecated
-  public static Graph<Long, ObjectMap, NullValue> getInputGraph(String fullDbString, ExecutionEnvironment env)
-      throws Exception {
-    DataLoader loader = new DataLoader(env);
-    DataSet<Vertex<Long, ObjectMap>> vertices = loader.getVertices(fullDbString);
-
-    // restrict edges to these where source and target are vertices
-    DataSet<Edge<Long, NullValue>> edges = loader.getEdges(fullDbString)
-        .leftOuterJoin(vertices)
-        .where(0).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction())
-        .leftOuterJoin(vertices)
-        .where(1).equalTo(0)
-        .with(new EdgeRestrictFlatJoinFunction());
-
-    return Graph.fromDataSet(
-        deleteVerticesWithoutAnyEdges(vertices, edges.<Tuple2<Long, Long>>project(0, 1)),
-        edges,
-        env);
-  }
-
-  /**
    * Harmonize available type information with a common dictionary.
    * @param graph input graph
    * @return graph with additional internal type property
@@ -405,51 +327,5 @@ public class Preprocessing {
       Graph<Long, ObjectMap, NullValue> graph) {
     return graph.getVertices()
         .map(new InternalTypeMapFunction());
-  }
-
-  /**
-   * Exclude edges where directly connected source and target vertices have different type property values.
-   * @param graph input graph
-   * @param isTypeMissMatchCorrectionActive true enables option
-   * @return corrected graph
-   * @throws Exception
-   */
-  public static Graph<Long, ObjectMap, NullValue> applyTypeMissMatchCorrection(
-      Graph<Long, ObjectMap, NullValue> graph,
-      boolean isTypeMissMatchCorrectionActive,
-      ExecutionEnvironment env) throws Exception {
-
-    if (isTypeMissMatchCorrectionActive) {
-      DataSet<IdTypeTuple> vertexIdAndTypeList = graph.getVertices()
-          .flatMap(new VertexIdTypeTupleMapper());
-
-      DataSet<Tuple4<Long, Long, String, String>> edgeTypes = graph.getEdges()
-          .map(edge -> new Tuple4<>(edge.getSource(), edge.getTarget(), "", ""))
-          .returns(new TypeHint<Tuple4<Long, Long, String, String>>() {})
-          .join(vertexIdAndTypeList)
-          .where(0).equalTo(0)
-          .with(new EdgeTypeJoinFunction(0))
-          .distinct()
-          .join(vertexIdAndTypeList)
-          .where(1)
-          .equalTo(0)
-          .with(new EdgeTypeJoinFunction(1))
-          .distinct();
-
-      DataSet<Edge<Long, NullValue>> edgesEqualType = edgeTypes
-          .filter(new EqualTypesEdgeFilterFunction())
-          .map(tuple -> new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance()))
-          .returns(new TypeHint<Edge<Long, NullValue>>() {})
-          .distinct(0, 1);
-
-      DataSet<Vertex<Long, ObjectMap>> resultVertices = deleteVerticesWithoutAnyEdges(
-          graph.getVertices(),
-          edgesEqualType.<Tuple2<Long, Long>>project(0, 1));
-
-      return Graph.fromDataSet(resultVertices, edgesEqualType, env);
-
-    }
-
-    return graph;
   }
 }

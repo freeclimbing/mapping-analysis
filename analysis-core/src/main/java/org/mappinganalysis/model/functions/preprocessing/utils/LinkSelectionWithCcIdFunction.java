@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -10,9 +10,9 @@ import java.util.HashMap;
 
 /**
  * Add links to result set, check if datasource is already contained in current cluster.
- * If contained, sort link out.
+ * If contained, remove link.
  *
- * To reduce complexity to ccid groups, ccid is still used.
+ * TODO To reduce complexity to ccid groups, ccid is still used.
  * todo Test version with sort partition.
  */
 public class LinkSelectionWithCcIdFunction

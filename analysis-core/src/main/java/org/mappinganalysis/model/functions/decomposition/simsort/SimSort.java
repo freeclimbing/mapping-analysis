@@ -50,7 +50,7 @@ public class SimSort {
     /**
      * set solution set unmanaged in order to reduce out of memory exception on non-cluster setup
      */
-    aggParameters.setSolutionSetUnmanagedMemory(true);
+//    aggParameters.setSolutionSetUnmanagedMemory(true);
 
     DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = createSimSortInputGraph(graph, env)
         .runVertexCentricIteration(

@@ -2,6 +2,7 @@ package org.mappinganalysis.model.functions.preprocessing;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.AbstractionUtils;
 

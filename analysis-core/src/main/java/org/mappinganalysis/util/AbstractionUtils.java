@@ -2,7 +2,7 @@ package org.mappinganalysis.util;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.mappinganalysis.model.functions.preprocessing.ComponentSourceTuple;
+import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 
 import java.util.HashMap;
 import java.util.HashSet;

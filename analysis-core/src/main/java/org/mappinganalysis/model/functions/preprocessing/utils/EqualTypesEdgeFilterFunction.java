@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.preprocessing;
+package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.RichFilterFunction;
@@ -7,7 +7,11 @@ import org.apache.flink.configuration.Configuration;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
-public class EqualTypesEdgeFilterFunction extends RichFilterFunction<Tuple4<Long, Long, String, String>> {
+/**
+ * Get all edges where type or type shading is equal.
+ */
+public class EqualTypesEdgeFilterFunction
+    extends RichFilterFunction<Tuple4<Long, Long, String, String>> {
   private LongCounter edgeCounter = new LongCounter();
 
   @Override
