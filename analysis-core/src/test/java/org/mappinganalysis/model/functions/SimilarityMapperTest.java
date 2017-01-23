@@ -9,11 +9,9 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.BasicTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.simcomputation.TrigramSimilarityMapper;
-import org.mappinganalysis.model.functions.simcomputation.TypeSimilarityMapper;
 import org.mappinganalysis.util.Utils;
-import org.mappinganalysis.util.functions.filter.TypeFilter;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.metrics.StringMetrics;
@@ -80,31 +78,48 @@ public class SimilarityMapperTest extends BasicTest {
     assertEquals(0.6681531, metric.compare(arabic1, arabic2), 0.00001);
   }
 
+  @Test
+  public void doubleValueTest() throws Exception {
+    String graphPath = SimilarityMapperTest.class
+        .getResource("/data/preprocessing/general/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    ObjectMap edgeValue = graph.getEdges().collect()
+        .iterator().next().getValue();
+
+    double weightedAggSim = SimilarityComputation.getWeightedAggSim(edgeValue);
+    double mean = SimilarityComputation.getMeanSimilarity(edgeValue);
+
+    assertEquals(0.5459223d, weightedAggSim, 0.00001);
+    assertEquals(0.699052d, mean, 0.00001);
+  }
+
   /**
    * JDBC test, not working
    * @throws Exception
    */
-  @Test
-  public void typeSimilarityTest() throws Exception {
-    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-    graph = Graph.fromDataSet(
-        Preprocessing.applyTypeToInternalTypeMapping(graph),
-        graph.getEdges(),
-        env);
-
-    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
-
-    baseTriplets.print();
-
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> typeSim
-        = baseTriplets
-        .map(new TypeSimilarityMapper())
-        .filter(new TypeFilter());
-
-    for (Triplet<Long, ObjectMap, ObjectMap> triplet : typeSim.collect()) {
-      System.out.println(triplet);
-    }
-  }
+  // TODO rewrite
+//  @Test
+//  public void typeSimilarityTest() throws Exception {
+//    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
+//
+//    graph = Graph.fromDataSet(
+//        Preprocessing.applyTypeToInternalTypeMapping(graph),
+//        graph.getEdges(),
+//        env);
+//
+//    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
+//
+//    baseTriplets.print();
+//
+//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> typeSim
+//        = baseTriplets
+//        .map(new TypeSimilarityMapper())
+//        .filter(new TypeFilter());
+//
+//    for (Triplet<Long, ObjectMap, ObjectMap> triplet : typeSim.collect()) {
+//      System.out.println(triplet);
+//    }
+//  }
 
   /**
    * not a test

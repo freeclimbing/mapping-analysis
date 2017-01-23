@@ -116,6 +116,7 @@ public class Constants {
   public static final String AR = "AdministrativeRegion";
   public static final String B = "BodyOfWater";
   public static final String P = "Park";
+  public static final String S = "Settlement";
 
   public static final String INPUT_GRAPH = "InputGraph";
   public static final String PREPROC_GRAPH = "PreprocGraph";

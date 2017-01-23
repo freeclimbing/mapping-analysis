@@ -14,22 +14,53 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PreprocessingTest {
   private static final Logger LOG = Logger.getLogger(PreprocessingTest.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
+  public void typeMapperTest() throws Exception {
+    String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/typeMapping/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph
+        .mapVertices(new InternalTypeMapFunction())
+        .getVertices();
+
+    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+      Set<String> types = vertex.getValue().getTypesIntern();
+      if (vertex.getId() == 1L) {
+        assertTrue(types.iterator().next()
+            .equals(Constants.S));
+      }
+      else if (vertex.getId() == 2L || vertex.getId() == 3L) {
+        assertTrue(types.iterator().next()
+            .equals(Constants.NO_TYPE));
+      }
+      else if (vertex.getId() == 4L) {
+        assertTrue(types.contains(Constants.S) && types.contains(Constants.M));
+      }
+      else if (vertex.getId() == 5L) {
+        assertTrue(types.contains(Constants.S) && types.contains(Constants.AR));
+      }
+      else {
+        assertFalse(true);
+      }
+    }
+  }
+
+    @Test
   public void compSourceTupleTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();

@@ -199,7 +199,7 @@ public class BasicTest {
 
     DataLoader loader = new DataLoader(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
-        .getVertices(Constants.GEO_FULL_NAME)
+        .getVerticesFromDb(Constants.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
           @Override
           public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {

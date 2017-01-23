@@ -110,6 +110,10 @@ public class ObjectMap
     }
   }
 
+  public Set<String> getTypesIntern() {
+    return getTypes(Constants.TYPE_INTERN);
+  }
+
   public void setTypes(String typeName, Set<String> types) {
     if (types.isEmpty()) {
       map.put(typeName, Sets.newHashSet(Constants.NO_TYPE));

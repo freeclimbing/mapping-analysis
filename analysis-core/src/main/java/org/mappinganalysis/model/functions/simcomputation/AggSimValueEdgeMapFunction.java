@@ -3,7 +3,6 @@ package org.mappinganalysis.model.functions.simcomputation;
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Edge;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
@@ -26,7 +25,6 @@ public class AggSimValueEdgeMapFunction
   @Override
   public Edge<Long, ObjectMap> map(Edge<Long, ObjectMap> edge) throws Exception {
     ObjectMap edgeValue = edge.getValue();
-
     Preconditions.checkArgument(!edgeValue.isEmpty(), "edge value empty: "
         + edge.getSource() + ", " + edge.getTarget());
 

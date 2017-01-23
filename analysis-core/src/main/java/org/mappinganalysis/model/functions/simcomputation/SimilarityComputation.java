@@ -21,7 +21,8 @@ import org.mappinganalysis.util.Constants;
 
 import java.math.BigDecimal;
 
-public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T, T> {
+public abstract class SimilarityComputation<T>
+    implements CustomUnaryOperation<T, T> {
   private static final Logger LOG = Logger.getLogger(SimilarityComputation.class);
 
   private final Double threshold;
@@ -157,29 +158,30 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
 
   /**
    * Compose similarity values based on existence: if property is missing, its not considered at all.
-   * @param value property map
+   * @param values property map
    * @return mean similarity value
    */
-  public static double getMeanSimilarity(ObjectMap value) {
+
+  public static double getMeanSimilarity(ObjectMap values) {
     double aggregatedSim = 0;
     int propCount = 0;
-    if (value.containsKey(Constants.SIM_TRIGRAM)) {
+    if (values.containsKey(Constants.SIM_TRIGRAM)) {
       ++propCount;
-      aggregatedSim = (double) value.get(Constants.SIM_TRIGRAM);
+      aggregatedSim = (double) values.get(Constants.SIM_TRIGRAM);
     }
-    if (value.containsKey(Constants.SIM_TYPE)) {
+    if (values.containsKey(Constants.SIM_TYPE)) {
       ++propCount;
-      aggregatedSim += (double) value.get(Constants.SIM_TYPE);
+      aggregatedSim += (double) values.get(Constants.SIM_TYPE);
     }
-    if (value.containsKey(Constants.SIM_DISTANCE)) {
-      double distanceSim = getDistanceValue(value);
+    if (values.containsKey(Constants.SIM_DISTANCE)) {
+      double distanceSim = (double) values.get(Constants.SIM_DISTANCE);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += distanceSim;
         ++propCount;
       }
     }
 
-    Preconditions.checkArgument(propCount != 0, "prop count 0 for objectmap: " + value.toString());
+    Preconditions.checkArgument(propCount != 0, "prop count 0 for objectmap: " + values.toString());
 
     BigDecimal result = new BigDecimal(aggregatedSim / propCount);
     result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
@@ -206,7 +208,7 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
       aggregatedSim += typeWeight * (double) values.get(Constants.SIM_TYPE);
     }
     if (values.containsKey(Constants.SIM_DISTANCE)) {
-      double distanceSim = getDistanceValue(values);
+      double distanceSim = (double) values.get(Constants.SIM_DISTANCE);
       if (Doubles.compare(distanceSim, -1) > 0) {
         aggregatedSim += geoWeight * distanceSim;
       }
@@ -216,18 +218,6 @@ public abstract class SimilarityComputation<T> implements CustomUnaryOperation<T
     result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
 
     return result.doubleValue();
-  }
-
-  /**
-   * get distance property from object map TODO check if needed
-   * @param value object map
-   * @return distance
-   */
-  private static double getDistanceValue(ObjectMap value) {
-    Object object = value.get(Constants.SIM_DISTANCE);
-    Preconditions.checkArgument(object instanceof Double, "Error (should not occur)" + object.getClass().toString());
-
-    return (Double) object;
   }
 
   /**

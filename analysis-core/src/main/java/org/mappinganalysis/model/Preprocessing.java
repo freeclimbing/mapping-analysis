@@ -2,13 +2,11 @@ package org.mappinganalysis.model;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -17,12 +15,13 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.DataLoader;
-import org.mappinganalysis.io.functions.EdgeRestrictFlatJoinFunction;
 import org.mappinganalysis.io.output.ExampleOutput;
+import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
 import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
 import org.mappinganalysis.model.functions.preprocessing.IsolatedVertexRemover;
 import org.mappinganalysis.model.functions.preprocessing.TypeMisMatchCorrection;
-import org.mappinganalysis.model.functions.preprocessing.utils.*;
+import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -43,10 +42,8 @@ public class Preprocessing {
                                                           String verbosity,
                                                           ExampleOutput out,
                                                           ExecutionEnvironment env) throws Exception {
-    graph = removeEqualSourceLinks(
-        graph.getEdgeIds(),
-        applyTypeToInternalTypeMapping(graph),
-        env);
+    graph = graph.mapVertices(new InternalTypeMapFunction())
+        .run(new EqualDataSourceLinkRemover(env));
 
     // stats start
     // TODO cc computation produces memory an out exception, dont use
@@ -69,49 +66,6 @@ public class Preprocessing {
         graph.getVertices(),
         SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
         env);
-  }
-
-  /**
-   * Remove links where source and target dataset name are equal, remove duplicate links
-   */
-  public static Graph<Long, ObjectMap, NullValue> removeEqualSourceLinks(
-      DataSet<Tuple2<Long, Long>> edgeIds,
-      DataSet<Vertex<Long, ObjectMap>> vertices,
-      ExecutionEnvironment env) {
-    DataSet<Edge<Long, NullValue>> edges = getEdgeIdSourceValues(edgeIds, vertices)
-        .filter(edge -> !edge.getSrcSource().equals(edge.getTrgSource()))
-        .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
-        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct();
-
-    return Graph.fromDataSet(vertices, edges, env);
-  }
-
-  /**
-   * Create a dataset of edge ids with the associated dataset source values like "http://dbpedia.org/
-   */
-  public static DataSet<EdgeIdsSourcesTuple> getEdgeIdSourceValues(
-      DataSet<Tuple2<Long, Long>> edgeIds,
-      DataSet<Vertex<Long, ObjectMap>> vertices) {
-    return edgeIds
-        .map(edge -> new EdgeIdsSourcesTuple(edge.f0, edge.f1, "", ""))
-        .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
-        .join(vertices)
-        .where(0)
-        .equalTo(0)
-        .with((tuple, vertex) -> {
-          tuple.checkSideAndUpdate(0, vertex.getValue().getOntology());
-          return tuple;
-        })
-        .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
-        .join(vertices)
-        .where(1)
-        .equalTo(0)
-        .with((tuple, vertex) -> {
-          tuple.checkSideAndUpdate(1, vertex.getValue().getOntology());
-          return tuple;
-        })
-        .returns(new TypeHint<EdgeIdsSourcesTuple>() {});
   }
 
   /**
@@ -316,16 +270,5 @@ public class Preprocessing {
             out.collect(result);
           }
         });
-  }
-
-  /**
-   * Harmonize available type information with a common dictionary.
-   * @param graph input graph
-   * @return graph with additional internal type property
-   */
-  public static DataSet<Vertex<Long, ObjectMap>> applyTypeToInternalTypeMapping(
-      Graph<Long, ObjectMap, NullValue> graph) {
-    return graph.getVertices()
-        .map(new InternalTypeMapFunction());
   }
 }

@@ -10,8 +10,8 @@ import org.mappinganalysis.util.Constants;
  *
  * used in general merge and rejoin vertices from simsort
  */
-public class AggSimValueTripletMapFunction implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>,
-    Triplet<Long, ObjectMap, ObjectMap>> {
+public class AggSimValueTripletMapFunction
+    implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Triplet<Long, ObjectMap, ObjectMap>> {
   private final boolean ignoreMissingProperties;
   private final Double minSim;
 

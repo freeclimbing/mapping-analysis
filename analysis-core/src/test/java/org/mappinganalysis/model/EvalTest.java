@@ -5,10 +5,12 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Stats;
 import org.mappinganalysis.util.Utils;
@@ -30,8 +32,14 @@ public class EvalTest {
     String graphPath = EvalTest.class.getResource("/data/eval/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    Graph<Long, ObjectMap, NullValue> result = Preprocessing
-        .removeEqualSourceLinks(graph.getEdgeIds(), graph.getVertices(), env);
+    // start strange workaround
+    DataSet<Edge<Long, NullValue>> edges = graph.getEdges()
+        .map(edge -> new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance()))
+        .returns(new TypeHint<Edge<Long, NullValue>>() {});
+
+    Graph<Long, ObjectMap, NullValue> result = Graph.fromDataSet(graph.getVertices(), edges, env)
+        // end workaround
+        .run(new EqualDataSourceLinkRemover(env));
 
     for (Tuple2<Long, Long> tuple2 : result.getEdgeIds().collect()) {
       assertTrue(tuple2.f0 == 12L && tuple2.f1 == 116L || tuple2.f0 == 53L && tuple2.f1 == 52L);

@@ -14,11 +14,11 @@ import java.util.Set;
  * Map types of imported resources to an internal dictionary of harmonized type values.
  */
 public class InternalTypeMapFunction
-    implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+    implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(InternalTypeMapFunction.class);
 
   @Override
-  public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+  public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
     ObjectMap properties = vertex.getValue();
     Set<String> resultTypes = Sets.newHashSet();
 
@@ -42,7 +42,7 @@ public class InternalTypeMapFunction
     properties.remove(Constants.GN_TYPE_DETAIL);
 //    LOG.info("###inttypemap###2 " + vertex.toString());
 
-    return vertex;
+    return properties;
   }
 
   private static Set<String> getDictValue(String value) {

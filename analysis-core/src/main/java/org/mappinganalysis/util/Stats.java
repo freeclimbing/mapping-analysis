@@ -18,11 +18,11 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeIdsSourcesTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.stats.*;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
@@ -285,20 +285,6 @@ public class Stats {
   }
 
   /**
-   * helper
-   * @param graph
-   * @return
-   */
-  @Deprecated
-  public static DataSet<EdgeIdsSourcesTuple> getLinksWithSrcAndTrgGnSource(Graph<Long, ObjectMap, ObjectMap> graph) {
-
-    DataSet<Vertex<Long, ObjectMap>> gnVertices = graph.getVertices()
-        .filter(new SourceFilterFunction(Constants.GN_NS));
-
-    return Preprocessing.getEdgeIdSourceValues(graph.getEdgeIds(), gnVertices);
-  }
-
-  /**
    * Get vertex count having correct geo coordinates / type: (geo, type)
    * @param isAbsolutePath default false, needed for test
    * @throws Exception
@@ -309,9 +295,9 @@ public class Stats {
     Graph<Long, ObjectMap, NullValue> preGraph
         = Utils.readFromJSONFile(path, ObjectMap.class, NullValue.class, env, isAbsolutePath);
 //    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
-
-    DataSet<Tuple2<Integer, Integer>> geoTypeTuples = Preprocessing
-        .applyTypeToInternalTypeMapping(preGraph)
+    DataSet<Tuple2<Integer, Integer>> geoTypeTuples = preGraph
+        .mapVertices(new InternalTypeMapFunction())
+        .getVertices()
         .map(vertex -> {
           int geo = 0;
           if (vertex.getValue().hasGeoPropertiesValid()) {
