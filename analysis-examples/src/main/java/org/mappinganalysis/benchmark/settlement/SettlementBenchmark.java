@@ -1,6 +1,5 @@
 package org.mappinganalysis.benchmark.settlement;
 
-import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;

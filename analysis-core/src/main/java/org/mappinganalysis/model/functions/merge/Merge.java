@@ -96,14 +96,13 @@ public class Merge {
     DeltaIteration<MergeTuple, MergeTriplet> iteration = clusters
         .iterateDelta(initialWorkingSet, 1000, 0);
 
-    // start step function
     // log superstep
 //    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
-//        .map(x->x); // why do we need this?
+//        .map(x->x); // why do we need this line, not working without
+
+    // start step function
     DataSet<MergeTriplet> workset = iteration.getWorkset();
-
     DataSet<MergeTriplet> maxTriplets = getIterationMaxTriplets(workset);
-
     DataSet<MergeTuple> delta = maxTriplets
         .flatMap(new MergeMapFunction());
 
@@ -143,6 +142,13 @@ public class Merge {
         .with(new FinalMergeVertexCreator());
   }
 
+  /**
+   * Compute similarities within an iteration step and check side conditions
+   * @param sourcesCount count of different data sources
+   * @param similarityComputation type of similarity computation
+   * @param changes input values
+   * @return changed input values
+   */
   private static DataSet<MergeTriplet> computeSimilarities(
       int sourcesCount, SimilarityComputation<MergeTriplet> similarityComputation, DataSet<MergeTriplet> changes) {
     return changes
@@ -239,13 +245,6 @@ public class Merge {
         .returns(new TypeHint<Tuple2<Double, String>>() {})
         .distinct();
 
-    //        .map(new MapFunction<MergeTriplet, MergeTriplet>() {
-//          @Override
-//          public MergeTriplet map(MergeTriplet value) throws Exception {
-//            LOG.info("MAX TRIPLETS: " + value.toString());
-//            return value;
-//          }
-//        });
     return workset.join(maxFilter)
         .where(4)
         .equalTo(0)
@@ -322,9 +321,6 @@ public class Merge {
         .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
             Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3");
-
-//    out.addDataSetCount("newBaseTriplets", newBaseTriplets);
-//    Utils.writeToFile(newBaseTriplets, "6-init-newBaseTriplets");
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
         .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));

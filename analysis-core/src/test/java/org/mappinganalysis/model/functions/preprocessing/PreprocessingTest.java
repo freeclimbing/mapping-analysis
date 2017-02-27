@@ -230,10 +230,8 @@ public class PreprocessingTest {
 
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(inGraph.getVertices(), edges, env);
 
-    Graph<Long, ObjectMap, ObjectMap> simGraph = Graph.fromDataSet(
-        graph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
-        env);
+    Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.computeGraphEdgeSim(
+        graph, Constants.DEFAULT_VALUE, env);
 
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()

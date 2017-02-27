@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
+import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
@@ -92,11 +94,16 @@ public abstract class SimilarityComputation<T>
    * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
    * @return graph with edge similarities
    */
-  public static DataSet<Edge<Long, ObjectMap>> computeGraphEdgeSim(Graph<Long, ObjectMap, NullValue> graph,
-                                                                   String matchCombination) {
-    return computeSimilarities(graph.getTriplets(), matchCombination)
+  public static Graph<Long, ObjectMap, ObjectMap> computeGraphEdgeSim(
+      Graph<Long, ObjectMap, NullValue> graph,
+      String matchCombination,
+      ExecutionEnvironment env) {
+    // sim edge class create TODO
+    DataSet<Edge<Long, ObjectMap>> edges = computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES));
+
+    return Graph.fromDataSet(graph.getVertices(), edges, env);
   }
 
   /**

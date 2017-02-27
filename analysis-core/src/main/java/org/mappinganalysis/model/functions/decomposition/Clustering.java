@@ -67,10 +67,10 @@ public class Clustering {
     // CcIdKeySelector!
     final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
-    final DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
-        .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-            Constants.SIM_GEO_LABEL_STRATEGY);
-    graph = Graph.fromDataSet(graph.getVertices(), simEdges, env);
-    return graph;
+
+    return SimilarityComputation.computeGraphEdgeSim(
+        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
+        Constants.SIM_GEO_LABEL_STRATEGY,
+        env);
   }
 }

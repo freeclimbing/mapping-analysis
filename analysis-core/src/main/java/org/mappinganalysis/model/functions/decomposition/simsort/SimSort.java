@@ -1,12 +1,12 @@
 package org.mappinganalysis.model.functions.decomposition.simsort;
 
-import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.graph.*;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
@@ -30,11 +30,10 @@ public class SimSort {
     DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new HashCcIdKeySelector());
 
-    DataSet<Edge<Long, ObjectMap>> simEdges = SimilarityComputation
-        .computeGraphEdgeSim(Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-            Constants.SIM_GEO_LABEL_STRATEGY);
-
-    return Graph.fromDataSet(graph.getVertices(), simEdges, env);
+    return SimilarityComputation.computeGraphEdgeSim(
+        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
+        Constants.SIM_GEO_LABEL_STRATEGY,
+        env);
   }
 
   /**

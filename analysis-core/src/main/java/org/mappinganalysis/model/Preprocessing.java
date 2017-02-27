@@ -56,16 +56,13 @@ public class Preprocessing {
     /*
      * restrict graph to direct links with matching type information
      */
-    TypeMisMatchCorrection correction = new TypeMisMatchCorrection
+    TypeMisMatchCorrection typeMisMatchCorrection = new TypeMisMatchCorrection
         .TypeMisMatchCorrectionBuilder()
         .setEnvironment(env)
         .build();
-    graph = graph.run(correction);
+    graph = graph.run(typeMisMatchCorrection);
 
-    return Graph.fromDataSet(
-        graph.getVertices(),
-        SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE),
-        env);
+    return SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE, env);
   }
 
   /**
