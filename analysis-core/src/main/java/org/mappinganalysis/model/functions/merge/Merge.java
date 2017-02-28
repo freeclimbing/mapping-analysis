@@ -22,6 +22,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
+import org.mappinganalysis.model.functions.simcomputation.EdgeSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -70,11 +71,11 @@ public class Merge {
       int sourcesCount)
       throws Exception {
 
-    MeanAggregationMode mode = new MeanAggregationMode(); // not used atm, rework
-    MergeTripletGeoLabelSimilarity simFunction = new MergeTripletGeoLabelSimilarity(mode);
+    MergeTripletGeoLabelSimilarity simFunction =
+        new MergeTripletGeoLabelSimilarity(new MeanAggregationMode());
 
-    SimilarityComputation<MergeTriplet> similarityComputation = new SimilarityComputation
-        .SimilarityComputationBuilder<MergeTriplet>()
+    SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation = new SimilarityComputation
+        .SimilarityComputationBuilder<MergeTriplet, MergeTriplet>()
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.MERGE)
         .setThreshold(0.5)
@@ -150,7 +151,7 @@ public class Merge {
    * @return changed input values
    */
   private static DataSet<MergeTriplet> computeSimilarities(
-      int sourcesCount, SimilarityComputation<MergeTriplet> similarityComputation, DataSet<MergeTriplet> changes) {
+      int sourcesCount, SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation, DataSet<MergeTriplet> changes) {
     return changes
         .map(triplet -> {
           if (triplet.getSrcId() > triplet.getTrgId()) {
@@ -315,10 +316,24 @@ public class Merge {
       DataSet<Vertex<Long, ObjectMap>> representativeVertices,
       DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets, ExampleOutput out) {
 
+    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
+        Constants.DEFAULT_VALUE,
+        Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
+
+    SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation = new SimilarityComputation
+        .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>>()
+        .setSimilarityFunction(simFunction)
+        .setStrategy(SimilarityStrategy.EDGE_SIM)
+        .build();
+
     // vertices with min sim, some triplets get omitted -> error cause
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = SimilarityComputation
-        .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES,
+    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = oldHashCcTriplets
+        .runOperation(similarityComputation)
+//        SimilarityComputation
+//        .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
+        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, // old mean function
             Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3");
 

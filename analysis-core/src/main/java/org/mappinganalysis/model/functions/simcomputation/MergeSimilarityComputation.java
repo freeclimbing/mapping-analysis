@@ -1,20 +1,15 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
-import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 /**
  * Actual implementation for MergeTriplet
  */
-public class MergeSimilarityComputation<T> extends SimilarityComputation<T> {
+public class MergeSimilarityComputation<T, O> extends SimilarityComputation<T, O> {
 
-  MergeSimilarityComputation(SimilarityFunction<T> function,
-                             SimilarityStrategy strategy,
+  MergeSimilarityComputation(SimilarityFunction<T, O> function,
                              Double threshold) {
-    super(function, strategy, threshold);
+    super(function, threshold);
   }
 }

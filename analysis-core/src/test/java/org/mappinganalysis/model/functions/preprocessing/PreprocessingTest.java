@@ -243,12 +243,6 @@ public class PreprocessingTest {
     simGraph.run(linkFilter)
         .getVertices()
         .print();
-
-//    DataSet<Vertex<Long, ObjectMap>> result = Preprocessing.deleteVerticesWithoutAnyEdges(
-//        inGraph.getVertices(),
-//        inGraph.getEdges().<Tuple2<Long, Long>>project(0, 1));
-//
-//    assertEquals(4, result.count());
   }
 
   @Test

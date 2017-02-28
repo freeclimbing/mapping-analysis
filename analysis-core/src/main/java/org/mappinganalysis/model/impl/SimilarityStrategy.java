@@ -7,5 +7,6 @@ public enum SimilarityStrategy {
   /**
    * {@see MergeSimilarityComputation}
    */
-  MERGE
+  MERGE,
+  EDGE_SIM
 }

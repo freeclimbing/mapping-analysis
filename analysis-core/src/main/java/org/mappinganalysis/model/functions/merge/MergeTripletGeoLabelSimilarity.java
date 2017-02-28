@@ -1,36 +1,33 @@
 package org.mappinganalysis.model.functions.merge;
 
 import com.google.common.base.Preconditions;
-import com.sun.tools.internal.jxc.ap.Const;
+import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeEdge;
 import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.HashMap;
 
 /**
  * Add similarities to Merge Triplets based on property values.
  */
 class MergeTripletGeoLabelSimilarity
-    extends SimilarityFunction<MergeTriplet>
+    extends SimilarityFunction<MergeTriplet, MergeTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeTripletGeoLabelSimilarity.class);
   AggregationMode<MergeTriplet> mode;
 
-  public MergeTripletGeoLabelSimilarity(MeanAggregationMode mode) {
-    // todo implement mode
+  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeTriplet> mode) {
     this.mode = mode;
   }
 
-  // TODO add min sim check + agg mode
-
+  // TODO add min sim check
   @Override
   public MergeTriplet map(MergeTriplet triplet) throws Exception {
     Double labelSimilarity = getLabelSimilarity(triplet.getSrcTuple().getLabel(),
@@ -41,16 +38,11 @@ class MergeTripletGeoLabelSimilarity
         triplet.getTrgTuple().getLatitude(),
         triplet.getTrgTuple().getLongitude());
 
-    if (geoSimilarity != null) {
-      triplet.setSimilarity((geoSimilarity + labelSimilarity) / 2);
-    } else {
-      // todo fix this
-      if (labelSimilarity < 0.7) {
-        triplet.setSimilarity(0D);
-      } else {
-        triplet.setSimilarity(labelSimilarity);
-      }
-    }
+    HashMap<String, Double> values = Maps.newHashMap();
+    values.put(Constants.LABEL, labelSimilarity);
+    values.put(Constants.GEO, geoSimilarity);
+
+    triplet.setSimilarity(mode.compute(values));
 
     return triplet;
   }

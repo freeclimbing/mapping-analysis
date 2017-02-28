@@ -1,12 +1,9 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Triplet;
@@ -23,21 +20,28 @@ import org.mappinganalysis.util.Constants;
 
 import java.math.BigDecimal;
 
-public abstract class SimilarityComputation<T>
-    implements CustomUnaryOperation<T, T> {
+public abstract class SimilarityComputation<T, O>
+    implements CustomUnaryOperation<T, O> {
   private static final Logger LOG = Logger.getLogger(SimilarityComputation.class);
 
   private final Double threshold;
-  private SimilarityFunction<T> function;
+  private SimilarityFunction<T, O> function;
   private AggregationMode<T> mode;
   private DataSet<T> inputData;
   private SimilarityStrategy strategy;
 
-  public SimilarityComputation(SimilarityFunction<T> function,
+  @Deprecated
+  public SimilarityComputation(SimilarityFunction<T, O> function,
                                SimilarityStrategy strategy,
                                Double threshold) {
     this.function = function;
     this.strategy = strategy;
+    this.threshold = threshold;
+  }
+
+  public SimilarityComputation(SimilarityFunction<T, O> function,
+                               Double threshold) {
+    this.function = function;
     this.threshold = threshold;
   }
 
@@ -50,7 +54,7 @@ public abstract class SimilarityComputation<T>
    * Execution of previously defined operators and aggregations to compute similarities.
    */
   @Override
-  public DataSet<T> createResult() {
+  public DataSet<O> createResult() {
     if (inputData == null) {
 			throw new IllegalStateException("The input data set has not been set.");
 		}
@@ -58,7 +62,11 @@ public abstract class SimilarityComputation<T>
     if (strategy == SimilarityStrategy.MERGE) {
       return inputData
           .map(function)
-          .filter((FilterFunction<T>) new MinThresholdFilterFunction(threshold));
+          .filter(new MinThresholdFilterFunction<>(threshold));
+    } else if (strategy == SimilarityStrategy.EDGE_SIM) {
+      return inputData
+          .map(function)
+          .filter(new MinThresholdFilterFunction<>(threshold));
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
@@ -70,6 +78,7 @@ public abstract class SimilarityComputation<T>
    * @param filter strategy: geo, label, type, [empty, combined] -> all 3 combined
    * @return triplets with sim values
    */
+  @Deprecated
   public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets, String filter) {
     switch (filter) {
@@ -98,10 +107,23 @@ public abstract class SimilarityComputation<T>
       Graph<Long, ObjectMap, NullValue> graph,
       String matchCombination,
       ExecutionEnvironment env) {
-    // sim edge class create TODO
-    DataSet<Edge<Long, ObjectMap>> edges = computeSimilarities(graph.getTriplets(), matchCombination)
+    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
+        matchCombination,
+        Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
+
+    SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation = new SimilarityComputation
+        .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>>()
+        .setSimilarityFunction(simFunction)
+        .setStrategy(SimilarityStrategy.EDGE_SIM)
+        .build();
+
+    DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
+        .runOperation(similarityComputation)
+//    computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
-        .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES));
+        .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES)); // old mean function
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }
@@ -113,6 +135,7 @@ public abstract class SimilarityComputation<T>
    * @return joined dataset with all similarities in an ObjectMap
    */
   @SafeVarargs
+  @Deprecated
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> joinDifferentSimilarityValues(
       DataSet<Triplet<Long, ObjectMap, ObjectMap>>... tripletDataSet) {
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> triplets = null;
@@ -132,16 +155,19 @@ public abstract class SimilarityComputation<T>
     return triplets;
   }
 
+  @Deprecated
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTypeSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
     return triplets.map(new TypeSimilarityMapper());
   }
 
+  @Deprecated
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTrigramSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
     return triplets.map(new TrigramSimilarityMapper());
   }
 
+  @Deprecated
   private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicGeoSimilarity(
       DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
     return triplets.filter(new EmptyGeoCodeFilter())
@@ -153,6 +179,7 @@ public abstract class SimilarityComputation<T>
    * @param triplet triplet where edge value is NullValue
    * @return result triplet
    */
+  @Deprecated
   public static Triplet<Long, ObjectMap, ObjectMap> initResultTriplet(Triplet<Long, ObjectMap, NullValue> triplet) {
     return new Triplet<>(
         triplet.getSrcVertex(),
@@ -165,10 +192,12 @@ public abstract class SimilarityComputation<T>
 
   /**
    * Compose similarity values based on existence: if property is missing, its not considered at all.
+   *
+   * Move to AggregationMode class
    * @param values property map
    * @return mean similarity value
    */
-
+  @Deprecated
   public static double getMeanSimilarity(ObjectMap values) {
     double aggregatedSim = 0;
     int propCount = 0;
@@ -188,8 +217,6 @@ public abstract class SimilarityComputation<T>
       }
     }
 
-    Preconditions.checkArgument(propCount != 0, "prop count 0 for objectmap: " + values.toString());
-
     BigDecimal result = new BigDecimal(aggregatedSim / propCount);
     result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
 
@@ -198,9 +225,12 @@ public abstract class SimilarityComputation<T>
 
   /**
    * Compose similarity values based on weights for each of the properties, missing values are counted as zero.
+   *
+   * Move to AggregationMode class
    * @param values property map
    * @return aggregated similarity value
    */
+  @Deprecated
   public static double getWeightedAggSim(ObjectMap values) {
     double trigramWeight = 0.45;
     double typeWeight = 0.25;
@@ -231,29 +261,33 @@ public abstract class SimilarityComputation<T>
    * Used for building the similarity computation operator instance.
    * @param <T> data type merge triple (working) or normal triple (to be implemented)
    */
-  public static final class SimilarityComputationBuilder<T> {
+  public static final class SimilarityComputationBuilder<T, O> {
 
-    private SimilarityFunction<T> function;
+    private SimilarityFunction<T, O> function;
     private AggregationMode<T> mode = null;
     private SimilarityStrategy strategy;
     private double threshold;
 
-    public SimilarityComputationBuilder<T> setStrategy(SimilarityStrategy strategy) {
+    public SimilarityComputationBuilder<T, O> setStrategy(SimilarityStrategy strategy) {
       this.strategy = strategy;
       return this;
     }
 
-    public SimilarityComputationBuilder<T> setSimilarityFunction(SimilarityFunction<T> function) {
+    public SimilarityComputationBuilder<T, O> setSimilarityFunction(SimilarityFunction<T, O> function) {
       this.function = function;
       return this;
     }
 
-    public SimilarityComputationBuilder<T> setAggregationMode(AggregationMode<T> mode) {
+    @Deprecated
+    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
       this.mode = mode;
       return this;
     }
 
-    public SimilarityComputationBuilder<T> setThreshold(double threshold) {
+    /**
+     * Set minimum threshold for similarity
+     */
+    public SimilarityComputationBuilder<T, O> setThreshold(double threshold) {
       this.threshold = threshold;
       return this;
     }
@@ -262,10 +296,12 @@ public abstract class SimilarityComputation<T>
      * Creates similarity computation operator based on the configured parameters.
      * @return similarity computation operator
      */
-    public SimilarityComputation<T> build() {
+    public SimilarityComputation<T, O> build() {
       // return different implementation for mergetriplet and normal triple
       if (strategy == SimilarityStrategy.MERGE) {
-        return new MergeSimilarityComputation<>(function, strategy, threshold);
+        return new MergeSimilarityComputation<>(function, threshold);
+      } else if (strategy == SimilarityStrategy.EDGE_SIM) {
+        return new EdgeSimilarityComputation<>(function, threshold);
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }

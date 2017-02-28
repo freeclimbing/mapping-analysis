@@ -12,6 +12,7 @@ import java.util.Set;
 /**
  * Get type similarity (and type shading similarity).
  */
+@Deprecated
 public class TypeSimilarityMapper implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
     Triplet<Long, ObjectMap, ObjectMap>> {
   @Override

@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 /**
  * Return triple including the distance between 2 geo points as edge value.
  */
+@Deprecated
 public class GeoCodeSimMapper implements MapFunction<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(GeoCodeSimMapper.class);

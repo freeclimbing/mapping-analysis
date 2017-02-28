@@ -8,6 +8,6 @@ import org.mappinganalysis.model.ObjectMap;
 /**
  * Abstract class for all similarity functions.
  */
-public abstract class SimilarityFunction<T>
-    implements MapFunction<T, T> {
+public abstract class SimilarityFunction<T, O>
+    implements MapFunction<T, O> {
 }

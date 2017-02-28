@@ -1,10 +1,9 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple6;
 
 /**
- * MergeTriplet
+ * srcId, trgId, srcTuple, trgTuple, sim, blocking label
  */
 public class MergeTriplet
     extends Tuple6<Long, Long, MergeTuple, MergeTuple, Double, String> {

@@ -9,7 +9,6 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -17,8 +16,6 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
 public class SimSort {
-  private static final Logger LOG = Logger.getLogger(SimSort.class);
-
   /**
    * create all missing edges, addGraph default vertex sim values
    * @param graph input graph

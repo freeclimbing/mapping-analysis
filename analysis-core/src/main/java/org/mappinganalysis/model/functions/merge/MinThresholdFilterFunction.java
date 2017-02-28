@@ -9,7 +9,7 @@ import org.mappinganalysis.model.MergeTriplet;
  *
  * Temporary solution, should be integrated in similarity computation process.
  */
-public class MinThresholdFilterFunction implements FilterFunction<MergeTriplet> {
+public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
     private static final Logger LOG = Logger.getLogger(MinThresholdFilterFunction.class);
   private final Double threshold;
 
@@ -18,10 +18,15 @@ public class MinThresholdFilterFunction implements FilterFunction<MergeTriplet> 
   }
 
   @Override
-  public boolean filter(MergeTriplet value) throws Exception {
+  public boolean filter(T value) throws Exception {
 //    if (value.getSimilarity() < threshold) {
 //      LOG.info("excluded triplet: " + value.toString());
 //    }
-    return value.getSimilarity() >= threshold;
+    if (value instanceof MergeTriplet) {
+      MergeTriplet triplet = (MergeTriplet) value;
+      return triplet.getSimilarity() >= threshold;
+    } else {
+      return false;
+    }
   }
 }

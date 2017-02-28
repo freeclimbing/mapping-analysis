@@ -9,6 +9,7 @@ import org.mappinganalysis.util.Constants;
 /**
  * Filter coordinates where both latitude and longitude are 0 for either source or target resource.
  */
+@Deprecated
 public class EmptyGeoCodeFilter implements FilterFunction<Triplet<Long, ObjectMap, NullValue>> {
   @Override
   public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {

@@ -51,6 +51,7 @@ public class Constants {
   public static final String TYPE = "type";
   public static final String LAT = "lat";
   public static final String LON = "lon";
+  public static final String GEO = "geo";
   public static final String LABEL = "label";
   /**
    * DB column name for GeoNames second type value field.

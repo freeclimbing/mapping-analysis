@@ -46,16 +46,6 @@ public class ObjectMap
     map = Maps.newHashMap();
   }
 
-//  public Map<String, Object> getMap() {
-//    return map;
-//  }
-//  public void setMap(Map<String, Object> map) {
-//    this.map = map;
-//  }
-//  public void setMap(ObjectMap map) {
-//    this.map = map;
-//  }
-
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
   }
@@ -297,6 +287,14 @@ public class ObjectMap
    */
   public void setEdgeSimilarity(double similarity) {
     map.put(Constants.AGGREGATED_SIM_VALUE, similarity);
+  }
+
+  /**
+   * Set similarity for geographic distance of 2 entities
+   * @param similarity double value
+   */
+  public void setGeoSimilarity(double similarity) {
+    map.put(Constants.SIM_DISTANCE, similarity);
   }
 
   /**

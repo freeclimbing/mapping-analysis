@@ -206,7 +206,6 @@ public class Utils {
   }
 
   public static boolean isValidGeoObject(MergeTuple triplet) {
-
     if (triplet.getLatitude() == null || triplet.getLongitude() == null) {
       return Boolean.FALSE;
     }
