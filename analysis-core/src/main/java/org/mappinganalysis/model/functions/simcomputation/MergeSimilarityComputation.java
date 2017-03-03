@@ -9,7 +9,8 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 public class MergeSimilarityComputation<T, O> extends SimilarityComputation<T, O> {
 
   MergeSimilarityComputation(SimilarityFunction<T, O> function,
+                             SimilarityStrategy strategy,
                              Double threshold) {
-    super(function, threshold);
+    super(function, strategy, threshold);
   }
 }

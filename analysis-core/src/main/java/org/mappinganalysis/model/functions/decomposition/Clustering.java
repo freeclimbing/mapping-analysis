@@ -10,7 +10,7 @@ import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
-import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
@@ -68,9 +68,11 @@ public class Clustering {
     final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
 
-    return SimilarityComputation.computeGraphEdgeSim(
-        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-        Constants.SIM_GEO_LABEL_STRATEGY,
-        env);
+    return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
+        .run(new BasicEdgeSimilarityComputation(Constants.SIM_GEO_LABEL_STRATEGY, env));
+//        SimilarityComputation.computeGraphEdgeSim(
+//        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
+//        Constants.SIM_GEO_LABEL_STRATEGY,
+//        env);
   }
 }

@@ -3,42 +3,59 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.EdgeDirection;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.*;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
-public class SimSort {
+public class SimSort
+    implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
+  private final ExecutionEnvironment env;
+
+  public SimSort(ExecutionEnvironment env) {
+    this.env = env;
+  }
+
+  /**
+   * Execute SimSort procedure based on vertex-centric-iteration, as preparation:
+   * create all missing edges, addGraph default vertex sim values
+   * @throws Exception
+   */
+  @Override
+  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+    DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
+        .getTransitiveClosureEdges(graph.getVertices(), new HashCcIdKeySelector());
+
+    graph = Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
+        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+
+    return execute(graph, env);
+  }
+
+
+
   /**
    * create all missing edges, addGraph default vertex sim values
-   * @param graph input graph
-   * @param env execution environment
-   * @return preprocessed graph
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
                                                           ExecutionEnvironment env) throws Exception {
     DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
         .getTransitiveClosureEdges(graph.getVertices(), new HashCcIdKeySelector());
 
-    return SimilarityComputation.computeGraphEdgeSim(
-        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-        Constants.SIM_GEO_LABEL_STRATEGY,
-        env);
+    return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
+        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
   }
 
   /**
    * Execute SimSort procedure based on vertex-centric-iteration
-   * @param maxIterations max vertex-centric-iteration count
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          Integer maxIterations,
                                                           ExecutionEnvironment env) {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("SimSort");
@@ -51,7 +68,7 @@ public class SimSort {
     DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = createSimSortInputGraph(graph, env)
         .runVertexCentricIteration(
             new SimSortOptVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
-            new SimSortOptMessagingFunction(), maxIterations, aggParameters)
+            new SimSortOptMessagingFunction(), Integer.MAX_VALUE, aggParameters)
         .getVertices();
 
     DataSet<Vertex<Long, ObjectMap>> resultingVertices = graph
@@ -97,19 +114,5 @@ public class SimSort {
         .returns(new TypeHint<Vertex<Long, SimSortVertexTuple>>() {});
 
     return Graph.fromDataSet(vertices, edges, env);
-  }
-
-  /**
-   * Alternative sim-based refinement algorithm based on searching for cluster partitioning
-   * with good average cluster similarity in sub clusters.
-   */
-  public static Graph<Long, ObjectMap, ObjectMap> executeAlternative(
-      Graph<Long, ObjectMap, ObjectMap> graph,
-       ExecutionEnvironment env) {
-
-    // TODO prepare is ok, perhaps delete property Constants.VERTEX_AGG_SIM_VALUE
-    // TODO for alternative version, unneeded
-
-    return graph;
   }
 }

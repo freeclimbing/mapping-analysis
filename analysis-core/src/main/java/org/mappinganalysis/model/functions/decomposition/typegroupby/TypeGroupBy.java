@@ -17,7 +17,6 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 public class TypeGroupBy
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
-
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
   private ExecutionEnvironment env;
 
@@ -106,14 +105,6 @@ public class TypeGroupBy
     return Graph.fromDataSet(newVertices, graph.getEdges(), env);
   }
 
-
-  public static Graph<Long, ObjectMap, ObjectMap> execute(
-      Graph<Long, ObjectMap, ObjectMap> graph,
-      ExecutionEnvironment env, ExampleOutput out)
-      throws Exception {
-    return null;
-  }
-
   /**
    * helper method
    */
@@ -131,30 +122,5 @@ public class TypeGroupBy
             .returns(new TypeHint<NeighborTuple>() {})
             .groupBy(0)
             .min(3);
-  }
-
-  /**
-   * Used for building a TypeGroupBy instance.
-   */
-  public static final class TypeGroupByBuilder {
-    private ExecutionEnvironment env;
-
-    public TypeGroupByBuilder setEnvironment(ExecutionEnvironment env) {
-      this.env = env;
-      return this;
-    }
-
-    /**
-     * Creates link filter based on the configured parameters.
-     * @return link filter
-     */
-    public TypeGroupBy build() {
-      if (env != null) {
-        return new TypeGroupBy(env);
-      } else {
-        throw new IllegalArgumentException("Execution environment null");
-      }
-    }
-
   }
 }

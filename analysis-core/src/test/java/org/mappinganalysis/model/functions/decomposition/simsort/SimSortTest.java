@@ -4,18 +4,15 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
-import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.Decomposition;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.s1ck.gdl.GDLHandler;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SimSortTest {
@@ -47,17 +44,16 @@ public class SimSortTest {
   @Test
   // TODO write asserts
   public void simSortJSONTest() throws Exception {
-    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
     Constants.MIN_SIMSORT_SIM = 0.5;
 
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
 
-    graph = SimSort.execute(graph, 100, env);
+    graph = SimSort.execute(graph, env);
 //    graph = SimSort.excludeLowSimVertices(graph);
 
-    DataSet<Vertex<Long, ObjectMap>> representatives = Decomposition.createRepresentatives(graph);
+    DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
+        .runOperation(new RepresentativeCreator());
 
 //    graph = SimSort.excludeLowSimVertices(graph);
 
@@ -74,15 +70,12 @@ public class SimSortTest {
 
   @Test
   public void simSortTest() throws Exception {
-    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
     Constants.MIN_SIMSORT_SIM = 0.9;
 
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph = SimSort.prepare(graph, env);
-    graph = SimSort.execute(graph, 100, env);
+    graph.run(new SimSort(env));
 
     graph.getVertices()
         .print();
@@ -98,14 +91,11 @@ public class SimSortTest {
    */
   @Test
   public void simSortErrorTest() throws Exception {
-    Constants.PRE_CLUSTER_STRATEGY = Constants.DEFAULT_VALUE;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_CANAIMA);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
-
-    firstGraph = SimSort.prepare(firstGraph, env);
     Constants.MIN_CLUSTER_SIM = 0.75D;
-    firstGraph = SimSort.execute(firstGraph, 200, env);
+
+    firstGraph = firstGraph.run(new SimSort(env));
 
     for (int i = 0; i < 20; i++) {
       for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {

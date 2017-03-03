@@ -15,7 +15,7 @@ import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
-import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -230,8 +230,8 @@ public class PreprocessingTest {
 
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(inGraph.getVertices(), edges, env);
 
-    Graph<Long, ObjectMap, ObjectMap> simGraph = SimilarityComputation.computeGraphEdgeSim(
-        graph, Constants.DEFAULT_VALUE, env);
+    Graph<Long, ObjectMap, ObjectMap> simGraph = graph
+        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
 
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()

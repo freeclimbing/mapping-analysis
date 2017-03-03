@@ -4,9 +4,10 @@ import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
+import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
+import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -16,6 +17,9 @@ import org.mappinganalysis.util.Utils;
 public class SettlementBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
+  public static final String PREPROCESSING = "settlement-preprocessing";
+
+
   public static void main(String[] args) throws Exception {
     // read input
     Graph<Long, ObjectMap, NullValue> inGraph = Utils.readFromJSONFile(
@@ -24,15 +28,20 @@ public class SettlementBenchmark implements ProgramDescription {
         NullValue.class,
         env);
 
-    ExampleOutput out = new ExampleOutput(env);
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-
-
     // preprocessing
-    Graph<Long, ObjectMap, ObjectMap> graph
-        = Preprocessing.execute(inGraph, Constants.VERBOSITY, out, env);
-    // decomposition
-    // merge
+    Graph<Long, ObjectMap, ObjectMap> graph = inGraph
+        .run(new DefaultPreprocessing(true, env));
+
+    Utils.writeGraphToJSONFile(graph, Constants.LL_MODE.concat(PREPROCESSING));
+    env.execute("Settlement Preprocessing");
+
+//    graph = Utils.readFromJSONFile(
+//        Constants.LL_MODE.concat(PREPROCESSING),
+//        env)
+//        .run(new TypeGroupBy(env)) // not needed? TODO
+//        .run(new SimSort(env));
+//    // decomposition
+//    // merge
   }
 
   @Override

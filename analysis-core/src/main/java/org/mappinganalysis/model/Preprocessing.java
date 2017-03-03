@@ -22,6 +22,7 @@ import org.mappinganalysis.model.functions.preprocessing.IsolatedVertexRemover;
 import org.mappinganalysis.model.functions.preprocessing.TypeMisMatchCorrection;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
+import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -38,6 +39,7 @@ public class Preprocessing {
   /**
    * Execute all preprocessing steps with the given options
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> execute(Graph<Long, ObjectMap, NullValue> graph,
                                                           String verbosity,
                                                           ExampleOutput out,
@@ -45,6 +47,7 @@ public class Preprocessing {
     graph = graph.mapVertices(new InternalTypeMapFunction())
         .run(new EqualDataSourceLinkRemover(env));
 
+    // todo stats still needed?
     // stats start
     // TODO cc computation produces memory an out exception, dont use
     if (verbosity.equals(Constants.DEBUG)) {
@@ -53,16 +56,16 @@ public class Preprocessing {
     }
     // stats end
 
-    /*
+    /*p
      * restrict graph to direct links with matching type information
      */
     TypeMisMatchCorrection typeMisMatchCorrection = new TypeMisMatchCorrection
         .TypeMisMatchCorrectionBuilder()
         .setEnvironment(env)
         .build();
-    graph = graph.run(typeMisMatchCorrection);
 
-    return SimilarityComputation.computeGraphEdgeSim(graph, Constants.DEFAULT_VALUE, env);
+    return graph.run(typeMisMatchCorrection)
+        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
   }
 
   /**
@@ -127,6 +130,13 @@ public class Preprocessing {
     return vertices;
   }
 
+  /**
+   * Restrict a set of vertices to a subset having the relevant cc ids.
+   * @param vertices input vertices
+   * @param vertexCcs vertex / cc id assignment
+   * @param relevantCcs cc ids for result vertex subset
+   * @return resulting vertices
+   */
   private static DataSet<Vertex<Long, ObjectMap>> restrictVerticesToGivenCcs(
       DataSet<Vertex<Long, ObjectMap>> vertices,
       DataSet<Tuple2<Long, Long>> vertexCcs,
@@ -146,7 +156,9 @@ public class Preprocessing {
     return vertices;
   }
 
-  private static DataSet<Tuple2<Long, Long>> getBaseVertexCcs(ExecutionEnvironment env, String ccFile) {
+  private static DataSet<Tuple2<Long, Long>> getBaseVertexCcs(
+      ExecutionEnvironment env,
+      String ccFile) {
     return env.readCsvFile(Constants.INPUT_DIR + ccFile)
           .fieldDelimiter(";")
           .ignoreInvalidLines()
@@ -232,6 +244,12 @@ public class Preprocessing {
     return restrictVerticesToGivenCcs(vertices, vertexCcs, relevantCcs.union(additionalCcs));
   }
 
+  /**
+   * helper method nyt things
+   * @param vertices
+   * @param ccs
+   * @return
+   */
   public static DataSet<ComponentSourceTuple> getComponentSourceTuples(
       DataSet<Vertex<Long, ObjectMap>> vertices,
       DataSet<Tuple2<Long, Long>> ccs) {
@@ -251,7 +269,8 @@ public class Preprocessing {
           });
     }
 
-    return vertices.groupBy(new CcIdKeySelector())
+    return vertices
+        .groupBy(new CcIdKeySelector())
         .reduceGroup(new GroupReduceFunction<Vertex<Long,ObjectMap>, ComponentSourceTuple>() {
           @Override
           public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices, Collector<ComponentSourceTuple> out) throws Exception {

@@ -15,6 +15,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.LongValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -40,8 +41,8 @@ public class MergeTest {
    */
   @Test
   public void testInit() throws Exception {
-    setupLocalEnvironment();
-    setupConstants();
+    env = TestBase.setupLocalEnvironment();
+    TestBase.setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeInit/").getFile();
@@ -73,8 +74,8 @@ public class MergeTest {
    * 1, 2, 3: two have only one geo attribute
    */
   public void testExecuteMerge() throws Exception {
-    setupLocalEnvironment();
-    setupConstants();
+    env = TestBase.setupLocalEnvironment();
+    TestBase.setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec/").getFile();
@@ -96,8 +97,8 @@ public class MergeTest {
   @Test
   // weimar + weimar republic, lake louise
   public void testExecuteNoMerge() throws Exception {
-    setupLocalEnvironment();
-    setupConstants();
+    env = TestBase.setupLocalEnvironment();
+    TestBase.setupConstants();
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec2/").getFile();
@@ -161,21 +162,4 @@ public class MergeTest {
 
     assertTrue("Leipzig".equals(finalValue));
   }
-
-  private void setupConstants() {
-    Constants.MIN_CLUSTER_SIM = 0.5;
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
-    Constants.INPUT_DIR = "linklion";
-    Constants.SOURCE_COUNT = 5;
-  }
-
-  private void setupLocalEnvironment() {
-    Configuration conf = new Configuration();
-    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
-    env = new LocalEnvironment(conf);
-    env.setParallelism(Runtime.getRuntime().availableProcessors());
-    env.getConfig().disableSysoutLogging();
-  }
-
 }

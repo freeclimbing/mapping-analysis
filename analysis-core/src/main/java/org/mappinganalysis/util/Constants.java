@@ -129,11 +129,11 @@ public class Constants {
   public static final String INPUT = "input";
   public static final String PREPROC = "preproc";
   public static final String LF = "lf";
-  public static final String PRECOMPLETE = "pc";
+  public static final String PREPROCESSING_COMPLETE = "pc";
   public static final String IC = "ic";
   public static final String DECOMP = "decomp";
   public static final String SIMSORT = "simsort";
-  public static final String DECCOMPLETE = "dc";
+  public static final String DECOMPOSITION_COMPLETE = "dc";
   public static final String ANALYSIS = "analysis";
   public static final String ALL = "all"; // all parts in a row, multiple jobs
   public static final String COMPLETE = "c"; // all parts together
@@ -163,5 +163,4 @@ public class Constants {
   public static Double MIN_LABEL_PRIORITY_SIM;
   public static Double MIN_SIMSORT_SIM;
   public static boolean IGNORE_MISSING_PROPERTIES;
-  public static String PRE_CLUSTER_STRATEGY;
 }

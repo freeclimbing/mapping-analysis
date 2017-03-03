@@ -327,13 +327,13 @@ public class Merge {
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
+    Constants.IGNORE_MISSING_PROPERTIES = true;
 
     // vertices with min sim, some triplets get omitted -> error cause
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = oldHashCcTriplets
         .runOperation(similarityComputation)
-//        SimilarityComputation
-//        .computeSimilarities(oldHashCcTriplets, Constants.DEFAULT_VALUE)
-        .map(new AggSimValueTripletMapFunction(Constants.IGNORE_MISSING_PROPERTIES, // old mean function
+        .map(new AggSimValueTripletMapFunction(
+            Constants.IGNORE_MISSING_PROPERTIES, // old mean function
             Constants.MIN_LABEL_PRIORITY_SIM))
         .withForwardedFields("f0;f1;f2;f3");
 

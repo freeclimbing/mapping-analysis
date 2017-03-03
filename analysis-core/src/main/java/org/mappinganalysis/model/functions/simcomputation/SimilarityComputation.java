@@ -30,18 +30,11 @@ public abstract class SimilarityComputation<T, O>
   private DataSet<T> inputData;
   private SimilarityStrategy strategy;
 
-  @Deprecated
   public SimilarityComputation(SimilarityFunction<T, O> function,
                                SimilarityStrategy strategy,
                                Double threshold) {
     this.function = function;
     this.strategy = strategy;
-    this.threshold = threshold;
-  }
-
-  public SimilarityComputation(SimilarityFunction<T, O> function,
-                               Double threshold) {
-    this.function = function;
     this.threshold = threshold;
   }
 
@@ -103,6 +96,7 @@ public abstract class SimilarityComputation<T, O>
    * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
    * @return graph with edge similarities
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> computeGraphEdgeSim(
       Graph<Long, ObjectMap, NullValue> graph,
       String matchCombination,
@@ -118,10 +112,10 @@ public abstract class SimilarityComputation<T, O>
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
+    Constants.IGNORE_MISSING_PROPERTIES = true;
 
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .runOperation(similarityComputation)
-//    computeSimilarities(graph.getTriplets(), matchCombination)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES)); // old mean function
 
@@ -299,9 +293,9 @@ public abstract class SimilarityComputation<T, O>
     public SimilarityComputation<T, O> build() {
       // return different implementation for mergetriplet and normal triple
       if (strategy == SimilarityStrategy.MERGE) {
-        return new MergeSimilarityComputation<>(function, threshold);
+        return new MergeSimilarityComputation<>(function, strategy, threshold);
       } else if (strategy == SimilarityStrategy.EDGE_SIM) {
-        return new EdgeSimilarityComputation<>(function, threshold);
+        return new EdgeSimilarityComputation<>(function, strategy, threshold);
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
