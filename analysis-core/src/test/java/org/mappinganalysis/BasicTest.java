@@ -149,49 +149,7 @@ public class BasicTest {
           }
         });
 
-//    final DataSet<Vertex<Long, ObjectMap>> baseVertices = tmpGraph.getVertices()
-//        .map(new MapFunction<Vertex<Long, NullValue>, Vertex<Long, ObjectMap>>() {
-//          @Override
-//          public Vertex<Long, ObjectMap> map(Vertex<Long, NullValue> vertex) throws Exception {
-//            ObjectMap prop = new ObjectMap();
-//            prop.put(Utils.LABEL, "foo");
-//            return new Vertex<>(vertex.getId(), prop);
-//          }
-//        });
-
-//    Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(baseVertices, tmpGraph.getEdges(), env);
-
-//    final DataSet<Triplet<Long, ObjectMap, ObjectMap>> accumulatedSimValues
-//        = SimilarityComputation.computeSimilarities(graph.getTriplets(), "combined");
-//
-//    // 1. time cc
-//    final DataSet<Tuple2<Long, Long>> ccEdges = accumulatedSimValues.project(0, 1);
-//    final DataSet<Long> ccVertices = baseVertices.map(new VertexIdMapFunction());
-//    final DataSet<Tuple2<Long, Long>> ccResult = FlinkConnectedComponents.compute(ccVertices, ccEdges, 1000);
-
     verticesWithMinIds.print();
-
-//    DataSet<Vertex<Long, ObjectMap>> ccResultVertices = baseVertices
-//        .join(ccResult)
-//        .where(0).equalTo(0)
-//        .with(new CcResultVerticesJoin()); // deprecated
-
-    // get new edges in components
-//    DataSet<Edge<Long, NullValue>> newEdges
-//        = GraphUtils.restrictToNewEdges(graph.getEdges(),
-//        GraphUtils.computeComponentEdges(ccResultVertices));
-
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> newSimValues
-//        = MappingAnalysisExample.computeSimilarities(
-//        Graph.fromDataSet(baseVertices, newEdges, env).getTriplets(), "combined");
-
-//    DataSet<Tuple2<Long, Long>> newSimValuesSimple = newSimValues.project(0, 1);
-//    DataSet<Tuple2<Long, Long>> newCcEdges = newSimValuesSimple.union(ccEdges);
-//    newCcEdges.print();
-
-    // 2. time cc
-//    DataSet<Tuple2<Long, Long>> newCcResult = FlinkConnectedComponents.compute(ccVertices, newCcEdges, 1000);
-//    newCcResult.print();
   }
 
   @SuppressWarnings("unchecked")

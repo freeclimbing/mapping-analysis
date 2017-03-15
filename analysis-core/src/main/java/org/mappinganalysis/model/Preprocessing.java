@@ -13,7 +13,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.GraphUtils;
+import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.io.DataLoader;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
@@ -23,7 +23,6 @@ import org.mappinganalysis.model.functions.preprocessing.TypeMisMatchCorrection;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
-import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ElementCounter;
@@ -51,7 +50,7 @@ public class Preprocessing {
     // stats start
     // TODO cc computation produces memory an out exception, dont use
     if (verbosity.equals(Constants.DEBUG)) {
-      graph = GraphUtils.addCcIdsToGraph(graph, env); // only needed for stats
+      graph = graph.run(new ConnectedComponentIdAdder<>(env)); // only needed for stats
       out.addPreClusterSizes("1 cluster sizes input graph", graph.getVertices(), Constants.CC_ID);
     }
     // stats end

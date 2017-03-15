@@ -38,8 +38,8 @@ public class SimSortTest {
       "(v1)-[e3:sameAs]->(v4)";
 
   /**
-   * mystic example
-   * @throws Exception
+   * mystic example: simsort + representative
+   * todo check sims
    */
   @Test
   // TODO write asserts
@@ -47,25 +47,20 @@ public class SimSortTest {
     Constants.MIN_SIMSORT_SIM = 0.5;
 
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-
-    graph = SimSort.execute(graph, env);
-//    graph = SimSort.excludeLowSimVertices(graph);
+    Graph<Long, ObjectMap, ObjectMap> graph =
+        Utils.readFromJSONFile(graphPath, env, true)
+        .run(new SimSort(false, env));
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
         .runOperation(new RepresentativeCreator());
 
-//    graph = SimSort.excludeLowSimVertices(graph);
-
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-      LOG.info(vertex.toString());
+      if (vertex.getId() == 2757L) {
+        assertTrue(vertex.getValue().getVerticesCount().equals(1));
+      } else {
+        assertTrue(vertex.getValue().getVerticesCount().equals(3));
+      }
     }
-
-//    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
-//      LOG.info(vertex.toString());
-//    }
-
-//    assertEquals(7533, graph.getVertexIds().count());
   }
 
   @Test
@@ -75,7 +70,7 @@ public class SimSortTest {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
     Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
 
-    graph.run(new SimSort(env));
+    graph.run(new SimSort(true, env));
 
     graph.getVertices()
         .print();
@@ -95,7 +90,7 @@ public class SimSortTest {
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
     Constants.MIN_CLUSTER_SIM = 0.75D;
 
-    firstGraph = firstGraph.run(new SimSort(env));
+    firstGraph = firstGraph.run(new SimSort(true, env));
 
     for (int i = 0; i < 20; i++) {
       for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {

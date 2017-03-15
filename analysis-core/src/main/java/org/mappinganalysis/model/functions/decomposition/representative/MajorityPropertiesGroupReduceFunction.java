@@ -10,7 +10,6 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.merge.Merge;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -62,7 +61,7 @@ public class MajorityPropertiesGroupReduceFunction
       resultProps.setGeoProperties(geoMap);
     }
     if (!labelMap.isEmpty()) {
-      resultProps.put(Constants.LABEL, Merge.getFinalValue(labelMap, Constants.LABEL));
+      resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
     }
 
     resultProps.setClusterSources(clusterOntologies);

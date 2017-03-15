@@ -147,7 +147,9 @@ public class PreprocessingTest {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+
     graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
+
     assertEquals(21, graph.getEdgeIds().count());
 
     LinkFilter linkFilter = new LinkFilter

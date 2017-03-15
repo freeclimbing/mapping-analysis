@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
 public class Utils {
@@ -79,7 +81,10 @@ public class Utils {
     writeVerticesToJSONFile(vertices, outDir, false);
   }
 
-  public static void writeVerticesToJSONFile(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir, Boolean isAbsolute) {
+  public static void writeVerticesToJSONFile(
+      DataSet<Vertex<Long, ObjectMap>> vertices,
+      String outDir,
+      Boolean isAbsolute) {
     String vertexOutFile;
     if (!isAbsolute) {
       vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
@@ -121,8 +126,9 @@ public class Utils {
    * Read Gelly graph from JSON file
    * @param inDir path is not absolute
    */
-  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(String inDir,
-                                                                   ExecutionEnvironment env) {
+  public static Graph<Long, ObjectMap, ObjectMap> readFromJSONFile(
+      String inDir,
+      ExecutionEnvironment env) {
     return readFromJSONFile(inDir, env, false);
   }
 
@@ -172,6 +178,34 @@ public class Utils {
     JSONDataSource jsonDataSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
 
     return jsonDataSource.getGraph(vertexClass, edgeClass);
+  }
+
+  /**
+   * Get the hash map value having the highest count of occurrence.
+   * For label property, if count is equal, a longer string is preferred.
+   * @param map containing value options with count of occurrence
+   * @param propertyName if label, for same occurrence count the longer string is taken
+   * @return resulting value
+   */
+  public static <T> T getFinalValue(HashMap<T, Integer> map, String propertyName) {
+    Map.Entry<T, Integer> finalEntry = null;
+    map = Utils.sortByValue(map);
+
+    for (Map.Entry<T, Integer> entry : map.entrySet()) {
+      if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
+        finalEntry = entry;
+      } else if (entry.getKey() instanceof String
+          && propertyName.equals(Constants.LABEL)
+          && Ints.compare(entry.getValue(), finalEntry.getValue()) >= 0) {
+        String labelKey = entry.getKey().toString();
+        if (labelKey.length() > finalEntry.getKey().toString().length()) {
+          finalEntry = entry;
+        }
+      }
+    }
+
+    checkArgument(finalEntry != null, "Entry must not be null");
+    return finalEntry.getKey();
   }
 
   /**
@@ -262,7 +296,8 @@ public class Utils {
     }
   }
 
-  public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {
+  public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(
+      DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {
     return tmpResult
         .map(new MapFunction<Tuple3<Long, Integer, Integer>, Tuple3<Integer, Integer, Integer>>() {
           @Override

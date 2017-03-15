@@ -9,10 +9,9 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.mappinganalysis.graph.GraphUtils;
 import org.mappinganalysis.graph.LinkFilterFunction;
+import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.preprocessing.utils.EdgeSourceSimTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.LinkSelectionWithCcIdFunction;
 import org.mappinganalysis.model.functions.preprocessing.utils.SecondNeighborOntologyFunction;
@@ -35,7 +34,7 @@ public class BasicLinkFilterFunction
 
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-    graph = GraphUtils.addCcIdsToGraph(graph, env);
+    graph = graph.run(new ConnectedComponentIdAdder<>(env));
 
     // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
     DataSet<EdgeSourceSimTuple> neighborTuples = graph

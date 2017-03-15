@@ -35,7 +35,7 @@ public class EdgeSimilarityFunction
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
 
-    Triplet<Long, ObjectMap, ObjectMap> result = getBasicLabelSimilarity(triplet);
+    Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
     result = addGeoSimilarity(result);
     if (usedPropertiesCombination.equals(Constants.DEFAULT_VALUE)) {
       result = addTypeSimilarity(result);
@@ -90,7 +90,7 @@ public class EdgeSimilarityFunction
   /**
    * basic label similarity
    */
-  private Triplet<Long, ObjectMap, ObjectMap> getBasicLabelSimilarity(
+  private Triplet<Long, ObjectMap, ObjectMap> addBasicLabelSimilarity(
       Triplet<Long, ObjectMap, NullValue> triplet) {
     final String srcLabel = triplet.getSrcVertex().getValue().getLabel();
     final String trgLabel = triplet.getTrgVertex().getValue().getLabel();

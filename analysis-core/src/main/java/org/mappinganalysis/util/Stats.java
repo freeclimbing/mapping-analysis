@@ -294,7 +294,6 @@ public class Stats {
 
     Graph<Long, ObjectMap, NullValue> preGraph
         = Utils.readFromJSONFile(path, ObjectMap.class, NullValue.class, env, isAbsolutePath);
-//    Graph<Long, ObjectMap, NullValue> preGraph = GraphUtils.mapEdgesToNullValue(graph);
     DataSet<Tuple2<Integer, Integer>> geoTypeTuples = preGraph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()

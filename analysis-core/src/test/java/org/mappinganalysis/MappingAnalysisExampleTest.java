@@ -22,12 +22,6 @@ public class MappingAnalysisExampleTest {
   private static final Logger LOG = Logger.getLogger(MappingAnalysisExample.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-//    @Test
-//  public void typeGroupByAndSimSortGeoDatasetTest() throws Exception {
-//    MappingAnalysisExample mappingAnalysis = new MappingAnalysisExample();
-//
-//  }
-
   // TODO
   //        LOG.info("#####");
 //        LOG.info("##### FINAL OUT");

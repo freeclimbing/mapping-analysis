@@ -58,14 +58,72 @@ public abstract class SimilarityComputation<T, O>
           .filter(new MinThresholdFilterFunction<>(threshold));
     } else if (strategy == SimilarityStrategy.EDGE_SIM) {
       return inputData
-          .map(function)
-          .filter(new MinThresholdFilterFunction<>(threshold));
+          .map(function);
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
   }
 
+
   /**
+   * Used for building the similarity computation operator instance.
+   * @param <T> data type merge triple (working) or normal triple (to be implemented)
+   */
+  public static final class SimilarityComputationBuilder<T, O> {
+
+    private SimilarityFunction<T, O> function;
+    private AggregationMode<T> mode = null;
+    private SimilarityStrategy strategy;
+    private double threshold;
+
+    public SimilarityComputationBuilder<T, O> setStrategy(SimilarityStrategy strategy) {
+      this.strategy = strategy;
+      return this;
+    }
+
+    public SimilarityComputationBuilder<T, O> setSimilarityFunction(SimilarityFunction<T, O> function) {
+      this.function = function;
+      return this;
+    }
+
+    @Deprecated
+    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
+      this.mode = mode;
+      return this;
+    }
+
+    /**
+     * Set minimum threshold for similarity
+     */
+    public SimilarityComputationBuilder<T, O> setThreshold(double threshold) {
+      this.threshold = threshold;
+      return this;
+    }
+
+    /**
+     * Creates similarity computation operator based on the configured parameters.
+     * @return similarity computation operator
+     */
+    public SimilarityComputation<T, O> build() {
+      // return different implementation for mergetriplet and normal triple
+      if (strategy == SimilarityStrategy.MERGE) {
+        return new MergeSimilarityComputation<>(function, strategy, threshold);
+      } else if (strategy == SimilarityStrategy.EDGE_SIM) {
+        return new EdgeSimilarityComputation<>(function, strategy, threshold);
+      } else {
+        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+      }
+    }
+
+  }
+
+
+
+
+  /**
+   * ###########################################################################
+   * ###########################################################################
+   * ###########################################################################
    * Decide which similarities should be computed based on filter
    * @param triplets graph triplets
    * @param filter strategy: geo, label, type, [empty, combined] -> all 3 combined
@@ -249,57 +307,5 @@ public abstract class SimilarityComputation<T, O>
     result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
 
     return result.doubleValue();
-  }
-
-  /**
-   * Used for building the similarity computation operator instance.
-   * @param <T> data type merge triple (working) or normal triple (to be implemented)
-   */
-  public static final class SimilarityComputationBuilder<T, O> {
-
-    private SimilarityFunction<T, O> function;
-    private AggregationMode<T> mode = null;
-    private SimilarityStrategy strategy;
-    private double threshold;
-
-    public SimilarityComputationBuilder<T, O> setStrategy(SimilarityStrategy strategy) {
-      this.strategy = strategy;
-      return this;
-    }
-
-    public SimilarityComputationBuilder<T, O> setSimilarityFunction(SimilarityFunction<T, O> function) {
-      this.function = function;
-      return this;
-    }
-
-    @Deprecated
-    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
-      this.mode = mode;
-      return this;
-    }
-
-    /**
-     * Set minimum threshold for similarity
-     */
-    public SimilarityComputationBuilder<T, O> setThreshold(double threshold) {
-      this.threshold = threshold;
-      return this;
-    }
-
-    /**
-     * Creates similarity computation operator based on the configured parameters.
-     * @return similarity computation operator
-     */
-    public SimilarityComputation<T, O> build() {
-      // return different implementation for mergetriplet and normal triple
-      if (strategy == SimilarityStrategy.MERGE) {
-        return new MergeSimilarityComputation<>(function, strategy, threshold);
-      } else if (strategy == SimilarityStrategy.EDGE_SIM) {
-        return new EdgeSimilarityComputation<>(function, strategy, threshold);
-      } else {
-        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
-      }
-    }
-
   }
 }

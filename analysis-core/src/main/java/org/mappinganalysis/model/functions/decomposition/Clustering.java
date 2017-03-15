@@ -6,7 +6,8 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.GraphUtils;
+import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
+import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
@@ -62,17 +63,14 @@ public class Clustering {
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env) throws Exception {
 
-    graph = GraphUtils.addCcIdsToGraph(graph, env);
+    graph = graph.run(new ConnectedComponentIdAdder<>(env));
 
     // CcIdKeySelector!
-    final DataSet<Edge<Long, NullValue>> distinctEdges = GraphUtils
-        .getTransitiveClosureEdges(graph.getVertices(), new CcIdKeySelector());
+    final DataSet<Edge<Long, NullValue>> distinctEdges = graph
+        .getVertices()
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
         .run(new BasicEdgeSimilarityComputation(Constants.SIM_GEO_LABEL_STRATEGY, env));
-//        SimilarityComputation.computeGraphEdgeSim(
-//        Graph.fromDataSet(graph.getVertices(), distinctEdges, env),
-//        Constants.SIM_GEO_LABEL_STRATEGY,
-//        env);
   }
 }

@@ -1,18 +1,9 @@
 package org.mappinganalysis.model.functions.merge;
 
 import com.google.common.collect.Maps;
-import org.apache.flink.api.common.aggregators.ConvergenceCriterion;
-import org.apache.flink.api.common.aggregators.LongSumAggregator;
-import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.LocalEnvironment;
-import org.apache.flink.api.java.operators.IterativeDataSet;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.LongValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
@@ -20,10 +11,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -47,9 +35,8 @@ public class MergeTest {
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeInit/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices =
-        Utils.readVerticesFromJSONFile(graphPath, env, true);
-
-    vertices = Merge.init(vertices, null);
+        Utils.readVerticesFromJSONFile(graphPath, env, true)
+            .runOperation(new MergeInitialization());
 
     int count = 0;
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
@@ -79,19 +66,49 @@ public class MergeTest {
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
-        .getVertices();
+    DataSet<Vertex<Long, ObjectMap>> vertices = Utils
+        .readFromJSONFile(graphPath, env, true)
+        .getVertices()
+        .runOperation(new MergeExecution(5));
 
-    vertices = Merge.execute(vertices, 5);
+    // at some time, we had no(t always) reproducible results, here,
+    // we check if the result is the same for 10 runs
+    // todo remove later
+    for (int i = 0; i < 10; i++) {
+      LOG.info("Run: " + i);
+      for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+//        LOG.info(vertex.toString());
 
-//    int i = 0;
-//    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-//      assertFalse(vertex.getValue().getTypes(Constants.TYPE_INTERN).contains(Constants.NO_TYPE));
-//      ++i;
-//    }
-//    assertEquals(3, i);
+        if (vertex.getId() == 60191L) {
+          assertTrue(vertex.getValue().getVerticesList().contains(60191L));
+        } else if (vertex.getId() == 395207L) {
+          assertTrue(vertex.getValue().getVerticesList().contains(513732L)
+              || vertex.getValue().getVerticesList().contains(395207L)
+              || vertex.getValue().getVerticesList().contains(1010272L));
+        } else if (vertex.getId() == 1L) {
+          assertTrue(vertex.getValue().getVerticesList().contains(1L));
+        } else if (vertex.getId() == 2L) {
+          assertTrue(vertex.getValue().getVerticesList().contains(2L)
+              || vertex.getValue().getVerticesList().contains(3L));
+        } else if (vertex.getId() == 23L){
+          assertTrue(vertex.getValue().getVerticesList().contains(23L)
+              || vertex.getValue().getVerticesList().contains(42L)
+              || vertex.getValue().getVerticesList().contains(252016L)
+              || vertex.getValue().getVerticesList().contains(1268005L)
+              || vertex.getValue().getVerticesList().contains(60190L));
+        } else {
+          assert false;
+        }
 
-    vertices.print();
+//        if (vertex.getId() == 60191L
+//            && vertex.getValue().getVerticesList().size() == 1) {
+//          LOG.info("60191L single");
+//        } else if (vertex.getId() == 42L
+//            && vertex.getValue().getVerticesList().size() == 1) {
+//          LOG.info("42L single");
+//        }
+      }
+    }
   }
 
   @Test
@@ -102,13 +119,12 @@ public class MergeTest {
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec2/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = Utils.readFromJSONFile(graphPath, env, true)
-        .getVertices();
-
-    vertices = Merge.execute(vertices, 5);
+    DataSet<Vertex<Long, ObjectMap>> vertices = Utils
+        .readFromJSONFile(graphPath, env, true)
+        .getVertices()
+        .runOperation(new MergeExecution(5));
 
     assertEquals(4, vertices.count());
-//    vertices.print();
   }
 
   @Test
@@ -153,12 +169,12 @@ public class MergeTest {
     map.put("Leipzig Saxonia Germany", 1);
     map.put("Leipzig (Sachsen)", 1);
 
-    String finalValue = Merge.getFinalValue(map, Constants.LABEL);
+    String finalValue = Utils.getFinalValue(map, Constants.LABEL);
     assertTrue("Leipzig Saxonia Germany".equals(finalValue));
 
     map.put("Leipzig", 3);
     map.put("Lipsia Test", 2);
-    finalValue = Merge.getFinalValue(map, Constants.LABEL);
+    finalValue = Utils.getFinalValue(map, Constants.LABEL);
 
     assertTrue("Leipzig".equals(finalValue));
   }

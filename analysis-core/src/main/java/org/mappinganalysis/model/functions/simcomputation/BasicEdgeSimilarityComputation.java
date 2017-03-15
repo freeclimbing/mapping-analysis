@@ -1,12 +1,15 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Triplet;
+import org.apache.flink.graph.library.CommunityDetection;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
@@ -18,6 +21,8 @@ import org.mappinganalysis.util.Constants;
  */
 public class BasicEdgeSimilarityComputation
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(BasicEdgeSimilarityComputation.class);
+
   private final ExecutionEnvironment env;
   private final EdgeSimilarityFunction simFunction;
 

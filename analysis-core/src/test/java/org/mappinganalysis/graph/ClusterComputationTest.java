@@ -11,8 +11,10 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
@@ -29,18 +31,18 @@ public class ClusterComputationTest {
   public void computeMissingEdgesTest() throws Exception {
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
     DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
-    DataSet<Edge<Long, NullValue>> allEdges
-        = GraphUtils.computeComponentEdges(inputVertices, new CcIdKeySelector());
+    DataSet<Edge<Long, NullValue>> allEdges =
+        EdgeComputationVertexCcSet.computeComponentEdges(inputVertices, new CcIdKeySelector());
 
     assertEquals(9, allEdges.count());
 
     DataSet<Edge<Long, NullValue>> newEdges
-        = GraphUtils.restrictToNewEdges(graph.getEdges(), allEdges);
+        = restrictToNewEdges(graph.getEdges(), allEdges);
     assertEquals(1, newEdges.count());
     assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
     final DataSet<Edge<Long, NullValue>> distinctEdges
-        = GraphUtils.getDistinctSimpleEdges(allEdges);
+        = EdgeComputationVertexCcSet.getDistinctSimpleEdges(allEdges);
 
     assertEquals(3, distinctEdges.count());
     assertTrue(distinctEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
@@ -64,5 +66,30 @@ public class ClusterComputationTest {
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
 
     return Graph.fromCollection(edgeList, env);
+  }
+
+  /**
+   * Restrict given set to edges which are not in the input edges set.
+   * @param input edges in this dataset should no longer be in the result set
+   * @param processEdges remove edges from input edge dataset from these and return
+   *
+   * Used for tests.
+   */
+  private DataSet<Edge<Long, NullValue>> restrictToNewEdges(
+      DataSet<Edge<Long, NullValue>> input,
+      DataSet<Edge<Long, NullValue>> processEdges) {
+    return processEdges
+        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
+        .leftOuterJoin(input)
+        .where(0, 1)
+        .equalTo(0, 1)
+        .with(new LeftMinusRightSideJoinFunction<>())
+        .leftOuterJoin(input)
+        .where(0, 1)
+        .equalTo(1, 0)
+        .with(new LeftMinusRightSideJoinFunction<>())
+        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
+        .returns(new TypeHint<Edge<Long, NullValue>>() {})
+        .distinct();
   }
 }
