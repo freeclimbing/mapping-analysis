@@ -172,7 +172,5 @@
     <orderEntry type="library" name="Maven: stax:stax-api:1.0.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-gelly_2.11:1.1.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.flink:flink-hbase_2.11:1.1.2" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.6.2" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.6.2" level="project" />
   </component>
 </module>

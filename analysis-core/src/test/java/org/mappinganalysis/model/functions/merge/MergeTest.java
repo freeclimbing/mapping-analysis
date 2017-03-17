@@ -73,7 +73,7 @@ public class MergeTest {
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
-    // todo remove later
+    // todo remove outer for loop later
     for (int i = 0; i < 10; i++) {
       LOG.info("Run: " + i);
       for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
