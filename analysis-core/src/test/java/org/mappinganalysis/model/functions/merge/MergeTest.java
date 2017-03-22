@@ -7,6 +7,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -22,9 +23,9 @@ public class MergeTest {
 
   /**
    * Check (especially) rejoin single vertices from SimSort:
-   * - 3 vertices where 2 are similar, get clustered
-   * - 2 vertices are dissimilar, they should be still in the result (as single vertices)
-   * - 2 vertices without oldHashCc
+   * 3 vertices where 2 are similar, get clustered
+   * 2 vertices are dissimilar, they should be still in the result (as single vertices)
+   * 2 vertices without oldHashCc
    * @throws Exception
    */
   @Test
@@ -32,15 +33,15 @@ public class MergeTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String graphPath = MergeTest.class
+    String filePath = MergeTest.class
         .getResource("/data/representative/mergeInit/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices =
-        Utils.readVerticesFromJSONFile(graphPath, env, true)
+    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(filePath, true, env)
+            .getVertices()
             .runOperation(new MergeInitialization());
 
     int count = 0;
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-      LOG.info(vertex.toString());
+//      LOG.info(vertex.toString());
       ++count;
       if (vertex.getId() == 395207L) {
         assertTrue(vertex.getValue().getVerticesList().contains(395207L)
@@ -66,15 +67,14 @@ public class MergeTest {
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = Utils
-        .readFromJSONFile(graphPath, env, true)
+    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
         .runOperation(new MergeExecution(5));
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
     // todo remove outer for loop later
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 4; i++) {
       LOG.info("Run: " + i);
       for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
 //        LOG.info(vertex.toString());
@@ -119,8 +119,7 @@ public class MergeTest {
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec2/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = Utils
-        .readFromJSONFile(graphPath, env, true)
+    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
         .runOperation(new MergeExecution(5));
 

@@ -1,7 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing.utils;
 
 import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.mappinganalysis.model.IdTypeTuple;
 

@@ -6,6 +6,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
 
@@ -20,7 +21,7 @@ public class RepresentativeTest {
   public void geoEntityValidTest() throws Exception {
     String graphPath = RepresentativeTest.class.getResource("/data/simsort/").getFile();
 
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
     graph.filterOnVertices(new FilterFunction<Vertex<Long, ObjectMap>>() {
       @Override

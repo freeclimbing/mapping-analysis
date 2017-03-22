@@ -1,9 +1,12 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
@@ -16,14 +19,16 @@ import org.mappinganalysis.util.Constants;
  */
 public class DefaultPreprocessing
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(DefaultPreprocessing.class);
+
   private final ExecutionEnvironment env;
-  private final boolean isBasicLinkFilterEnabled;
+  private final boolean linkFilterEnabled;
 
   /**
    * Basic preprocessing
    */
   public DefaultPreprocessing(ExecutionEnvironment env) {
-    this.isBasicLinkFilterEnabled = false;
+    this.linkFilterEnabled = true;
     this.env = env;
   }
 
@@ -31,26 +36,27 @@ public class DefaultPreprocessing
    * Preprocessing with additional basic link filter.
    */
   public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
-    this.isBasicLinkFilterEnabled = isBasicLinkFilterEnabled;
+    this.linkFilterEnabled = isBasicLinkFilterEnabled;
     this.env = env;
   }
 
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
-    //restrict graph to direct links with matching type information
-    TypeMisMatchCorrection typeMisMatchCorrection = new TypeMisMatchCorrection
-        .TypeMisMatchCorrectionBuilder()
-        .setEnvironment(env)
-        .build();
-
     Graph<Long, ObjectMap, ObjectMap> result = graph
         .mapVertices(new InternalTypeMapFunction())
         .run(new EqualDataSourceLinkRemover(env))
-        .run(typeMisMatchCorrection)
+        .run(new TypeMisMatchCorrection(env))
         .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+//        .filterOnEdges(new FilterFunction<Edge<Long, ObjectMap>>() {
+//          @Override
+//          public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
+//            LOG.info(value.toString());
+//            return true;
+//          }
+//        });
 
-    if (isBasicLinkFilterEnabled) {
+    if (linkFilterEnabled) {
       LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()
         .setEnvironment(env)

@@ -23,24 +23,19 @@ public class InternalTypeMapFunction
     Set<String> resultTypes = Sets.newHashSet();
 
     if (properties.containsKey(Constants.GN_TYPE_DETAIL)) {
-//      LOG.info("###itm: " + vertex.getId() + " ### gn");
       resultTypes = getDictValue(properties.get(Constants.GN_TYPE_DETAIL).toString());
     }
     if (properties.containsKey(Constants.TYPE) &&
         (resultTypes.isEmpty() || resultTypes.contains(Constants.NO_TYPE))) {
-//      LOG.info("###itm: " + vertex.toString() + " ### normal");
       resultTypes = getDictValues(properties.getTypes(Constants.TYPE));
     }
     if (resultTypes.isEmpty()) {
-//      LOG.info("###itm: " + vertex.getId() + " ### notype");
       resultTypes = Sets.newHashSet(Constants.NO_TYPE);
     }
-//    LOG.info("###itm: " + vertex.toString() + " ### " + resultTypes.toString());
 
     properties.put(Constants.TYPE_INTERN, resultTypes);
     properties.remove(Constants.TYPE);
     properties.remove(Constants.GN_TYPE_DETAIL);
-//    LOG.info("###inttypemap###2 " + vertex.toString());
 
     return properties;
   }

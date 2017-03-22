@@ -10,16 +10,17 @@ import org.apache.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.model.ObjectMap;
+
+import static org.junit.Assert.*;
 
 public class JSONTest {
   private static final Logger LOG = Logger.getLogger(JSONTest.class);
 
   private ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();;
-
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   // TODO no duplicate keys for properties in gdl (only with graph properties)
   private static final String EXAMPLE = "g[" +
       "(v1 {label = \"Kathmandu\", typeIntern = \"Settlement\", ccId = 7380L, " +
@@ -29,39 +30,56 @@ public class JSONTest {
       "]";
 
   @Test
-  // todo test, method already working
-  public void readJSONTest() throws Exception {
-    String vertexInFile =
-        JSONTest.class.getResource("/data/vertices.json").getFile();
-    String edgeInFile =
-        JSONTest.class.getResource("/data/edges.json").getFile();
-    JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
+  public void pathTest() {
+    JSONDataSource jsonDataSource = new JSONDataSource("path", "step", false, env);
+    assertTrue(jsonDataSource.getVertexPath().equals("path/output/step/vertices/"));
+    assertTrue(jsonDataSource.getEdgePath().equals("path/output/step/edges/"));
 
-    Graph<Long, ObjectMap, NullValue> graph = dataSource.getGraph(ObjectMap.class, NullValue.class);
+    jsonDataSource = new JSONDataSource("path", "", false, env);
+    assertTrue(jsonDataSource.getVertexPath().equals("path/input/vertices/"));
+    jsonDataSource = new JSONDataSource("path", null, false, env);
+    assertTrue(jsonDataSource.getVertexPath().equals("path/input/vertices/"));
+
+    jsonDataSource = new JSONDataSource("path", "", true, env);
+    assertTrue(jsonDataSource.getVertexPath().equals("path/vertices/"));
+  }
+
+  /**
+   * Simple JSON input reader test
+   * @throws Exception
+   */
+  @Test
+  public void readJSONTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+    String path = JSONTest.class.getResource("/data/preprocessing/input/").getFile();
+
+    Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(path, true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-      LOG.info("vertex: " + vertex);
+      assertTrue(vertex.getId() == 109L
+          || vertex.getId() == 7380L
+          || vertex.getId() == 5346L);
+      assertTrue(vertex.getValue().getClass().equals(ObjectMap.class));
     }
 
-    for (Edge<Long, NullValue> longObjectMapEdge : graph.getEdges().collect()) {
-      LOG.info("edge: " + longObjectMapEdge.toString());
+    for (Edge<Long, NullValue> edge : graph.getEdges().collect()) {
+      assertTrue(edge.getSource() == 7380L);
+      assertTrue(edge.getTarget() == 5346L
+          || edge.getTarget() == 109L);
+      assertTrue(edge.getValue().getClass().equals(NullValue.class));
     }
   }
 
+  /**
+   * not working
+   * @throws Exception
+   */
   @Test
   public void readWriteJSONTest() throws Exception {
-    /**
-     * Read file
-     */
-    String vertexInFile =
-        JSONTest.class.getResource("/data/vertices.json").getFile();
-    String edgeInFile =
-        JSONTest.class.getResource("/data/edges.json").getFile();
-    JSONDataSource dataSource = new JSONDataSource(vertexInFile, edgeInFile, env);
-
-    Graph<Long, ObjectMap, ObjectMap> graph = dataSource.getGraph(ObjectMap.class, ObjectMap.class);
-
-    // todo do sth
+    env = TestBase.setupLocalEnvironment();
+    String path = JSONTest.class.getResource("/data/preprocessing/input/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(path, true, env).getGraph();
 
     /**
      * Write graph to JSON file
@@ -76,14 +94,13 @@ public class JSONTest {
     /**
      * todo better compare in and out file?
      */
-    JSONDataSource testSource = new JSONDataSource(vertexOutFile, edgeOutFile, env);
+    Graph<Long, ObjectMap, ObjectMap> inOutGraph = new JSONDataSource(tmpDir, true, env)
+        .getGraph();
 
-    Graph<Long, ObjectMap, ObjectMap> inOutGraph = testSource.getGraph(ObjectMap.class, ObjectMap.class);
-
-    DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
-    for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {
-      LOG.info("in result: " + vertex);
-    }
+//    DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
+//    for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {
+//      LOG.info("in result: " + vertex);
+//    }
 
     DataSet<Vertex<Long, ObjectMap>> outVertices = inOutGraph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : outVertices.collect()) {

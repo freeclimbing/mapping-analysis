@@ -18,6 +18,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeIdsSourcesTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -291,9 +292,10 @@ public class Stats {
    */
   public static DataSet<Tuple2<Integer, Integer>> countMissingGeoAndTypeProperties(
       String path, boolean isAbsolutePath, ExecutionEnvironment env) throws Exception {
+    Graph<Long, ObjectMap, NullValue> preGraph =
+        new JSONDataSource(path, isAbsolutePath, env)
+            .getGraph(ObjectMap.class, NullValue.class);
 
-    Graph<Long, ObjectMap, NullValue> preGraph
-        = Utils.readFromJSONFile(path, ObjectMap.class, NullValue.class, env, isAbsolutePath);
     DataSet<Tuple2<Integer, Integer>> geoTypeTuples = preGraph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()

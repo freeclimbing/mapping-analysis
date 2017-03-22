@@ -55,15 +55,8 @@ public class Preprocessing {
     }
     // stats end
 
-    /*p
-     * restrict graph to direct links with matching type information
-     */
-    TypeMisMatchCorrection typeMisMatchCorrection = new TypeMisMatchCorrection
-        .TypeMisMatchCorrectionBuilder()
-        .setEnvironment(env)
-        .build();
-
-    return graph.run(typeMisMatchCorrection)
+    return graph
+        .run(new TypeMisMatchCorrection(env))
         .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
   }
 
@@ -101,7 +94,8 @@ public class Preprocessing {
       }
     }
 
-    DataSet<Edge<Long, NullValue>> edges = loader.getEdgesFromCsv(Constants.INPUT_DIR + edgeFile)
+    DataSet<Edge<Long, NullValue>> edges = loader
+        .getEdgesFromCsv(Constants.INPUT_DIR + edgeFile)
         .runOperation(new IsolatedEdgeRemover<>(vertices));
 
     vertices = vertices.runOperation(new IsolatedVertexRemover<>(edges));

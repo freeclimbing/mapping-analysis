@@ -14,8 +14,10 @@ import org.mappinganalysis.util.Constants;
 public class SimSortVertexCentricIteration
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
   private final ExecutionEnvironment env;
+  private final Double minSimilarity;
 
-  public SimSortVertexCentricIteration(ExecutionEnvironment env) {
+  public SimSortVertexCentricIteration(Double minSimilarity, ExecutionEnvironment env) {
+    this.minSimilarity = minSimilarity;
     this.env = env;
   }
 
@@ -31,7 +33,7 @@ public class SimSortVertexCentricIteration
 
     DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = createSimSortInputGraph(graph, env)
         .runVertexCentricIteration(
-            new SimSortOptVertexUpdateFunction(Constants.MIN_SIMSORT_SIM),
+            new SimSortOptVertexUpdateFunction(minSimilarity),
             new SimSortOptMessagingFunction(), Integer.MAX_VALUE, aggParameters)
         .getVertices();
 

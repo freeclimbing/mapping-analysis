@@ -19,6 +19,9 @@ public class EqualDataSourceLinkRemover
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, NullValue>> {
   private final ExecutionEnvironment env;
 
+  /**
+   * Remove links where source and target dataset name are equal, remove duplicate links
+   */
   public EqualDataSourceLinkRemover(ExecutionEnvironment env) {
     this.env = env;
   }

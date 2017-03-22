@@ -1,6 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -10,12 +10,12 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
-import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -33,7 +33,7 @@ public class PreprocessingTest {
   public void typeMapperTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/typeMapping/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices();
@@ -60,11 +60,11 @@ public class PreprocessingTest {
     }
   }
 
-    @Test
+  @Test
   public void compSourceTupleTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
     DataSet<ComponentSourceTuple> resultTuples = Preprocessing
         .getComponentSourceTuples(graph.getVertices(), null);
@@ -84,37 +84,6 @@ public class PreprocessingTest {
   }
 
   @Test
-  public void linkFilterStrategyTest() throws Exception {
-    String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/linkFilter/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-
-    LinkFilter linkFilter = new LinkFilter
-        .LinkFilterBuilder()
-        .setEnvironment(env)
-        .setStrategy(LinkFilterStrategy.BASIC)
-        .build();
-
-    graph = graph
-        .run(linkFilter)
-        .filterOnEdges(edge -> {
-          if (edge.getSource() == 617158L) {
-            // 3 edges to lgd get reduced to the best option
-            assertEquals(617159L, edge.getTarget().longValue());
-            return true;
-          } else if (edge.getSource() == 1022884L) {
-            // 2 edges to geonames to best option
-            assertEquals(1375705L, edge.getTarget().longValue());
-            return true;
-          } else {
-            return false;
-          }
-        });
-
-    assertEquals(4, graph.getVertices().count());
-  }
-
-  @Test
   // 819;label;Łęgowo;string
   // sometimes the following line is created
   // ����gowo
@@ -122,7 +91,7 @@ public class PreprocessingTest {
   public void writeToDiskEncodingTest() throws Exception {
         String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
 
     // write to disk works like suspected with UTF8
@@ -131,22 +100,15 @@ public class PreprocessingTest {
     graph.getVertices().print();
   }
 
-  // todo no test, working code
-//  @Test
-//  public void nullValueTest() throws Exception {
-//    String graphPath = PreprocessingTest.class
-//        .getResource("/data/preprocessing/nullValueLinkFilter/").getFile();
-//    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-//    graph = Preprocessing.applyLinkFilterStrategy(graph, env, true);
-//
-//    graph.getVertices().print();
-//  }
-
+  /**
+   * Clustering link filter
+   * @throws Exception
+   */
   @Test
   public void finalOneToManyTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
     graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env);
 
@@ -169,14 +131,17 @@ public class PreprocessingTest {
   }
 
   /**
+   * Check basic link filter, optionally delete isolated vertices - Gradina
+   *
+   * 7 vertices, delete 5
    * vertex lat/lon data is irrelevant, similarities are already computed in edges
-   * @throws Exception
+   * TODO too much collect
    */
   @Test
   public void oneToManyTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/oneToMany/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> inputGraph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> inputGraph = new JSONDataSource(graphPath, true, env).getGraph();
 
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()
@@ -196,6 +161,23 @@ public class PreprocessingTest {
       assertTrue(vertex == 2642L || vertex == 46584L);
     }
 
+//    Graph<Long, ObjectMap, ObjectMap> graph =
+//        new JSONDataSource(graphPath, true, env).getGraph()
+//            .run(linkFilter)
+//            .filterOnEdges(edge -> {
+//              if (edge.getSource() == 617158L) {
+//                // 3 edges to lgd get reduced to the best option
+//                assertEquals(617159L, edge.getTarget().longValue());
+//                return true;
+//              } else if (edge.getSource() == 1022884L) {
+//                // 2 edges to geonames to best option
+//                assertEquals(1375705L, edge.getTarget().longValue());
+//                return true;
+//              } else {
+//                return false;
+//              }
+//            });
+
     linkFilter = new LinkFilter
         .LinkFilterBuilder()
         .setEnvironment(env)
@@ -214,44 +196,52 @@ public class PreprocessingTest {
   }
 
   /**
-   * TODO fix this test
+   * EqualDataSourceLinkRemover not tested, but tested separately
    * @throws Exception
    */
   @Test
-  public void generalPreprocessingTest() throws Exception {
+  public void defaultPreprocessingTest() throws Exception {
     String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> inGraph = Utils.readFromJSONFile(graphPath, env, true);
+        .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
+    Graph<Long, ObjectMap, NullValue> inGraph = new JSONDataSource(graphPath, true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+    DefaultPreprocessing preprocessing = new DefaultPreprocessing(env);
 
-    DataSet<Edge<Long, NullValue>> edges = inGraph.getEdges()
-        .map(edge -> {
-          LOG.info("edge: " + edge.getSource() + " " + edge.getTarget());
-          return new Edge<>(edge.getSource(), edge.getTarget(), NullValue.getInstance());
-        })
-        .returns(new TypeHint<Edge<Long, NullValue>>() {});
-
-    Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(inGraph.getVertices(), edges, env);
-
-    Graph<Long, ObjectMap, ObjectMap> simGraph = graph
-        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
-
-    LinkFilter linkFilter = new LinkFilter
-        .LinkFilterBuilder()
-        .setEnvironment(env)
-        .setRemoveIsolatedVertices(true)
-        .setStrategy(LinkFilterStrategy.BASIC)
-        .build();
-
-    simGraph.run(linkFilter)
-        .getVertices()
-        .print();
+    inGraph.run(preprocessing).getVertices().print();
   }
 
+  /**
+   * Link to vertex 1 is deleted
+   * @throws Exception
+   */
+  @Test
+  public void typeMisMatchCorrectionTest() throws Exception {
+    String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
+    Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(graphPath, true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+
+    assertEquals(6, graph
+        .run(new TypeMisMatchCorrection(env))
+        .filterOnEdges(new FilterFunction<Edge<Long, NullValue>>() { // no lambda
+          @Override
+          public boolean filter(Edge<Long, NullValue> edge) throws Exception {
+            assertTrue(edge.getSource() != 1L && edge.getTarget() != 1L);
+            return true;
+          }
+        })
+        .getEdgeIds()
+        .count());
+  }
+
+  /**
+   * 5 vertices, one gets deleted - Karlespitze
+   */
   @Test
   public void deleteVerticesWithoutEdgesTest() throws Exception {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/deleteVerticesWithoutEdges/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
+    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
     DataSet<Vertex<Long, ObjectMap>> result = graph.getVertices()
         .runOperation(new IsolatedVertexRemover<>(graph.getEdges()));

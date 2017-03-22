@@ -8,6 +8,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.BasicTest;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.simcomputation.TrigramSimilarityMapper;
@@ -82,8 +83,10 @@ public class SimilarityMapperTest extends BasicTest {
   public void doubleValueTest() throws Exception {
     String graphPath = SimilarityMapperTest.class
         .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-    ObjectMap edgeValue = graph.getEdges().collect()
+    ObjectMap edgeValue = new JSONDataSource(graphPath, true, env)
+        .getGraph()
+        .getEdges()
+        .collect()
         .iterator().next().getValue();
 
     double weightedAggSim = SimilarityComputation.getWeightedAggSim(edgeValue);

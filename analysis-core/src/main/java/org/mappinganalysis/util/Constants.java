@@ -126,7 +126,7 @@ public class Constants {
   public static final String IC_GRAPH = "IcGraph";
   public static final String SIMSORT_GRAPH = "SimSortGraph";
 
-  public static final String INPUT = "input";
+  public static final String READ_INPUT = "read-input";
   public static final String PREPROC = "preproc";
   public static final String LF = "lf";
   public static final String PREPROCESSING_COMPLETE = "pc";
@@ -150,6 +150,13 @@ public class Constants {
    * Command line option names.
    */
   public static String INPUT_DIR;
+
+  public static final String VERTICES = "vertices/";
+  public static final String EDGES = "edges/";
+  public static final String OUTPUT = "output/";
+  public static final String INPUT = "input/";
+  public static final String SLASH = "/";
+
   /**
    * Number of different data sources in the data set.
    */

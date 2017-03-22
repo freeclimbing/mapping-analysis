@@ -7,6 +7,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.util.Constants;
@@ -20,7 +21,8 @@ public class SimSortTest {
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   private static final String SORT_SIMPLE = "g[" +
-      "(v1 {ccId = 1L, typeIntern = \"Settlement\", label = \"bajaur\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
+//      "(v1 {ccId = 1L, typeIntern = \"Settlement\", label = \"bajaur\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
+      "(v1 {ccId = 1L, typeIntern = \"Settlement\", label = \"zzzzz\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
       "(v2 {ccId = 1L, typeIntern = \"Settlement\", label = \"Bajaur Agency\", lat = 34.6833D, lon = 71.5D, hashCc = 23L})" +
       "(v3 {ccId = 1L, typeIntern = \"AdministrativeRegion\", lat = 34.8333333D, lon = 71.5D, hashCc = 23L})" +
       "(v4 {ccId = 1L, label = \"Bajaur (Pakistan)\", lat = 34.8333D, lon = 71.5D, hashCc = 23L})]" +
@@ -44,17 +46,20 @@ public class SimSortTest {
   @Test
   // TODO write asserts
   public void simSortJSONTest() throws Exception {
-    Constants.MIN_SIMSORT_SIM = 0.5;
+    double minSimilarity = 0.8;
 
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph =
-        Utils.readFromJSONFile(graphPath, env, true)
-        .run(new SimSort(false, env));
+        new JSONDataSource(graphPath, true, env).getGraph()
+        .run(new SimSort(true, minSimilarity, env));
+
+//    graph.getVertices().print();
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
         .runOperation(new RepresentativeCreator());
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
+      LOG.info(vertex.toString());
       if (vertex.getId() == 2757L) {
         assertTrue(vertex.getValue().getVerticesCount().equals(1));
       } else {
@@ -63,14 +68,18 @@ public class SimSortTest {
     }
   }
 
+  /*
+   TODO does nothing!?
+   */
   @Test
   public void simSortTest() throws Exception {
-    Constants.MIN_SIMSORT_SIM = 0.9;
+    double minSimilarity = 0.9;
 
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_SIMPLE);
-    Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
+    Graph<Long, ObjectMap, ObjectMap> graph = MappingAnalysisExampleTest
+        .createTestGraph(firstHandler);
 
-    graph.run(new SimSort(true, env));
+    graph = graph.run(new SimSort(true, minSimilarity, env));
 
     graph.getVertices()
         .print();
@@ -81,16 +90,16 @@ public class SimSortTest {
   }
 
   /**
-   * Error occurs every 1-20(?) runs...
+   * Error occurs every 1-20(?) runs... not anymore
    * @throws Exception
    */
   @Test
   public void simSortErrorTest() throws Exception {
     GDLHandler firstHandler = new GDLHandler.Builder().buildFromString(SORT_CANAIMA);
     Graph<Long, ObjectMap, ObjectMap> firstGraph = MappingAnalysisExampleTest.createTestGraph(firstHandler);
-    Constants.MIN_CLUSTER_SIM = 0.75D;
+    double minSimilarity = 0.75D;
 
-    firstGraph = firstGraph.run(new SimSort(true, env));
+    firstGraph = firstGraph.run(new SimSort(true, minSimilarity, env));
 
     for (int i = 0; i < 20; i++) {
       for (Vertex<Long, ObjectMap> vertex : firstGraph.getVertices().collect()) {

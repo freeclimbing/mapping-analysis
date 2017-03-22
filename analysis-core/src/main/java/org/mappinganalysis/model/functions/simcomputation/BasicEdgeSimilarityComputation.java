@@ -27,7 +27,8 @@ public class BasicEdgeSimilarityComputation
   private final EdgeSimilarityFunction simFunction;
 
   /**
-   *
+   * Compute similarities based on the existing vertex properties,
+   * save aggregated similarity as edge property
    * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
    * @param env env
    */

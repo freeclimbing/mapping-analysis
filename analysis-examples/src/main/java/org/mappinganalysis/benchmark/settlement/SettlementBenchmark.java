@@ -7,6 +7,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
@@ -40,40 +41,46 @@ public class SettlementBenchmark implements ProgramDescription {
         args.length == 1, "args[0]: input dir");
     Constants.SOURCE_COUNT = 4;
     Constants.INPUT_DIR = args[0];
+    Double minSimSortSim = 0.7;
 
-    // preprocessing
+    /**
+     * preprocessing
+     */
     Graph<Long, ObjectMap, NullValue> preprocGraph =
-        Utils.readFromJSONFile(
-            "input",
-            ObjectMap.class,
-            NullValue.class,
-            env);
+        new JSONDataSource(Constants.INPUT_DIR, env)
+            .getGraph(ObjectMap.class, NullValue.class);
 
     Utils.writeGraphToJSONFile(
         preprocGraph.run(new DefaultPreprocessing(true, env)),
         PREPROCESSING);
     env.execute(PRE_JOB);
 
-//    // decomposition with representative creation
-//    Graph<Long, ObjectMap, ObjectMap> decompGraph =
-//        Utils.readFromJSONFile(PREPROCESSING, env)
-//            .run(new TypeGroupBy(env)) // not needed? TODO
-//            .run(new SimSort(true, env));
-//
-//    Utils.writeVerticesToJSONFile(
-//        decompGraph.getVertices()
-//            .runOperation(new RepresentativeCreator()),
-//        DECOMPOSITION);
-//    env.execute(DEC_JOB);
-//
-//    // merge
-//    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-//        Utils.readVerticesFromJSONFile(Constants.SIMSORT_GRAPH, env, false)
-//            .runOperation(new MergeInitialization())
-//            .runOperation(new MergeExecution(Constants.SOURCE_COUNT));
-//
-//    Utils.writeVerticesToJSONFile(mergedVertices, MERGE);
-//    env.execute(MER_JOB);
+    /**
+     * decomposition with representative creation
+     */
+    Graph<Long, ObjectMap, ObjectMap> decompGraph =
+        new JSONDataSource(Constants.INPUT_DIR, PREPROCESSING, env)
+            .getGraph()
+            .run(new TypeGroupBy(env)) // not needed? TODO
+            .run(new SimSort(minSimSortSim, env));
+
+    Utils.writeVerticesToJSONFile(
+        decompGraph.getVertices()
+            .runOperation(new RepresentativeCreator()),
+        DECOMPOSITION);
+    env.execute(DEC_JOB);
+
+    /**
+     * merge
+     */
+    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
+        new JSONDataSource(Constants.INPUT_DIR, Constants.SIMSORT_GRAPH, env)
+            .getVertices()
+            .runOperation(new MergeInitialization())
+            .runOperation(new MergeExecution(Constants.SOURCE_COUNT));
+
+    Utils.writeVerticesToJSONFile(mergedVertices, MERGE);
+    env.execute(MER_JOB);
   }
 
   @Override

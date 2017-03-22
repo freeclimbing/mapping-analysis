@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.preprocessing.utils;
 
-import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
@@ -12,12 +11,12 @@ import org.mappinganalysis.util.Utils;
  */
 public class EqualTypesEdgeFilterFunction
     extends RichFilterFunction<Tuple4<Long, Long, String, String>> {
-  private LongCounter edgeCounter = new LongCounter();
+//  private LongCounter edgeCounter = new LongCounter();
 
   @Override
   public void open(final Configuration parameters) throws Exception {
     super.open(parameters);
-    getRuntimeContext().addAccumulator(Constants.EDGE_EXCLUDE_ACCUMULATOR, edgeCounter);
+//    getRuntimeContext().addAccumulator(Constants.EDGE_EXCLUDE_ACCUMULATOR, edgeCounter);
   }
 
   @Override
@@ -30,9 +29,9 @@ public class EqualTypesEdgeFilterFunction
         )
         || Utils.getShadingType(tuple.f2).equals(Utils.getShadingType(tuple.f3));
 
-    if (!result) {
-      edgeCounter.add(1L);
-    }
+//    if (!result) {
+//      edgeCounter.add(1L);
+//    }
     return result;
   }
 }

@@ -43,7 +43,8 @@ public class EdgeComputationVertexCcSet
   }
 
   /**
-   * Within a set of vertices having connected component ids, compute all edges within each component.
+   * Within a set of vertices having connected component ids,
+   * compute all edges within each component.
    * TODO fix public
    */
   public static DataSet<Edge<Long, NullValue>> computeComponentEdges(

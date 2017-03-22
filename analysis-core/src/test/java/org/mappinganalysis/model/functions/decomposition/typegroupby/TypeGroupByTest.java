@@ -1,10 +1,12 @@
 package org.mappinganalysis.model.functions.decomposition.typegroupby;
 
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
 
@@ -20,9 +22,6 @@ public class TypeGroupByTest {
   @Test
   public void newTgbTest() throws Exception {
     String graphPath = TypeGroupByTest.class.getResource("/data/typeGroupBy/").getFile();
-
-    Graph<Long, ObjectMap, ObjectMap> graph = Utils.readFromJSONFile(graphPath, env, true);
-
     TypeGroupBy typeGroupBy = new TypeGroupBy(env);
 
     // little workaround needed because hash in HashCcIdOverlappingFunction may change for different runs
@@ -36,7 +35,12 @@ public class TypeGroupByTest {
     long resultLake2 = 0;
     long resultFake = 0; // all no_type -> same hash
 
-    for (Vertex<Long, ObjectMap> vertex : graph.run(typeGroupBy).getVertices().collect()) {
+    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
+        .getGraph()
+        .run(typeGroupBy)
+        .getVertices();
+
+    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
       if (vertex.getId() == 1375705L || vertex.getId() == 617158L
           || vertex.getId() == 617159L || vertex.getId() == 1022884L) {
         if (!isKarl) {
