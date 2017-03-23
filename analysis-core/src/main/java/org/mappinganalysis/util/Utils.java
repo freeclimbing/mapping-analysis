@@ -44,7 +44,7 @@ public class Utils {
   private static final HashFunction HF = Hashing.md5();
 
   /**
-   * Write any dataset to disk, not working currently.
+   * Write any dataset to disk, not working currently, old.
    */
   public static <T> void writeToFile(DataSet<T> data, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
@@ -52,52 +52,6 @@ public class Utils {
           FileSystem.WriteMode.OVERWRITE,
           new DataSetTextFormatter<>());
     }
-  }
-  /**
-   * Write any dataset to disk, not working currently.
-   */
-  public static <T extends Tuple> void writeTuplesToFile(DataSet<T> data, String outDir) {
-
-    String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
-    JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
-
-    dataSink.writeTuples(data);
-  }
-  /**
-   * Write a Gelly graph to JSON
-   */
-  public static <VV, EV> void writeGraphToJSONFile(Graph<Long, VV, EV> graph, String outDir) {
-      String vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/vertices/";
-      String edgeOutFile = Constants.INPUT_DIR + "output/" + outDir + "/edges/";
-      JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
-
-      dataSink.writeGraph(graph);
-  }
-
-  /**
-   * Write a DataSet of vertices to JSON
-   */
-  public static void writeVerticesToJSONFile(DataSet<Vertex<Long, ObjectMap>> vertices, String outDir) {
-    writeVerticesToJSONFile(vertices, outDir, false);
-  }
-
-  public static void writeVerticesToJSONFile(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
-      String outDir,
-      Boolean isAbsolute) {
-    String vertexOutFile;
-    if (!isAbsolute) {
-      vertexOutFile = Constants.INPUT_DIR + "output/" + outDir + "/";
-    } else {
-      vertexOutFile = outDir + "output/";
-    }
-    LOG.info("################" + vertexOutFile);
-
-    // TODO use discarding output format to check encoding?
-
-    JSONDataSink dataSink = new JSONDataSink(vertexOutFile);
-
-    dataSink.writeVertices(vertices);
   }
 
   /**
@@ -207,6 +161,8 @@ public class Utils {
           .sum(1).and(Aggregations.SUM, 2)
           .filter(tuple -> tuple.f1 != 0)
           .returns(new TypeHint<Tuple3<Long, Integer, Integer>>() {});
+
+
       Utils.writeToFile(tmpResult, "rmEdgesPerCompAndEdgeCount");
 
       DataSet<Tuple3<Integer, Integer, Integer>> result = getAggCount(tmpResult);

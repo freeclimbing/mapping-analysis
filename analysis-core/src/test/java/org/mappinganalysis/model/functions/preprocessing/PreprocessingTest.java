@@ -10,6 +10,8 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.Preprocessing;
@@ -27,17 +29,22 @@ import static org.junit.Assert.*;
 
 public class PreprocessingTest {
   private static final Logger LOG = Logger.getLogger(PreprocessingTest.class);
-  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void typeMapperTest() throws Exception {
     String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/typeMapping/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
+        .getResource("/data/preprocessing/typeMapping/")
+        .getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph =
+        new JSONDataSource(graphPath, true, env)
+        .getGraph();
+
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices();
 
+    // tests
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
       Set<String> types = vertex.getValue().getTypesIntern();
       if (vertex.getId() == 1L) {
@@ -60,6 +67,9 @@ public class PreprocessingTest {
     }
   }
 
+  /**
+   * Test aux method
+   */
   @Test
   public void compSourceTupleTest() throws Exception {
     String graphPath = PreprocessingTest.class
@@ -69,6 +79,7 @@ public class PreprocessingTest {
     DataSet<ComponentSourceTuple> resultTuples = Preprocessing
         .getComponentSourceTuples(graph.getVertices(), null);
 
+    // tests
     for (ComponentSourceTuple result : resultTuples.collect()) {
       assertEquals(60190L, result.getCcId().longValue());
       assertEquals(5, AbstractionUtils.getSourceCount(result).intValue());
@@ -83,22 +94,25 @@ public class PreprocessingTest {
     }
   }
 
-  @Test
-  // 819;label;Łęgowo;string
-  // sometimes the following line is created
-  // ����gowo
-  // todo fix dont write to target folder
-  public void writeToDiskEncodingTest() throws Exception {
-        String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
-
-
-    // write to disk works like suspected with UTF8
-    Utils.writeVerticesToJSONFile(graph.getVertices(), graphPath, true);
-
-    graph.getVertices().print();
-  }
+//  @Test
+//  // 819;label;Łęgowo;string
+//  // sometimes the following line is created
+//  // ����gowo
+//  // todo fix dont write to target folder
+//  public void writeToDiskEncodingTest() throws Exception {
+//        String graphPath = PreprocessingTest.class
+//        .getResource("/data/preprocessing/general/").getFile();
+//    DataSet<Vertex<Long, ObjectMap>> vertices =
+//        new JSONDataSource(graphPath, true, env).getVertices();
+//
+//    // TODO use discarding output format to check encoding?
+//    // use somewhat like this vertexOutFile = outDir + "output/";
+//    JSONDataSink dataSink = new JSONDataSink(graphPath);
+//    // write to disk works like suspected with UTF8
+//    dataSink.writeVertices(vertices);
+//
+//    vertices.print();
+//  }
 
   /**
    * Clustering link filter
@@ -106,6 +120,7 @@ public class PreprocessingTest {
    */
   @Test
   public void finalOneToManyTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
@@ -121,7 +136,7 @@ public class PreprocessingTest {
         .build();
 
     for (Vertex<Long, ObjectMap> vertex : graph.run(linkFilter).getVertices().collect()) {
-      LOG.info(vertex.toString());
+//      LOG.info(vertex.toString());
       assertTrue(vertex.getId() == 60191L
           || vertex.getId() == 252016L
           || vertex.getId() == 513732L
@@ -139,6 +154,7 @@ public class PreprocessingTest {
    */
   @Test
   public void oneToManyTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/oneToMany/").getFile();
     Graph<Long, ObjectMap, ObjectMap> inputGraph = new JSONDataSource(graphPath, true, env).getGraph();
@@ -161,6 +177,7 @@ public class PreprocessingTest {
       assertTrue(vertex == 2642L || vertex == 46584L);
     }
 
+    // use: less collect
 //    Graph<Long, ObjectMap, ObjectMap> graph =
 //        new JSONDataSource(graphPath, true, env).getGraph()
 //            .run(linkFilter)
@@ -201,13 +218,24 @@ public class PreprocessingTest {
    */
   @Test
   public void defaultPreprocessingTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
     Graph<Long, ObjectMap, NullValue> inGraph = new JSONDataSource(graphPath, true, env)
         .getGraph(ObjectMap.class, NullValue.class);
-    DefaultPreprocessing preprocessing = new DefaultPreprocessing(env);
 
-    inGraph.run(preprocessing).getVertices().print();
+    DataSet<Vertex<Long, ObjectMap>> vertices = inGraph
+        .run(new DefaultPreprocessing(env))
+        .getVertices();
+
+    // both 59 and 84 are from LGD, this is correct, because the link filter
+    // only affects direct links and not sth like 84 <-- 58 --> 59
+    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
+      assertTrue(vertex.getId() == 1375705L
+      || vertex.getId() == 617158L
+      || vertex.getId() == 617159L
+      || vertex.getId() == 1022884L);
+    }
   }
 
   /**
@@ -216,6 +244,7 @@ public class PreprocessingTest {
    */
   @Test
   public void typeMisMatchCorrectionTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
     Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(graphPath, true, env)
@@ -239,6 +268,7 @@ public class PreprocessingTest {
    */
   @Test
   public void deleteVerticesWithoutEdgesTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/deleteVerticesWithoutEdges/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();

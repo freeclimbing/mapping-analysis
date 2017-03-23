@@ -13,6 +13,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.util.Constants;
@@ -210,24 +211,18 @@ public class ExampleOutput {
     String evalFile = caption.replaceAll("\\D+","").concat("-size-clusters");
     LOG.info("###eval file " + evalFile);
 
-//    String vertexPath = Utils.getFinalPath(evalFile, false);
-//    LOG.info("###eval vertex path " + vertexPath + " " + (new File(vertexPath).exists()));
-
     DataSet<Vertex<Long, ObjectMap>> resultClusters;
 
-//    if (new File(vertexPath).exists()) {
-//      LOG.info("###eval sample vertices from file " + vertexPath);
-//      resultClusters = Utils.readVerticesFromJSONFile(evalFile, env, false);
-//    } else {
-      LOG.info("###eval vertices from mergedclusters, pick sample");
-      resultClusters = mergedClusters
-          .filter(new ClusterSizeSimpleFilterFunction(clusterSize))
-          .first(entityCount);
-      /**
-       * Write eval clusters for a certain size to disk for later reuse.
-       */
-      Utils.writeVerticesToJSONFile(resultClusters, evalFile);
-//    }
+    LOG.info("###eval vertices from mergedclusters, pick sample");
+    resultClusters = mergedClusters
+        .filter(new ClusterSizeSimpleFilterFunction(clusterSize))
+        .first(entityCount);
+    /**
+     * Write eval clusters for a certain size to disk for later reuse.
+     */
+    new JSONDataSink(Constants.INPUT_DIR, evalFile)
+        .writeVertices(resultClusters);
+//      Utils.writeVerticesToJSONFile(resultClusters, evalFile);
 
     DataSet<String> vertexSet = new CanonicalAdjacencyMatrixBuilder()
         .executeOnRandomFinalClusterBaseVertexValues(resultClusters, vertices);

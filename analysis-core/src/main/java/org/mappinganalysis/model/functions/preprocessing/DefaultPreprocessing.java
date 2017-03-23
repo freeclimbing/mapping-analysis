@@ -5,6 +5,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
@@ -33,7 +34,7 @@ public class DefaultPreprocessing
   }
 
   /**
-   * Preprocessing with additional basic link filter.
+   * Preprocessing with optional link filter.
    */
   public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
     this.linkFilterEnabled = isBasicLinkFilterEnabled;
@@ -48,13 +49,6 @@ public class DefaultPreprocessing
         .run(new EqualDataSourceLinkRemover(env))
         .run(new TypeMisMatchCorrection(env))
         .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
-//        .filterOnEdges(new FilterFunction<Edge<Long, ObjectMap>>() {
-//          @Override
-//          public boolean filter(Edge<Long, ObjectMap> value) throws Exception {
-//            LOG.info(value.toString());
-//            return true;
-//          }
-//        });
 
     if (linkFilterEnabled) {
       LinkFilter linkFilter = new LinkFilter

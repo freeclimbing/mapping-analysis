@@ -15,8 +15,6 @@ public class TestBase {
   private static final Logger LOG = Logger.getLogger(TestBase.class);
 
   public static void setupConstants() {
-    Constants.MIN_CLUSTER_SIM = 0.5;
-    Constants.MIN_LABEL_PRIORITY_SIM = 0.5;
     Constants.INPUT_DIR = "linklion";
     Constants.SOURCE_COUNT = 5;
   }

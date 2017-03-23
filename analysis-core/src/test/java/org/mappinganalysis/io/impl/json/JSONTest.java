@@ -82,12 +82,12 @@ public class JSONTest {
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(path, true, env).getGraph();
 
     /**
-     * Write graph to JSON file
+     * Write graph to JSON file - todo
      */
     String tmpDir = temporaryFolder.getRoot().toString();
     String vertexOutFile = tmpDir + "/outVertices.json";
     String edgeOutFile = tmpDir + "/outEdges.json";
-    JSONDataSink dataSink = new JSONDataSink(vertexOutFile, edgeOutFile);
+    JSONDataSink dataSink = new JSONDataSink(tmpDir, "steptodo");
 
     dataSink.writeGraph(graph);
 

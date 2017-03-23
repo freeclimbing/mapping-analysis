@@ -15,6 +15,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.io.DataLoader;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
 import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
@@ -100,8 +101,8 @@ public class Preprocessing {
 
     vertices = vertices.runOperation(new IsolatedVertexRemover<>(edges));
 
-    Utils.writeGraphToJSONFile(Graph.fromDataSet(vertices, edges, env),
-        Constants.LL_MODE.concat("InputGraph"));
+    new JSONDataSink(Constants.INPUT_DIR, Constants.LL_MODE.concat("InputGraph"))
+        .writeGraph(Graph.fromDataSet(vertices, edges, env));
     env.execute("Read input graph from csv");
   }
 

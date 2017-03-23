@@ -67,18 +67,17 @@ public class MergeInitialization
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
-    Constants.IGNORE_MISSING_PROPERTIES = true;
 
     // vertices with min sim, some triplets get omitted -> error cause
+    // similarity was always hard set to 0.5 in MappingAnalysisExample
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newBaseTriplets = oldHashCcTriplets
         .runOperation(similarityComputation)
-        .map(new AggSimValueTripletMapFunction(
-            Constants.IGNORE_MISSING_PROPERTIES, // old mean function
-            Constants.MIN_LABEL_PRIORITY_SIM))
+        .map(new AggSimValueTripletMapFunction(true, 0.5))
         .withForwardedFields("f0;f1;f2;f3");
 
+    // only very low similarity pairs should not be merged
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> newRepresentativeTriplets = newBaseTriplets
-        .filter(new MinRequirementThresholdFilterFunction(Constants.MIN_CLUSTER_SIM));
+        .filter(new MinRequirementThresholdFilterFunction(0.5));
 
     // reduce to single representative, some vertices are now missing
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets

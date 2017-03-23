@@ -6,6 +6,7 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.Constants;
 
 /**
  * Write Gelly graphs or vertices to JSON files
@@ -15,14 +16,37 @@ public class JSONDataSink {
   private final String vertexPath;
   private final String edgePath;
 
-  public JSONDataSink(String vertexPath, String edgePath) {
-    this.vertexPath = vertexPath;
-    this.edgePath = edgePath;
+  /**
+   * Constructor for testing, fix appropriate test in PreprocessingTest
+   */
+  public JSONDataSink(String path) {
+    this(path, null, true);
   }
 
-  public JSONDataSink(String vertexPath) {
-    this.vertexPath = vertexPath;
-    this.edgePath = null;
+  /**
+   * Default constructor
+   * @param path default file path
+   * @param step step name
+   */
+  public JSONDataSink(String path, String step) {
+    this(path, step, false);
+  }
+
+  private JSONDataSink(String path, String step, Boolean isAbsolutePath) {
+    if (!path.endsWith(Constants.SLASH)) {
+      path = path.concat(Constants.SLASH);
+    }
+    if (isAbsolutePath) { // no need to care for step
+      this.vertexPath = path.concat(Constants.VERTICES);
+      this.edgePath = path.concat(Constants.EDGES);
+    } else {
+      this.vertexPath = path.concat(Constants.OUTPUT)
+          .concat(step).concat(Constants.SLASH)
+          .concat(Constants.VERTICES);
+      this.edgePath = path.concat(Constants.OUTPUT)
+          .concat(step).concat(Constants.SLASH)
+          .concat(Constants.EDGES);
+    }
   }
 
   /**
