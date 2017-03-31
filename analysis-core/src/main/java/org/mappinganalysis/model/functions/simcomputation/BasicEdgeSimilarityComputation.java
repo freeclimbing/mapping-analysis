@@ -7,7 +7,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Triplet;
-import org.apache.flink.graph.library.CommunityDetection;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
@@ -44,13 +43,15 @@ public class BasicEdgeSimilarityComputation
    * @throws Exception
    */
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph)
+      throws Exception {
 //    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
 //        matchCombination,
 //        Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
 
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation = new SimilarityComputation
+        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
+        = new SimilarityComputation
         .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>>()
         .setSimilarityFunction(simFunction)
@@ -61,6 +62,11 @@ public class BasicEdgeSimilarityComputation
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction())
+        .map(x -> {
+          LOG.info("TESTSTRING: " + x.toString());
+          return x;
+        })
+        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
         .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES)); // old mean function
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);

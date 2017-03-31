@@ -19,7 +19,7 @@ import java.util.Set;
  *
  * old component id cc_id is removed at the end in favor of hashCcId
  */
-class HashCcIdOverlappingFunction
+public class HashCcIdOverlappingFunction
     implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(HashCcIdOverlappingFunction.class);
 

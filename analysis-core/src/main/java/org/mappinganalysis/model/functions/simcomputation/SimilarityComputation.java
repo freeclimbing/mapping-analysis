@@ -117,36 +117,6 @@ public abstract class SimilarityComputation<T, O>
 
   }
 
-
-
-
-  /**
-   * ###########################################################################
-   * ###########################################################################
-   * ###########################################################################
-   * Decide which similarities should be computed based on filter
-   * @param triplets graph triplets
-   * @param filter strategy: geo, label, type, [empty, combined] -> all 3 combined
-   * @return triplets with sim values
-   */
-  @Deprecated
-  public static DataSet<Triplet<Long, ObjectMap, ObjectMap>> computeSimilarities(
-      DataSet<Triplet<Long, ObjectMap, NullValue>> triplets, String filter) {
-    switch (filter) {
-      case Constants.SIM_GEO_LABEL_STRATEGY:
-        return joinDifferentSimilarityValues(basicGeoSimilarity(triplets),
-            basicTrigramSimilarity(triplets));
-      case "label":
-        return basicTrigramSimilarity(triplets);
-      case "type":
-        return basicTypeSimilarity(triplets);
-      default:
-        return joinDifferentSimilarityValues(basicGeoSimilarity(triplets),
-            basicTrigramSimilarity(triplets),
-            basicTypeSimilarity(triplets));
-    }
-  }
-
   /**
    * Compute similarities based on the existing vertex properties,
    * save aggregated similarity as edge property
@@ -205,25 +175,6 @@ public abstract class SimilarityComputation<T, O>
       }
     }
     return triplets;
-  }
-
-  @Deprecated
-  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTypeSimilarity(
-      DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets.map(new TypeSimilarityMapper());
-  }
-
-  @Deprecated
-  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicTrigramSimilarity(
-      DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets.map(new TrigramSimilarityMapper());
-  }
-
-  @Deprecated
-  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> basicGeoSimilarity(
-      DataSet<Triplet<Long, ObjectMap, NullValue>> triplets) {
-    return triplets.filter(new EmptyGeoCodeFilter())
-        .map(new GeoCodeSimMapper(Constants.MAXIMAL_GEO_DISTANCE));
   }
 
   /**

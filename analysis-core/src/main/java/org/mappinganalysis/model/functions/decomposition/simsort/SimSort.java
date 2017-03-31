@@ -1,12 +1,10 @@
 package org.mappinganalysis.model.functions.decomposition.simsort;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
-import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
@@ -52,14 +50,7 @@ public class SimSort
 
     graph = graph.run(new SimSortVertexCentricIteration(minSimilarity, env));
 
-    graph = Graph.fromDataSet(graph.getVertices().map(x -> {
-      LOG.info(x);
-      return x;
-    }).returns(new TypeHint<Vertex<Long, ObjectMap>>() {}), graph.getEdges(), env);
-
-
-
-    return graph;
+    return Graph.fromDataSet(graph.getVertices(), graph.getEdges(), env);
   }
 
   /**

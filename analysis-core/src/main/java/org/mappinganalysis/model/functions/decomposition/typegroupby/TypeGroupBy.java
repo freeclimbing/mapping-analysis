@@ -33,11 +33,11 @@ public class TypeGroupBy
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph)
       throws Exception {
     // start preprocessing
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-        .map(new AddShadingTypeMapFunction())
-        .groupBy(new CcIdKeySelector())
-        .reduceGroup(new HashCcIdOverlappingFunction());
-    graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
+//    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
+//        .map(new AddShadingTypeMapFunction())
+//        .groupBy(new CcIdKeySelector())
+//        .reduceGroup(new HashCcIdOverlappingFunction());
+//    graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
     // end preprocessing
 
     /**
@@ -66,7 +66,7 @@ public class TypeGroupBy
 //        .groupBy(0)
 //        .min(3)
         .distinct(0)
-        .leftOuterJoin(vertices)
+        .leftOuterJoin(graph.getVertices())
         .where(0)
         .equalTo(0)
         .with((left, right) -> {

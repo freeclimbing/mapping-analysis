@@ -1,17 +1,12 @@
 package org.mappinganalysis.model.functions;
 
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Triplet;
-import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.BasicTest;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.model.functions.simcomputation.TrigramSimilarityMapper;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
@@ -19,7 +14,6 @@ import org.simmetrics.metrics.StringMetrics;
 import org.simmetrics.tokenizers.Tokenizers;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
 /**
@@ -29,25 +23,26 @@ public class SimilarityMapperTest extends BasicTest {
   private static final Logger LOG = Logger.getLogger(SimilarityMapperTest.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  @Test
-  public void trigramSimilarityTest() throws Exception {
-    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
-
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> exactSim
-      = baseTriplets
-      .map(new TrigramSimilarityMapper()); // filter deleted, maybe test no longer working?
-
-    for (Triplet<Long, ObjectMap, ObjectMap> triplet : exactSim.collect()) {
-      if (triplet.getSrcVertex().getId() == 5680) {
-        if (triplet.getTrgVertex().getId() == 5984 || triplet.getTrgVertex().getId() == 5681) {
-          assertEquals(0.6324555f, triplet.getEdge().getValue().get("trigramSim"));
-        } else {
-          assertFalse(true);
-        }
-      }
-    }
-  }
+  // needs rework
+//  @Test
+//  public void trigramSimilarityTest() throws Exception {
+//    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
+//    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
+//
+//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> exactSim
+//      = baseTriplets
+//      .map(new TrigramSimilarityMapper()); // filter deleted, maybe test no longer working?
+//
+//    for (Triplet<Long, ObjectMap, ObjectMap> triplet : exactSim.collect()) {
+//      if (triplet.getSrcVertex().getId() == 5680) {
+//        if (triplet.getTrgVertex().getId() == 5984 || triplet.getTrgVertex().getId() == 5681) {
+//          assertEquals(0.6324555f, triplet.getEdge().getValue().get("trigramSim"));
+//        } else {
+//          assertFalse(true);
+//        }
+//      }
+//    }
+//  }
 
   /**
    * check simmetrics metric, check for utf8 support
@@ -127,6 +122,7 @@ public class SimilarityMapperTest extends BasicTest {
   /**
    * not a test
    */
+  @Test
   public void differentSimilaritiesTest() {
     String leipzig = "Leipzig";
     String leipzigsachsen = "Leipzig (Sachsen)";
@@ -164,6 +160,36 @@ public class SimilarityMapperTest extends BasicTest {
     StringMetric dice = StringMetrics.dice();
     System.out.println("dice");
     System.out.println(dice.compare(leipzig, leipzigsachsen));
+
+    String song1 = "Uriah Heep - Southern Star Into the Wild";
+    String song2 = "0B1-Southern Star Heep Uriah Into the Wild (2011)";
+    String song3 = "Southern Star - Into the Wild Uriah Heep";
+    String song4a = "Southern Star Into the Wild";
+    String song4b = "Star Southern Into the Wild";
+    String song5 = "Southern Star (Into the Wild) Uriah Heep Into the Wild";
+
+    System.out.println("\nSwitch words:");
+    System.out.println("#############");
+    System.out.println(trigram.compare(song4a, song4b));
+    System.out.println(dice.compare(song4a, song4b));
+    System.out.println(cosine.compare(song4a, song4b));
+    System.out.println(jaro.compare(song4a, song4b));
+
+    System.out.println("\n song1 - song2:");
+    System.out.println("#############");
+    System.out.println(trigram.compare(song1, song2));
+    System.out.println(dice.compare(song1, song2));
+    System.out.println(cosine.compare(song1, song2));
+    System.out.println(jaro.compare(song1, song2));
+
+    System.out.println("\n others:");
+    System.out.println("#############");
+    System.out.println(dice.compare(song2, song3));
+    System.out.println(cosine.compare(song2, song3));
+    System.out.println(dice.compare(song4a, song3));
+    System.out.println(cosine.compare(song4a, song3));
+    System.out.println(dice.compare(song4a, song5));
+    System.out.println(cosine.compare(song4a, song5));
   }
 
 }

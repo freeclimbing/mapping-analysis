@@ -73,7 +73,9 @@ public class MajorityPropertiesGroupReduceFunction
     collector.collect(resultVertex);
   }
 
-  private void updateClusterOntologies(Set<String> clusterOntologies, Vertex<Long, ObjectMap> currentVertex) {
+  private void updateClusterOntologies(
+      Set<String> clusterOntologies,
+      Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(Constants.ONTOLOGY)) {
       clusterOntologies.add(currentVertex.getValue().getOntology());
     }
@@ -82,7 +84,9 @@ public class MajorityPropertiesGroupReduceFunction
     }
   }
 
-  private void updateClusterVertexIds(Set<Long> clusterVertices, Vertex<Long, ObjectMap> currentVertex) {
+  private void updateClusterVertexIds(
+      Set<Long> clusterVertices,
+      Vertex<Long, ObjectMap> currentVertex) {
     clusterVertices.add(currentVertex.getId());
     if (currentVertex.getValue().containsKey(Constants.CL_VERTICES)) {
       clusterVertices.addAll(currentVertex.getValue().getVerticesList());
@@ -95,7 +99,9 @@ public class MajorityPropertiesGroupReduceFunction
     }
   }
 
-  private void addGeoToMap(HashMap<String, GeoCode> geoMap, Vertex<Long, ObjectMap> vertex) {
+  private void addGeoToMap(
+      HashMap<String, GeoCode> geoMap,
+      Vertex<Long, ObjectMap> vertex) {
     if (vertex.getValue().hasGeoPropertiesValid()) {
       if (!vertex.getValue().containsKey(Constants.ONTOLOGY)
           && !vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
@@ -116,7 +122,9 @@ public class MajorityPropertiesGroupReduceFunction
     }
   }
 
-  private void addLabelToMap(HashMap<String, Integer> labelMap, Vertex<Long, ObjectMap> currentVertex) {
+  private void addLabelToMap(
+      HashMap<String, Integer> labelMap,
+      Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(Constants.LABEL)) {
       String label = Utils.simplify(currentVertex.getValue().getLabel());
       if (labelMap.containsKey(label)) {

@@ -38,7 +38,7 @@ public class Constants {
   /**
    * similarity default values.
    */
-  public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
+  public static final Double MAXIMAL_GEO_DISTANCE = 15000D;
   public static final Double SHADING_TYPE_SIM = 1D;
   public static final String SIM_GEO_LABEL_STRATEGY = "geo-label";
   /**

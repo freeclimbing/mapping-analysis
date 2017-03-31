@@ -40,8 +40,7 @@ public class SettlementBenchmark implements ProgramDescription {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(
-        args.length == 1, "args[0]: input dir");
+    Preconditions.checkArgument(args.length == 1, "args[0]: input dir");
     Constants.SOURCE_COUNT = 4;
     INPUT_PATH = args[0];
     Double minSimSortSim = 0.7;
@@ -56,20 +55,15 @@ public class SettlementBenchmark implements ProgramDescription {
     new JSONDataSink(INPUT_PATH, PREPROCESSING)
         .writeGraph(preprocGraph
             .run(new DefaultPreprocessing(true, env)));
-//    Utils.writeGraphToJSONFile(
-//        preprocGraph.run(new DefaultPreprocessing(true, env)),
-//        PREPROCESSING);
     env.execute(PRE_JOB);
 
     /**
      * decomposition with representative creation
      */
-//    Graph<Long, ObjectMap, ObjectMap> decompGraph =
-
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
         .getGraph()
-        .run(new TypeGroupBy(env)) // not needed? TODO
+//        .run(new TypeGroupBy(env)) // not needed? TODO
         .run(new SimSort(minSimSortSim, env))
         .getVertices()
         .runOperation(new RepresentativeCreator());

@@ -1,18 +1,19 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.HashCcIdOverlappingFunction;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
  * Default preprocessing: remove duplicate links, add cc ids,
@@ -58,7 +59,13 @@ public class DefaultPreprocessing
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 
-      return result.run(linkFilter);
+      result = result.run(linkFilter);
+      DataSet<Vertex<Long, ObjectMap>> vertices = result.getVertices()
+          .map(new AddShadingTypeMapFunction())
+          .groupBy(new CcIdKeySelector())
+          .reduceGroup(new HashCcIdOverlappingFunction());
+      result = Graph.fromDataSet(vertices, result.getEdges(), env);
+      return result;
     } else {
       return result;
     }
