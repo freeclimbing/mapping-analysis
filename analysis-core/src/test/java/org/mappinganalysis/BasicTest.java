@@ -20,9 +20,9 @@ import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.junit.Test;
-import org.mappinganalysis.io.DataLoader;
+import org.mappinganalysis.io.impl.csv.CSVDataSource;
+import org.mappinganalysis.io.impl.jdbc.JDBCDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
 import org.mappinganalysis.util.Constants;
 
@@ -155,7 +155,7 @@ public class BasicTest {
   @SuppressWarnings("unchecked")
   protected Graph<Long, ObjectMap, NullValue> createSimpleGraph() throws Exception {
 
-    DataLoader loader = new DataLoader(env);
+    JDBCDataSource loader = new JDBCDataSource(env);
     DataSet<Vertex<Long, ObjectMap>> vertices = loader
         .getVerticesFromDb(Constants.GEO_FULL_NAME)
         .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {

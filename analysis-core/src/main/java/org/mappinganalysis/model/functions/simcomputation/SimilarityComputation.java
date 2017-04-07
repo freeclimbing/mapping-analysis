@@ -151,49 +151,6 @@ public abstract class SimilarityComputation<T, O>
   }
 
   /**
-   * Join several sets of triplets which are being produced within property similarity computation.
-   * Edges where no similarity value is higher than the appropriate threshold are not in the result set.
-   * @param tripletDataSet input data sets
-   * @return joined dataset with all similarities in an ObjectMap
-   */
-  @SafeVarargs
-  @Deprecated
-  private static DataSet<Triplet<Long, ObjectMap, ObjectMap>> joinDifferentSimilarityValues(
-      DataSet<Triplet<Long, ObjectMap, ObjectMap>>... tripletDataSet) {
-    DataSet<Triplet<Long, ObjectMap, ObjectMap>> triplets = null;
-    boolean isFirstSet = false;
-    for (DataSet<Triplet<Long, ObjectMap, ObjectMap>> dataSet : tripletDataSet) {
-      if (!isFirstSet) {
-        triplets = dataSet;
-        isFirstSet = true;
-      } else {
-        triplets = triplets
-            .fullOuterJoin(dataSet)
-            .where(0, 1)
-            .equalTo(0, 1)
-            .with(new FullOuterJoinSimilarityValueFunction());
-      }
-    }
-    return triplets;
-  }
-
-  /**
-   * Get a new triplet with an empty ObjectMap as edge value.
-   * @param triplet triplet where edge value is NullValue
-   * @return result triplet
-   */
-  @Deprecated
-  public static Triplet<Long, ObjectMap, ObjectMap> initResultTriplet(Triplet<Long, ObjectMap, NullValue> triplet) {
-    return new Triplet<>(
-        triplet.getSrcVertex(),
-        triplet.getTrgVertex(),
-        new Edge<>(
-            triplet.getSrcVertex().getId(),
-            triplet.getTrgVertex().getId(),
-            new ObjectMap()));
-  }
-
-  /**
    * Compose similarity values based on existence: if property is missing, its not considered at all.
    *
    * Move to AggregationMode class

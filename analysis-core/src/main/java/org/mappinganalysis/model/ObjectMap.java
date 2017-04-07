@@ -77,10 +77,6 @@ public class ObjectMap
     map.put(Constants.LABEL, label);
   }
 
-  public Long getCcId() {
-    return (long) map.get(Constants.CC_ID);
-  }
-
   /**
    * Get the set of type strings for a vertex from the input graph.
    * @return String set of rdf:type values
@@ -127,7 +123,7 @@ public class ObjectMap
   }
 
   /**
-   * Get the hash cc id from an object map - no check if hash is available
+   * Get the hash cc id from an object map, if not available, return null
    * @return hashCcId
    */
   public Long getHashCcId() {
@@ -138,8 +134,20 @@ public class ObjectMap
     }
   }
 
+  public Long getCcId() {
+    if (map.containsKey(Constants.CC_ID)) {
+      return (long) map.get(Constants.CC_ID);
+    } else {
+      return null;
+    }
+  }
+
   public void setHashCcId(Long value) {
     map.put(Constants.HASH_CC, value);
+  }
+
+  public void setCcId(Long value) {
+    map.put(Constants.CC_ID, value);
   }
 
   public Long getOldHashCcId() {

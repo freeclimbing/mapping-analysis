@@ -36,7 +36,6 @@ public class SettlementBenchmark implements ProgramDescription {
 
   /**
    * Main class for Settlement benchmark
-   * @param args
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {

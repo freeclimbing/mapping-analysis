@@ -13,7 +13,6 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.graph.LinkFilterFunction;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.FinalOneToManyRemovalFunction;
 
 /**

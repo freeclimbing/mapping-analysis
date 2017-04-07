@@ -20,13 +20,10 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.EdgeIdsSourcesTuple;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.stats.*;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
-import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 import java.util.List;
 import java.util.Map;

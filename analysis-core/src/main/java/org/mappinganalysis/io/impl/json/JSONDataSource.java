@@ -7,9 +7,10 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.api.DataSource;
 import org.mappinganalysis.util.Constants;
 
-public class JSONDataSource {
+public class JSONDataSource implements DataSource {
   private static final Logger LOG = Logger.getLogger(JSONDataSource.class);
 
   private final String vertexPath;
@@ -100,6 +101,7 @@ public class JSONDataSource {
    * Get default graph
    * @return both edge as well as vertex value are ObjectMap
    */
+  @Override
   public Graph<Long, ObjectMap, ObjectMap> getGraph() {
     return this.getGraph(ObjectMap.class, ObjectMap.class);
   }
@@ -112,6 +114,7 @@ public class JSONDataSource {
   /**
    * Default implementation, get ObjectMap value vertices
    */
+  @Override
   public DataSet<Vertex<Long, ObjectMap>> getVertices() {
     return this.getVertices(ObjectMap.class);
   }

@@ -11,17 +11,15 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
-import org.mappinganalysis.io.impl.json.JSONDataSink;
+import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.Preprocessing;
 import org.mappinganalysis.model.functions.decomposition.Clustering;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
@@ -69,6 +67,7 @@ public class PreprocessingTest {
 
   /**
    * Test aux method
+   * csv reader
    */
   @Test
   public void compSourceTupleTest() throws Exception {
@@ -76,7 +75,7 @@ public class PreprocessingTest {
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
 
-    DataSet<ComponentSourceTuple> resultTuples = Preprocessing
+    DataSet<ComponentSourceTuple> resultTuples = CSVDataSource
         .getComponentSourceTuples(graph.getVertices(), null);
 
     // tests

@@ -8,7 +8,6 @@ import org.apache.flink.graph.Vertex;
 
 /**
  * Delete edges where source or target vertex are not in the vertex set.
- * TODO fix lambdas not working because of type erasure, even with TypeHint
  */
 public class IsolatedEdgeRemover<VV, EV>
     implements CustomUnaryOperation<Edge<Long, EV>, Edge<Long, EV>> {
