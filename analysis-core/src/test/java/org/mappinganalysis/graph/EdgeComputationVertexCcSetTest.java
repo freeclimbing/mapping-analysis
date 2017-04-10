@@ -1,7 +1,6 @@
 package org.mappinganalysis.graph;
 
 import com.google.common.collect.Lists;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -12,6 +11,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
@@ -22,17 +22,29 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ClusterComputationTest {
-  private static final Logger LOG = Logger.getLogger(ClusterComputationTest.class);
+public class EdgeComputationVertexCcSetTest {
+  private static final Logger LOG = Logger.getLogger(EdgeComputationVertexCcSetTest.class);
 
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
-  public void computeMissingEdgesTest() throws Exception {
+  public void SimpleEdgesCreatorTest() throws Exception {
+    String graphPath = EdgeComputationVertexCcSetTest
+        .class.getResource("/data/typeGroupBy/").getFile();
+    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
+        .getVertices();
+
+    vertices.runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false))
+        .print();
+//    vertices.print();
+  }
+
+  @Test
+  public void allEdgesCreatorTest() throws Exception {
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
     DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
-    DataSet<Edge<Long, NullValue>> allEdges =
-        EdgeComputationVertexCcSet.computeComponentEdges(inputVertices, new CcIdKeySelector());
+    DataSet<Edge<Long, NullValue>> allEdges = inputVertices
+        .runOperation(new org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet(new CcIdKeySelector(), true, false));
 
     assertEquals(9, allEdges.count());
 
@@ -41,8 +53,8 @@ public class ClusterComputationTest {
     assertEquals(1, newEdges.count());
     assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
-    final DataSet<Edge<Long, NullValue>> distinctEdges
-        = EdgeComputationVertexCcSet.getDistinctSimpleEdges(allEdges);
+    final DataSet<Edge<Long, NullValue>> distinctEdges = inputVertices
+        .runOperation(new org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     assertEquals(3, distinctEdges.count());
     assertTrue(distinctEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));

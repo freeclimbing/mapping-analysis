@@ -2,16 +2,26 @@ package org.mappinganalysis.benchmark.musikbrainz;
 
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.ProgramDescription;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
+import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
+import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
 /**
  * benchmark musicbrainz dataset https://vsis-www.informatik.uni-hamburg.de/download/info.txt
+ *
+ * TODO check utf-8 csv input on server
  */
 public class MusicbrainzBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -39,10 +49,12 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
             .getVertices();
 
+    DataSet<Edge<Long, NullValue>> edges = vertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
 
 
     new JSONDataSink(INPUT_PATH, INPUT)
-        .writeVertices(vertices);
+        .writeGraph(Graph.fromDataSet(vertices, edges, env));
     env.execute(INP_JOB);
   }
   @Override

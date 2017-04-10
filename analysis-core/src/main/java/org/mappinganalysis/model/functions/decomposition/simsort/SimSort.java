@@ -37,7 +37,8 @@ public class SimSort
    * @throws Exception
    */
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+  public Graph<Long, ObjectMap, ObjectMap> run(
+      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
     if (prepareEnabled) {
       DataSet<Edge<Long, NullValue>> distinctEdges = graph
           .getVertices()
@@ -57,8 +58,9 @@ public class SimSort
    * create all missing edges, addGraph default vertex sim values
    */
   @Deprecated
-  public static Graph<Long, ObjectMap, ObjectMap> prepare(Graph<Long, ObjectMap, ObjectMap> graph,
-                                                          ExecutionEnvironment env) throws Exception {
+  public static Graph<Long, ObjectMap, ObjectMap> prepare(
+      Graph<Long, ObjectMap, ObjectMap> graph,
+      ExecutionEnvironment env) throws Exception {
     DataSet<Edge<Long, NullValue>> distinctEdges = graph.getVertices()
         .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
 

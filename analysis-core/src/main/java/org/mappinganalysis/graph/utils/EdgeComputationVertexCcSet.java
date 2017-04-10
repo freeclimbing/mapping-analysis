@@ -1,14 +1,13 @@
 package org.mappinganalysis.graph.utils;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
  * Create edges for a given set of vertices having component ids.
@@ -17,10 +16,42 @@ public class EdgeComputationVertexCcSet
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
 
   KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+  private Boolean computeAllEdges;
+  private Boolean isResultEdgeDistinct;
   private DataSet<Vertex<Long, ObjectMap>> vertices;
 
+  /**
+   * Create all distinct edges for a set of vertices with cc ids.
+   */
   public EdgeComputationVertexCcSet(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
     this.keySelector = keySelector;
+    this.computeAllEdges = true;
+    this.isResultEdgeDistinct = true;
+  }
+
+  /**
+   * Create edges for set of vertices having cc id - optionally create only as many edges
+   * to connect all vertices within cc.
+   * @param keySelector used cc id key selector
+   * @param computeAllEdges if false, only core edges will be computed in cc
+   * @param isResultEdgeDistinct if false, no distinct check for edges
+   */
+  public EdgeComputationVertexCcSet(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
+                                    Boolean computeAllEdges,
+                                    Boolean isResultEdgeDistinct) {
+    this.keySelector = keySelector;
+    this.computeAllEdges = computeAllEdges;
+    this.isResultEdgeDistinct = isResultEdgeDistinct;
+  }
+
+  /**
+   * For simple edge creator, edges are always distinct.
+   * @param keySelector used cc id key selector
+   * @param computeAllEdges needs to be false
+   */
+  public EdgeComputationVertexCcSet(CcIdKeySelector keySelector, boolean computeAllEdges) {
+    this.keySelector = keySelector;
+    this.computeAllEdges = computeAllEdges;
   }
 
   @Override
@@ -37,35 +68,12 @@ public class EdgeComputationVertexCcSet
    */
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-    DataSet<Edge<Long, NullValue>> edgeSet = computeComponentEdges(vertices, keySelector);
-
-    return getDistinctSimpleEdges(edgeSet);
-  }
-
-  /**
-   * Within a set of vertices having connected component ids,
-   * compute all edges within each component.
-   * TODO fix public
-   */
-  public static DataSet<Edge<Long, NullValue>> computeComponentEdges(
-      DataSet<Vertex<Long, ObjectMap>> vertices,
-      KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
-    return vertices.coGroup(vertices)
-        .where(keySelector)
-        .equalTo(keySelector)
-        .with(new EdgeExtractCoGroupFunction());
-  }
-
-  /**
-   * Example: (1, 2), (2, 1), (1, 3), (1, 1) as input will result in (1, 2), (1,3)
-   * TODO fix public
-   */
-  public static DataSet<Edge<Long, NullValue>> getDistinctSimpleEdges(
-      DataSet<Edge<Long, NullValue>> input) {
-    return input
-        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
-        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
-        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct();
+    if (computeAllEdges) {
+      return vertices
+          .runOperation(new AllEdgesCreator(keySelector, isResultEdgeDistinct));
+    } else {
+      return vertices
+          .runOperation(new SimpleEdgesCreator(keySelector));
+    }
   }
 }

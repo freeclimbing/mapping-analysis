@@ -59,13 +59,8 @@ public class DefaultPreprocessing
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 
-      result = result.run(linkFilter);
-      DataSet<Vertex<Long, ObjectMap>> vertices = result.getVertices()
-          .map(new AddShadingTypeMapFunction())
-          .groupBy(new CcIdKeySelector())
-          .reduceGroup(new HashCcIdOverlappingFunction());
-      result = Graph.fromDataSet(vertices, result.getEdges(), env);
-      return result;
+      return result.run(linkFilter)
+          .run(new TypeOverlapCcCreator(env));
     } else {
       return result;
     }

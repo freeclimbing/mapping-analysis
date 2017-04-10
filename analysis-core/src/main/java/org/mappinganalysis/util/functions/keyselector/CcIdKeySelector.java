@@ -4,7 +4,6 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.hadoop.shaded.com.google.common.base.Preconditions;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.util.Constants;
 
 /**
  * Key Selector connected component id

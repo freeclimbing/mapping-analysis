@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.preprocessing.TypeOverlapCcCreator;
 import org.mappinganalysis.util.Utils;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +23,6 @@ public class TypeGroupByTest {
   @Test
   public void newTgbTest() throws Exception {
     String graphPath = TypeGroupByTest.class.getResource("/data/typeGroupBy/").getFile();
-    TypeGroupBy typeGroupBy = new TypeGroupBy(env);
 
     // little workaround needed because hash in HashCcIdOverlappingFunction may change for different runs
     // --> but resulting grouping is always correct
@@ -37,7 +37,8 @@ public class TypeGroupByTest {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getGraph()
-        .run(typeGroupBy)
+        .run(new TypeOverlapCcCreator(env))
+        .run(new TypeGroupBy(env))
         .getVertices();
 
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {

@@ -13,11 +13,15 @@ import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.junit.Test;
+import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.simmetrics.StringMetric;
 
 import java.math.BigDecimal;
@@ -45,14 +49,16 @@ public class MusicbrainzBenchmarkTest {
 //  public static final String TEST_TITLE = "007-Chorus Finale on Schiller's 'Ode To Joy' from Symphony No. 9 in D minor, Op. 125 \"Choral\"";
   public static final String TEST_TITLE = "All This Is That (Carl and the Passions: \"So Tough\")";
 
+  /**
+   * Song length test
+   */
   @Test
   public void testSongLength() throws Exception {
     env = setupLocalEnvironment();
 
-    String path = MusicbrainzBenchmarkTest.class
+    final String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
         .getFile();
-//    final String vertexFileName = "input.csv";
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
@@ -86,27 +92,35 @@ public class MusicbrainzBenchmarkTest {
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
         .getFile();
-//    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
-    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
+//    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
+    DataSet<Edge<Long, NullValue>> edges = vertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
 
-    String[] split = TEST_TITLE.split("\\\"");
-    Matcher quoted = Pattern.compile("\"(.*?)\"").matcher(TEST_TITLE);
-
-
-    Map<String, Double> result = new LinkedHashMap<>();
+    System.out.println(edges.count());
 
 
-    List<Tuple2<String, Double>> collect = vertices.map(new MaxMapFunction())
-        .collect()
-        .stream()
-        .sorted((left, right) -> left.f1.compareTo(right.f1))
-        .collect(Collectors.toList());
+//    String[] split = TEST_TITLE.split("\\\"");
+//    Matcher quoted = Pattern.compile("\"(.*?)\"").matcher(TEST_TITLE);
+//
+//
+//    Map<String, Double> result = new LinkedHashMap<>();
+//
+//
+//    List<Tuple2<String, Double>> collect = vertices.map(new MaxMapFunction())
+//        .collect()
+//        .stream()
+//        .sorted((left, right) -> left.f1.compareTo(right.f1))
+//        .collect(Collectors.toList());
+//
+//    vertices.print();
 
-    vertices.print();
+
+
 //    System.out.println(vertices.count());
 //    for (Map.Entry<String, Double> stringDoubleEntry : result.entrySet()) {
 //      System.out.println(stringDoubleEntry);
