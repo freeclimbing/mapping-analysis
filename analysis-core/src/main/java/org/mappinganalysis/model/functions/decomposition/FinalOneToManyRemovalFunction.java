@@ -19,7 +19,7 @@ public class FinalOneToManyRemovalFunction
       Vertex<Long, ObjectMap> vertex,
       Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighborEdgeVertices,
       Collector<Tuple3<Long, String, Double>> out) throws Exception {
-    String ontology = vertex.getValue().getOntology();
+    String ontology = vertex.getValue().getDataSource();
     int neighborCount = 0;
     double vertexAggSim = 0d;
     boolean isRelevant = false;
@@ -28,7 +28,7 @@ public class FinalOneToManyRemovalFunction
       Edge<Long, ObjectMap> edge = edgeVertex.f0;
       Vertex<Long, ObjectMap> neighbor = edgeVertex.f1;
       ++neighborCount;
-      if (!isRelevant && neighbor.getValue().getOntology().equals(ontology)) {
+      if (!isRelevant && neighbor.getValue().getDataSource().equals(ontology)) {
         isRelevant = true;
       }
       vertexAggSim += edge.getValue().getEdgeSimilarity();

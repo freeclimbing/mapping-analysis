@@ -1,5 +1,7 @@
 package org.mappinganalysis.util;
 
+import org.mappinganalysis.io.impl.DataDomain;
+
 /**
  * Constants for mapping analysis
  */
@@ -35,16 +37,23 @@ public class Constants {
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
   public static final String VERTEX_OPTIONS = "vertex-options";
   public static final String AGG_PREFIX = "aggregated-";
+
   /**
    * similarity default values.
    */
   public static final Double MAXIMAL_GEO_DISTANCE = 15000D;
   public static final Double SHADING_TYPE_SIM = 1D;
+
+  /**
+   * similarity computation strategies
+   */
   public static final String SIM_GEO_LABEL_STRATEGY = "geo-label";
+  public static final String MUSIC = "music";
   /**
    * DB attName for gn type detail information
    */
   public static final String GN_TYPE_DETAIL = "typeDetail";
+
   /**
    * DB column name for 'rdf:type'/..., 'geo:lat/lon', 'rdfs:label'/'gn:name'/... field.
    */
@@ -53,36 +62,44 @@ public class Constants {
   public static final String LON = "lon";
   public static final String GEO = "geo";
   public static final String LABEL = "label";
+
   /**
    * DB column name for GeoNames second type value field.
    */
   public static final String TYPE_INTERN = "typeIntern";
   public static final String TMP_TYPE = "tmpType" ;
   public static final String COMP_TYPE = "compType";
+
   /**
    * temp values for missing values
    */
   public static final String NO_LABEL_FOUND = "no_label_found";
   public static final String NO_TYPE = "no_type";
+  public static final String NO_OR_MINOR_LANG = "no_or_minor_lang";
+
   /**
    * Field name for sim value names
    */
   public static final String SIM_TYPE = "typeMatch";
   public static final String SIM_TRIGRAM = "trigramSim";
   public static final String SIM_DISTANCE = "distance";
+
   /**
    * Aggregated similarity value on edge
    */
   public static final String AGGREGATED_SIM_VALUE = "aggSimValue";
+
   /**
    * Aggregated similarity of all edges which are outgoing or incoming to a vertex
    */
   public static final String VERTEX_AGG_SIM_VALUE = "vertexAggSimValue";
+
   /**
    * SimSort status flag
    */
   public static final String VERTEX_STATUS = "vertexStatus";
   public static final Double DEFAULT_VERTEX_SIM = -1.0D;
+
   /**
    * field name for connected component ID
    */
@@ -91,15 +108,28 @@ public class Constants {
   public static final String HASH_CC = "hashCc";
   public static final String OLD_HASH_CC = "oldHashCc";
   public static final String REFINE_ID = "refineId";
+
   /**
    * property name in cluster representative where clustered vertivces are put into.
    */
   public static final String CL_VERTICES = "clusteredVertices";
+
   /**
    * source name of resource. internal name for db field ontID_fk
    */
-  public static final String ONTOLOGY = "ontology";
-  public static final String ONTOLOGIES = "ontologies";
+  public static final String DATA_SOURCE = "ontology";
+  public static final String DATA_SOURCES = "ontologies";
+
+  /**
+   * Music vocabulary
+   */
+  public static final String LANGUAGE = "language";
+  public static final String LENGTH = "length";
+  public static final String YEAR = "year";
+  public static final String ARTIST = "artist";
+  public static final String ALBUM = "album";
+  public static final String NUMBER = "number";
+
   /**
    * source namespaces
    */
@@ -110,7 +140,7 @@ public class Constants {
   public static final String NYT_NS = "http://data.nytimes.com/";
 
   /**
-   * types
+   * geo rdf:types condensed to some key values
    */
   public static final String AS = "ArchitecturalStructure";
   public static final String M = "Mountain";
@@ -119,6 +149,9 @@ public class Constants {
   public static final String P = "Park";
   public static final String S = "Settlement";
 
+  /**
+   * General vocabulary to read input and run jobs
+   */
   public static final String INPUT_GRAPH = "InputGraph";
   public static final String PREPROC_GRAPH = "PreprocGraph";
   public static final String DECOMP_GRAPH = "DecompGraph";
@@ -164,7 +197,6 @@ public class Constants {
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
   public static String VERBOSITY;
+  public static DataDomain DOMAIN;
   public static boolean IS_SIMSORT_ENABLED;
-  public static boolean IS_SIMSORT_ALT_ENABLED;
-  public static boolean IGNORE_MISSING_PROPERTIES;
 }

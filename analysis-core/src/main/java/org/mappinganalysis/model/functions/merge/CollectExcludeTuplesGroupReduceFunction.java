@@ -67,9 +67,9 @@ public class CollectExcludeTuplesGroupReduceFunction
 
       Set<String> tripletOnts;
       if (column == 1) {
-        tripletOnts = triplet.getTrgVertex().getValue().getOntologiesList();
+        tripletOnts = triplet.getTrgVertex().getValue().getDataSourcesList();
       } else {
-        tripletOnts = triplet.getSrcVertex().getValue().getOntologiesList();
+        tripletOnts = triplet.getSrcVertex().getValue().getDataSourcesList();
       }
 
       for (String ont : tripletOnts) {

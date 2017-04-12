@@ -83,8 +83,8 @@ public class JDBCDataSource {
           public void join(Vertex<Long, ObjectMap> left,
                            Vertex<Long, ObjectMap> right,
                            Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
-            left.getValue().addProperty(Constants.ONTOLOGY,
-                right.getValue().get(Constants.ONTOLOGY));
+            left.getValue().addProperty(Constants.DATA_SOURCE,
+                right.getValue().get(Constants.DATA_SOURCE));
 
             collector.collect(left);
           }

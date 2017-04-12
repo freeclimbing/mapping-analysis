@@ -29,7 +29,7 @@ class MergeTupleCreator implements MapFunction<Vertex<Long, ObjectMap>, MergeTup
       tuple.setLongitude(properties.getLongitude());
     }
     tuple.setIntTypes(properties.getIntTypes());
-    tuple.setIntSources(properties.getIntSources());
+    tuple.setIntSources(properties.getIntDataSources());
     tuple.addClusteredElements(properties.getVerticesList());
     tuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
 

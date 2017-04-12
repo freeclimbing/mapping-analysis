@@ -8,10 +8,13 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 
 public class SimpleEdgesCreator
       implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
+  private static final Logger LOG = Logger.getLogger(SimpleEdgesCreator.class);
+
   private DataSet<Vertex<Long, ObjectMap>> vertices;
   private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
 
@@ -31,23 +34,27 @@ public class SimpleEdgesCreator
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
     return vertices.groupBy(keySelector)
-        .reduceGroup(new GroupReduceFunction<Vertex<Long,ObjectMap>, Edge<Long, NullValue>>() {
-          @Override
-          public void reduce(
-              Iterable<Vertex<Long, ObjectMap>> vertexIterable,
-              Collector<Edge<Long, NullValue>> out) throws Exception {
-            boolean isFirstEdge = true;
-            Long firstVertexId = null;
-            for (Vertex<Long, ObjectMap> vertex : vertexIterable) {
-              if (isFirstEdge) {
-                firstVertexId = vertex.getId();
-                isFirstEdge = false;
-              } else {
-                out.collect(new Edge<>(firstVertexId, vertex.getId(), NullValue.getInstance()));
-              }
+        .reduceGroup(new SimpleEdgeCreatorGroupReducer());
+  }
 
-            }
-          }
-        });
+  private static class SimpleEdgeCreatorGroupReducer implements GroupReduceFunction<Vertex<Long,ObjectMap>, Edge<Long, NullValue>> {
+    @Override
+    public void reduce(
+        Iterable<Vertex<Long, ObjectMap>> vertexIterable,
+        Collector<Edge<Long, NullValue>> out) throws Exception {
+      boolean isFirstEdge = true;
+      Long firstVertexId = null;
+      for (Vertex<Long, ObjectMap> vertex : vertexIterable) {
+        if (isFirstEdge) {
+          firstVertexId = vertex.getId();
+//          LOG.info("first: " + firstVertexId);
+          isFirstEdge = false;
+        } else {
+//          LOG.info("new Edgee: " + firstVertexId + " " + vertex.getId());
+          out.collect(new Edge<>(firstVertexId, vertex.getId(), NullValue.getInstance()));
+        }
+
+      }
+    }
   }
 }

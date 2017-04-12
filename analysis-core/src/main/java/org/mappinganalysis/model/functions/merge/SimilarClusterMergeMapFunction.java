@@ -45,9 +45,9 @@ public class SimilarClusterMergeMapFunction
     reuseVertex.getValue().put(Constants.CL_VERTICES, srcVertices);
 
     Set<String> resultOnts = Sets.newHashSet();
-    resultOnts.addAll(srcVal.getOntologiesList());
-    resultOnts.addAll(trgVal.getOntologiesList());
-    reuseVertex.getValue().put(Constants.ONTOLOGIES, resultOnts);
+    resultOnts.addAll(srcVal.getDataSourcesList());
+    resultOnts.addAll(trgVal.getDataSourcesList());
+    reuseVertex.getValue().put(Constants.DATA_SOURCES, resultOnts);
 
     LOG.info("############new cluster: " + reuseVertex.toString());
     return reuseVertex;

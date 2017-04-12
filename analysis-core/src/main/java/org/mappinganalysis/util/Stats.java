@@ -113,7 +113,7 @@ public class Stats {
         .groupBy(new KeySelector<Vertex<Long, ObjectMap>, String>() {
           @Override
           public String getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return vertex.getValue().getOntology();
+            return vertex.getValue().getDataSource();
           }
         })
         .reduceGroup(new GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
@@ -324,7 +324,7 @@ public class Stats {
         .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, String, Integer>>() {
           @Override
           public Tuple3<Long, String, Integer> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Tuple3<Long, String, Integer>(vertex.getId(), vertex.getValue().getOntology(), 1);
+            return new Tuple3<Long, String, Integer>(vertex.getId(), vertex.getValue().getDataSource(), 1);
           }
         })
         .groupBy(1)
@@ -381,7 +381,7 @@ public class Stats {
                            Collector<Tuple3<Long, Long, String>> out) throws Exception {
             if (left != null) {
 //                LOG.info("first1: " + left.toString() + " "  + right.toString());
-              out.collect(new Tuple3<>(left.f0, left.f1, right.getValue().getOntology()));
+              out.collect(new Tuple3<>(left.f0, left.f1, right.getValue().getDataSource()));
             }
           }
         })
@@ -395,10 +395,10 @@ public class Stats {
                            Collector<Tuple4<Long, Long, String, String>> out) throws Exception {
             if (left != null) {
 //                LOG.info("second1: " + left.toString() + " "  + right.toString());
-              if (left.f2.equals(right.getValue().getOntology())) {
+              if (left.f2.equals(right.getValue().getDataSource())) {
                 LOG.info("###anomaly: " + left + " " + right);
               }
-              out.collect(new Tuple4<>(left.f0, left.f1, left.f2, right.getValue().getOntology()));
+              out.collect(new Tuple4<>(left.f0, left.f1, left.f2, right.getValue().getDataSource()));
             }
           }
         })

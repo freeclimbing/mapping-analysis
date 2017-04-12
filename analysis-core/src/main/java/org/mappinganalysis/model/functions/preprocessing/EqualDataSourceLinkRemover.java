@@ -38,7 +38,8 @@ public class EqualDataSourceLinkRemover
   }
 
   /**
-   * Create a dataset of edge ids with the associated dataset source values like "http://dbpedia.org/
+   * Create a dataset of edge ids with the associated dataset source values
+   * like "23L, 42L, http://dbpedia.org/, http://geonames.org/"
    */
   public static DataSet<EdgeIdsSourcesTuple> getEdgeIdSourceValues(
       DataSet<Tuple2<Long, Long>> edgeIds,
@@ -50,7 +51,7 @@ public class EqualDataSourceLinkRemover
         .where(0)
         .equalTo(0)
         .with((tuple, vertex) -> {
-          tuple.checkSideAndUpdate(0, vertex.getValue().getOntology());
+          tuple.checkSideAndUpdate(0, vertex.getValue().getDataSource());
           return tuple;
         })
         .returns(new TypeHint<EdgeIdsSourcesTuple>() {})
@@ -58,7 +59,7 @@ public class EqualDataSourceLinkRemover
         .where(1)
         .equalTo(0)
         .with((tuple, vertex) -> {
-          tuple.checkSideAndUpdate(1, vertex.getValue().getOntology());
+          tuple.checkSideAndUpdate(1, vertex.getValue().getDataSource());
           return tuple;
         })
         .returns(new TypeHint<EdgeIdsSourcesTuple>() {});

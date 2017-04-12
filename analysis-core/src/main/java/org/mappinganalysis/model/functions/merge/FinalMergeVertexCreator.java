@@ -23,7 +23,7 @@ class FinalMergeVertexCreator
       ObjectMap map = new ObjectMap();
       map.setLabel(left.getLabel());
       map.setGeoProperties(left.getLatitude(), left.getLongitude());
-      map.setClusterSources(AbstractionUtils.getSourcesStringSet(left.getIntSources()));
+      map.setClusterDataSources(AbstractionUtils.getSourcesStringSet(left.getIntSources()));
       map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(left.getIntTypes()));
       map.setClusterVertices(Sets.newHashSet(left.getClusteredElements()));
 

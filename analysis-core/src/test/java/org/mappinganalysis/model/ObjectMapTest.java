@@ -114,12 +114,12 @@ public class ObjectMapTest {
   public void testClusterSources() throws Exception {
     ObjectMap map = new ObjectMap();
     Set<String> set = Sets.newHashSet(Constants.DBP_NS, Constants.FB_NS);
-    map.setClusterSources(set);
-    assertEquals(2, map.getOntologiesList().size());
-    map.addProperty(Constants.ONTOLOGIES, Constants.DBP_NS);
-    assertEquals(2, map.getOntologiesList().size());
+    map.setClusterDataSources(set);
+    assertEquals(2, map.getDataSourcesList().size());
+    map.addProperty(Constants.DATA_SOURCES, Constants.DBP_NS);
+    assertEquals(2, map.getDataSourcesList().size());
 
-    map.addProperty(Constants.ONTOLOGIES, Constants.NYT_NS);
-    assertEquals(3, map.getOntologiesList().size());
+    map.addProperty(Constants.DATA_SOURCES, Constants.NYT_NS);
+    assertEquals(3, map.getDataSourcesList().size());
   }
 }

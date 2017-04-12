@@ -14,12 +14,14 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.simmetrics.StringMetric;
@@ -65,17 +67,17 @@ public class MusicbrainzBenchmarkTest {
         .getVertices()
         .map(vertex -> {
           if (vertex.getId() == 1L) {
-            assertEquals(219, vertex.getValue().get("length")); // 219
+            assertEquals(219, vertex.getValue().getLength().intValue()); // 219
           } else if (vertex.getId() == 15184L) {
-            assertEquals(220, vertex.getValue().get("length")); // 3.663
+            assertEquals(220, vertex.getValue().getLength().intValue()); // 3.663
           } else if (vertex.getId() == 13138L) {
-            assertEquals(147, vertex.getValue().get("length")); // 2m 27sec
+            assertEquals(147, vertex.getValue().getLength().intValue()); // 2m 27sec
           } else if (vertex.getId() == 4L) {
-            assertEquals(null, vertex.getValue().get("length")); // unk.
+            assertEquals(null, vertex.getValue().getLength()); // unk.
           } else if (vertex.getId() == 15382L) {
-            assertEquals(403, vertex.getValue().get("length")); // 402840
+            assertEquals(403, vertex.getValue().getLength().intValue()); // 402840
           } else if (vertex.getId() == 10291L) {
-            assertEquals(222, vertex.getValue().get("length")); // 03:42
+            assertEquals(222, vertex.getValue().getLength().intValue()); // 03:42
           }
           return vertex;
         })
@@ -86,14 +88,47 @@ public class MusicbrainzBenchmarkTest {
   }
 
   @Test
+  public void testSongLengthPrintOutput() throws Exception {
+    env = setupLocalEnvironment();
+
+    final String path = MusicbrainzBenchmarkTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+        .getVertices();
+
+    vertices.print();
+
+//    Map<String, Long> result = new LinkedHashMap<>();
+//
+//    vertices.collect()
+//        .stream()
+//        .collect(Collectors
+//            .groupingBy(v -> v.getValue().get("oLength").toString(), Collectors.counting()))
+//        .entrySet()
+//        .stream()
+//        .sorted(Map.Entry.<String, Long>comparingByValue())
+//        .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
+//
+//    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
+//      System.out.println(stringLongEntry.toString());
+//    }
+//
+////    vertices.print();
+//    System.out.println(vertices.count());
+  }
+
+  @Test
   public void testSim() throws Exception {
     env = setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
         .getFile();
-    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
-//    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+//    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
@@ -101,7 +136,12 @@ public class MusicbrainzBenchmarkTest {
     DataSet<Edge<Long, NullValue>> edges = vertices
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
 
-    System.out.println(edges.count());
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(vertices, edges, env)
+        .run(new DefaultPreprocessing(env));
+
+
+    graph.getVertices().print();
+//    System.out.println(edges.count());
 
 
 //    String[] split = TEST_TITLE.split("\\\"");
@@ -198,7 +238,7 @@ public class MusicbrainzBenchmarkTest {
     vertices.collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> v.getValue().get("year").toString(), Collectors.counting()))
+            .groupingBy(v -> v.getValue().get("oYear").toString(), Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.<String, Long>comparingByValue())

@@ -28,8 +28,8 @@ public class TripletCreateCrossFunction implements CrossFunction<Vertex<Long, Ob
   public Triplet<Long, ObjectMap, NullValue> cross(Vertex<Long, ObjectMap> left, Vertex<Long, ObjectMap> right)
       throws Exception {
     // exclude if right and left contains same ontology somewhere
-    Set<String> srcOnts = left.getValue().getOntologiesList();
-    Set<String> trgOnts = right.getValue().getOntologiesList();
+    Set<String> srcOnts = left.getValue().getDataSourcesList();
+    Set<String> trgOnts = right.getValue().getDataSourcesList();
     for (String srcValue : srcOnts) {
       if (trgOnts.contains(srcValue)) {
         reuseTriplet.setFields(0L,

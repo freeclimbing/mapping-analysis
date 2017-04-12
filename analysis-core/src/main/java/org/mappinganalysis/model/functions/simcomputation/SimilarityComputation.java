@@ -59,6 +59,9 @@ public abstract class SimilarityComputation<T, O>
     } else if (strategy == SimilarityStrategy.EDGE_SIM) {
       return inputData
           .map(function);
+    } else if (strategy == SimilarityStrategy.MUSIC) { // customize?
+      return inputData
+          .map(function);
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
@@ -110,44 +113,13 @@ public abstract class SimilarityComputation<T, O>
         return new MergeSimilarityComputation<>(function, strategy, threshold);
       } else if (strategy == SimilarityStrategy.EDGE_SIM) {
         return new EdgeSimilarityComputation<>(function, strategy, threshold);
+      } else if (strategy == SimilarityStrategy.MUSIC) {
+        return new MusicSimilarityComputation<>(function, strategy, threshold);
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
     }
 
-  }
-
-  /**
-   * Compute similarities based on the existing vertex properties,
-   * save aggregated similarity as edge property
-   * @param graph input graph
-   * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
-   * @return graph with edge similarities
-   */
-  @Deprecated
-  public static Graph<Long, ObjectMap, ObjectMap> computeGraphEdgeSim(
-      Graph<Long, ObjectMap, NullValue> graph,
-      String matchCombination,
-      ExecutionEnvironment env) {
-    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
-        matchCombination,
-        Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
-
-    SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation = new SimilarityComputation
-        .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>>()
-        .setSimilarityFunction(simFunction)
-        .setStrategy(SimilarityStrategy.EDGE_SIM)
-        .build();
-    Constants.IGNORE_MISSING_PROPERTIES = true;
-
-    DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
-        .runOperation(similarityComputation)
-        .map(new TripletToEdgeMapFunction())
-        .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES)); // old mean function
-
-    return Graph.fromDataSet(graph.getVertices(), edges, env);
   }
 
   /**

@@ -3,6 +3,7 @@ package org.mappinganalysis.io.impl.csv;
 import com.google.common.math.DoubleMath;
 import com.google.common.math.IntMath;
 import com.google.common.primitives.Ints;
+import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple10;
 import org.apache.flink.api.java.tuple.Tuple9;
@@ -10,6 +11,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.Constants;
 
 import java.math.RoundingMode;
 import java.util.Arrays;
@@ -64,9 +66,9 @@ public class CSVToVertexFormatter
   public Vertex<Long, ObjectMap> map(
       Tuple10<Long,  //0 TID --> vertex id
                 Long,  //1 CID --> cluster id
-      //          Long,  //2 CTID --> cluster intern id
+      //          Long,  // CTID --> cluster intern id
                 Long,  //2 SourceID, 1 to 5
-      //          String,  //4xx id - IGNORE - strange mix numbers and letters
+      //          String,  //IGNORE - strange mix numbers and letters
                 String,  //3 number - song number? sometimes letters involved
                 String,  //4 title
                 String,  //5 length, e.g., 4m 32sec, 432, 432000, 4.58
@@ -78,20 +80,21 @@ public class CSVToVertexFormatter
         reuseVertex.setId(value.f0);
 //        System.out.println(value.toString());
         ObjectMap properties = reuseVertex.getValue();
-        properties.setCcId(value.f2);
+        properties.setCcId(value.f1);
         properties.setLabel(value.f4);
 
-        properties.put("source", value.f2);
-        properties.put("number", value.f3);
+        properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
+        properties.put(Constants.NUMBER, value.f3);
 
-        properties.put("length", fixSongLength(value.f0, value.f5));
-        // System.out.println("songlength: " + fixSongLength(value.f0, value.f4));
-        properties.put("artist", value.f6);
-        properties.put("album", value.f7);
-        properties.put("year", fixYear(value.f8));
-        // properties.put("oYear", value.f10);
-        properties.put("lang", fixLanguage(value.f9));
-        // properties.put("orig", value.f11);  // tmp for test
+        properties.put(Constants.LENGTH, fixSongLength(value.f5));
+//        properties.put("oLength", value.f5);
+
+        properties.put(Constants.ARTIST, value.f6);
+        properties.put(Constants.ALBUM, value.f7);
+        properties.put(Constants.YEAR, fixYear(value.f8));
+//         properties.put("oYear", value.f8);
+        properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
+//         properties.put("orig", value.f9);  // tmp for test
     return reuseVertex;
   }
 
@@ -108,7 +111,6 @@ public class CSVToVertexFormatter
     }
     Matcher fourDigitsMatcher = Pattern.compile(".*(\\d{4}).*").matcher(year);
 
-//    if (year.startsWith("'")) {
     if (year.matches("^'\\d+")) {
       year = year.replace("'", "");
 //      System.out.println("start with ': " + year);
@@ -137,8 +139,7 @@ public class CSVToVertexFormatter
     return null;
   }
 
-  private Integer fixSongLength(Long f0, String songLength) throws Exception {
-//    System.out.println(f0 + " pre: " + songLength);
+  private Integer fixSongLength(String songLength) throws Exception {
     String backup = songLength;
     songLength = songLength.toLowerCase().replaceAll("\\s+", "");
 
@@ -156,7 +157,6 @@ public class CSVToVertexFormatter
       return null;
     }
     if (songLength.contains("-") || songLength.equals("--")) {
-//      LOG.info("Contains '-': " + songLength);
       return null;
     }
 
@@ -211,12 +211,13 @@ public class CSVToVertexFormatter
               Double.valueOf(songLength) * 60, RoundingMode.HALF_UP);
         } else if (songLength.contains(":") && songLength.matches("[0-9]+:[0-9]+")) {
           String[] split = songLength.split(":");
-          if (songLength.contains("r0ud12")) {
-            System.out.println("backup: " + backup);
-          }
+//          if (songLength.contains("r0ud12")) {
+//            System.out.println("backup: " + backup);
+//          }
           if (split.length < 2) {
             return null;
           }
+
           int splitZeroLength = split[0].length();
           if (splitZeroLength > 2) {
             split[0] = split[0].substring(splitZeroLength - 2, splitZeroLength -1);
@@ -228,9 +229,9 @@ public class CSVToVertexFormatter
             return null;
           }
 
-          if (split[0].equals("") || split[1].equals("")) {
-            System.out.println("backup: " + backup);
-          }
+//          if (split[0].equals("") || split[1].equals("")) {
+//            System.out.println("backup: " + backup);
+//          }
 
           return Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]);
         } else if (songLength.matches("[0-9]+")) {
@@ -241,7 +242,6 @@ public class CSVToVertexFormatter
           return Integer.valueOf(songLength);
         }
       }
-//      LOG.info("will return NULL for value: " + songLength);
       return null; // only letters are not handled
     }
   }
@@ -249,7 +249,6 @@ public class CSVToVertexFormatter
   private String fixLanguage(String lang) {
     lang = lang.toLowerCase();
     if (lang.contains(",")) {
-//      LOG.info("contains ,: " + lang);
       return MU;
     }
     if (lang.startsWith("en")) {
@@ -324,6 +323,6 @@ public class CSVToVertexFormatter
     }
 
 //    LOG.info(lang);
-    return null;
+    return Constants.NO_OR_MINOR_LANG;
   }
 }

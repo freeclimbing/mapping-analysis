@@ -13,6 +13,6 @@ public class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectM
 
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-    return vertex.getValue().getOntology().equals(source);
+    return vertex.getValue().getDataSource().equals(source);
   }
 }

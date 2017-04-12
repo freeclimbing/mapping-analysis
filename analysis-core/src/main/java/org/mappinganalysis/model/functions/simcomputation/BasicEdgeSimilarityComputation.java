@@ -9,6 +9,7 @@ import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
@@ -23,7 +24,8 @@ public class BasicEdgeSimilarityComputation
   private static final Logger LOG = Logger.getLogger(BasicEdgeSimilarityComputation.class);
 
   private final ExecutionEnvironment env;
-  private final EdgeSimilarityFunction simFunction;
+  private final SimilarityFunction<Triplet<Long, ObjectMap, NullValue>,
+      Triplet<Long, ObjectMap, ObjectMap>> simFunction;
 
   /**
    * Compute similarities based on the existing vertex properties,
@@ -33,7 +35,13 @@ public class BasicEdgeSimilarityComputation
    */
   public BasicEdgeSimilarityComputation(String matchCombination, ExecutionEnvironment env) {
     this.env = env;
-    this.simFunction = new EdgeSimilarityFunction(matchCombination, Constants.MAXIMAL_GEO_DISTANCE);
+    if (matchCombination.equals(Constants.MUSIC)) {
+      this.simFunction = new MusicSimilarityFunction();
+    } else {
+      this.simFunction = new EdgeSimilarityFunction(
+          matchCombination,
+          Constants.MAXIMAL_GEO_DISTANCE);
+    }
   }
 
   /**
@@ -57,17 +65,12 @@ public class BasicEdgeSimilarityComputation
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
-    Constants.IGNORE_MISSING_PROPERTIES = true;
 
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction())
-        .map(x -> {
-          LOG.info("TESTSTRING: " + x.toString());
-          return x;
-        })
-        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
-        .map(new AggSimValueEdgeMapFunction(Constants.IGNORE_MISSING_PROPERTIES)); // old mean function
+//        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
+        .map(new AggSimValueEdgeMapFunction(true)); // old mean function
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }

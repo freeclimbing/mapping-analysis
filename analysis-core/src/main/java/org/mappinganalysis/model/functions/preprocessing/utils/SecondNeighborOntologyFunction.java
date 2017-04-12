@@ -24,14 +24,14 @@ public class SecondNeighborOntologyFunction
       throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
-      String ontology = neighbor.f1.getValue().getOntology();
+      String ontology = neighbor.f1.getValue().getDataSource();
       Double edgeSim = edge.getValue().getEdgeSimilarity();
 
       EdgeSourceSimTuple resultTuple
           = new EdgeSourceSimTuple(vertex.getValue().getCcId(),
           edge.getSource(),
           edge.getTarget(),
-          vertex.getValue().getOntology(),
+          vertex.getValue().getDataSource(),
           ontology,
           edgeSim);
 //      LOG.info("Tuple6: " + resultTuple.toString());

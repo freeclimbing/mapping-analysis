@@ -18,23 +18,24 @@ import org.mappinganalysis.model.functions.preprocessing.utils.EqualTypesEdgeFil
 import org.mappinganalysis.model.functions.preprocessing.utils.VertexIdTypeTupleMapper;
 
 /**
- * Type mismatch correction is part of the preprocessing.
- * Exclude edges where directly connected source and target vertices have different type property values.
+ * Exclude edges where directly connected source and target vertices
+ * have different type property values.
  */
 public class TypeMisMatchCorrection
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, NullValue>> {
   private final ExecutionEnvironment env;
 
   /**
-   * Type mismatch correction is part of the preprocessing.
-   * Exclude edges where directly connected source and target vertices have different type property values.
+   * Exclude edges where directly connected source and target vertices
+   * have different type property values.
    */
   public TypeMisMatchCorrection(ExecutionEnvironment env) {
     this.env = env;
   }
 
   @Override
-  public Graph<Long, ObjectMap, NullValue> run(Graph<Long, ObjectMap, NullValue> graph) throws Exception {
+  public Graph<Long, ObjectMap, NullValue> run(
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     DataSet<IdTypeTuple> vertexIdAndTypeList = graph.getVertices()
         .flatMap(new VertexIdTypeTupleMapper());
 

@@ -15,31 +15,20 @@ import java.math.BigDecimal;
 import java.util.Set;
 
 /**
- * Basic edge similarity function (geographic)
+ * Music edge similarity function
  */
-public class EdgeSimilarityFunction
+public class MusicSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>>
     implements Serializable {
-  private final String usedPropertiesCombination;
-  private final double maxDistInMeter;
 
-  public EdgeSimilarityFunction(String usedPropertiesCombination, double maxDistInMeter) {
-    this.usedPropertiesCombination = usedPropertiesCombination;
-    this.maxDistInMeter = maxDistInMeter;
+  public MusicSimilarityFunction() {
   }
-
-  // Constants.SIM_GEO_LABEL_STRATEGY
-  // Constants.DEFAULT_VALUE
 
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
 
     Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
-    result = addGeoSimilarity(result);
-    if (usedPropertiesCombination.equals(Constants.DEFAULT_VALUE)) {
-      result = addTypeSimilarity(result);
-    }
 
     return result;
   }
@@ -61,31 +50,6 @@ public class EdgeSimilarityFunction
     return triplet;
   }
 
-  /**
-   * add basic geo similarity
-   */
-  private Triplet<Long,ObjectMap,ObjectMap> addGeoSimilarity(
-      Triplet<Long, ObjectMap, ObjectMap> triplet) {
-    ObjectMap source = triplet.getSrcVertex().getValue();
-    ObjectMap target = triplet.getTrgVertex().getValue();
-
-    if (source.hasGeoPropertiesValid() && target.hasGeoPropertiesValid()) {
-      Double distance = GeoDistance.distance(source.getLatitude(),
-          source.getLongitude(), target.getLatitude(), target.getLongitude());
-
-      if (distance >= maxDistInMeter) {
-        triplet.getEdge().getValue().setGeoSimilarity(0D);
-      } else {
-        BigDecimal tmpResult = null;
-        double tmp = 1D - (distance / maxDistInMeter);
-        tmpResult = new BigDecimal(tmp);
-        double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-        triplet.getEdge().getValue().setGeoSimilarity(result);
-      }
-    }
-
-    return triplet;
-  }
 
   /**
    * basic label similarity

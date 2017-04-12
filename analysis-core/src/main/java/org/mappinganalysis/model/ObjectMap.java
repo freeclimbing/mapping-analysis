@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
-import com.sun.tools.internal.jxc.ap.Const;
+import com.google.common.primitives.Ints;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -323,15 +323,19 @@ public class ObjectMap
   /**
    * Get source dataset name for vertex.
    */
-  public String getOntology() {
-    return map.get(Constants.ONTOLOGY).toString();
+  public String getDataSource() {
+    return map.get(Constants.DATA_SOURCE).toString();
+  }
+
+  public void setDataSource(String source) {
+    map.put(Constants.DATA_SOURCE, source);
   }
 
   /**
    * Get list of source dataset names which are contained in the cluster.
    */
-  public Set<String> getOntologiesList() {
-    Object ontologies = map.get(Constants.ONTOLOGIES);
+  public Set<String> getDataSourcesList() {
+    Object ontologies = map.get(Constants.DATA_SOURCES);
 
     if (ontologies instanceof Set) {
       return (Set<String>) ontologies;
@@ -340,22 +344,22 @@ public class ObjectMap
     }
   }
 
-  public void setClusterSources(Set<String> sources) {
+  public void setClusterDataSources(Set<String> sources) {
     if (!sources.isEmpty()) {
-      map.put(Constants.ONTOLOGIES, sources);
+      map.put(Constants.DATA_SOURCES, sources);
     }
   }
 
   /**
-   * Get internal represenation of several ontologies in a cluster.
+   * Get internal represenation of all data sources in a cluster.
    */
-  public Integer getIntSources() {
-    Object ontologies = map.get(Constants.ONTOLOGIES);
+  public Integer getIntDataSources() {
+    Object dataSources = map.get(Constants.DATA_SOURCES);
     Set<String> sources;
-    if (ontologies instanceof Set) {
-      sources = (Set<String>) ontologies;
+    if (dataSources instanceof Set) {
+      sources = (Set<String>) dataSources;
     } else {
-      sources = Sets.newHashSet(ontologies.toString());
+      sources = Sets.newHashSet(dataSources.toString());
     }
 
     return AbstractionUtils.getSourcesInt(sources);
@@ -375,21 +379,93 @@ public class ObjectMap
 
     return AbstractionUtils.getTypesInt(types);
   }
+
+  /**
+   * Music dataset getter/setter
+   */
+
+  public void setLength(Integer length) {
+    map.put(Constants.LENGTH, length);
+  }
+
+  public Integer getLength() {
+    if (map.containsKey(Constants.LENGTH) && map.get(Constants.LENGTH) != null) {
+      System.out.println(map.get(Constants.LENGTH));
+      return Ints.tryParse(map.get(Constants.LENGTH).toString());
+    } else {
+      return null;
+    }
+  }
+
+  public void setYear(Integer year) {
+    map.put(Constants.YEAR, year);
+  }
+
+  public Integer getYear() {
+    if (map.containsKey(Constants.YEAR) && map.get(Constants.YEAR) != null) {
+      return Ints.tryParse(map.get(Constants.YEAR).toString());
+    } else {
+      return null;
+    }
+  }
+
+  public void setNumber(String number) {
+    map.put(Constants.NUMBER, number);
+  }
+
+  public String getNumber() {
+    if (map.containsKey(Constants.NUMBER)) {
+      return map.get(Constants.NUMBER).toString();
+    } else {
+      return Constants.NO_LABEL_FOUND;
+    }
+  }
+
+  public void setLanguage(String language) {
+    map.put(Constants.LANGUAGE, language);
+  }
+
+  public String getLanguage() {
+    if (map.containsKey(Constants.LANGUAGE)) {
+      return map.get(Constants.LANGUAGE).toString();
+    } else {
+      return Constants.NO_LABEL_FOUND;
+    }
+  }
+
+  public void setArtist(String artist) {
+    map.put(Constants.ARTIST, artist);
+  }
+
+  public String getArtist() {
+    if (map.containsKey(Constants.ARTIST)) {
+      return map.get(Constants.ARTIST).toString();
+    } else {
+      return Constants.NO_LABEL_FOUND;
+    }
+  }
+
+  public void setAlbum(String album) {
+    map.put(Constants.ALBUM, album);
+  }
+
+  public String getAlbum() {
+    if (map.containsKey(Constants.ALBUM)) {
+      return map.get(Constants.ALBUM).toString();
+    } else {
+      return Constants.NO_LABEL_FOUND;
+    }
+  }
+
   /**
    * Add a key value pair, if key already exists, a set of values is created or extended.
    * @param key property name
    * @param value property value
+   * TODO direct access to properties via getter setter
    */
+  @Deprecated
   public void addProperty(String key, Object value) {
-
     Preconditions.checkNotNull(value, "new lat or lon null: " + map.toString());
-
-    //Todo here rly needed? write test
-    Preconditions.checkArgument(!(key.equals(Constants.LAT) && map.containsKey(Constants.LAT))
-        || !(key.equals(Constants.LON) && map.containsKey(Constants.LON)),
-        map.get(Constants.LAT) + " - " + map.get(Constants.LON) + " LAT or LON already there, new: "
-        + key + ": " + value.toString());
-
 
     if (map.containsKey(key)) {
       if (value.toString().equals(Constants.NO_TYPE)) {

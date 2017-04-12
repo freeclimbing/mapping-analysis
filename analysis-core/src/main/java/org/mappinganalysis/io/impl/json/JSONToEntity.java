@@ -21,7 +21,7 @@ public class JSONToEntity {
   List<String> arrayOptions = Arrays.asList(
       Constants.TYPE_INTERN,
       Constants.COMP_TYPE,
-      Constants.ONTOLOGIES,
+      Constants.DATA_SOURCES,
       Constants.CL_VERTICES,
       Constants.TYPE
   );

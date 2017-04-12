@@ -64,7 +64,7 @@ public class MajorityPropertiesGroupReduceFunction
       resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
     }
 
-    resultProps.setClusterSources(clusterOntologies);
+    resultProps.setClusterDataSources(clusterOntologies);
     resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
@@ -76,11 +76,11 @@ public class MajorityPropertiesGroupReduceFunction
   private void updateClusterOntologies(
       Set<String> clusterOntologies,
       Vertex<Long, ObjectMap> currentVertex) {
-    if (currentVertex.getValue().containsKey(Constants.ONTOLOGY)) {
-      clusterOntologies.add(currentVertex.getValue().getOntology());
+    if (currentVertex.getValue().containsKey(Constants.DATA_SOURCE)) {
+      clusterOntologies.add(currentVertex.getValue().getDataSource());
     }
-    if (currentVertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-      clusterOntologies.addAll(currentVertex.getValue().getOntologiesList());
+    if (currentVertex.getValue().containsKey(Constants.DATA_SOURCES)) {
+      clusterOntologies.addAll(currentVertex.getValue().getDataSourcesList());
     }
   }
 
@@ -103,19 +103,19 @@ public class MajorityPropertiesGroupReduceFunction
       HashMap<String, GeoCode> geoMap,
       Vertex<Long, ObjectMap> vertex) {
     if (vertex.getValue().hasGeoPropertiesValid()) {
-      if (!vertex.getValue().containsKey(Constants.ONTOLOGY)
-          && !vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
+      if (!vertex.getValue().containsKey(Constants.DATA_SOURCE)
+          && !vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
         LOG.info("no/more ont but geo: " + vertex);
       }
 
       Double latitude = vertex.getValue().getLatitude();
       Double longitude = vertex.getValue().getLongitude();
 
-      if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
-        geoMap.put(vertex.getValue().getOntology(),
+      if (vertex.getValue().containsKey(Constants.DATA_SOURCE)) {
+        geoMap.put(vertex.getValue().getDataSource(),
             new GeoCode(latitude, longitude));
-      } else if (vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-        for (String value : vertex.getValue().getOntologiesList()) {
+      } else if (vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
+        for (String value : vertex.getValue().getDataSourcesList()) {
           geoMap.put(value, new GeoCode(latitude, longitude));
         }
       }

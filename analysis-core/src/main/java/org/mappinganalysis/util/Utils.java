@@ -11,10 +11,8 @@ import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
@@ -22,8 +20,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.io.impl.json.JSONDataSink;
-import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.*;
 import org.simmetrics.StringMetric;
@@ -32,7 +28,6 @@ import org.simmetrics.simplifiers.Simplifiers;
 import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -242,11 +237,11 @@ public class Utils {
     }
 
     String ontology = "";
-    if (vertex.getValue().containsKey(Constants.ONTOLOGY)) {
-      ontology = " source: " + vertex.getValue().getOntology();
+    if (vertex.getValue().containsKey(Constants.DATA_SOURCE)) {
+      ontology = " source: " + vertex.getValue().getDataSource();
     }
-    if (vertex.getValue().containsKey(Constants.ONTOLOGIES)) {
-      ontology = " sources: " + vertex.getValue().getOntologiesList().toString();
+    if (vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
+      ontology = " sources: " + vertex.getValue().getDataSourcesList().toString();
     }
     if (vertex.getValue().containsKey(Constants.DB_URL_FIELD)) {
       ontology = " uri: " + vertex.getValue().get(Constants.DB_URL_FIELD).toString();
