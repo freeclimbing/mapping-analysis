@@ -305,6 +305,22 @@ public class ObjectMap
     map.put(Constants.SIM_DISTANCE, similarity);
   }
 
+  public void setLanguageSimilarity(double languageSimilarity) {
+    map.put(Constants.SIM_LANG, languageSimilarity);
+  }
+
+  public void setLengthSimilarity(double lengthSimilarity) {
+    map.put(Constants.SIM_LENGTH, lengthSimilarity);
+  }
+
+  public void setNumberSimilarity(double numberSimilarity) {
+    map.put(Constants.SIM_NUMBER, numberSimilarity);
+  }
+
+  public void setYearSimilarity(double yearSimilarity) {
+    map.put(Constants.SIM_YEAR, yearSimilarity);
+  }
+
   /**
    * Get aggregated similarity of all edges for vertex
    */
@@ -401,6 +417,9 @@ public class ObjectMap
     map.put(Constants.YEAR, year);
   }
 
+  /**
+   * Get year for entity. If no year is available, return {@value Constants#NO_VALUE}.
+   */
   public Integer getYear() {
     if (map.containsKey(Constants.YEAR) && map.get(Constants.YEAR) != null) {
       return Ints.tryParse(map.get(Constants.YEAR).toString());
@@ -410,14 +429,21 @@ public class ObjectMap
   }
 
   public void setNumber(String number) {
-    map.put(Constants.NUMBER, number);
+    if (number.equals(Constants.CSV_NO_VALUE)) {
+      map.put(Constants.NUMBER, Constants.NO_VALUE);
+    } else {
+      map.put(Constants.NUMBER, number);
+    }
   }
 
+  /**
+   * Get song number for entity. If no number is available, return {@value Constants#NO_VALUE}.
+   */
   public String getNumber() {
     if (map.containsKey(Constants.NUMBER)) {
       return map.get(Constants.NUMBER).toString();
     } else {
-      return Constants.NO_LABEL_FOUND;
+      return Constants.NO_VALUE;
     }
   }
 
@@ -425,35 +451,52 @@ public class ObjectMap
     map.put(Constants.LANGUAGE, language);
   }
 
+  /**
+   * Get language for entity. If no language is available, return {@value Constants#NO_VALUE}.
+   */
   public String getLanguage() {
     if (map.containsKey(Constants.LANGUAGE)) {
       return map.get(Constants.LANGUAGE).toString();
     } else {
-      return Constants.NO_LABEL_FOUND;
+      return Constants.NO_VALUE;
     }
   }
 
   public void setArtist(String artist) {
-    map.put(Constants.ARTIST, artist);
+    if (artist.equals(Constants.CSV_NO_VALUE)) {
+      map.put(Constants.ARTIST, Constants.NO_VALUE);
+    } else {
+      map.put(Constants.ARTIST, artist);
+    }
   }
 
+  /**
+   * Get artist for entity. If no artist is available, return {@value Constants#NO_VALUE}.
+   */
   public String getArtist() {
     if (map.containsKey(Constants.ARTIST)) {
       return map.get(Constants.ARTIST).toString();
     } else {
-      return Constants.NO_LABEL_FOUND;
+      return Constants.NO_VALUE;
     }
   }
 
   public void setAlbum(String album) {
-    map.put(Constants.ALBUM, album);
+    if (album.equals(Constants.CSV_NO_VALUE)) {
+      map.put(Constants.ALBUM, Constants.NO_VALUE);
+    } else {
+      map.put(Constants.ALBUM, album);
+    }
   }
 
+  /**
+   * Get album for entity. If no album is available, return {@value Constants#NO_VALUE}.
+   */
   public String getAlbum() {
     if (map.containsKey(Constants.ALBUM)) {
       return map.get(Constants.ALBUM).toString();
     } else {
-      return Constants.NO_LABEL_FOUND;
+      return Constants.NO_VALUE;
     }
   }
 
@@ -551,4 +594,5 @@ public class ObjectMap
   public Set<Entry<String, Object>> entrySet() {
     return map.entrySet();
   }
+
 }

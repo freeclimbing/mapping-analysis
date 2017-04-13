@@ -4,7 +4,9 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.simcomputation.ops.SinglePropertySimilarity;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
@@ -28,7 +30,12 @@ public class MusicSimilarityFunction
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
 
-    Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
+    EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
+    System.out.println(result.toString());
+    result.runOperation(new SinglePropertySimilarity());
+
+    System.out.println(result.getEdge().getValue().toString());
+//    Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
 
     return result;
   }
@@ -58,7 +65,7 @@ public class MusicSimilarityFunction
       Triplet<Long, ObjectMap, NullValue> triplet) {
     final String srcLabel = triplet.getSrcVertex().getValue().getLabel();
     final String trgLabel = triplet.getTrgVertex().getValue().getLabel();
-    Triplet<Long, ObjectMap, ObjectMap> resultTriplet = initResultTriplet(triplet);
+    EdgeObjectMapTriplet resultTriplet = new EdgeObjectMapTriplet(triplet);
     StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
 
     if (!srcLabel.equals(Constants.NO_LABEL_FOUND) && !trgLabel.equals(Constants.NO_LABEL_FOUND)) {
@@ -72,16 +79,5 @@ public class MusicSimilarityFunction
     } else {
       return resultTriplet;
     }
-  }
-
-  private Triplet<Long, ObjectMap, ObjectMap> initResultTriplet(
-      Triplet<Long, ObjectMap, NullValue> triplet) {
-    return new Triplet<>(
-        triplet.getSrcVertex(),
-        triplet.getTrgVertex(),
-        new Edge<>(
-            triplet.getSrcVertex().getId(),
-            triplet.getTrgVertex().getId(),
-            new ObjectMap()));
   }
 }

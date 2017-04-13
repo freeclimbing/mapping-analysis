@@ -76,6 +76,8 @@ public class Constants {
   public static final String NO_LABEL_FOUND = "no_label_found";
   public static final String NO_TYPE = "no_type";
   public static final String NO_OR_MINOR_LANG = "no_or_minor_lang";
+  public static final String NO_VALUE = "no_value";
+  public static final String CSV_NO_VALUE = "--";
 
   /**
    * Field name for sim value names
@@ -83,6 +85,10 @@ public class Constants {
   public static final String SIM_TYPE = "typeMatch";
   public static final String SIM_TRIGRAM = "trigramSim";
   public static final String SIM_DISTANCE = "distance";
+  public static final String SIM_LANG = "simLang";
+  public static final String SIM_YEAR = "simYear";
+  public static final String SIM_LENGTH = "simLength";
+  public static final String SIM_NUMBER = "simNumber";
 
   /**
    * Aggregated similarity value on edge

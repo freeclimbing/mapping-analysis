@@ -26,6 +26,7 @@ public class BasicEdgeSimilarityComputation
   private final ExecutionEnvironment env;
   private final SimilarityFunction<Triplet<Long, ObjectMap, NullValue>,
       Triplet<Long, ObjectMap, ObjectMap>> simFunction;
+  private final String matchCombination;
 
   /**
    * Compute similarities based on the existing vertex properties,
@@ -35,7 +36,9 @@ public class BasicEdgeSimilarityComputation
    */
   public BasicEdgeSimilarityComputation(String matchCombination, ExecutionEnvironment env) {
     this.env = env;
+    this.matchCombination = matchCombination;
     if (matchCombination.equals(Constants.MUSIC)) {
+      System.out.println("using MusicSimilarityFunction");
       this.simFunction = new MusicSimilarityFunction();
     } else {
       this.simFunction = new EdgeSimilarityFunction(
@@ -66,11 +69,14 @@ public class BasicEdgeSimilarityComputation
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
 
+
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .runOperation(similarityComputation)
-        .map(new TripletToEdgeMapFunction())
-//        .returns(new TypeHint<Edge<Long, ObjectMap>>() {})
-        .map(new AggSimValueEdgeMapFunction(true)); // old mean function
+        .map(new TripletToEdgeMapFunction());
+
+    if (!matchCombination.equals(Constants.MUSIC)) {
+      edges.map(new AggSimValueEdgeMapFunction(true)); // old mean function
+    }
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }

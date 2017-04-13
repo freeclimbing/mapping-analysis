@@ -69,6 +69,5 @@ public abstract class LinkFilter
         throw new IllegalArgumentException("Execution environment null");
       }
     }
-
   }
 }

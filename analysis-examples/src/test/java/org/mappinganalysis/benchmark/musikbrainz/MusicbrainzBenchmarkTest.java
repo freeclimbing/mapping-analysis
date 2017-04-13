@@ -99,25 +99,28 @@ public class MusicbrainzBenchmarkTest {
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
-    vertices.print();
+//    vertices.print();
 
-//    Map<String, Long> result = new LinkedHashMap<>();
-//
-//    vertices.collect()
-//        .stream()
-//        .collect(Collectors
-//            .groupingBy(v -> v.getValue().get("oLength").toString(), Collectors.counting()))
-//        .entrySet()
-//        .stream()
-//        .sorted(Map.Entry.<String, Long>comparingByValue())
-//        .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
-//
-//    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
-//      System.out.println(stringLongEntry.toString());
-//    }
-//
-////    vertices.print();
-//    System.out.println(vertices.count());
+    Map<String, Long> result = new LinkedHashMap<>();
+
+    vertices.collect()
+        .stream()
+        .collect(Collectors
+            .groupingBy(v -> v.getValue().getLabel(), Collectors.counting()))
+        .entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
+
+    for (Map.Entry<String, Long> labelOccurance : result.entrySet()) {
+      if (labelOccurance.getKey().matches(".*?\\s-\\s.*?")
+          && !labelOccurance.getKey().matches(".*? - .*?"))
+//          || labelOccurance.getKey().contains(""))
+      System.out.println(labelOccurance.toString());
+    }
+
+//    vertices.print();
+    System.out.println(vertices.count());
   }
 
   @Test

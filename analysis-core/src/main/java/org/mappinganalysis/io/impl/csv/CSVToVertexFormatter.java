@@ -156,7 +156,7 @@ public class CSVToVertexFormatter
     if (songLength.length() > 11 || songLength.matches("[a-zA-Z]+\\d{4}\\d+")) {
       return null;
     }
-    if (songLength.contains("-") || songLength.equals("--")) {
+    if (songLength.contains("-") || songLength.equals(Constants.CSV_NO_VALUE)) {
       return null;
     }
 
