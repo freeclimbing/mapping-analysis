@@ -3,17 +3,16 @@ package org.mappinganalysis.model.functions.simcomputation.ops;
 import com.google.common.collect.Lists;
 import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.api.SimilarityOperation;
+import org.mappinganalysis.model.api.CustomOperation;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * Multiple properties are used to compute a single similarity.
  */
-public class MultiPropertySimilarity implements SimilarityOperation<EdgeObjectMapTriplet> {
+public class MultiPropertySimilarity implements CustomOperation<EdgeObjectMapTriplet> {
   private EdgeObjectMapTriplet triplet;
 
   @Override
@@ -30,8 +29,10 @@ public class MultiPropertySimilarity implements SimilarityOperation<EdgeObjectMa
     ObjectMap source = triplet.getSrcVertex().getValue();
     ObjectMap target = triplet.getTrgVertex().getValue();
 
-
+    // add title
 //    Collections.addAll(listOne, )
+
+    // artist, album
 
     return null;
   }

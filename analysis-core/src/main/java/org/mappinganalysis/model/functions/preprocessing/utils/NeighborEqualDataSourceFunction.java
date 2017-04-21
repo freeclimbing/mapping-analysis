@@ -11,17 +11,17 @@ import org.mappinganalysis.model.ObjectMap;
 /**
  * Find neighbors with same ontology (to exclude or handle them later)
  */
-public class SecondNeighborOntologyFunction
+public class NeighborEqualDataSourceFunction
     implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap,
     EdgeSourceSimTuple> {
-  private static final Logger LOG = Logger.getLogger(SecondNeighborOntologyFunction.class);
+  private static final Logger LOG = Logger.getLogger(NeighborEqualDataSourceFunction.class);
 
 
   @Override
-  public void iterateNeighbors(Vertex<Long, ObjectMap> vertex,
-                               Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
-                               Collector<EdgeSourceSimTuple> collector)
-      throws Exception {
+  public void iterateNeighbors(
+      Vertex<Long, ObjectMap> vertex,
+      Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
+      Collector<EdgeSourceSimTuple> collector) throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
       Edge<Long, ObjectMap> edge = neighbor.f0;
       String ontology = neighbor.f1.getValue().getDataSource();

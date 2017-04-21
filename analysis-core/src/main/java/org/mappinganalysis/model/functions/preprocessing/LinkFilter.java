@@ -7,6 +7,8 @@ import org.mappinganalysis.graph.LinkFilterFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 
+import java.util.List;
+
 /**
  * Link filter builder class.
  *
@@ -36,6 +38,7 @@ public abstract class LinkFilter
     private LinkFilterStrategy strategy;
     private Boolean removeIsolatedVertices = true;
     private ExecutionEnvironment env = null;
+    private List<String> sources;
 
     public LinkFilterBuilder setStrategy(LinkFilterStrategy strategy) {
       this.strategy = strategy;
@@ -44,6 +47,11 @@ public abstract class LinkFilter
 
     public LinkFilterBuilder setRemoveIsolatedVertices(Boolean removeIsolatedVertices) {
       this.removeIsolatedVertices = removeIsolatedVertices;
+      return this;
+    }
+
+    public LinkFilterBuilder setDataSources(List<String> sources) {
+      this.sources = sources;
       return this;
     }
 
@@ -59,7 +67,7 @@ public abstract class LinkFilter
     public LinkFilter build() {
       if (env != null) {
         if (strategy == LinkFilterStrategy.BASIC) {
-          return new BasicLinkFilter(removeIsolatedVertices, env);
+          return new BasicLinkFilter(sources, removeIsolatedVertices, env);
         } else if (strategy == LinkFilterStrategy.CLUSTERING) {
           return new ClusteringLinkFilter(env);
         } else {

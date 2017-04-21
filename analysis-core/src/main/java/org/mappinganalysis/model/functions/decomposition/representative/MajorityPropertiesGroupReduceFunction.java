@@ -35,7 +35,7 @@ public class MajorityPropertiesGroupReduceFunction
   public void reduce(Iterable<Vertex<Long, ObjectMap>> vertices,
                      Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
     Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here
-    ObjectMap resultProps = new ObjectMap();
+    ObjectMap resultProps = new ObjectMap(Constants.GEO);
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();

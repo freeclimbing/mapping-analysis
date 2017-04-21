@@ -26,7 +26,7 @@ public class AggSimValueTripletMapFunction
 
     double aggregatedSim;
     if (ignoreMissingProperties) {
-      if ((double) value.get(Constants.SIM_TRIGRAM) < minSim) {
+      if ((double) value.get(Constants.SIM_LABEL) < minSim) {
         aggregatedSim = 0D;
       } else {
         aggregatedSim = SimilarityComputation.getMeanSimilarity(value);

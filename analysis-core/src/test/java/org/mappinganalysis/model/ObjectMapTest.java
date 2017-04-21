@@ -17,56 +17,34 @@ public class ObjectMapTest {
   private static final Logger LOG = Logger.getLogger(ObjectMapTest.class);
 
   @Test
-  // do not create set of labels
-  public void testGetLabel() throws Exception {
-    ObjectMap test = new ObjectMap();
-
-  }
-
-  @Test
   public void testHasTypeNoType() throws Exception {
-    ObjectMap objectMap = new ObjectMap();
+    ObjectMap props = new ObjectMap(Constants.GEO);
 
     // initial no type
-    objectMap.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
-    assertTrue(objectMap.hasTypeNoType(Constants.TYPE_INTERN));
+    props.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
+    assertTrue(props.hasTypeNoType(Constants.TYPE_INTERN));
 
-    objectMap.addProperty(Constants.TYPE_INTERN, "foo");
-    objectMap.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
-    assertFalse(objectMap.hasTypeNoType(Constants.TYPE_INTERN));
+    props.addProperty(Constants.TYPE_INTERN, "foo");
+    props.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
+    assertFalse(props.hasTypeNoType(Constants.TYPE_INTERN));
 
-    objectMap.addProperty(Constants.TYPE_INTERN, "foo");
-    objectMap.addProperty(Constants.TYPE_INTERN, "bar");
+    props.addProperty(Constants.TYPE_INTERN, "foo");
+    props.addProperty(Constants.TYPE_INTERN, "bar");
 
     // value added only once
-    assertEquals(2, objectMap.getTypes(Constants.TYPE_INTERN).size());
+    assertEquals(2, props.getTypes(Constants.TYPE_INTERN).size());
     // initial no type can be overwritten
-    assertFalse(objectMap.hasTypeNoType(Constants.TYPE_INTERN));
+    assertFalse(props.hasTypeNoType(Constants.TYPE_INTERN));
 
 
-    objectMap.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
-    assertFalse(objectMap.hasTypeNoType(Constants.TYPE_INTERN));
-  }
-
-  @Test
-  public void testGetCcId() throws Exception {
-
-  }
-
-  @Test
-  public void testGetTypes() throws Exception {
-
-  }
-
-  @Test
-  public void testGetHashCcId() throws Exception {
-
+    props.addProperty(Constants.TYPE_INTERN, Constants.NO_TYPE);
+    assertFalse(props.hasTypeNoType(Constants.TYPE_INTERN));
   }
 
   @Test
   public void testGeoProperties() throws Exception {
-    ObjectMap checkMap = new ObjectMap();
-    ObjectMap input = new ObjectMap();
+    ObjectMap checkMap = new ObjectMap(Constants.GEO);
+    ObjectMap input = new ObjectMap(Constants.GEO);
     input.addProperty(Constants.LAT, 23.0);
     input.addProperty(Constants.LON, 42.0);
 
@@ -85,7 +63,7 @@ public class ObjectMapTest {
 
   @Test
   public void testGetVerticesList() throws Exception {
-    ObjectMap map = new ObjectMap();
+    ObjectMap map = new ObjectMap(Constants.GEO);
     Set<Long> set = Sets.newHashSet(1L, 2L);
     map.setClusterVertices(set);
     assertEquals(2, map.getVerticesList().size());
@@ -98,7 +76,7 @@ public class ObjectMapTest {
 
   @Test
   public void testSimilarities() throws Exception {
-    ObjectMap map = new ObjectMap();
+    ObjectMap map = new ObjectMap(Constants.GEO);
     map.setEdgeSimilarity(0.5);
     assertEquals(0.5, map.getEdgeSimilarity(), 0.0001);
     map.setEdgeSimilarity(0.6);
@@ -112,7 +90,7 @@ public class ObjectMapTest {
 
   @Test
   public void testClusterSources() throws Exception {
-    ObjectMap map = new ObjectMap();
+    ObjectMap map = new ObjectMap(Constants.GEO);
     Set<String> set = Sets.newHashSet(Constants.DBP_NS, Constants.FB_NS);
     map.setClusterDataSources(set);
     assertEquals(2, map.getDataSourcesList().size());

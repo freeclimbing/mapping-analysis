@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -21,6 +22,8 @@ import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -162,6 +165,7 @@ public class PreprocessingTest {
         .LinkFilterBuilder()
         .setEnvironment(env)
         .setRemoveIsolatedVertices(true)
+        .setDataSources(Constants.GEO_SOURCES)
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 
@@ -198,6 +202,7 @@ public class PreprocessingTest {
         .LinkFilterBuilder()
         .setEnvironment(env)
         .setRemoveIsolatedVertices(false)
+        .setDataSources(Constants.GEO_SOURCES)
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 

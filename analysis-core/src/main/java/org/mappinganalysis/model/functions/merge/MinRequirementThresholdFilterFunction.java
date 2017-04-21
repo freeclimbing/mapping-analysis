@@ -23,7 +23,7 @@ public class MinRequirementThresholdFilterFunction
   public boolean filter(Triplet<Long, ObjectMap, ObjectMap> triplet) throws Exception {
     ObjectMap edgeValue = triplet.getEdge().getValue();
     boolean hasSimDist = edgeValue.containsKey(Constants.SIM_DISTANCE);
-    boolean hasSimLabel = edgeValue.containsKey(Constants.SIM_TRIGRAM);
+    boolean hasSimLabel = edgeValue.containsKey(Constants.SIM_LABEL);
     boolean hasSimType = edgeValue.containsKey(Constants.SIM_TYPE);
 
     boolean hasHighThreshold = edgeValue.containsKey(Constants.AGGREGATED_SIM_VALUE)
@@ -33,7 +33,7 @@ public class MinRequirementThresholdFilterFunction
 
     boolean hasNoOrHighDistanceSim = !hasSimDist || ((double) edgeValue.get(Constants.SIM_DISTANCE) > 0.7);
     boolean hasNoOrHighTypeSim = !hasSimType || ((double) edgeValue.get(Constants.SIM_TYPE) > 0.7);
-    boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Constants.SIM_TRIGRAM) > 0.8);
+    boolean hasOnlyHighLabel = hasSimLabel && ((double) edgeValue.get(Constants.SIM_LABEL) > 0.8);
 
     if (hasHighThreshold && hasMinTwoSimValues) {
 //      LOG.info("Merge " + triplet.getSrcVertex().getId() + " <-> " + triplet.getTrgVertex().getId() + " #### : \n"

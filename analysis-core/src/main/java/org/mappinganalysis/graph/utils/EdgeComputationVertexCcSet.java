@@ -24,9 +24,7 @@ public class EdgeComputationVertexCcSet
    * Create all distinct edges for a set of vertices with cc ids.
    */
   public EdgeComputationVertexCcSet(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
-    this.keySelector = keySelector;
-    this.computeAllEdges = true;
-    this.isResultEdgeDistinct = true;
+    this(keySelector, true, true);
   }
 
   /**

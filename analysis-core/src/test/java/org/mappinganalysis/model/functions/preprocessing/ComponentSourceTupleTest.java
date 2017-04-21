@@ -1,19 +1,32 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.AbstractionUtils;
 
+import java.util.HashMap;
+
 import static org.junit.Assert.*;
 
 public class ComponentSourceTupleTest {
   private static final Logger LOG = Logger.getLogger(ComponentSourceTupleTest.class);
 
+  private static final HashMap<String, Integer> SOURCES;
+  static {
+    SOURCES = Maps.newLinkedHashMap();
+    SOURCES.put(Constants.NYT_NS, 1);
+    SOURCES.put(Constants.DBP_NS, 2);
+    SOURCES.put(Constants.LGD_NS, 4);
+    SOURCES.put(Constants.FB_NS, 8);
+    SOURCES.put(Constants.GN_NS, 16);
+  }
+
   @Test
   public void testAddSource() throws Exception {
-    ComponentSourceTuple tuple = new ComponentSourceTuple(1L);
+    ComponentSourceTuple tuple = new ComponentSourceTuple(1L, SOURCES);
     tuple.addSource(Constants.DBP_NS);
     tuple.addSource(Constants.GN_NS);
     tuple.addSource(Constants.LGD_NS);
@@ -23,7 +36,7 @@ public class ComponentSourceTupleTest {
     assertEquals(31, tuple.getSourcesInt().intValue());
     assertEquals(5, AbstractionUtils.getSourceCount(tuple).intValue());
 
-    ComponentSourceTuple differentOrderTuple = new ComponentSourceTuple(2L);
+    ComponentSourceTuple differentOrderTuple = new ComponentSourceTuple(2L, SOURCES);
     differentOrderTuple.addSource(Constants.NYT_NS);
     differentOrderTuple.addSource(Constants.FB_NS);
     differentOrderTuple.addSource(Constants.LGD_NS);
@@ -32,20 +45,20 @@ public class ComponentSourceTupleTest {
 
     assertEquals(31, differentOrderTuple.getSourcesInt().intValue());
 
-    ComponentSourceTuple maxSingleValue = new ComponentSourceTuple(3L);
+    ComponentSourceTuple maxSingleValue = new ComponentSourceTuple(3L, SOURCES);
     maxSingleValue.addSource(Constants.NYT_NS);
     maxSingleValue.addSource(Constants.NYT_NS);
 
     assertEquals(16, maxSingleValue.getSourcesInt().intValue());
 
 
-    ComponentSourceTuple minSingleValue = new ComponentSourceTuple(4L);
+    ComponentSourceTuple minSingleValue = new ComponentSourceTuple(4L, SOURCES);
     minSingleValue.addSource(Constants.DBP_NS);
     minSingleValue.addSource(Constants.DBP_NS);
 
     assertEquals(1, minSingleValue.getSourcesInt().intValue());
 
-    ComponentSourceTuple notOverfloatingTuple = new ComponentSourceTuple(5L);
+    ComponentSourceTuple notOverfloatingTuple = new ComponentSourceTuple(5L, SOURCES);
     notOverfloatingTuple.addSource(Constants.DBP_NS);
     notOverfloatingTuple.addSource(Constants.NYT_NS);
     notOverfloatingTuple.addSource(Constants.GN_NS);
@@ -67,7 +80,7 @@ public class ComponentSourceTupleTest {
 
   @Test
   public void testContainsSrc() throws Exception {
-    ComponentSourceTuple tuple = new ComponentSourceTuple(1L);
+    ComponentSourceTuple tuple = new ComponentSourceTuple(1L, SOURCES);
     tuple.addSource(Constants.DBP_NS);
     tuple.addSource(Constants.GN_NS);
     tuple.addSource(Constants.LGD_NS);
@@ -75,7 +88,7 @@ public class ComponentSourceTupleTest {
     assertTrue(tuple.contains(Constants.GN_NS));
     assertFalse(tuple.contains(Constants.FB_NS));
 
-    ComponentSourceTuple tuple2 = new ComponentSourceTuple(2L);
+    ComponentSourceTuple tuple2 = new ComponentSourceTuple(2L, SOURCES);
     tuple2.addSource(Constants.NYT_NS);
     tuple2.addSource(Constants.FB_NS);
     tuple2.addSource(Constants.LGD_NS);
@@ -87,7 +100,7 @@ public class ComponentSourceTupleTest {
         && tuple2.contains(Constants.NYT_NS)
         && tuple2.contains(Constants.LGD_NS));
 
-    ComponentSourceTuple tuple3 = new ComponentSourceTuple(3L);
+    ComponentSourceTuple tuple3 = new ComponentSourceTuple(3L, SOURCES);
     assertFalse(tuple3.contains(Constants.DBP_NS)
         && tuple3.contains(Constants.GN_NS)
         && tuple3.contains(Constants.FB_NS)

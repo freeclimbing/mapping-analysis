@@ -5,11 +5,14 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
+
+import java.util.List;
 
 /**
  * Default (geographic) preprocessing: remove duplicate links, add cc ids,
@@ -21,13 +24,13 @@ public class DefaultPreprocessing
 
   private final ExecutionEnvironment env;
   private final boolean linkFilterEnabled;
+  private final DataDomain domain;
 
   /**
    * Basic preprocessing: link filter enabled
    */
   public DefaultPreprocessing(ExecutionEnvironment env) {
-    this.linkFilterEnabled = true;
-    this.env = env;
+    this(true, env);
   }
 
   /**
@@ -36,29 +39,50 @@ public class DefaultPreprocessing
   public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
     this.linkFilterEnabled = isBasicLinkFilterEnabled;
     this.env = env;
+    this.domain = DataDomain.GEOGRAPHY; // CHECK THIS TODO
+  }
+
+  /**
+   * Music constructor, link filter enabled by default.
+   */
+  public DefaultPreprocessing(DataDomain domain, ExecutionEnvironment env) {
+    this.domain = domain;
+    this.linkFilterEnabled = true;
+    this.env = env;
   }
 
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
-    Graph<Long, ObjectMap, ObjectMap> result = graph
+    Graph<Long, ObjectMap, NullValue> tmpGraph = graph
         .mapVertices(new InternalTypeMapFunction())
         .run(new EqualDataSourceLinkRemover(env))
-        .run(new TypeMisMatchCorrection(env))
-        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+        .run(new TypeMisMatchCorrection(env));
+
+    Graph<Long, ObjectMap, ObjectMap> resultGraph;
+    List<String> sources;
+    if (domain == DataDomain.MUSIC) {
+      resultGraph = tmpGraph.run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
+      sources = Constants.MUSIC_SOURCES;
+    } else {
+      sources = Constants.GEO_SOURCES;
+      resultGraph = tmpGraph.run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+    }
 
     if (linkFilterEnabled) {
       LinkFilter linkFilter = new LinkFilter
-        .LinkFilterBuilder()
-        .setEnvironment(env)
-        .setRemoveIsolatedVertices(true)
-        .setStrategy(LinkFilterStrategy.BASIC)
-        .build();
+          .LinkFilterBuilder()
+          .setEnvironment(env)
+          .setRemoveIsolatedVertices(true)
+          .setDataSources(sources)
+          .setStrategy(LinkFilterStrategy.BASIC)
+          .build();
 
-      return result.run(linkFilter)
-          .run(new TypeOverlapCcCreator(env));
+      return resultGraph
+          .run(linkFilter)
+          .run(new TypeOverlapCcCreator(domain, env)); // each vertex has "no type" with music dataset
     } else {
-      return result;
+      return resultGraph;
     }
   }
 }

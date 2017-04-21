@@ -5,5 +5,5 @@ package org.mappinganalysis.io.impl;
  */
 public enum DataDomain {
   MUSIC,
-  GEOGRAPHY
+  DataDomain, GEOGRAPHY
 }

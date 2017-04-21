@@ -44,13 +44,13 @@ public class MergeMapFunction
     MergeTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
     if (geoTuple != null) {
       mergedCluster.setGeoProperties(geoTuple);
-    } else if (AbstractionUtils.containsSrc(priority.getIntSources(), Constants.GN_NS)) {
+    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.GN_NS)) {
       mergedCluster.setGeoProperties(priority);
-    } else if (AbstractionUtils.containsSrc(minor.getIntSources(), Constants.GN_NS)) {
+    } else if (AbstractionUtils.containsSrc(Constants.GEO, minor.getIntSources(), Constants.GN_NS)) {
       mergedCluster.setGeoProperties(minor);
-    } else if (AbstractionUtils.containsSrc(priority.getIntSources(), Constants.DBP_NS)) {
+    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
       mergedCluster.setGeoProperties(priority);
-    } else if (AbstractionUtils.containsSrc(priority.getIntSources(), Constants.DBP_NS)) {
+    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
       mergedCluster.setGeoProperties(minor);
     }
 

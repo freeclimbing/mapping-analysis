@@ -5,8 +5,10 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.util.AbstractionUtils;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Add links to result set, check if datasource is already contained in current cluster.
@@ -18,31 +20,37 @@ import java.util.HashMap;
 public class LinkSelectionWithCcIdFunction
     implements GroupReduceFunction<EdgeSourceSimTuple, Tuple2<Long, Long>> {
   private static final Logger LOG = Logger.getLogger(LinkSelectionWithCcIdFunction.class);
+  HashMap<String, Integer> sourcesMap;
+
+  public LinkSelectionWithCcIdFunction(List<String> sources) {
+    this.sourcesMap = AbstractionUtils.getSourcesMap(sources);
+  }
 
   @Override
   public void reduce(Iterable<EdgeSourceSimTuple> values,
                      Collector<Tuple2<Long, Long>> out) throws Exception {
     HashMap<Long, ComponentSourceTuple> entitySourceMap = Maps.newHashMap();
+
     // ccid, e.src, e.trg, v.src, e.src, sim
-    for (EdgeSourceSimTuple link : values) {
-      ComponentSourceTuple src = entitySourceMap.get(link.getSrcId());
-      ComponentSourceTuple trg = entitySourceMap.get(link.getTrgId());
+    for (EdgeSourceSimTuple edge : values) {
+      ComponentSourceTuple src = entitySourceMap.get(edge.getSrcId());
+      ComponentSourceTuple trg = entitySourceMap.get(edge.getTrgId());
       if (src == null) {
-        src = new ComponentSourceTuple(link.getSrcId());
+        src = new ComponentSourceTuple(edge.getSrcId(), sourcesMap);
       }
       if (trg == null) {
-        trg = new ComponentSourceTuple(link.getTrgId());
+        trg = new ComponentSourceTuple(edge.getTrgId(), sourcesMap);
       }
 
-      if (!src.contains(link.getTrgOntology())
-          && !trg.contains(link.getSrcOntology())) {
-        src.addSource(link.getTrgOntology());
-        entitySourceMap.put(link.getSrcId(), src);
+      if (!src.contains(edge.getTrgOntology())
+          && !trg.contains(edge.getSrcOntology())) {
+        src.addSource(edge.getTrgOntology());
+        entitySourceMap.put(edge.getSrcId(), src);
 
-        trg.addSource(link.getSrcOntology());
-        entitySourceMap.put(link.getTrgId(), trg);
+        trg.addSource(edge.getSrcOntology());
+        entitySourceMap.put(edge.getTrgId(), trg);
 
-        out.collect(new Tuple2<>(link.getSrcId(), link.getTrgId()));
+        out.collect(new Tuple2<>(edge.getSrcId(), edge.getTrgId()));
       }
     }
   }

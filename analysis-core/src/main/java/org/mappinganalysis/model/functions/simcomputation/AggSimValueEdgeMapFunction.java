@@ -12,14 +12,23 @@ import org.mappinganalysis.util.Constants;
  */
 public class AggSimValueEdgeMapFunction
     implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
-  private final boolean ignoreMissingProperties;
+  private final boolean isMeanSimActivated;
+  private String combination = "";
 
   /**
    * Aggregate all similarity values, either based on weight based metric
    * or simply by existence (missing properties are ignored).
    */
-  public AggSimValueEdgeMapFunction(boolean ignoreMissingProperties) {
-    this.ignoreMissingProperties = ignoreMissingProperties;
+  public AggSimValueEdgeMapFunction(boolean isMeanSimActivated) {
+    this.isMeanSimActivated = isMeanSimActivated;
+  }
+
+  /**
+   * New constructor - music dataset currently
+   */
+  public AggSimValueEdgeMapFunction(String combination) {
+    this.isMeanSimActivated = false;
+    this.combination = combination;
   }
 
   @Override
@@ -28,16 +37,20 @@ public class AggSimValueEdgeMapFunction
     Preconditions.checkArgument(!edgeValue.isEmpty(), "edge value empty: "
         + edge.getSource() + ", " + edge.getTarget());
 
-    double aggregatedSim;
-    if (ignoreMissingProperties) {
-      aggregatedSim = SimilarityComputation.getMeanSimilarity(edgeValue);
+    if (combination.equals(Constants.MUSIC)) {
+      edgeValue.runOperation(new MeanSimilarityFunction());
     } else {
-      aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
+      double aggregatedSim;
+      if (isMeanSimActivated) {
+        aggregatedSim = SimilarityComputation.getMeanSimilarity(edgeValue);
+      } else {
+        aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
+      }
+      edgeValue.setEdgeSimilarity(aggregatedSim);
     }
-    edgeValue.setEdgeSimilarity(aggregatedSim);
 
     // aggregated value is saved, we don't need the simple similarities anymore
-//    edgeValue.remove(Constants.SIM_TRIGRAM);
+//    edgeValue.remove(Constants.SIM_LABEL);
 //    edgeValue.remove(Constants.SIM_TYPE);
 //    edgeValue.remove(Constants.SIM_DISTANCE);
 

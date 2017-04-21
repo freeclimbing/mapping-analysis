@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -38,7 +39,7 @@ public class BasicEdgeSimilarityComputation
     this.env = env;
     this.matchCombination = matchCombination;
     if (matchCombination.equals(Constants.MUSIC)) {
-      System.out.println("using MusicSimilarityFunction");
+//      System.out.println("using MusicSimilarityFunction");
       this.simFunction = new MusicSimilarityFunction();
     } else {
       this.simFunction = new EdgeSimilarityFunction(
@@ -69,13 +70,14 @@ public class BasicEdgeSimilarityComputation
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
 
-
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction());
 
     if (!matchCombination.equals(Constants.MUSIC)) {
-      edges.map(new AggSimValueEdgeMapFunction(true)); // old mean function
+      edges = edges.map(new AggSimValueEdgeMapFunction(true)); // old mean function
+    } else {
+      edges = edges.map(new AggSimValueEdgeMapFunction(Constants.MUSIC));
     }
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);

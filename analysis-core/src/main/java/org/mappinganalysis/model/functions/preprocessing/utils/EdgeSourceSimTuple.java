@@ -4,16 +4,17 @@ import org.apache.flink.api.java.tuple.Tuple6;
 
 /**
  *  Tuple representation for an edge with contained information
+ *  - cc id
  *  - source vertex id
  *  - target vertex id
- *  - starting vertex data source (ontology)
- *  - neighbor vertex data source (ontology)
+ *  - starting vertex data source
+ *  - neighbor vertex data source
  *  - edge similarity
  */
 public class EdgeSourceSimTuple
     extends Tuple6<Long, Long, Long, String, String, Double> {
 
-  public EdgeSourceSimTuple() {
+  public EdgeSourceSimTuple() { // needed
   }
 
   public EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcOntology, String trgOntology, Double edgeSim) {
@@ -48,5 +49,4 @@ public class EdgeSourceSimTuple
   public Double getLinkSim() {
     return f5;
   }
-
 }

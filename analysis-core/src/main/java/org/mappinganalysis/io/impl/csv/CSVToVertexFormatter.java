@@ -25,36 +25,11 @@ public class CSVToVertexFormatter
     extends RichMapFunction<Tuple10<Long, Long, Long, String, String, String, String, String, String, String>,
         Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(CSVToVertexFormatter.class);
-
-  public static final String GE = "german";
-  public static final String EN = "english";
-  public static final String SP = "spanish";
-  public static final String IT = "italian";
-  public static final String FR = "french";
-  public static final String LA = "latin";
-  public static final String HU = "hungarian";
-  public static final String PO = "polish";
-  public static final String UN = "unknown";
-  public static final String MU = "multiple";
-  public static final String CH = "chinese";
-  public static final String CA = "catalan";
-  public static final String GR = "greek";
-  public static final String NO = "norwegian";
-  public static final String ES = "esperanto";
-  public static final String POR = "portuguese";
-  public static final String FI = "finnish";
-  public static final String JA = "japanese";
-  public static final String SW = "swedish";
-  public static final String DU = "dutch";
-  public static final String RU = "russian";
-  public static final String TU = "turkish";
-  public static final String DA = "danish";
-
   private final Vertex<Long, ObjectMap> reuseVertex;
 
   public CSVToVertexFormatter() {
     reuseVertex = new Vertex<>();
-    reuseVertex.setValue(new ObjectMap());
+    reuseVertex.setValue(new ObjectMap(Constants.MUSIC));
   }
 
   @Override
@@ -78,17 +53,17 @@ public class CSVToVertexFormatter
                 String> value)  //9 language
       throws Exception {
         reuseVertex.setId(value.f0);
-//        System.out.println(value.toString());
         ObjectMap properties = reuseVertex.getValue();
+
+        System.out.println(value.toString());
+
         properties.setCcId(value.f1);
         properties.setLabel(value.f4);
 
         properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
         properties.put(Constants.NUMBER, value.f3);
-
         properties.put(Constants.LENGTH, fixSongLength(value.f5));
 //        properties.put("oLength", value.f5);
-
         properties.put(Constants.ARTIST, value.f6);
         properties.put(Constants.ALBUM, value.f7);
         properties.put(Constants.YEAR, fixYear(value.f8));
@@ -249,77 +224,77 @@ public class CSVToVertexFormatter
   private String fixLanguage(String lang) {
     lang = lang.toLowerCase();
     if (lang.contains(",")) {
-      return MU;
+      return Constants.MU;
     }
     if (lang.startsWith("en")) {
-      return EN;
+      return Constants.EN;
     }
     if (lang.startsWith("ge")) {
-      return GE;
+      return Constants.GE;
     }
     if (lang.startsWith("sp")) {
-      return SP;
+      return Constants.SP;
     }
     if (lang.startsWith("fr")) {
-      return FR;
+      return Constants.FR;
     }
     if (lang.startsWith("it")) {
-      return IT;
+      return Constants.IT;
     }
     if (lang.startsWith("la")) {
-      return LA;
+      return Constants.LA;
     }
     if (lang.startsWith("hu")) {
-      return HU;
+      return Constants.HU;
     }
     if (lang.startsWith("po")) { // por
       if (lang.startsWith("por")) {
-        return POR;
+        return Constants.POR;
       } else {
-        return PO;
+        return Constants.PO;
       }
     }
     if (lang.startsWith("un")) {
-      return UN;
+      return Constants.UN;
     }
     if (lang.startsWith("[m")) {
-      return MU;
+      return Constants.MU;
     }
     if (lang.startsWith("ch")) {
-      return CH;
+      return Constants.CH;
     }
     if (lang.startsWith("ca")) {
-      return CA;
+      return Constants.CA;
     }
     if (lang.startsWith("gr")) {
-      return GR;
+      return Constants.GR;
     }
     if (lang.startsWith("es")) {
-      return ES;
+      return Constants.ES;
     }
     if (lang.startsWith("no")) {
-      return NO;
+      return Constants.NO;
     }
     if (lang.startsWith("sw")) {
-      return SW;
+      return Constants.SW;
     }
     if (lang.startsWith("fi")) {
-      return FI;
+      return Constants.FI;
     }
     if (lang.startsWith("ja")) {
-      return JA;
+      return Constants.JA;
     }
     if (lang.startsWith("du")) {
-      return DU;
+      return Constants.DU;
     }
     if (lang.startsWith("da")) {
-      return DA;
+      return Constants.DA;
     }
     if (lang.startsWith("ru")) {
-      return RU;
+      return Constants.RU;
     }
     if (lang.startsWith("tu")) {
-      return TU;
+      return Constants.TU;
     }
 
 //    LOG.info(lang);

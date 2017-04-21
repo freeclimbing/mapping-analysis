@@ -92,11 +92,11 @@ public class BasicTest {
 
   @Test
   public void aggregateTest() throws Exception {
-    ObjectMap mapOne = new ObjectMap();
+    ObjectMap mapOne = new ObjectMap(Constants.GEO);
     mapOne.put("distance", 1.0);
     mapOne.put("trigramSim", 0.738549);
     mapOne.put("aggSimValue", 0.8692745);
-    ObjectMap mapTwo = new ObjectMap();
+    ObjectMap mapTwo = new ObjectMap(Constants.GEO);
     mapTwo.put("distance", 1.0);
     mapTwo.put("trigramSim", 0.957427);
     mapTwo.put("aggSimValue", 0.9787135);

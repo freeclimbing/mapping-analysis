@@ -8,6 +8,7 @@ import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.util.Constants;
@@ -20,8 +21,17 @@ public class SimSort
   private final ExecutionEnvironment env;
   private final Boolean prepareEnabled;
   private final Double minSimilarity;
+  private DataDomain domain;
 
+  /**
+   * check constructors TODO null is never good here
+   */
   public SimSort(Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
+    this(null, prepareEnabled, minSimilarity, env);
+  }
+
+  public SimSort(DataDomain domain, Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
+    this.domain = domain;
     this.prepareEnabled = prepareEnabled;
     this.minSimilarity = minSimilarity;
     this.env = env;
@@ -29,6 +39,10 @@ public class SimSort
 
   public SimSort(Double minSimilarity, ExecutionEnvironment env) {
     this(true, minSimilarity, env);
+  }
+
+  public SimSort(DataDomain domain, Double minSimilarity, ExecutionEnvironment env) {
+    this(domain, true, minSimilarity, env);
   }
 
   /**
@@ -39,14 +53,21 @@ public class SimSort
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+    String mode;
+    if (domain == DataDomain.MUSIC) {
+      mode = Constants.MUSIC;
+    } else {
+      mode = Constants.GEO;
+    }
+
     if (prepareEnabled) {
-      DataSet<Edge<Long, NullValue>> distinctEdges = graph
+      DataSet<Edge<Long, NullValue>> distinctEdges = graph // TODO #126
           .getVertices()
           .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
 
       graph = Graph
           .fromDataSet(graph.getVertices(), distinctEdges, env)
-          .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+          .run(new BasicEdgeSimilarityComputation(mode, env));
     }
 
     graph = graph.run(new SimSortVertexCentricIteration(minSimilarity, env));

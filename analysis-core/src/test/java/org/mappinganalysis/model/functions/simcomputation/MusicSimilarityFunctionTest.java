@@ -36,23 +36,27 @@ public class MusicSimilarityFunctionTest {
 
     final String TITLE_ONE = " Daniel Balavoine - L'enfant aux yeux d'Italie";
     final String TITLE_TWO = "L'enfant aux yeux d'Italie - De vous à elle en passant par moi";
-    final String ARTIST_ONE = "--";
+    final String ARTIST_ONE = "a";
     final String ARTIST_TWO = "Daniel Balavoine";
     final String ALBUM_ONE = "De vous à elle en passant par moi";
-    final String ALBUM_TWO = "--";
+    final String ALBUM_TWO = "b";
     final String LANGUAGE = "french";
 
-    ObjectMap omOne = new ObjectMap();
+    ObjectMap omOne = new ObjectMap(Constants.MUSIC);
     omOne.setLabel(TITLE_ONE);
     omOne.setArtist(ARTIST_ONE);
     omOne.setAlbum(ALBUM_ONE);
     omOne.setLanguage(LANGUAGE);
+    omOne.setLength(42);
+    omOne.setYear(2000);
 
-    ObjectMap omTwo = new ObjectMap();
+    ObjectMap omTwo = new ObjectMap(Constants.MUSIC);
     omTwo.setLabel(TITLE_TWO);
     omTwo.setArtist(ARTIST_TWO);
     omTwo.setAlbum(ALBUM_TWO);
     omTwo.setLanguage(LANGUAGE);
+    omTwo.setLength(41);
+    omTwo.setYear(2000);
 
     List<Vertex<Long, ObjectMap>> vertexInput = Lists.newArrayList();
     vertexInput.add(new Vertex<>(1L, omOne));
@@ -71,12 +75,12 @@ public class MusicSimilarityFunctionTest {
 
     StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
 
-    String[] splitTitleOne = TITLE_ONE.split("[-:]");
+    String[] splitTitleOne = TITLE_ONE.split(" - ");
     ArrayList<String> one = Lists.newArrayList();
     Collections.addAll(one, splitTitleOne);
     one.add(ALBUM_ONE);
 
-    String[] splitTitleTwo = TITLE_TWO.split("[-:]");
+    String[] splitTitleTwo = TITLE_TWO.split(" - ");
     ArrayList<String> two = Lists.newArrayList();
     Collections.addAll(two, splitTitleTwo);
     two.add(ARTIST_TWO);

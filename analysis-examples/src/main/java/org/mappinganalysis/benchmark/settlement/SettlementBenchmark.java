@@ -52,8 +52,7 @@ public class SettlementBenchmark implements ProgramDescription {
             .getGraph(ObjectMap.class, NullValue.class);
 
     new JSONDataSink(INPUT_PATH, PREPROCESSING)
-        .writeGraph(preprocGraph
-            .run(new DefaultPreprocessing(true, env)));
+        .writeGraph(preprocGraph.run(new DefaultPreprocessing(true, env)));
     env.execute(PRE_JOB);
 
     /**

@@ -37,7 +37,7 @@ public class EdgeSimilarityFunction
 
     Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
     result = addGeoSimilarity(result);
-    if (usedPropertiesCombination.equals(Constants.DEFAULT_VALUE)) {
+    if (usedPropertiesCombination.equals(Constants.GEO)) {
       result = addTypeSimilarity(result);
     }
 
@@ -102,7 +102,7 @@ public class EdgeSimilarityFunction
       BigDecimal tmpResult = new BigDecimal(similarity);
       similarity = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
 
-      resultTriplet.getEdge().getValue().put(Constants.SIM_TRIGRAM, similarity);
+      resultTriplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
 
       return resultTriplet;
     } else {
@@ -118,6 +118,6 @@ public class EdgeSimilarityFunction
         new Edge<>(
             triplet.getSrcVertex().getId(),
             triplet.getTrgVertex().getId(),
-            new ObjectMap()));
+            new ObjectMap())); // edge
   }
 }

@@ -1,5 +1,6 @@
 package org.mappinganalysis;
 
+import com.google.common.cache.Cache;
 import com.google.common.collect.Lists;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
@@ -8,6 +9,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.Constants;
 import org.s1ck.gdl.GDLHandler;
 
 import java.util.List;
@@ -44,12 +46,12 @@ public class MappingAnalysisExampleTest {
 
     // create Gelly edges and vertices -> graph
     for (org.s1ck.gdl.model.Vertex vertex : handler.getVertices()) {
-      ObjectMap properties = new ObjectMap();
+      ObjectMap properties = new ObjectMap(Constants.GEO);
       properties.putAll(vertex.getProperties());
       vertexList.add(new Vertex<>(vertex.getId(), properties));
     }
     for (org.s1ck.gdl.model.Edge edge : handler.getEdges()) {
-      ObjectMap map = new ObjectMap();
+      ObjectMap map = new ObjectMap(); // edge
       // edges shall not be null
       map.putAll(edge.getProperties());
       edgeList.add(new Edge<>(edge.getSourceVertexId(),

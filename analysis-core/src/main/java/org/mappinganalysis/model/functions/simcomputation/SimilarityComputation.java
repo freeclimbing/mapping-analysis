@@ -1,19 +1,13 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.Triplet;
-import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.FullOuterJoinSimilarityValueFunction;
-import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.functions.merge.MinThresholdFilterFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
@@ -133,9 +127,10 @@ public abstract class SimilarityComputation<T, O>
   public static double getMeanSimilarity(ObjectMap values) {
     double aggregatedSim = 0;
     int propCount = 0;
-    if (values.containsKey(Constants.SIM_TRIGRAM)) {
+
+    if (values.containsKey(Constants.SIM_LABEL)) {
       ++propCount;
-      aggregatedSim = (double) values.get(Constants.SIM_TRIGRAM);
+      aggregatedSim = (double) values.get(Constants.SIM_LABEL);
     }
     if (values.containsKey(Constants.SIM_TYPE)) {
       ++propCount;
@@ -143,7 +138,9 @@ public abstract class SimilarityComputation<T, O>
     }
     if (values.containsKey(Constants.SIM_DISTANCE)) {
       double distanceSim = (double) values.get(Constants.SIM_DISTANCE);
-      if (Doubles.compare(distanceSim, -1) > 0) {
+      Preconditions.checkArgument(Doubles.compare(distanceSim, 0) < 0,
+          "distance sim should never be below 0 " + values);
+      if (Doubles.compare(distanceSim, -1.0) > 0) {
         aggregatedSim += distanceSim;
         ++propCount;
       }
@@ -168,8 +165,8 @@ public abstract class SimilarityComputation<T, O>
     double typeWeight = 0.25;
     double geoWeight = 0.3;
     double aggregatedSim;
-    if (values.containsKey(Constants.SIM_TRIGRAM)) {
-      aggregatedSim = trigramWeight * (double) values.get(Constants.SIM_TRIGRAM);
+    if (values.containsKey(Constants.SIM_LABEL)) {
+      aggregatedSim = trigramWeight * (double) values.get(Constants.SIM_LABEL);
     } else {
       aggregatedSim = 0;
     }

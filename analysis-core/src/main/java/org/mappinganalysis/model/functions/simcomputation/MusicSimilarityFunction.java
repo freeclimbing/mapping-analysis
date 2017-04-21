@@ -1,6 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import org.apache.flink.graph.Edge;
+import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.SimilarityFunction;
@@ -8,7 +8,6 @@ import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.ops.SinglePropertySimilarity;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 
@@ -31,12 +30,14 @@ public class MusicSimilarityFunction
       throws Exception {
 
     EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
-    System.out.println(result.toString());
-    result.runOperation(new SinglePropertySimilarity());
+    result.runOperation(new SinglePropertySimilarity(Constants.LANGUAGE))
+        .runOperation(new SinglePropertySimilarity(Constants.LABEL))
+        .runOperation(new SinglePropertySimilarity(Constants.ARTIST))
+        .runOperation(new SinglePropertySimilarity(Constants.ALBUM))
+        .runOperation(new SinglePropertySimilarity(Constants.YEAR))
+        .runOperation(new SinglePropertySimilarity(Constants.LENGTH));
 
-    System.out.println(result.getEdge().getValue().toString());
-//    Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
-
+//    System.out.println(result.getEdge().getValue().toString());
     return result;
   }
 
@@ -73,7 +74,7 @@ public class MusicSimilarityFunction
       BigDecimal tmpResult = new BigDecimal(similarity);
       similarity = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
 
-      resultTriplet.getEdge().getValue().put(Constants.SIM_TRIGRAM, similarity);
+      resultTriplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
 
       return resultTriplet;
     } else {

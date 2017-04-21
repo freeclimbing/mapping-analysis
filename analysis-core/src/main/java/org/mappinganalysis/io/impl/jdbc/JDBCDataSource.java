@@ -144,7 +144,7 @@ public class JDBCDataSource {
 
     public PropertyVertexCreator() {
       reuseVertex = new Vertex<>();
-      reuseVertex.setValue(new ObjectMap());
+      reuseVertex.setValue(new ObjectMap(Constants.GEO));
     }
     @Override
     public void reduce(Iterable<FlinkProperty> properties,

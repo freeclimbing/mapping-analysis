@@ -32,17 +32,6 @@ public class TypeGroupBy
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph)
       throws Exception {
-    // start preprocessing
-//    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-//        .map(new AddShadingTypeMapFunction())
-//        .groupBy(new CcIdKeySelector())
-//        .reduceGroup(new HashCcIdOverlappingFunction());
-//    graph = Graph.fromDataSet(vertices, graph.getEdges(), env);
-    // end preprocessing
-
-    /**
-     * Start typed grouping
-     */
     final DataSet<NeighborTuple> allTypeOptionsForUntyped = graph
         .groupReduceOnNeighbors(new NeighborTupleCreator(), EdgeDirection.ALL);
 

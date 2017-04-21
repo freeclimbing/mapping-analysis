@@ -11,31 +11,39 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * For a clustered view for entities (component), retrieve the different data sources.
+ * For a cluster, retrieve the different data sources.
  * A single integer value is used to represent (currently) 5 different types.
  *
  * Types as well as count of different types can be retrieved.
  */
 public class ComponentSourceTuple
     extends Tuple2<Long, Integer> {
-
   private static final Logger LOG = Logger.getLogger(ComponentSourceTuple.class);
-  private static final HashMap<String, Integer> SOURCES = AbstractionUtils.getSourceMap();
+  private static HashMap<String, Integer> SOURCES;
 
+  /**
+   * Nyt
+   */
+  @Deprecated
   public ComponentSourceTuple() {
     this.f1 = 0;
   }
 
-  public ComponentSourceTuple(Long ccId) {
+  /**
+   * default constructor
+   */
+  public ComponentSourceTuple(Long ccId, HashMap<String, Integer> sources) {
     this.f0 = ccId;
     this.f1 = 0;
+    SOURCES = sources;
   }
 
   public boolean contains(String source) {
-    int maxSources = 5;
+    int maxSources = SOURCES.size();
     int sourcesValue = f1;
     int input = SOURCES.get(source);
     int startValue = (int) (Math.pow(2, maxSources - 1) + 0.5);
+
     if (f1 == 0) {
       return false;
     }
@@ -59,13 +67,11 @@ public class ComponentSourceTuple
   }
 
   public boolean addSource(String source) {
-    /**
-     * todo config maxSources
-     */
-    int maxSources = 5;
+    int maxSources = SOURCES.size();
     int sourcesValue = f1;
     int input = SOURCES.get(source);
     int startValue = (int) (Math.pow(2, maxSources - 1) + 0.5);
+
     if (sourcesValue == 0) {
       f1 += input;
       return true;
@@ -101,6 +107,10 @@ public class ComponentSourceTuple
     f0 = ccId;
   }
 
+  /**
+   * Not working anymore correct, only used for nyt things.
+   */
+  @Deprecated
   public Set<String> getSources() {
     HashSet<String> result = Sets.newHashSet();
     int sourcesValue = f1;

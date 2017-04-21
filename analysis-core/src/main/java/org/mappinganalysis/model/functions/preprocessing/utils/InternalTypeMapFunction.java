@@ -33,9 +33,11 @@ public class InternalTypeMapFunction
       resultTypes = Sets.newHashSet(Constants.NO_TYPE);
     }
 
-    properties.put(Constants.TYPE_INTERN, resultTypes);
-    properties.remove(Constants.TYPE);
-    properties.remove(Constants.GN_TYPE_DETAIL);
+    if (!resultTypes.isEmpty()) {
+      properties.put(Constants.TYPE_INTERN, resultTypes);
+      properties.remove(Constants.TYPE);
+      properties.remove(Constants.GN_TYPE_DETAIL);
+    }
 
     return properties;
   }

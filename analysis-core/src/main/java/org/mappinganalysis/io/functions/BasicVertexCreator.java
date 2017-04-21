@@ -9,7 +9,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
 /**
- * Create FlinkVertex object from raw database result set.
+ * Create Flink Vertex object from raw data input.
  */
 public class BasicVertexCreator
     extends RichMapFunction<Tuple3<Integer, String, String>, Vertex<Long, ObjectMap>> {
@@ -24,7 +24,7 @@ public class BasicVertexCreator
 
   public BasicVertexCreator() {
     reuseVertex = new Vertex<>();
-    reuseVertex.setValue(new ObjectMap());
+    reuseVertex.setValue(new ObjectMap(Constants.GEO));
   }
 
   public Vertex<Long, ObjectMap> map(Tuple3<Integer, String, String> tuple) throws Exception {

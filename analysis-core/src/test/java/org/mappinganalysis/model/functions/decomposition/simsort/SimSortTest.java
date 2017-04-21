@@ -7,6 +7,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
@@ -51,7 +52,7 @@ public class SimSortTest {
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph =
         new JSONDataSource(graphPath, true, env).getGraph()
-        .run(new SimSort(true, minSimilarity, env));
+        .run(new SimSort(DataDomain.GEOGRAPHY, true, minSimilarity, env));
 
 //    graph.getVertices().print();
 

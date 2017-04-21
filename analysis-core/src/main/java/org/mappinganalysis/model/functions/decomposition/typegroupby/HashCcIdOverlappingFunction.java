@@ -6,6 +6,7 @@ import org.apache.flink.hadoop.shaded.com.google.common.collect.Maps;
 import org.apache.flink.hadoop.shaded.com.google.common.collect.Sets;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -22,6 +23,11 @@ import java.util.Set;
 public class HashCcIdOverlappingFunction
     implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(HashCcIdOverlappingFunction.class);
+  private DataDomain domain;
+
+  public HashCcIdOverlappingFunction(DataDomain domain) {
+    this.domain = domain;
+  }
 
   @Override
   public void reduce(Iterable<Vertex<Long, ObjectMap>> input,
@@ -67,6 +73,9 @@ public class HashCcIdOverlappingFunction
           .put(Constants.HASH_CC, typeHashDict.get(rndVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
       vertex.getValue().remove(Constants.CC_ID);
+      if (domain == DataDomain.MUSIC) {
+        vertex.getValue().remove(Constants.TYPE_INTERN);
+      }
 //      LOG.info("###hashOverlap###: " + vertex.toString());
       out.collect(vertex);
     }

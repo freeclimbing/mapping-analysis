@@ -11,6 +11,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
@@ -19,9 +20,15 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.simmetrics.StringMetric;
@@ -31,6 +38,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -95,14 +103,10 @@ public class MusicbrainzBenchmarkTest {
         .getResource("/data/musicbrainz/")
         .getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
-
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
-//    vertices.print();
-
     Map<String, Long> result = new LinkedHashMap<>();
-
     vertices.collect()
         .stream()
         .collect(Collectors
@@ -113,13 +117,20 @@ public class MusicbrainzBenchmarkTest {
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> labelOccurance : result.entrySet()) {
-      if (labelOccurance.getKey().matches(".*?\\s-\\s.*?")
-          && !labelOccurance.getKey().matches(".*? - .*?"))
+      if (labelOccurance.getKey().matches(".*?\\s-\\s.*?")) {
+//          && !labelOccurance.getKey().matches(".*? - .*?"))
 //          || labelOccurance.getKey().contains(""))
-      System.out.println(labelOccurance.toString());
+        List<String> my = Lists.newArrayList();
+        String[] split = labelOccurance.getKey().split(" - ");
+        Collections.addAll(my, split);
+        for (String s : my) {
+          if (s.length() <= 3) {
+            System.out.println("short: " + s);
+          }
+        }
+//        System.out.println(labelOccurance.toString());
+      }
     }
-
-//    vertices.print();
     System.out.println(vertices.count());
   }
 
@@ -133,38 +144,38 @@ public class MusicbrainzBenchmarkTest {
 //    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+    DataSet<Vertex<Long, ObjectMap>> inputVertivces = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
-    DataSet<Edge<Long, NullValue>> edges = vertices
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertivces
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
 
-    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(vertices, edges, env)
-        .run(new DefaultPreprocessing(env));
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertivces, inputEdges, env)
+//        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
+        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph
+        .run(new TypeGroupBy(env)) // not needed? TODO
+        .run(new SimSort(0.5, env))
+        .getVertices()
+        .runOperation(new RepresentativeCreator());
 
 
-    graph.getVertices().print();
-//    System.out.println(edges.count());
-
+    vertices.print();
+//    graph.getVertices().print();
+//    graph.getEdges().print();
 
 //    String[] split = TEST_TITLE.split("\\\"");
 //    Matcher quoted = Pattern.compile("\"(.*?)\"").matcher(TEST_TITLE);
 //
-//
 //    Map<String, Double> result = new LinkedHashMap<>();
-//
 //
 //    List<Tuple2<String, Double>> collect = vertices.map(new MaxMapFunction())
 //        .collect()
 //        .stream()
 //        .sorted((left, right) -> left.f1.compareTo(right.f1))
 //        .collect(Collectors.toList());
-//
-//    vertices.print();
 
-
-
-//    System.out.println(vertices.count());
 //    for (Map.Entry<String, Double> stringDoubleEntry : result.entrySet()) {
 //      System.out.println(stringDoubleEntry);
 //    }
@@ -234,10 +245,7 @@ public class MusicbrainzBenchmarkTest {
           }
         });
 
-//    System.out.println(vertices.count());
-
     Map<String, Long> result = new LinkedHashMap<>();
-
     vertices.collect()
         .stream()
         .collect(Collectors
@@ -297,7 +305,6 @@ public class MusicbrainzBenchmarkTest {
       Set<String> rightSet = Sets.newHashSet();
       while (rightSide.find()) {
         rightSet.add(rightSide.group(1));
-//        System.out.println("rightsidegroup " + rightSide.group(1));
       }
 
       Pattern leftPattern = Pattern.compile("\\\\\"(.*?)\\\\\"");

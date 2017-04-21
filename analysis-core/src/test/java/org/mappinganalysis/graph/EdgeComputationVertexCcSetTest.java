@@ -64,7 +64,7 @@ public class EdgeComputationVertexCcSetTest {
     return graph
         .getVertices()
         .map(vertex -> {
-          ObjectMap prop = new ObjectMap();
+          ObjectMap prop = new ObjectMap(Constants.GEO);
           prop.put(Constants.CC_ID, 5680L);
 
           return new Vertex<>(vertex.getId(), prop);

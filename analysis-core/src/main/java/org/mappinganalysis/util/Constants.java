@@ -1,6 +1,13 @@
 package org.mappinganalysis.util;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.mappinganalysis.io.impl.DataDomain;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Constants for mapping analysis
@@ -75,20 +82,37 @@ public class Constants {
    */
   public static final String NO_LABEL_FOUND = "no_label_found";
   public static final String NO_TYPE = "no_type";
-  public static final String NO_OR_MINOR_LANG = "no_or_minor_lang";
   public static final String NO_VALUE = "no_value";
   public static final String CSV_NO_VALUE = "--";
 
   /**
    * Field name for sim value names
    */
-  public static final String SIM_TYPE = "typeMatch";
-  public static final String SIM_TRIGRAM = "trigramSim";
-  public static final String SIM_DISTANCE = "distance";
+  public static final String SIM_TYPE = "simType";
+  public static final String SIM_LABEL = "simLabel";
+  public static final String SIM_DISTANCE = "simDistance";
+
+  public static final String SIM_ARTIST = "simArtist";
+  public static final String SIM_ALBUM = "simAlbum";
   public static final String SIM_LANG = "simLang";
   public static final String SIM_YEAR = "simYear";
   public static final String SIM_LENGTH = "simLength";
   public static final String SIM_NUMBER = "simNumber";
+
+  public static final HashSet<String> SIM_VALUES;
+  static {
+    SIM_VALUES = Sets.newHashSet();
+    SIM_VALUES.add(SIM_TYPE);
+    SIM_VALUES.add(SIM_LABEL);
+    SIM_VALUES.add(SIM_DISTANCE);
+    SIM_VALUES.add(SIM_ARTIST);
+    SIM_VALUES.add(SIM_ALBUM);
+    SIM_VALUES.add(SIM_LANG);
+    SIM_VALUES.add(SIM_YEAR);
+    SIM_VALUES.add(SIM_LENGTH);
+    SIM_VALUES.add(SIM_NUMBER);
+  }
+
 
   /**
    * Aggregated similarity value on edge
@@ -123,8 +147,8 @@ public class Constants {
   /**
    * source name of resource. internal name for db field ontID_fk
    */
-  public static final String DATA_SOURCE = "ontology";
-  public static final String DATA_SOURCES = "ontologies";
+  public static final String DATA_SOURCE = "dataSource";
+  public static final String DATA_SOURCES = "dataSources";
 
   /**
    * Music vocabulary
@@ -137,6 +161,35 @@ public class Constants {
   public static final String NUMBER = "number";
 
   /**
+   * Language vocab
+   */
+  public static final String NO_OR_MINOR_LANG = "no_or_minor_lang";
+  public static final String UN = "unknown";
+  public static final String MU = "multiple";
+
+  public static final String GE = "german";
+  public static final String EN = "english";
+  public static final String SP = "spanish";
+  public static final String IT = "italian";
+  public static final String FR = "french";
+  public static final String LA = "latin";
+  public static final String HU = "hungarian";
+  public static final String PO = "polish";
+  public static final String CH = "chinese";
+  public static final String CA = "catalan";
+  public static final String GR = "greek";
+  public static final String NO = "norwegian";
+  public static final String ES = "esperanto";
+  public static final String POR = "portuguese";
+  public static final String FI = "finnish";
+  public static final String JA = "japanese";
+  public static final String SW = "swedish";
+  public static final String DU = "dutch";
+  public static final String RU = "russian";
+  public static final String TU = "turkish";
+  public static final String DA = "danish";
+
+  /**
    * source namespaces
    */
   public static final String DBP_NS = "http://dbpedia.org/";
@@ -144,6 +197,32 @@ public class Constants {
   public static final String LGD_NS = "http://linkedgeodata.org/";
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
+
+  public static final List<String> GEO_SOURCES = Lists.newArrayList(DBP_NS, GN_NS, LGD_NS, FB_NS, NYT_NS);
+  public static final List<String> MUSIC_SOURCES = Lists.newArrayList("1", "2", "3", "4", "5");
+
+  /**
+   * TODO create these maps on-the-fly #124
+   */
+  public static final HashMap<String, Integer> GEO_MAP;
+  static {
+    GEO_MAP = Maps.newLinkedHashMap();
+    GEO_MAP.put(Constants.NYT_NS, 1);
+    GEO_MAP.put(Constants.DBP_NS, 2);
+    GEO_MAP.put(Constants.LGD_NS, 4);
+    GEO_MAP.put(Constants.FB_NS, 8);
+    GEO_MAP.put(Constants.GN_NS, 16);
+  }
+
+  public static final HashMap<String, Integer> MUSIC_MAP;
+  static {
+    MUSIC_MAP = Maps.newLinkedHashMap();
+    MUSIC_MAP.put("1", 1);
+    MUSIC_MAP.put("2", 2);
+    MUSIC_MAP.put("3", 4);
+    MUSIC_MAP.put("4", 8);
+    MUSIC_MAP.put("5", 16);
+  }
 
   /**
    * geo rdf:types condensed to some key values
@@ -203,6 +282,5 @@ public class Constants {
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
   public static String VERBOSITY;
-  public static DataDomain DOMAIN;
   public static boolean IS_SIMSORT_ENABLED;
 }

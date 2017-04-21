@@ -7,6 +7,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.api.CustomOperation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -23,17 +24,21 @@ public class ObjectMap
   private static final long serialVersionUID = 42L;
   private static final Logger LOG = Logger.getLogger(ObjectMap.class);
 
+  private String mode;
   private Map<String, Object> map;
 
   /**
    * Constructor for given object map
+   * TODO only used in basic test
    */
+  @Deprecated
   public ObjectMap(ObjectMap map) {
     this.map = map;
   }
 
   /**
    * Constructor for hash map
+   * TODO only used in JSONToEntity
    */
   public ObjectMap(HashMap<String, Object> map) {
     this.map = map;
@@ -43,7 +48,21 @@ public class ObjectMap
    * Default constructor
    */
   public ObjectMap() {
-    map = Maps.newHashMap();
+    this.map = Maps.newHashMap();
+  }
+
+  /**
+   * Constructor containing the current data set mode - music or geo domain
+   */
+  public ObjectMap(String mode) {
+    this.map = Maps.newHashMap();
+    this.mode = mode;
+  }
+
+  public ObjectMap runOperation(
+      CustomOperation<ObjectMap> operation) {
+    operation.setInput(this);
+    return operation.createResult();
   }
 
   public String toString() {
@@ -74,7 +93,11 @@ public class ObjectMap
   }
 
   public void setLabel(String label) {
-    map.put(Constants.LABEL, label);
+    if (label.equals(Constants.CSV_NO_VALUE)) {
+      map.put(Constants.LABEL, Constants.NO_VALUE);
+    } else {
+      map.put(Constants.LABEL, label);
+    }
   }
 
   /**
@@ -378,7 +401,7 @@ public class ObjectMap
       sources = Sets.newHashSet(dataSources.toString());
     }
 
-    return AbstractionUtils.getSourcesInt(sources);
+    return AbstractionUtils.getSourcesInt(mode, sources);
   }
 
   /**
@@ -393,7 +416,7 @@ public class ObjectMap
       types = Sets.newHashSet(typeProperty.toString());
     }
 
-    return AbstractionUtils.getTypesInt(types);
+    return AbstractionUtils.getTypesInt(mode, types);
   }
 
   /**
@@ -406,7 +429,6 @@ public class ObjectMap
 
   public Integer getLength() {
     if (map.containsKey(Constants.LENGTH) && map.get(Constants.LENGTH) != null) {
-      System.out.println(map.get(Constants.LENGTH));
       return Ints.tryParse(map.get(Constants.LENGTH).toString());
     } else {
       return null;
@@ -498,6 +520,10 @@ public class ObjectMap
     } else {
       return Constants.NO_VALUE;
     }
+  }
+
+  public String getMode() {
+    return mode;
   }
 
   /**
@@ -594,5 +620,4 @@ public class ObjectMap
   public Set<Entry<String, Object>> entrySet() {
     return map.entrySet();
   }
-
 }

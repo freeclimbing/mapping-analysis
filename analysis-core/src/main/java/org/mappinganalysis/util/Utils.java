@@ -98,6 +98,13 @@ public class Utils {
     }
   }
 
+  public static Double computeWithMetric(StringMetric metric, String first, String second) {
+    double similarity = metric.compare(first.trim().toLowerCase(), second.trim().toLowerCase());
+    BigDecimal tmpResult = new BigDecimal(similarity);
+
+    return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
+  }
+
   public static MergeTuple isOnlyOneValidGeoObject(MergeTuple left, MergeTuple right) {
     if (isValidGeoObject(left) && !isValidGeoObject(right)) {
       return left;

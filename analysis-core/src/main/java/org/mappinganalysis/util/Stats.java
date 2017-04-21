@@ -121,7 +121,7 @@ public class Stats {
           public void reduce(Iterable<Vertex<Long, ObjectMap>> iterable, Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
             long count = 0;
             Vertex<Long, ObjectMap> result = new Vertex<>();
-            ObjectMap resultProps = new ObjectMap();
+            ObjectMap resultProps = new ObjectMap(Constants.GEO);
             boolean isVertexPrepared = false;
 
             for (Vertex<Long, ObjectMap> vertex : iterable) {
@@ -437,7 +437,7 @@ public class Stats {
           @Override
           public Triplet<Long, ObjectMap, NullValue> join(Edge<Long, NullValue> edge,
                                                           Vertex<Long, ObjectMap> vertex) throws Exception {
-            return new Triplet<>(edge.getSource(), edge.getTarget(), vertex.getValue(), new ObjectMap(),
+            return new Triplet<>(edge.getSource(), edge.getTarget(), vertex.getValue(), new ObjectMap(Constants.GEO),
                 NullValue.getInstance());
           }
         })

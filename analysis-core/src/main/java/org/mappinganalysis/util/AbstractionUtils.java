@@ -4,27 +4,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Data source related helper classes. Currently, only 5 sources are supported:
  * DBpedia, GeoNames, LinkedGeoData, Freebase, Nyt
- *
- * TODO added type equivalent, needs testing
  */
 public class AbstractionUtils {
-  private static final HashMap<String, Integer> SOURCES_MAP;
-  static {
-    SOURCES_MAP = Maps.newHashMap();
-    SOURCES_MAP.put(Constants.DBP_NS, 1);
-    SOURCES_MAP.put(Constants.GN_NS, 2);
-    SOURCES_MAP.put(Constants.LGD_NS, 4);
-    SOURCES_MAP.put(Constants.FB_NS, 8);
-    SOURCES_MAP.put(Constants.NYT_NS, 16);
-  }
+  private static HashMap<String, Integer> SOURCES_MAP;
 
   // todo check no type compatibility
   private static final HashMap<String, Integer> TYPES_MAP;
@@ -38,45 +26,28 @@ public class AbstractionUtils {
     TYPES_MAP.put(Constants.AS, 16);
   }
 
-  public static HashMap<String, Integer> getSourceMap() {
+  /**
+   * For a list of data sources, create a HashMap with corresponding integer values.
+   */
+  public static HashMap<String, Integer> getSourcesMap(List<String> sources) {
+    SOURCES_MAP = Maps.newHashMap();
+    Collections.sort(sources);
+    int running = 1;
+
+    System.out.println(sources);
+    for (String source : sources) {
+      SOURCES_MAP.put(source, running);
+      running *= 2;
+    }
+
     return SOURCES_MAP;
   }
-
-  public static HashMap<String, Integer> getTypesMap() {
-    return TYPES_MAP;
-  }
-
-//  public boolean contains(String source) {
-//    int maxSources = 5; // todo check
-//    int sourcesValue = f1;
-//    int input = SOURCES.get(source);
-//    int startValue = (int) (Math.pow(2, maxSources - 1) + 0.5);
-//    if (sourcesValue == 0) {
-//      return false;
-//    }
-//
-//    for (int i = startValue ; i > 0; i -= i/2) {
-//      if (sourcesValue - i >= 0) {
-//        sourcesValue -= i;
-//        if (i == input) {
-//          return true;
-//        }
-//      }
-//      if (i == 1 && sourcesValue == 1) {
-//        return true;
-//      }
-//      if (i == 1 && sourcesValue < 1) {
-//        return false;
-//      }
-//    }
-//
-//    return false;
-//  }
 
   /**
    * Return an integer representation of the used data sources for easy use in tuples.
    */
-  public static Integer getSourcesInt(Set<String> sources) {
+  public static Integer getSourcesInt(String mode, Set<String> sources) {
+    setupMode(mode);
     int result = 0;
     for (String source : sources) {
       result += SOURCES_MAP.get(source);
@@ -85,10 +56,18 @@ public class AbstractionUtils {
     return result;
   }
 
+  private static void setupMode(String mode) {
+    if (mode.equals(Constants.MUSIC)) {
+      SOURCES_MAP = Constants.MUSIC_MAP;
+    } else {
+      SOURCES_MAP = Constants.GEO_MAP;
+    }
+  }
+
   /**
    * Return an integer representation of the type property.
    */
-  public static Integer getTypesInt(Set<String> types) {
+  public static Integer getTypesInt(String mode, Set<String> types) {
     int result = 0;
     for (String type : types) {
       result += TYPES_MAP.get(type);
@@ -133,14 +112,17 @@ public class AbstractionUtils {
     return result;
   }
 
-  public static Set<String> getSourcesStringSet(Integer value) {
+  public static Set<String> getSourcesStringSet(String mode, Integer value) {
+    setupMode(mode);
     Set<Integer> valuesIntSet = getValuesIntSet(value);
     Set<String> result = Sets.newHashSet();
-    for (Map.Entry<String, Integer> entry : SOURCES_MAP.entrySet()) {
-      if (valuesIntSet.contains(entry.getValue())) {
-        result.add(entry.getKey());
-      }
-    }
+
+    result.addAll(SOURCES_MAP
+        .entrySet()
+        .stream()
+        .filter(entry -> valuesIntSet.contains(entry.getValue()))
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList()));
 
     return result;
   }
@@ -203,7 +185,8 @@ public class AbstractionUtils {
   /**
    * Check if certain int sources representation contains a specific source value.
    */
-  public static boolean containsSrc(Integer sources, String checkSrc) {
+  public static boolean containsSrc(String mode, Integer sources, String checkSrc) {
+    setupMode(mode);
     Set<Integer> values = getValuesIntSet(sources);
 
     Integer checkInt = SOURCES_MAP.get(checkSrc);

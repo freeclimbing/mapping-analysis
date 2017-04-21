@@ -14,7 +14,9 @@ import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.utils.EdgeSourceSimTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.LinkSelectionWithCcIdFunction;
-import org.mappinganalysis.model.functions.preprocessing.utils.SecondNeighborOntologyFunction;
+import org.mappinganalysis.model.functions.preprocessing.utils.NeighborEqualDataSourceFunction;
+
+import java.util.List;
 
 /**
  * Actual implementation for basic link filter.
@@ -24,10 +26,12 @@ import org.mappinganalysis.model.functions.preprocessing.utils.SecondNeighborOnt
  */
 public class BasicLinkFilterFunction
     extends LinkFilterFunction {
+  private List<String> sources;
   private Boolean removeIsolatedVertices;
   private ExecutionEnvironment env;
 
-  public BasicLinkFilterFunction(Boolean removeIsolatedVertices, ExecutionEnvironment env) {
+  public BasicLinkFilterFunction(List<String> sources, Boolean removeIsolatedVertices, ExecutionEnvironment env) {
+    this.sources = sources;
     this.removeIsolatedVertices = removeIsolatedVertices;
     this.env = env;
   }
@@ -38,13 +42,13 @@ public class BasicLinkFilterFunction
 
     // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
-        .groupReduceOnNeighbors(new SecondNeighborOntologyFunction(), EdgeDirection.OUT);
+        .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(), EdgeDirection.OUT);
 
     DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0)
         .sortGroup(5, Order.DESCENDING)
         .sortGroup(1, Order.ASCENDING)
         .sortGroup(2, Order.ASCENDING)
-        .reduceGroup(new LinkSelectionWithCcIdFunction());
+        .reduceGroup(new LinkSelectionWithCcIdFunction(sources));
 
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)

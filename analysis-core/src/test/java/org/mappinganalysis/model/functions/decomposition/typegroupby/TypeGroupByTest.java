@@ -6,6 +6,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.TypeOverlapCcCreator;
@@ -37,7 +38,7 @@ public class TypeGroupByTest {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getGraph()
-        .run(new TypeOverlapCcCreator(env))
+        .run(new TypeOverlapCcCreator(DataDomain.GEOGRAPHY, env))
         .run(new TypeGroupBy(env))
         .getVertices();
 
