@@ -49,11 +49,6 @@ public class AggSimValueEdgeMapFunction
       edgeValue.setEdgeSimilarity(aggregatedSim);
     }
 
-    // aggregated value is saved, we don't need the simple similarities anymore
-//    edgeValue.remove(Constants.SIM_LABEL);
-//    edgeValue.remove(Constants.SIM_TYPE);
-//    edgeValue.remove(Constants.SIM_DISTANCE);
-
     return edge;
   }
 }

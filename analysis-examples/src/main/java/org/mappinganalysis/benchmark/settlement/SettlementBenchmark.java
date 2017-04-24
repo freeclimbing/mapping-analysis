@@ -7,6 +7,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -62,9 +63,9 @@ public class SettlementBenchmark implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
         .getGraph()
 //        .run(new TypeGroupBy(env)) // not needed? TODO
-        .run(new SimSort(minSimSortSim, env))
+        .run(new SimSort(DataDomain.GEOGRAPHY, minSimSortSim, env))
         .getVertices()
-        .runOperation(new RepresentativeCreator());
+        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
 
     new JSONDataSink(INPUT_PATH, DECOMPOSITION)
         .writeVertices(vertices);

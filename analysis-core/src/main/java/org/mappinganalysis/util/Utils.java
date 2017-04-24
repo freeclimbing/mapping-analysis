@@ -64,7 +64,6 @@ public class Utils {
       if (finalEntry == null || Ints.compare(entry.getValue(), finalEntry.getValue()) > 0) {
         finalEntry = entry;
       } else if (entry.getKey() instanceof String
-          && propertyName.equals(Constants.LABEL)
           && Ints.compare(entry.getValue(), finalEntry.getValue()) >= 0) {
         String labelKey = entry.getKey().toString();
         if (labelKey.length() > finalEntry.getKey().toString().length()) {

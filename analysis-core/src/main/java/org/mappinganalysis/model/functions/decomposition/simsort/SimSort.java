@@ -30,17 +30,26 @@ public class SimSort
     this(null, prepareEnabled, minSimilarity, env);
   }
 
-  public SimSort(DataDomain domain, Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
+  /**
+   * Basic Constructor
+   */
+  private SimSort(DataDomain domain, Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
     this.domain = domain;
     this.prepareEnabled = prepareEnabled;
     this.minSimilarity = minSimilarity;
     this.env = env;
   }
 
+  /**
+   * Constructor - prepareEnabled true
+   */
   public SimSort(Double minSimilarity, ExecutionEnvironment env) {
     this(true, minSimilarity, env);
   }
 
+  /**
+   * Constructor - provide a DataDomain (geo or music) and min similarity, prepareEnabled true
+   */
   public SimSort(DataDomain domain, Double minSimilarity, ExecutionEnvironment env) {
     this(domain, true, minSimilarity, env);
   }

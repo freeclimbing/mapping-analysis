@@ -50,7 +50,7 @@ public class SimpleEdgesCreator
 //          LOG.info("first: " + firstVertexId);
           isFirstEdge = false;
         } else {
-//          LOG.info("new Edgee: " + firstVertexId + " " + vertex.getId());
+//          LOG.info("new Edge: " + firstVertexId + " " + vertex.getId());
           out.collect(new Edge<>(firstVertexId, vertex.getId(), NullValue.getInstance()));
         }
 

@@ -2,9 +2,7 @@ package org.mappinganalysis.model.functions.decomposition.representative;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.accumulators.LongCounter;
-import org.apache.flink.api.common.functions.RichGroupReduceFunction;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -17,39 +15,42 @@ import java.util.HashMap;
 import java.util.Set;
 
 /**
- * Merge properties for representative.
+ * actual implementation for music data set
  */
-public class MajorityPropertiesGroupReduceFunction
-    extends RichGroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+public class MusicMajorityPropertiesGroupReduceFunction
+    implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MajorityPropertiesGroupReduceFunction.class);
-  private LongCounter representativeCount = new LongCounter();
-
-  @Override
-  public void open(final Configuration parameters) throws Exception {
-    super.open(parameters);
-    getRuntimeContext().addAccumulator(Constants.REPRESENTATIVE_ACCUMULATOR, representativeCount);
-  }
 
   @Override
   public void reduce(
       Iterable<Vertex<Long, ObjectMap>> vertices,
       Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
     Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here
-    ObjectMap resultProps = new ObjectMap(Constants.GEO);
+    ObjectMap resultProps = new ObjectMap(Constants.MUSIC);
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterOntologies = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
-    HashMap<String, GeoCode> geoMap = Maps.newHashMap();
+    HashMap<String, Integer> artistMap = Maps.newHashMap();
+    HashMap<String, Integer> albumMap = Maps.newHashMap();
+    HashMap<String, Integer> numberMap = Maps.newHashMap();
+    HashMap<Integer, Integer> lengthMap = Maps.newHashMap();
+    HashMap<Integer, Integer> yearMap = Maps.newHashMap();
 
+    // get properties for all vertices
     for (Vertex<Long, ObjectMap> vertex : vertices) {
       updateVertexId(resultVertex, vertex);
       updateClusterVertexIds(clusterVertices, vertex);
       updateClusterOntologies(clusterOntologies, vertex);
 
-      addLabelToMap(labelMap, vertex);
+      addAttributeToMap(Constants.LABEL, labelMap, vertex);
+      addAttributeToMap(Constants.ARTIST, artistMap, vertex);
+      addAttributeToMap(Constants.ALBUM, albumMap, vertex);
+      addAttributeToMap(Constants.NUMBER, numberMap, vertex);
+      addIntAttributeToMap(Constants.LENGTH, lengthMap, vertex);
+      addIntAttributeToMap(Constants.YEAR, yearMap, vertex);
 
-      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
-      addGeoToMap(geoMap, vertex);
+
+//      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
         resultProps.put(Constants.OLD_HASH_CC,
@@ -57,18 +58,30 @@ public class MajorityPropertiesGroupReduceFunction
       }
     }
 
-    if (!geoMap.isEmpty()) {
-      resultProps.setGeoProperties(geoMap);
-    }
+    // decide for best one
     if (!labelMap.isEmpty()) {
       resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
+    }
+    if (!artistMap.isEmpty()) {
+      resultProps.put(Constants.ARTIST, Utils.getFinalValue(labelMap, Constants.ARTIST));
+    }
+    if (!albumMap.isEmpty()) {
+      resultProps.put(Constants.ALBUM, Utils.getFinalValue(labelMap, Constants.ALBUM));
+    }
+    if (!numberMap.isEmpty()) {
+      resultProps.put(Constants.NUMBER, Utils.getFinalValue(labelMap, Constants.NUMBER));
+    }
+    if (!lengthMap.isEmpty()) {
+      resultProps.put(Constants.LENGTH, Utils.getFinalValue(labelMap, Constants.LENGTH));
+    }
+    if (!yearMap.isEmpty()) {
+      resultProps.put(Constants.YEAR, Utils.getFinalValue(labelMap, Constants.YEAR));
     }
 
     resultProps.setClusterDataSources(clusterOntologies);
     resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
-    representativeCount.add(1L);
 
     collector.collect(resultVertex);
   }
@@ -122,16 +135,32 @@ public class MajorityPropertiesGroupReduceFunction
     }
   }
 
-  private void addLabelToMap(
-      HashMap<String, Integer> labelMap,
+  private void addIntAttributeToMap(
+      String attrName,
+      HashMap<Integer, Integer> lengthMap,
       Vertex<Long, ObjectMap> currentVertex) {
-    if (currentVertex.getValue().containsKey(Constants.LABEL)) {
-      String label = Utils.simplify(currentVertex.getValue().getLabel());
-      if (labelMap.containsKey(label)) {
-        int labelCount = labelMap.get(label);
-        labelMap.put(label, labelCount + 1);
+    if (currentVertex.getValue().containsKey(attrName)) {
+      int length = (int) currentVertex.getValue().get(attrName);
+      if (lengthMap.containsKey(length)) {
+        int lengthCount = lengthMap.get(length);
+        lengthMap.put(length, lengthCount + 1);
       } else {
-        labelMap.put(label, 1);
+        lengthMap.put(length, 1);
+      }
+    }
+  }
+
+  private void addAttributeToMap(
+      String attrName,
+      HashMap<String, Integer> map,
+      Vertex<Long, ObjectMap> currentVertex) {
+    if (currentVertex.getValue().containsKey(attrName)) {
+      String value = Utils.simplify(currentVertex.getValue().get(attrName).toString());
+      if (map.containsKey(value)) {
+        int attrCount = map.get(value);
+        map.put(value, attrCount + 1);
+      } else {
+        map.put(value, 1);
       }
     }
   }

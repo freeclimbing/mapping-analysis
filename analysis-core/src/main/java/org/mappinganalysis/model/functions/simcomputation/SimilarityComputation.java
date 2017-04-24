@@ -122,6 +122,7 @@ public abstract class SimilarityComputation<T, O>
    * Move to AggregationMode class
    * @param values property map
    * @return mean similarity value
+   * TODO use new MeanSimilarityFunction()
    */
   @Deprecated
   public static double getMeanSimilarity(ObjectMap values) {
@@ -138,7 +139,7 @@ public abstract class SimilarityComputation<T, O>
     }
     if (values.containsKey(Constants.SIM_DISTANCE)) {
       double distanceSim = (double) values.get(Constants.SIM_DISTANCE);
-      Preconditions.checkArgument(Doubles.compare(distanceSim, 0) < 0,
+      Preconditions.checkArgument(Doubles.compare(distanceSim, 0) > 0,
           "distance sim should never be below 0 " + values);
       if (Doubles.compare(distanceSim, -1.0) > 0) {
         aggregatedSim += distanceSim;

@@ -87,7 +87,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
             .run(new TypeGroupBy(env)) // not needed? TODO
             .run(new SimSort(domain, 0.5, env))
             .getVertices()
-            .runOperation(new RepresentativeCreator());
+            .runOperation(new RepresentativeCreator(domain));
 
     new JSONDataSink(INPUT_PATH, DECOMPOSITION)
         .writeVertices(vertices);

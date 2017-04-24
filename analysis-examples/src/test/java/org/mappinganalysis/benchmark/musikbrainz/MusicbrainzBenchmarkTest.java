@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
+import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
@@ -134,6 +135,10 @@ public class MusicbrainzBenchmarkTest {
     System.out.println(vertices.count());
   }
 
+  /**
+   * other modules can not be used everywhere
+   * @throws Exception
+   */
   @Test
   public void testSim() throws Exception {
     env = setupLocalEnvironment();
@@ -154,14 +159,6 @@ public class MusicbrainzBenchmarkTest {
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph
-        .run(new TypeGroupBy(env)) // not needed? TODO
-        .run(new SimSort(0.5, env))
-        .getVertices()
-        .runOperation(new RepresentativeCreator());
-
-
-    vertices.print();
 //    graph.getVertices().print();
 //    graph.getEdges().print();
 

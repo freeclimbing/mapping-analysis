@@ -2,24 +2,32 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
+import org.mappinganalysis.TestBase;
+import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
+import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.s1ck.gdl.GDLHandler;
 
 import static org.junit.Assert.assertTrue;
 
 public class SimSortTest {
   private static final Logger LOG = Logger.getLogger(SimSortTest.class);
-  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   private static final String SORT_SIMPLE = "g[" +
 //      "(v1 {ccId = 1L, typeIntern = \"Settlement\", label = \"bajaur\", lat = 34.683333D, lon = 71.5D, hashCc = 23L})" +
@@ -47,20 +55,21 @@ public class SimSortTest {
   @Test
   // TODO write asserts
   public void simSortJSONTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
     double minSimilarity = 0.8;
 
     String graphPath = SimSortTest.class.getResource("/data/simsort/").getFile();
     Graph<Long, ObjectMap, ObjectMap> graph =
-        new JSONDataSource(graphPath, true, env).getGraph()
-        .run(new SimSort(DataDomain.GEOGRAPHY, true, minSimilarity, env));
-
-//    graph.getVertices().print();
+        new JSONDataSource(graphPath, true, env)
+            .getGraph()
+            .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env));
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
-        .runOperation(new RepresentativeCreator());
+        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-      LOG.info(vertex.toString());
+//      LOG.info(vertex.toString());
       if (vertex.getId() == 2757L) {
         assertTrue(vertex.getValue().getVerticesCount().equals(1));
       } else {
@@ -69,8 +78,43 @@ public class SimSortTest {
     }
   }
 
+  @Test
+  public void testMusicDataSim() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String path = SimSortTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> inputVertices =
+        new CSVDataSource(path, vertexFileName, env)
+            .getVertices();
+
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertices, inputEdges, env)
+//        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
+        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+
+//    String graphPath = SimSortTest.class.getResource("/data/musicbrainz/simsort/").getFile();
+//    Graph<Long, ObjectMap, ObjectMap> graph =
+//        new JSONDataSource(graphPath, true, env)
+//            .getGraph();
+
+    DataSet<Vertex<Long, ObjectMap>> vertices =
+        graph
+        .run(new TypeGroupBy(env)) // not needed? TODO
+        .run(new SimSort(DataDomain.MUSIC, 0.7, env))
+        .getVertices()
+        .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
+
+    vertices.print();
+  }
+
   /*
-   TODO does nothing!?
+   * TODO does nothing!?
    */
   @Test
   public void simSortTest() throws Exception {

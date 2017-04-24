@@ -5,6 +5,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.*;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
@@ -13,6 +14,8 @@ import org.mappinganalysis.util.Constants;
  */
 public class SimSortVertexCentricIteration
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(SimSort.class);
+
   private final ExecutionEnvironment env;
   private final Double minSimilarity;
 
@@ -22,13 +25,12 @@ public class SimSortVertexCentricIteration
   }
 
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+  public Graph<Long, ObjectMap, ObjectMap> run(
+      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
     VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
     aggParameters.setName("SimSort");
     aggParameters.setDirection(EdgeDirection.ALL);
-    /**
-     * set solution set unmanaged in order to reduce out of memory exception on non-cluster setup
-     */
+     // set solution set unmanaged in order to reduce out of memory exception on non-cluster setup
 //    aggParameters.setSolutionSetUnmanagedMemory(true);
 
     DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = createSimSortInputGraph(graph, env)
