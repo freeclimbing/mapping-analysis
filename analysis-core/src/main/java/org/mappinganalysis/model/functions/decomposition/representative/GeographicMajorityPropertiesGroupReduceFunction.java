@@ -19,9 +19,9 @@ import java.util.Set;
 /**
  * Merge properties for representative.
  */
-public class MajorityPropertiesGroupReduceFunction
+public class GeographicMajorityPropertiesGroupReduceFunction
     extends RichGroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(MajorityPropertiesGroupReduceFunction.class);
+  private static final Logger LOG = Logger.getLogger(GeographicMajorityPropertiesGroupReduceFunction.class);
   private LongCounter representativeCount = new LongCounter();
 
   @Override

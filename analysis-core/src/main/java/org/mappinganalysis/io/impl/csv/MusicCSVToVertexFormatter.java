@@ -3,10 +3,8 @@ package org.mappinganalysis.io.impl.csv;
 import com.google.common.math.DoubleMath;
 import com.google.common.math.IntMath;
 import com.google.common.primitives.Ints;
-import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple10;
-import org.apache.flink.api.java.tuple.Tuple9;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -14,20 +12,19 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Musicbrainz vertex formatter.
  */
-public class CSVToVertexFormatter
+public class MusicCSVToVertexFormatter
     extends RichMapFunction<Tuple10<Long, Long, Long, String, String, String, String, String, String, String>,
         Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(CSVToVertexFormatter.class);
+  private static final Logger LOG = Logger.getLogger(MusicCSVToVertexFormatter.class);
   private final Vertex<Long, ObjectMap> reuseVertex;
 
-  public CSVToVertexFormatter() {
+  public MusicCSVToVertexFormatter() {
     reuseVertex = new Vertex<>();
     reuseVertex.setValue(new ObjectMap(Constants.MUSIC));
   }
@@ -55,66 +52,83 @@ public class CSVToVertexFormatter
         reuseVertex.setId(value.f0);
         ObjectMap properties = reuseVertex.getValue();
 
-        System.out.println(value.toString());
+//        System.out.println(value.toString());
 
         properties.setCcId(value.f1);
         properties.setLabel(value.f4);
 
         properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
         properties.put(Constants.NUMBER, value.f3);
-        properties.put(Constants.LENGTH, fixSongLength(value.f5));
+        fixSongLength(value.f5);
+//        properties.put(Constants.LENGTH, fixSongLength(value.f5));
 //        properties.put("oLength", value.f5);
         properties.put(Constants.ARTIST, value.f6);
         properties.put(Constants.ALBUM, value.f7);
-        properties.put(Constants.YEAR, fixYear(value.f8));
+        fixYear(value.f8);
 //         properties.put("oYear", value.f8);
         properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
 //         properties.put("orig", value.f9);  // tmp for test
     return reuseVertex;
   }
 
-  private Integer fixYear(String year) {
+  private void fixYear(String year) {
     if (year == null || year.isEmpty()) {
-      return null;
+      return;
     }
     year = year.replaceAll("\\s+", "");
     year = year.replaceAll("[oO]", "0");
 
     Matcher moreThanFour = Pattern.compile(".*(\\d{5,20}).*").matcher(year);
     if (moreThanFour.find()) {
-      return null;
+      return;
     }
     Matcher fourDigitsMatcher = Pattern.compile(".*(\\d{4}).*").matcher(year);
 
+    /**
+     * '11, '05
+     */
     if (year.matches("^'\\d+")) {
       year = year.replace("'", "");
 //      System.out.println("start with ': " + year);
       int tmp = Ints.tryParse(year);
-      if (tmp < 20 && year.startsWith("0")) {
-        return tmp + 2000;
+      if (tmp < 20) {//&& year.startsWith("0")) {
+        reuseVertex.getValue().put(Constants.YEAR, tmp + 2000);
+//        return tmp + 2000;
       } else if (tmp <= 99) {
-        return tmp + 1900;
+        reuseVertex.getValue().put(Constants.YEAR, tmp + 1900);
+//        return tmp + 1900;
       }
-    } else if (year.matches("[0-9]+")) {
+    } else
+    /**
+     * 04, 11, 2009, 1911
+     */
+    if (year.matches("[0-9]+")) {
       int tmp = Ints.tryParse(year);
       if (tmp < 20) {
-        return tmp + 2000;
+        reuseVertex.getValue().put(Constants.YEAR, tmp + 2000);
       } else if (tmp <= 99) {
-        return tmp + 1900;
+        reuseVertex.getValue().put(Constants.YEAR, tmp + 1900);
+//        return tmp + 1900;
       } else if (tmp > 2017) {
-        return null;
+        return; // needed atm
       } else {
-        return tmp;
+        reuseVertex.getValue().put(Constants.YEAR, tmp);
+//        return tmp;
       }
-    } else if (year.length() > 9 && fourDigitsMatcher.find()) {
+    } else
+    /**
+     * Any number with 4 digits within "long" string, e.g.,
+     * "Spider in the Snow - Live in Japan 2011"
+     */
+    if (year.length() > 9 && fourDigitsMatcher.find()) {
 //      System.out.println("4d: " + fourDigitsMatcher.group(1));
-//      System.out.println("... in year: " + year);
-      return Ints.tryParse(fourDigitsMatcher.group(1));
+      reuseVertex.getValue().put(Constants.YEAR, Ints.tryParse(fourDigitsMatcher.group(1)));
+
+//      return Ints.tryParse(fourDigitsMatcher.group(1));
     }
-    return null;
   }
 
-  private Integer fixSongLength(String songLength) throws Exception {
+  private void fixSongLength(String songLength) throws Exception {
     String backup = songLength;
     songLength = songLength.toLowerCase().replaceAll("\\s+", "");
 
@@ -126,27 +140,24 @@ public class CSVToVertexFormatter
         || songLength.contains("|")
         || songLength.contains("p") // "0p.6"
         ) {
-      return null;
+      return;
     }
     if (songLength.length() > 11 || songLength.matches("[a-zA-Z]+\\d{4}\\d+")) {
-      return null;
+      return;
     }
     if (songLength.contains("-") || songLength.equals(Constants.CSV_NO_VALUE)) {
-      return null;
+      return;
     }
 
 
     if ( // special cases from 20k
-        songLength.equals("28q666") // 4969 soll 289 sein
+        !songLength.equals("28q666") // 4969 soll 289 sein
 //        || songLength.equals("3.g83") // 9901 ~239 - whats with o instead of 0 - 13873
-        || songLength.equals("3318-a033") // 10112
+        && !songLength.equals("3318-a033") // 10112
 //        || songLength.equals("7.o67")
 //        || songLength.equals("4.g1")
 //        || songLength.equals("03:1g")
         ) {
-//      System.out.println(f0 + "###### return null for " + songLength);
-      return null;
-    } else {
       if (songLength.matches(".*\\d+.*")) {
         songLength = songLength
             .replaceAll("[oO]", "0")
@@ -173,24 +184,24 @@ public class CSVToVertexFormatter
               time += Integer.valueOf(songLength.split("s")[0]);
             }
 //          LOG.info(f0 + "end: " + time);
-            return time;
+            reuseVertex.getValue().put(Constants.LENGTH, time);
           } else {
-            return null;
+            return;
           }
         }
 
         songLength = songLength.replaceAll("[,nyur_b]","");
 
         if (songLength.contains(".") && songLength.matches("[0-9]+\\.[0-9]+")) {
-          return DoubleMath.roundToInt(
-              Double.valueOf(songLength) * 60, RoundingMode.HALF_UP);
+          reuseVertex.getValue().put(Constants.LENGTH, DoubleMath.roundToInt(
+              Double.valueOf(songLength) * 60, RoundingMode.HALF_UP));
         } else if (songLength.contains(":") && songLength.matches("[0-9]+:[0-9]+")) {
           String[] split = songLength.split(":");
 //          if (songLength.contains("r0ud12")) {
 //            System.out.println("backup: " + backup);
 //          }
           if (split.length < 2) {
-            return null;
+            return;
           }
 
           int splitZeroLength = split[0].length();
@@ -201,23 +212,33 @@ public class CSVToVertexFormatter
             split[1] = split[1].substring(0, 1);
           }
           if (split[0].equals("")) {
-            return null;
+            return ;
           }
 
 //          if (split[0].equals("") || split[1].equals("")) {
 //            System.out.println("backup: " + backup);
 //          }
+          reuseVertex
+              .getValue()
+              .put(Constants.LENGTH, Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]));
 
-          return Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]);
+//          return Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]);
         } else if (songLength.matches("[0-9]+")) {
           if (songLength.endsWith("000") || Integer.valueOf(songLength) > 10000) {
-            return IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP);
+            reuseVertex
+                .getValue()
+                .put(Constants.LENGTH, IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP));
+
+//            return IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP);
           }
 //          System.out.println("n: " + songLength);
-          return Integer.valueOf(songLength);
+          reuseVertex
+              .getValue()
+              .put(Constants.LENGTH,Integer.valueOf(songLength));
+
+//          return Integer.valueOf(songLength);
         }
       }
-      return null; // only letters are not handled
     }
   }
 

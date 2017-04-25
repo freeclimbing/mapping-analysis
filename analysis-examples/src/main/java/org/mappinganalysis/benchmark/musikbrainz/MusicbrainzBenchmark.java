@@ -2,15 +2,12 @@ package org.mappinganalysis.benchmark.musikbrainz;
 
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.ProgramDescription;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.GraphAnalytic;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
@@ -20,11 +17,11 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
+import org.mappinganalysis.model.functions.merge.MergeExecution;
+import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
-import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
-import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 
 /**
  * benchmark musicbrainz dataset https://vsis-www.informatik.uni-hamburg.de/download/info.txt
@@ -52,6 +49,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         "args[1]: processing mode (input, preproc, analysis, eval)");
     INPUT_PATH = args[0];
     VERTEX_FILE_NAME = args[1];
+    Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.MUSIC;
 
     /**
@@ -92,6 +90,19 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     new JSONDataSink(INPUT_PATH, DECOMPOSITION)
         .writeVertices(vertices);
     env.execute(DEC_JOB);
+
+    /**
+     * merge
+     */
+    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
+        new JSONDataSource(INPUT_PATH, DECOMPOSITION, env)
+            .getVertices()
+            .runOperation(new MergeInitialization(DataDomain.MUSIC))
+            .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT));
+
+    new JSONDataSink(INPUT_PATH, MERGE)
+        .writeVertices(mergedVertices);
+    env.execute(MER_JOB);
 
   }
 

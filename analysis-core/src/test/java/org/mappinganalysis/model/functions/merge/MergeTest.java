@@ -7,6 +7,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
@@ -37,7 +38,7 @@ public class MergeTest {
         .getResource("/data/representative/mergeInit/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(filePath, true, env)
             .getVertices()
-            .runOperation(new MergeInitialization());
+            .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY));
 
     int count = 0;
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
@@ -69,7 +70,7 @@ public class MergeTest {
         .getResource("/data/representative/mergeExec/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(5));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
@@ -121,7 +122,7 @@ public class MergeTest {
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(5));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
 
     vertices.print();
 //    assertEquals(4, vertices.count());

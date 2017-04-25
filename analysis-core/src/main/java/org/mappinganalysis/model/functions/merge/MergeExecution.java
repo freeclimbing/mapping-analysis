@@ -7,6 +7,8 @@ import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -21,10 +23,12 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 public class MergeExecution
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
+  private DataDomain domain;
   private int sourcesCount;
   private DataSet<Vertex<Long, ObjectMap>> baseClusters;
 
-  public MergeExecution(int sourcesCount) {
+  public MergeExecution(DataDomain domain, int sourcesCount) {
+    this.domain = domain;
     this.sourcesCount = sourcesCount;
   }
 
@@ -42,7 +46,7 @@ public class MergeExecution
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-    MergeTripletGeoLabelSimilarity simFunction =
+    SimilarityFunction<MergeTriplet, MergeTriplet> simFunction =
         new MergeTripletGeoLabelSimilarity(new MeanAggregationMode());
 
     SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation = new SimilarityComputation

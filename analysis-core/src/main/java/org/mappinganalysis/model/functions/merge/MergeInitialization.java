@@ -6,8 +6,9 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
+import org.mappinganalysis.model.functions.decomposition.representative.GeographicMajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.EdgeSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -24,6 +25,11 @@ public class MergeInitialization
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
 
   private DataSet<Vertex<Long, ObjectMap>> vertices;
+  private DataDomain domain;
+
+  public MergeInitialization(DataDomain domain) {
+    this.domain = domain;
+  }
 
   /**
    * @param vertices input set of representative vertices
@@ -39,12 +45,18 @@ public class MergeInitialization
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-    DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
-        .filter(new OldHashCcFilterFunction())
-        .groupBy(new OldHashCcKeySelector())
-        .reduceGroup(new TripletCreateGroupReduceFunction());
+    if (domain == DataDomain.MUSIC) {
+      return vertices;
+    } else if (domain == DataDomain.GEOGRAPHY) {
+      DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
+          .filter(new OldHashCcFilterFunction())
+          .groupBy(new OldHashCcKeySelector())
+          .reduceGroup(new TripletCreateGroupReduceFunction());
 
-    return rejoinSingleVertexClustersFromSimSort(vertices, oldHashCcTriplets);
+      return rejoinSingleVertexClustersFromSimSort(vertices, oldHashCcTriplets);
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -83,7 +95,7 @@ public class MergeInitialization
     DataSet<Vertex<Long, ObjectMap>> newRepresentativeVertices = newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())
         .groupBy(new OldHashCcKeySelector())
-        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
+        .reduceGroup(new GeographicMajorityPropertiesGroupReduceFunction());
 
     return newRepresentativeTriplets
         .flatMap(new VertexExtractFlatMapFunction())

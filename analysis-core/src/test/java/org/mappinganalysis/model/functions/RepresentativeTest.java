@@ -8,8 +8,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.MappingAnalysisExampleTest;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.MajorityPropertiesGroupReduceFunction;
-import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.model.functions.decomposition.representative.GeographicMajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 import org.s1ck.gdl.GDLHandler;
 
@@ -62,7 +61,7 @@ public class RepresentativeTest {
 
     DataSet<Vertex<Long, ObjectMap>> mergedClusterVertices = graph.getVertices()
         .groupBy(new HashCcIdKeySelector())
-        .reduceGroup(new MajorityPropertiesGroupReduceFunction());
+        .reduceGroup(new GeographicMajorityPropertiesGroupReduceFunction());
 
     for (Vertex<Long, ObjectMap> vertex : mergedClusterVertices.collect()) {
       LOG.info("result: " + vertex);

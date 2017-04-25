@@ -6,7 +6,6 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -19,7 +18,7 @@ import java.util.Set;
  */
 public class MusicMajorityPropertiesGroupReduceFunction
     implements GroupReduceFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(MajorityPropertiesGroupReduceFunction.class);
+  private static final Logger LOG = Logger.getLogger(MusicMajorityPropertiesGroupReduceFunction.class);
 
   @Override
   public void reduce(
@@ -38,6 +37,7 @@ public class MusicMajorityPropertiesGroupReduceFunction
 
     // get properties for all vertices
     for (Vertex<Long, ObjectMap> vertex : vertices) {
+//      System.out.println("MMPGRF: " + vertex.toString());
       updateVertexId(resultVertex, vertex);
       updateClusterVertexIds(clusterVertices, vertex);
       updateClusterOntologies(clusterOntologies, vertex);
@@ -63,25 +63,27 @@ public class MusicMajorityPropertiesGroupReduceFunction
       resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
     }
     if (!artistMap.isEmpty()) {
-      resultProps.put(Constants.ARTIST, Utils.getFinalValue(labelMap, Constants.ARTIST));
+      resultProps.put(Constants.ARTIST, Utils.getFinalValue(artistMap, Constants.ARTIST));
     }
     if (!albumMap.isEmpty()) {
-      resultProps.put(Constants.ALBUM, Utils.getFinalValue(labelMap, Constants.ALBUM));
+      resultProps.put(Constants.ALBUM, Utils.getFinalValue(albumMap, Constants.ALBUM));
     }
     if (!numberMap.isEmpty()) {
-      resultProps.put(Constants.NUMBER, Utils.getFinalValue(labelMap, Constants.NUMBER));
+      resultProps.put(Constants.NUMBER, Utils.getFinalValue(numberMap, Constants.NUMBER));
     }
     if (!lengthMap.isEmpty()) {
-      resultProps.put(Constants.LENGTH, Utils.getFinalValue(labelMap, Constants.LENGTH));
+      resultProps.put(Constants.LENGTH, Utils.getFinalValue(lengthMap, Constants.LENGTH));
     }
     if (!yearMap.isEmpty()) {
-      resultProps.put(Constants.YEAR, Utils.getFinalValue(labelMap, Constants.YEAR));
+      resultProps.put(Constants.YEAR, Utils.getFinalValue(yearMap, Constants.YEAR));
     }
 
     resultProps.setClusterDataSources(clusterOntologies);
     resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
+
+//    LOG.info(resultVertex.getValue().toString());
 
     collector.collect(resultVertex);
   }
@@ -112,34 +114,15 @@ public class MusicMajorityPropertiesGroupReduceFunction
     }
   }
 
-  private void addGeoToMap(
-      HashMap<String, GeoCode> geoMap,
-      Vertex<Long, ObjectMap> vertex) {
-    if (vertex.getValue().hasGeoPropertiesValid()) {
-//      if (!vertex.getValue().containsKey(Constants.DATA_SOURCE)
-//          && !vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
-//        LOG.info("no/more ont but geo: " + vertex);
-//      }
-
-      Double latitude = vertex.getValue().getLatitude();
-      Double longitude = vertex.getValue().getLongitude();
-
-      if (vertex.getValue().containsKey(Constants.DATA_SOURCE)) {
-        geoMap.put(vertex.getValue().getDataSource(),
-            new GeoCode(latitude, longitude));
-      } else if (vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
-        for (String value : vertex.getValue().getDataSourcesList()) {
-          geoMap.put(value, new GeoCode(latitude, longitude));
-        }
-      }
-    }
-  }
-
   private void addIntAttributeToMap(
       String attrName,
       HashMap<Integer, Integer> lengthMap,
       Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(attrName)) {
+      if (currentVertex.getValue().get(attrName) == null) {
+        LOG.info(currentVertex.getId() + " vertex is null - should not happen");
+      }
+//      LOG.info(currentVertex.getValue().get(attrName).toString());
       int length = (int) currentVertex.getValue().get(attrName);
       if (lengthMap.containsKey(length)) {
         int lengthCount = lengthMap.get(length);
