@@ -7,8 +7,8 @@ import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeTriplet;
-import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
@@ -21,7 +21,7 @@ public class MergeStepFunction {
   private DataSet<MergeTriplet> workset;
   private SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation;
   private int sourcesCount;
-  private DataSet<MergeTuple> delta;
+  private DataSet<MergeGeoTuple> delta;
 
   public MergeStepFunction(DataSet<MergeTriplet> workset,
                            SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation,
@@ -71,7 +71,7 @@ public class MergeStepFunction {
     return workset;
   }
 
-  public DataSet<MergeTuple> getDelta() {
+  public DataSet<MergeGeoTuple> getDelta() {
     return delta;
   }
 
@@ -89,7 +89,7 @@ public class MergeStepFunction {
     return changes
         .map(triplet -> {
           if (triplet.getSrcId() > triplet.getTrgId()) {
-            MergeTuple tmp = triplet.getSrcTuple();
+            MergeGeoTuple tmp = triplet.getSrcTuple();
             triplet.setSrcId(triplet.getTrgId());
             triplet.setSrcTuple(triplet.getTrgTuple());
             triplet.setTrgId(tmp.getId());
@@ -129,7 +129,7 @@ public class MergeStepFunction {
 
   private static DataSet<MergeTriplet> getChangedTriplets(
       DataSet<MergeTriplet> workset,
-      DataSet<MergeTuple> delta,
+      DataSet<MergeGeoTuple> delta,
       DataSet<Tuple2<Long, Long>> transitions) {
     DataSet<MergeTriplet> leftChanges = workset.join(transitions)
         .where(0)
@@ -140,7 +140,7 @@ public class MergeStepFunction {
         })
         .returns(new TypeHint<MergeTriplet>() {})
         .distinct(0,1)
-        .join(delta.filter(MergeTuple::isActive))
+        .join(delta.filter(MergeGeoTuple::isActive))
         .where(0)
         .equalTo(0)
         .with((triplet, newTuple) -> {
@@ -159,7 +159,7 @@ public class MergeStepFunction {
         })
         .returns(new TypeHint<MergeTriplet>() {})
         .distinct(0,1)
-        .join(delta.filter(MergeTuple::isActive))
+        .join(delta.filter(MergeGeoTuple::isActive))
         .where(1)
         .equalTo(0)
         .with((triplet, newTuple) -> {
@@ -174,7 +174,7 @@ public class MergeStepFunction {
   /**
    * In each iteration, get the highest triplet similarity for each blocking key. If
    * more than one triplet has highest similarity, take lowest entity id.
-   * @return only maximal similarity triplet for each blocking key
+   * @return only maximal similatrity riplet for each blocking key
    */
   private static DataSet<MergeTriplet> getIterationMaxTriplets(DataSet<MergeTriplet> workset) {
 //    DataSet<Tuple2<Double, String>> maxFilter =

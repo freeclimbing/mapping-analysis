@@ -1,11 +1,10 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeTriplet;
-import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -18,30 +17,30 @@ import java.util.Set;
  * Do not use reuse tuple.
  */
 public class MergeMapFunction
-    implements FlatMapFunction<MergeTriplet, MergeTuple> {
+    implements FlatMapFunction<MergeTriplet, MergeGeoTuple> {
   private static final Logger LOG = Logger.getLogger(MergeMapFunction.class);
 
   @Override
-  public void flatMap(MergeTriplet triplet, Collector<MergeTuple> out) throws Exception {
-    MergeTuple priority = triplet.getSrcTuple();
-    MergeTuple minor = triplet.getTrgTuple();
+  public void flatMap(MergeTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
+    MergeGeoTuple priority = triplet.getSrcTuple();
+    MergeGeoTuple minor = triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();
     if (srcElements.size() < trgElements.size()) {
-      MergeTuple tmp = minor;
+      MergeGeoTuple tmp = minor;
       minor = priority;
       priority = tmp;
     }
 
-    MergeTuple mergedCluster = new MergeTuple();
+    MergeGeoTuple mergedCluster = new MergeGeoTuple();
     // set tuple properties
     mergedCluster.setId(priority.getId() > minor.getId() ? minor.getId() : priority.getId());
     // is there a case where minor label should be taken?
     mergedCluster.setLabel(priority.getLabel());
 
     // geo coordinates
-    MergeTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
+    MergeGeoTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
     if (geoTuple != null) {
       mergedCluster.setGeoProperties(geoTuple);
     } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.GN_NS)) {
@@ -65,7 +64,7 @@ public class MergeMapFunction
     mergedCluster.setBlockingLabel(priority.getBlockingLabel());
 
 //    LOG.info("### new cluster: " + mergedCluster.toString());
-    MergeTuple fakeCluster = new MergeTuple(
+    MergeGeoTuple fakeCluster = new MergeGeoTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId(),
         false);
 //    LOG.info("### fake cluster: " + fakeCluster.toString());

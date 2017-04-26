@@ -104,7 +104,7 @@ public class Utils {
     return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
   }
 
-  public static MergeTuple isOnlyOneValidGeoObject(MergeTuple left, MergeTuple right) {
+  public static MergeGeoTuple isOnlyOneValidGeoObject(MergeGeoTuple left, MergeGeoTuple right) {
     if (isValidGeoObject(left) && !isValidGeoObject(right)) {
       return left;
     } else if (!isValidGeoObject(left) && isValidGeoObject(right)) {
@@ -114,7 +114,7 @@ public class Utils {
     }
   }
 
-  public static boolean isValidGeoObject(MergeTuple triplet) {
+  public static boolean isValidGeoObject(MergeGeoTuple triplet) {
     if (triplet.getLatitude() == null || triplet.getLongitude() == null) {
       return Boolean.FALSE;
     }

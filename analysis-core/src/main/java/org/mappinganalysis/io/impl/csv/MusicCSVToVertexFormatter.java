@@ -22,12 +22,10 @@ public class MusicCSVToVertexFormatter
     extends RichMapFunction<Tuple10<Long, Long, Long, String, String, String, String, String, String, String>,
         Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MusicCSVToVertexFormatter.class);
-  private final Vertex<Long, ObjectMap> reuseVertex;
-
-  public MusicCSVToVertexFormatter() {
-    reuseVertex = new Vertex<>();
-    reuseVertex.setValue(new ObjectMap(Constants.MUSIC));
-  }
+  /**
+   * no reuse vertex, not every attribute gets new value
+   */
+  private Vertex<Long, ObjectMap> vertex = new Vertex<>();
 
   @Override
   public void open(final Configuration parameters) throws Exception {
@@ -49,17 +47,23 @@ public class MusicCSVToVertexFormatter
                 String,  //8 year, e.g., 2009, '09
                 String> value)  //9 language
       throws Exception {
-        reuseVertex.setId(value.f0);
-        ObjectMap properties = reuseVertex.getValue();
-
-//        System.out.println(value.toString());
+        vertex.setValue(new ObjectMap(Constants.MUSIC));
+        vertex.setId(value.f0);
+        ObjectMap properties = vertex.getValue();
 
         properties.setCcId(value.f1);
         properties.setLabel(value.f4);
 
         properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
         properties.put(Constants.NUMBER, value.f3);
+        if (value.f0 == 4L) {
+          LOG.info("test: " + value.toString());
+        }
+        if (value.f0 == 4L)
+          LOG.info("N: " + vertex.toString());
         fixSongLength(value.f5);
+        if (value.f0 == 4L)
+          LOG.info("L: " + vertex.toString());
 //        properties.put(Constants.LENGTH, fixSongLength(value.f5));
 //        properties.put("oLength", value.f5);
         properties.put(Constants.ARTIST, value.f6);
@@ -68,7 +72,11 @@ public class MusicCSVToVertexFormatter
 //         properties.put("oYear", value.f8);
         properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
 //         properties.put("orig", value.f9);  // tmp for test
-    return reuseVertex;
+
+        if (value.f0 == 4L)
+        LOG.info(vertex.toString());
+
+    return vertex;
   }
 
   private void fixYear(String year) {
@@ -92,10 +100,10 @@ public class MusicCSVToVertexFormatter
 //      System.out.println("start with ': " + year);
       int tmp = Ints.tryParse(year);
       if (tmp < 20) {//&& year.startsWith("0")) {
-        reuseVertex.getValue().put(Constants.YEAR, tmp + 2000);
+        vertex.getValue().put(Constants.YEAR, tmp + 2000);
 //        return tmp + 2000;
       } else if (tmp <= 99) {
-        reuseVertex.getValue().put(Constants.YEAR, tmp + 1900);
+        vertex.getValue().put(Constants.YEAR, tmp + 1900);
 //        return tmp + 1900;
       }
     } else
@@ -105,14 +113,14 @@ public class MusicCSVToVertexFormatter
     if (year.matches("[0-9]+")) {
       int tmp = Ints.tryParse(year);
       if (tmp < 20) {
-        reuseVertex.getValue().put(Constants.YEAR, tmp + 2000);
+        vertex.getValue().put(Constants.YEAR, tmp + 2000);
       } else if (tmp <= 99) {
-        reuseVertex.getValue().put(Constants.YEAR, tmp + 1900);
+        vertex.getValue().put(Constants.YEAR, tmp + 1900);
 //        return tmp + 1900;
       } else if (tmp > 2017) {
         return; // needed atm
       } else {
-        reuseVertex.getValue().put(Constants.YEAR, tmp);
+        vertex.getValue().put(Constants.YEAR, tmp);
 //        return tmp;
       }
     } else
@@ -122,7 +130,7 @@ public class MusicCSVToVertexFormatter
      */
     if (year.length() > 9 && fourDigitsMatcher.find()) {
 //      System.out.println("4d: " + fourDigitsMatcher.group(1));
-      reuseVertex.getValue().put(Constants.YEAR, Ints.tryParse(fourDigitsMatcher.group(1)));
+      vertex.getValue().put(Constants.YEAR, Ints.tryParse(fourDigitsMatcher.group(1)));
 
 //      return Ints.tryParse(fourDigitsMatcher.group(1));
     }
@@ -163,6 +171,9 @@ public class MusicCSVToVertexFormatter
             .replaceAll("[oO]", "0")
             .replaceAll("l", "1")
             .replaceAll("z", "2");
+        /**
+         * min + sec format
+         */
         if ((songLength.contains("m") || songLength.contains("s"))
             && songLength.matches("^[0-9].*")) {
 //          System.out.println(f0 + "m or s " + songLength);
@@ -184,7 +195,7 @@ public class MusicCSVToVertexFormatter
               time += Integer.valueOf(songLength.split("s")[0]);
             }
 //          LOG.info(f0 + "end: " + time);
-            reuseVertex.getValue().put(Constants.LENGTH, time);
+            vertex.getValue().put(Constants.LENGTH, time);
           } else {
             return;
           }
@@ -192,10 +203,17 @@ public class MusicCSVToVertexFormatter
 
         songLength = songLength.replaceAll("[,nyur_b]","");
 
+        /**
+         * 2.1, 3.08 format
+         */
         if (songLength.contains(".") && songLength.matches("[0-9]+\\.[0-9]+")) {
-          reuseVertex.getValue().put(Constants.LENGTH, DoubleMath.roundToInt(
+          vertex.getValue().put(Constants.LENGTH, DoubleMath.roundToInt(
               Double.valueOf(songLength) * 60, RoundingMode.HALF_UP));
-        } else if (songLength.contains(":") && songLength.matches("[0-9]+:[0-9]+")) {
+        } else
+        /**
+         * 2:30 format
+         */
+        if (songLength.contains(":") && songLength.matches("[0-9]+:[0-9]+")) {
           String[] split = songLength.split(":");
 //          if (songLength.contains("r0ud12")) {
 //            System.out.println("backup: " + backup);
@@ -214,29 +232,28 @@ public class MusicCSVToVertexFormatter
           if (split[0].equals("")) {
             return ;
           }
-
 //          if (split[0].equals("") || split[1].equals("")) {
 //            System.out.println("backup: " + backup);
 //          }
-          reuseVertex
+          vertex
               .getValue()
               .put(Constants.LENGTH, Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]));
-
-//          return Integer.valueOf(split[0]) * 60 + Integer.valueOf(split[1]);
-        } else if (songLength.matches("[0-9]+")) {
+        } else
+        /**
+         * 3, 456000, 456, 456789
+         */
+        if (songLength.matches("[0-9]+")) {
           if (songLength.endsWith("000") || Integer.valueOf(songLength) > 10000) {
-            reuseVertex
+            vertex
                 .getValue()
-                .put(Constants.LENGTH, IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP));
-
-//            return IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP);
-          }
+                .put(Constants.LENGTH,
+                    IntMath.divide(Integer.valueOf(songLength), 1000, RoundingMode.HALF_UP));
+          } else {
 //          System.out.println("n: " + songLength);
-          reuseVertex
-              .getValue()
-              .put(Constants.LENGTH,Integer.valueOf(songLength));
-
-//          return Integer.valueOf(songLength);
+            vertex
+                .getValue()
+                .put(Constants.LENGTH, Integer.valueOf(songLength));
+          }
         }
       }
     }

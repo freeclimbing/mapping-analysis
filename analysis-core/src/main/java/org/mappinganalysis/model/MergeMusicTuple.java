@@ -1,0 +1,142 @@
+package org.mappinganalysis.model;
+
+import org.apache.flink.api.java.tuple.Tuple12;
+import org.mappinganalysis.model.api.Identifiable;
+import org.mappinganalysis.model.api.IntSources;
+import org.mappinganalysis.model.api.Labeled;
+import org.mappinganalysis.util.AbstractionUtils;
+
+import java.util.Set;
+
+/**
+ * 0. vertex id - Long
+ * 1. label - String
+ * 2. album - String
+ * 3. artist - String
+ * 4. number - String
+ * 5. year - Int
+ * 6. length - Int
+ * 7. lang - String
+ * 8. sources - Int
+ * 9. clustered elements list - LongSet
+ * 10. blocking label - String
+ * 11. activity flag - Bool
+ */
+public class MergeMusicTuple
+    extends Tuple12<Long, String, String, String, String, Integer, Integer,
+    String, Integer, LongSet, String, Boolean>
+    implements Identifiable, Labeled, IntSources, MergeTupleAttributes {
+
+  public String getAlbum() {
+    return f2;
+  }
+
+  public void setAlbum(String album) {
+    f2 = album;
+  }
+
+  public String getArtist() {
+    return f3;
+  }
+
+  public void setArtist(String artist) {
+    f3 = artist;
+  }
+
+  public String getNumber() {
+    return f4;
+  }
+
+  public void setNumber(String number) {
+    f4 = number;
+  }
+
+  public Integer getYear() {
+    return f5;
+  }
+
+  public void setYear(Integer year) {
+    f5 = year;
+  }
+
+  public Integer getLength() {
+    return f6;
+  }
+
+  public void setLength(Integer length) {
+    f6 = length;
+  }
+
+  public String getLang() {
+    return f7;
+  }
+
+  public void setLang(String lang) {
+    f7 = lang;
+  }
+
+  @Override
+  public Long getId() {
+    return f0;
+  }
+
+  @Override
+  public void setId(Long id) {
+    f0 = id;
+  }
+
+  @Override
+  public String getLabel() {
+    return f1;
+  }
+
+  @Override
+  public void setLabel(String label) {
+    f1 = label;
+  }
+
+  @Override
+  public Set<Long> getClusteredElements() {
+    return f9;
+  }
+
+  @Override
+  public void addClusteredElements(Set<Long> elements) {
+    f9.addAll(elements);
+  }
+
+  @Override
+  public Integer size() {
+    return AbstractionUtils.getSourceCount(f8);
+  }
+
+  @Override
+  public void setBlockingLabel(String label) {
+    f10 = label;
+  }
+
+  @Override
+  public String getBlockingLabel() {
+    return f10;
+  }
+
+  @Override
+  public boolean isActive() {
+    return f11;
+  }
+
+  @Override
+  public void setActive(Boolean value) {
+    f11 = value;
+  }
+
+  @Override
+  public Integer getIntSources() {
+    return f8;
+  }
+
+  @Override
+  public void setIntSources(Integer intSources) {
+    f8 = intSources;
+  }
+}

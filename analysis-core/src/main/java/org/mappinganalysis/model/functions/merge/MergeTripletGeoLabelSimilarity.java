@@ -55,9 +55,8 @@ class MergeTripletGeoLabelSimilarity
       if (distance >= Constants.MAXIMAL_GEO_DISTANCE) {
         return 0D;
       } else {
-        BigDecimal tmpResult = null;
         double tmp = 1D - (distance / Constants.MAXIMAL_GEO_DISTANCE);
-        tmpResult = new BigDecimal(tmp);
+        BigDecimal tmpResult = new BigDecimal(tmp);
 
         return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
       }

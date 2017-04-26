@@ -75,10 +75,12 @@ public class MergeTest {
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
     // todo remove outer for loop later
-    for (int i = 0; i < 4; i++) {
-      LOG.info("Run: " + i);
+//    for (int i = 0; i < 4; i++) {
+//      LOG.info("Run: " + i);
       for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
 //        LOG.info(vertex.toString());
+
+        // add shading test
 
         if (vertex.getId() == 60191L) {
           assertTrue(vertex.getValue().getVerticesList().contains(60191L));
@@ -109,7 +111,7 @@ public class MergeTest {
 //          LOG.info("42L single");
 //        }
       }
-    }
+//    }
   }
 
   @Test

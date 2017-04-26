@@ -1,13 +1,14 @@
 package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
 /**
  * Check cluster for contained element count, if lower than max source count, return true.
  */
-class SourceCountRestrictionFilter implements FilterFunction<MergeTuple> {
+class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
   private int sourcesCount;
 
   public SourceCountRestrictionFilter(int sourcesCount) {
@@ -21,7 +22,8 @@ class SourceCountRestrictionFilter implements FilterFunction<MergeTuple> {
    * @throws Exception
    */
   @Override
-  public boolean filter(MergeTuple tuple) throws Exception {
-    return AbstractionUtils.getSourceCount(tuple.getIntSources()) < sourcesCount;
+  public boolean filter(T tuple) throws Exception {
+    MergeTuple tmp = (MergeTuple) tuple;
+    return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
   }
 }

@@ -11,14 +11,11 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.preprocessing.IsolatedEdgeRemover;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
