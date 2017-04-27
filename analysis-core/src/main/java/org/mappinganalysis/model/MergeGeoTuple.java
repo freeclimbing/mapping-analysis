@@ -29,7 +29,10 @@ public class MergeGeoTuple
     this.f8 = true;
   }
 
-  public MergeGeoTuple(Long id, boolean isActive) {
+  /**
+   * Constructor for fake tuples (with fake values)
+   */
+  public MergeGeoTuple(Long id) {
     this.f0 = id;
     this.f1 = "";
     this.f2 = 1000D;
@@ -38,7 +41,7 @@ public class MergeGeoTuple
     this.f5 = 0;
     this.f6 = new LongSet(id);
     this.f7 = "";
-    this.f8 = isActive;
+    this.f8 = false;
   }
 
   @Override

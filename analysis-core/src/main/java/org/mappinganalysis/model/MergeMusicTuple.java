@@ -27,6 +27,18 @@ public class MergeMusicTuple
     String, Integer, LongSet, String, Boolean>
     implements Identifiable, Labeled, IntSources, MergeTupleAttributes {
 
+  public MergeMusicTuple() {
+    this.f9 = new LongSet();
+    this.f11 = true;
+  }
+
+  /**
+   * Constructor for fake tuples (with fake values)
+   */
+  public MergeMusicTuple(Long id) {
+    super(id, "", "", "", "", 0, 0, "", 0, new LongSet(id), "", false);
+  }
+
   public String getAlbum() {
     return f2;
   }

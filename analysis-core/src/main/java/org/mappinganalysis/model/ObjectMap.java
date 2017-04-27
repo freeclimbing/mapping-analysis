@@ -59,6 +59,14 @@ public class ObjectMap
     this.mode = mode;
   }
 
+  public void setMode(String mode) {
+    this.mode = mode;
+  }
+
+  public String getMode() {
+    return mode;
+  }
+
   public ObjectMap runOperation(
       CustomOperation<ObjectMap> operation) {
     operation.setInput(this);
@@ -520,10 +528,6 @@ public class ObjectMap
     } else {
       return Constants.NO_VALUE;
     }
-  }
-
-  public String getMode() {
-    return mode;
   }
 
   /**

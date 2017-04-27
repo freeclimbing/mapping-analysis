@@ -12,8 +12,8 @@ import java.util.HashMap;
  * Mean aggregation used in Merge.
  * if only label sim is available, it is set to 0 if sim is below 0.7
  */
-public class MeanAggregationMode
-    extends AggregationMode<MergeTriplet>
+public class MeanAggregationMode<T>
+    extends AggregationMode<MergeTriplet<T>>
     implements Serializable{
 
   @Override

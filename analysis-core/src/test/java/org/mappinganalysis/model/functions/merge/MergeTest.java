@@ -10,6 +10,7 @@ import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -68,15 +69,17 @@ public class MergeTest {
 
     String graphPath = MergeTest.class
         .getResource("/data/representative/mergeExec/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
+    DataSet<Vertex<Long, ObjectMap>> vertices =
+
+        new JSONDataSource(graphPath, true, env)
         .getVertices()
         .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
     // todo remove outer for loop later
-//    for (int i = 0; i < 4; i++) {
-//      LOG.info("Run: " + i);
+    for (int i = 0; i < 4; i++) {
+      LOG.info("Run: " + i);
       for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
 //        LOG.info(vertex.toString());
 
@@ -111,7 +114,7 @@ public class MergeTest {
 //          LOG.info("42L single");
 //        }
       }
-//    }
+    }
   }
 
   @Test

@@ -16,14 +16,14 @@ import java.util.Set;
  *
  * Do not use reuse tuple.
  */
-public class MergeMapFunction
-    implements FlatMapFunction<MergeTriplet, MergeGeoTuple> {
-  private static final Logger LOG = Logger.getLogger(MergeMapFunction.class);
+public class MergeGeoMapFunction<T>
+    implements FlatMapFunction<MergeTriplet<T>, T> {
+  private static final Logger LOG = Logger.getLogger(MergeGeoMapFunction.class);
 
   @Override
-  public void flatMap(MergeTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
-    MergeGeoTuple priority = triplet.getSrcTuple();
-    MergeGeoTuple minor = triplet.getTrgTuple();
+  public void flatMap(MergeTriplet<T> triplet, Collector<T> out) throws Exception {
+    MergeGeoTuple priority = (MergeGeoTuple) triplet.getSrcTuple();
+    MergeGeoTuple minor = (MergeGeoTuple) triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();
@@ -65,11 +65,10 @@ public class MergeMapFunction
 
 //    LOG.info("### new cluster: " + mergedCluster.toString());
     MergeGeoTuple fakeCluster = new MergeGeoTuple(
-        priority.getId() > minor.getId() ? priority.getId() : minor.getId(),
-        false);
+        priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
 
-    out.collect(fakeCluster);
-    out.collect(mergedCluster);
+    out.collect((T) fakeCluster);
+    out.collect((T) mergedCluster);
   }
 }

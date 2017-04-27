@@ -28,7 +28,7 @@ import java.util.HashSet;
  * - smaller id is always srcTuple
  */
 class MergeTripletCreator<T>
-    implements GroupReduceFunction<T, MergeTriplet> {
+    implements GroupReduceFunction<T, MergeTriplet<T>> {
   private static final Logger LOG = Logger.getLogger(MergeTripletCreator.class);
   private DataDomain domain;
   private final int sourcesCount;
@@ -40,7 +40,7 @@ class MergeTripletCreator<T>
 
   @Override
   public void reduce(Iterable<T> values,
-                     Collector<MergeTriplet> out) throws Exception {
+                     Collector<MergeTriplet<T>> out) throws Exception {
     HashSet<T> leftSide = Sets.newHashSet(values);
     HashSet<T> rightSide = Sets.newHashSet(leftSide);
 
@@ -52,6 +52,7 @@ class MergeTripletCreator<T>
         Integer leftTypes = leftTuple.getIntTypes();
 
         triplet.setBlockingLabel(leftTuple.getBlockingLabel());
+        triplet.setSimilarity(0D);
         rightSide.remove(leftGenericTuple);
         for (T rightGenericTuple : rightSide) {
           MergeGeoTuple rightTuple = (MergeGeoTuple) rightGenericTuple;
@@ -64,8 +65,8 @@ class MergeTripletCreator<T>
 
             triplet.setIdAndTuples(leftGenericTuple, rightGenericTuple, domain);
 
-//          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
-//          LOG.info(reuseTriplet.toString());
+          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
+          LOG.info(triplet.toString());
             out.collect(triplet);
           }
         }

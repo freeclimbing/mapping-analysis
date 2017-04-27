@@ -11,11 +11,11 @@ import org.mappinganalysis.model.MergeTriplet;
  * Now we select the MergeTriplet, where the source or target id is the lowest.
  * TODO MergeTriplet smaller value is always first!? if yes, dont need all the lines
  */
-class MaxSimMinIdReducer implements ReduceFunction<MergeTriplet> {
+class MaxSimMinIdReducer<T> implements ReduceFunction<MergeTriplet<T>> {
   private static final Logger LOG = Logger.getLogger(MaxSimMinIdReducer.class);
 
   @Override
-  public MergeTriplet reduce(MergeTriplet left, MergeTriplet right) throws Exception {
+  public MergeTriplet<T> reduce(MergeTriplet<T> left, MergeTriplet<T> right) throws Exception {
 //    LOG.info(left.toString() + " #### " + right.toString());
 
     if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) > 0 ) {

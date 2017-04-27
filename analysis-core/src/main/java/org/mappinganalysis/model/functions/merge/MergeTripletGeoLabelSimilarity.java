@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.GeoDistance;
@@ -17,26 +18,29 @@ import java.util.HashMap;
 /**
  * Add similarities to Merge Triplets based on property values.
  */
-class MergeTripletGeoLabelSimilarity
-    extends SimilarityFunction<MergeTriplet, MergeTriplet>
+class MergeTripletGeoLabelSimilarity<T>
+    extends SimilarityFunction<MergeTriplet<T>, MergeTriplet<T>>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeTripletGeoLabelSimilarity.class);
-  AggregationMode<MergeTriplet> mode;
+  AggregationMode<MergeTriplet<T>> mode;
 
-  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeTriplet> mode) {
+  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeTriplet<T>> mode) {
     this.mode = mode;
   }
 
   // TODO add min sim check
   @Override
-  public MergeTriplet map(MergeTriplet triplet) throws Exception {
-    Double labelSimilarity = getLabelSimilarity(triplet.getSrcTuple().getLabel(),
-        triplet.getTrgTuple().getLabel());
+  public MergeTriplet<T> map(MergeTriplet<T> triplet) throws Exception {
+    MergeGeoTuple src = (MergeGeoTuple) triplet.getSrcTuple();
+    MergeGeoTuple trg = (MergeGeoTuple) triplet.getTrgTuple();
 
-    Double geoSimilarity = getGeoSimilarity(triplet.getSrcTuple().getLatitude(),
-        triplet.getSrcTuple().getLongitude(),
-        triplet.getTrgTuple().getLatitude(),
-        triplet.getTrgTuple().getLongitude());
+    Double labelSimilarity = getLabelSimilarity(src.getLabel(),
+        trg.getLabel());
+
+    Double geoSimilarity = getGeoSimilarity(src.getLatitude(),
+        src.getLongitude(),
+        trg.getLatitude(),
+        trg.getLongitude());
 
     HashMap<String, Double> values = Maps.newHashMap();
     values.put(Constants.LABEL, labelSimilarity);
