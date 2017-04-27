@@ -3,7 +3,7 @@ package org.mappinganalysis.model.functions.merge;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeTriplet;
+import org.mappinganalysis.model.MergeGeoTriplet;
 
 /**
  * If similarity is the same for several MergeTriplets, random value was taken previously.
@@ -11,11 +11,11 @@ import org.mappinganalysis.model.MergeTriplet;
  * Now we select the MergeTriplet, where the source or target id is the lowest.
  * TODO MergeTriplet smaller value is always first!? if yes, dont need all the lines
  */
-class MaxSimMinIdReducer<T> implements ReduceFunction<MergeTriplet<T>> {
+class MaxSimMinIdReducer implements ReduceFunction<MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(MaxSimMinIdReducer.class);
 
   @Override
-  public MergeTriplet<T> reduce(MergeTriplet<T> left, MergeTriplet<T> right) throws Exception {
+  public MergeGeoTriplet reduce(MergeGeoTriplet left, MergeGeoTriplet right) throws Exception {
 //    LOG.info(left.toString() + " #### " + right.toString());
 
     if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) > 0 ) {

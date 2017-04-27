@@ -1,4 +1,4 @@
-{"id":1981,"data":{"clusteredVertices":[1981, 1982],"typeIntern":["Settlement"],"lon":11.3167,"label":"weimar","lat":50.9833,"ontologies":["http:\/\/linkedgeodata.org\/", "http:\/\/data.nytimes.com\/"]}}
-{"id":5488,"data":{"clusteredVertices":[5488, 6166],"typeIntern":["AdministrativeRegion"],"lon":13.4,"label":"weimar republic","ontologies":["http:\/\/sws.geonames.org\/", "http:\/\/rdf.freebase.com\/"],"lat":52.5167}}
-{"id":123,"data":{"typeIntern":["Settlement","AdministrativeRegion"],"lon":-116.184,"label":"lake louise alberta","lat":51.4311,"ontologies":["http:\/\/dbpedia.org\/","http:\/\/rdf.freebase.com\/"],"clusteredVertices":[123,2060]}}
-{"id":122,"data":{"typeIntern":["BodyOfWater"],"lon":-116.235,"label":"lake louise","lat":51.4167,"ontologies":["http:\/\/sws.geonames.org\/","http:\/\/data.nytimes.com\/"],"clusteredVertices":[122,1181]}}
+{"id":1981,"data":{"clusteredVertices":[1981, 1982],"typeIntern":["Settlement"],"lon":11.3167,"label":"weimar","lat":50.9833,"dataSources":["http:\/\/linkedgeodata.org\/", "http:\/\/data.nytimes.com\/"]}}
+{"id":5488,"data":{"clusteredVertices":[5488, 6166],"typeIntern":["AdministrativeRegion"],"lon":13.4,"label":"weimar republic","dataSources":["http:\/\/sws.geonames.org\/", "http:\/\/rdf.freebase.com\/"],"lat":52.5167}}
+{"id":123,"data":{"typeIntern":["Settlement","AdministrativeRegion"],"lon":-116.184,"label":"lake louise alberta","lat":51.4311,"dataSources":["http:\/\/dbpedia.org\/","http:\/\/rdf.freebase.com\/"],"clusteredVertices":[123,2060]}}
+{"id":122,"data":{"typeIntern":["BodyOfWater"],"lon":-116.235,"label":"lake louise","lat":51.4167,"dataSources":["http:\/\/sws.geonames.org\/","http:\/\/data.nytimes.com\/"],"clusteredVertices":[122,1181]}}

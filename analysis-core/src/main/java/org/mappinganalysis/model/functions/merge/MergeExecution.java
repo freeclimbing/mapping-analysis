@@ -1,11 +1,9 @@
 package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.RichFilterFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -32,9 +30,6 @@ public class MergeExecution
     this.sourcesCount = sourcesCount;
   }
 
-  /**
-   * @param vertices base clusters - prepared dataset
-   */
   @Override
   public void setInput(DataSet<Vertex<Long, ObjectMap>> vertices) {
     this.baseClusters = vertices;
@@ -53,34 +48,34 @@ public class MergeExecution
           .map(new AddShadingTypeMapFunction())
           .map(new MergeTupleCreator(domain));
 
-      SimilarityFunction<MergeTriplet<MergeGeoTuple>, MergeTriplet<MergeGeoTuple>> simFunction;
+      SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction;
       if (domain == DataDomain.GEOGRAPHY) {
-        simFunction = new MergeTripletGeoLabelSimilarity<>(new MeanAggregationMode<>());
+        simFunction = new MergeTripletGeoLabelSimilarity(new MeanAggregationMode());
 //      } else if (domain == DataDomain.MUSIC) {
 //        simFunction = new GeoMergeSimilarity(new MeanAggregationMode<>());// TODO CHECK
       } else {
         throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
       }
 
-      SimilarityComputation<MergeTriplet<MergeGeoTuple>,
-          MergeTriplet<MergeGeoTuple>> similarityComputation
+      SimilarityComputation<MergeGeoTriplet,
+          MergeGeoTriplet> similarityComputation
           = new SimilarityComputation
-          .SimilarityComputationBuilder<MergeTriplet<MergeGeoTuple>,
-          MergeTriplet<MergeGeoTuple>>()
+          .SimilarityComputationBuilder<MergeGeoTriplet,
+          MergeGeoTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE) // TODO check
           .setThreshold(0.5) // TODO CHECK
           .build();
 
       // initial working set
-      DataSet<MergeTriplet<MergeGeoTuple>> initialWorkingSet = clusters
+      DataSet<MergeGeoTriplet> initialWorkingSet = clusters
           .filter(new SourceCountRestrictionFilter<>(domain, sourcesCount))
           .groupBy(7) // TODO
-          .reduceGroup(new MergeTripletCreator<>(domain, sourcesCount))
+          .reduceGroup(new MergeGeoTripletCreator(sourcesCount))
           .runOperation(similarityComputation);
 
       // initialize the iteration
-      DeltaIteration<MergeGeoTuple, MergeTriplet<MergeGeoTuple>> iteration = clusters
+      DeltaIteration<MergeGeoTuple, MergeGeoTriplet> iteration = clusters
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
 
       // log superstep
@@ -88,11 +83,10 @@ public class MergeExecution
 //        .map(x->x); // why do we need this line, not working without
 
       // start step function
-      MergeStepFunction<MergeGeoTuple> stepFunction = new MergeStepFunction<>(
+      MergeStepFunction stepFunction = new MergeStepFunction(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,
-          MergeGeoTuple.class,
           domain);
 
       return iteration
@@ -148,17 +142,17 @@ public class MergeExecution
   /**
    * optional Helper method to write the current iteration superstep to the log.
    */
-  private static DataSet<MergeTriplet> printSuperstep(DataSet<MergeTriplet> iteration) {
-    DataSet<MergeTriplet> superstepPrinter = iteration
+  private static DataSet<MergeGeoTriplet> printSuperstep(DataSet<MergeGeoTriplet> iteration) {
+    DataSet<MergeGeoTriplet> superstepPrinter = iteration
         .first(1)
-        .filter(new RichFilterFunction<MergeTriplet>() {
+        .filter(new RichFilterFunction<MergeGeoTriplet>() {
           private Integer superstep = null;
           @Override
           public void open(Configuration parameters) throws Exception {
             this.superstep = getIterationRuntimeContext().getSuperstepNumber();
           }
           @Override
-          public boolean filter(MergeTriplet vertex) throws Exception {
+          public boolean filter(MergeGeoTriplet vertex) throws Exception {
             LOG.info("Superstep: " + superstep);
             return false;
           }

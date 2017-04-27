@@ -3,8 +3,8 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -16,14 +16,14 @@ import java.util.Set;
  *
  * Do not use reuse tuple.
  */
-public class MergeGeoMapFunction<T>
-    implements FlatMapFunction<MergeTriplet<T>, T> {
+public class MergeGeoMapFunction
+    implements FlatMapFunction<MergeGeoTriplet, MergeGeoTuple> {
   private static final Logger LOG = Logger.getLogger(MergeGeoMapFunction.class);
 
   @Override
-  public void flatMap(MergeTriplet<T> triplet, Collector<T> out) throws Exception {
-    MergeGeoTuple priority = (MergeGeoTuple) triplet.getSrcTuple();
-    MergeGeoTuple minor = (MergeGeoTuple) triplet.getTrgTuple();
+  public void flatMap(MergeGeoTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
+    MergeGeoTuple priority = triplet.getSrcTuple();
+    MergeGeoTuple minor = triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();
@@ -68,7 +68,7 @@ public class MergeGeoMapFunction<T>
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
 
-    out.collect((T) fakeCluster);
-    out.collect((T) mergedCluster);
+    out.collect(fakeCluster);
+    out.collect(mergedCluster);
   }
 }

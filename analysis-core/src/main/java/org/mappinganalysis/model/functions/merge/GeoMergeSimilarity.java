@@ -1,13 +1,11 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeTriplet;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -17,17 +15,17 @@ import java.util.HashMap;
  * Geo merge
  */
 public class GeoMergeSimilarity
-    extends SimilarityFunction<MergeTriplet, MergeTriplet>
+    extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(GeoMergeSimilarity.class);
-  AggregationMode<MergeTriplet> mode;
+  AggregationMode<MergeGeoTriplet> mode;
 
-  public GeoMergeSimilarity(AggregationMode<MergeTriplet> mode) {
+  public GeoMergeSimilarity(AggregationMode<MergeGeoTriplet> mode) {
     this.mode = mode;
   }
 
   @Override
-  public MergeTriplet map(MergeTriplet triplet) throws Exception {
+  public MergeGeoTriplet map(MergeGeoTriplet triplet) throws Exception {
     Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
 
     HashMap<String, Double> values = Maps.newHashMap();
@@ -38,7 +36,7 @@ public class GeoMergeSimilarity
     return triplet;
   }
 
-  private Double getAttributeSimilarity(String attrName, MergeTriplet triplet) {
+  private Double getAttributeSimilarity(String attrName, MergeGeoTriplet triplet) {
 //    triplet.getSrcTuple()
 
     double similarity = 0D;

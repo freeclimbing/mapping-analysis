@@ -3,8 +3,8 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.AbstractionUtils;
 
 import java.util.Set;
@@ -15,13 +15,13 @@ import java.util.Set;
  * TODO most attributes missing
  */
 public class MergeMusicMapFunction<T>
-    implements FlatMapFunction<MergeTriplet<T>, T> {
+    implements FlatMapFunction<MergeGeoTriplet, T> {
   private static final Logger LOG = Logger.getLogger(MergeMusicMapFunction.class);
 
   @Override
-  public void flatMap(MergeTriplet<T> triplet, Collector<T> out) throws Exception {
-    MergeMusicTuple priority = (MergeMusicTuple) triplet.getSrcTuple();
-    MergeMusicTuple minor = (MergeMusicTuple) triplet.getTrgTuple();
+  public void flatMap(MergeGeoTriplet triplet, Collector<T> out) throws Exception {
+    MergeMusicTuple priority = null;// triplet.getSrcTuple();
+    MergeMusicTuple minor = null; //triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();

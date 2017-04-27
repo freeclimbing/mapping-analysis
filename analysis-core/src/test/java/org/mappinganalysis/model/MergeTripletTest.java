@@ -11,7 +11,7 @@ public class MergeTripletTest {
 
   @Test
   public void testGetLatitude() throws Exception {
-    MergeTriplet triplet = new MergeTriplet();
+    MergeGeoTriplet triplet = new MergeGeoTriplet();
 
 //    if (triplet.getLatitude() != null) {
 //      LOG.info(triplet.getLatitude());

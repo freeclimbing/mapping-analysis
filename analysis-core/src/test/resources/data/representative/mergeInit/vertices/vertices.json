@@ -1,7 +1,7 @@
-{"id":395207,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Island"],"lon":-73.1134,"label":"Long Island","ontologies":["http:\/\/linkedgeodata.org\/"],"lat":41.2182}}
-{"id":513732,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["no_type"],"lon":-73.0662,"label":"Long Island (NY)","ontologies":["http:\/\/data.nytimes.com\/"],"lat":40.8168}}
-{"id":60190,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Island"],"lon":-3.3,"label":"Foobar","ontologies":["http:\/\/dbpedia.org\/"],"lat":4.8}}
-{"id":60191,"data":{"oldHashCc":-1437194739033668411,"typeIntern":["Settlement"],"lon":-3.0662,"label":"Short Settlement","ontologies":["http:\/\/data.nytimes.com\/"],"lat":0.8168}}
-{"id":252016,"data":{"oldHashCc":-1437194739033668411,"typeIntern":["Island"],"lon":-73.06622,"label":"Long Island","ontologies":["http:\/\/sws.geonames.org\/"],"lat":40.8167651}}
-{"id":1010272,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Settlement"],"lon":-3.11344,"label":"ABC Island","ontologies":["http:\/\/sws.geonames.org\/"],"lat":41.21815}}
-{"id":1268005,"data":{"typeIntern":["no_type"],"lon":-73.3,"label":"long island","ontologies":["http:\/\/rdf.freebase.com\/"],"lat":40.8}}
+{"id":395207,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Island"],"lon":-73.1134,"label":"Long Island","dataSources":["http:\/\/linkedgeodata.org\/"],"lat":41.2182}}
+{"id":513732,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["no_type"],"lon":-73.0662,"label":"Long Island (NY)","dataSources":["http:\/\/data.nytimes.com\/"],"lat":40.8168}}
+{"id":60190,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Island"],"lon":-3.3,"label":"Foobar","dataSources":["http:\/\/dbpedia.org\/"],"lat":4.8}}
+{"id":60191,"data":{"oldHashCc":-1437194739033668411,"typeIntern":["Settlement"],"lon":-3.0662,"label":"Short Settlement","dataSources":["http:\/\/data.nytimes.com\/"],"lat":0.8168}}
+{"id":252016,"data":{"oldHashCc":-1437194739033668411,"typeIntern":["Island"],"lon":-73.06622,"label":"Long Island","dataSources":["http:\/\/sws.geonames.org\/"],"lat":40.8167651}}
+{"id":1010272,"data":{"oldHashCc":-4437194739033668409,"typeIntern":["Settlement"],"lon":-3.11344,"label":"ABC Island","dataSources":["http:\/\/sws.geonames.org\/"],"lat":41.21815}}
+{"id":1268005,"data":{"typeIntern":["no_type"],"lon":-73.3,"label":"long island","dataSources":["http:\/\/rdf.freebase.com\/"],"lat":40.8}}

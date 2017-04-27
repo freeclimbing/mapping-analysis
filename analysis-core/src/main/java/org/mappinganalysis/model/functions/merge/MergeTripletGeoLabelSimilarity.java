@@ -5,8 +5,8 @@ import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
@@ -18,21 +18,21 @@ import java.util.HashMap;
 /**
  * Add similarities to Merge Triplets based on property values.
  */
-class MergeTripletGeoLabelSimilarity<T>
-    extends SimilarityFunction<MergeTriplet<T>, MergeTriplet<T>>
+class MergeTripletGeoLabelSimilarity
+    extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeTripletGeoLabelSimilarity.class);
-  AggregationMode<MergeTriplet<T>> mode;
+  AggregationMode<MergeGeoTriplet> mode;
 
-  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeTriplet<T>> mode) {
+  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeGeoTriplet> mode) {
     this.mode = mode;
   }
 
   // TODO add min sim check
   @Override
-  public MergeTriplet<T> map(MergeTriplet<T> triplet) throws Exception {
-    MergeGeoTuple src = (MergeGeoTuple) triplet.getSrcTuple();
-    MergeGeoTuple trg = (MergeGeoTuple) triplet.getTrgTuple();
+  public MergeGeoTriplet map(MergeGeoTriplet triplet) throws Exception {
+    MergeGeoTuple src = triplet.getSrcTuple();
+    MergeGeoTuple trg = triplet.getTrgTuple();
 
     Double labelSimilarity = getLabelSimilarity(src.getLabel(),
         trg.getLabel());

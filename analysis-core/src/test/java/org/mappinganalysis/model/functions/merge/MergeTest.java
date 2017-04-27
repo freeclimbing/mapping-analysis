@@ -10,7 +10,6 @@ import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
