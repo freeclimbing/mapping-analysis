@@ -10,7 +10,9 @@ import java.util.HashMap;
 /**
  * Mean aggregation used in Merge.
  * if only label sim is available, it is set to 0 if sim is below 0.7
+ * // TODO implement restriction check in other aggr mode
  */
+@Deprecated
 public class MeanAggregationMode
     extends AggregationMode<MergeGeoTriplet>
     implements Serializable{

@@ -25,7 +25,7 @@ import java.util.HashSet;
  * - reuse objects side effects, don't use here
  * - smaller id is always srcTuple
  */
-class MergeGeoTripletCreator
+public class MergeGeoTripletCreator
     implements GroupReduceFunction<MergeGeoTuple, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(MergeGeoTripletCreator.class);
   private final int sourcesCount;
@@ -40,54 +40,29 @@ class MergeGeoTripletCreator
     HashSet<MergeGeoTuple> leftSide = Sets.newHashSet(values);
     HashSet<MergeGeoTuple> rightSide = Sets.newHashSet(leftSide);
 
-      for (MergeGeoTuple leftTuple : leftSide) {
-        MergeGeoTriplet triplet = new MergeGeoTriplet();
-        Integer leftSources = leftTuple.getIntSources();
-        Integer leftTypes = leftTuple.getIntTypes();
+    for (MergeGeoTuple leftTuple : leftSide) {
+      MergeGeoTriplet triplet = new MergeGeoTriplet();
+      Integer leftSources = leftTuple.getIntSources();
+      Integer leftTypes = leftTuple.getIntTypes();
 
-        triplet.setBlockingLabel(leftTuple.getBlockingLabel());
-        triplet.setSimilarity(0D);
-        rightSide.remove(leftTuple);
-        for (MergeGeoTuple rightTuple : rightSide) {
-          int summedSources = AbstractionUtils.getSourceCount(leftSources)
-              + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
+      triplet.setBlockingLabel(leftTuple.getBlockingLabel());
+      triplet.setSimilarity(0D);
+      rightSide.remove(leftTuple);
+      for (MergeGeoTuple rightTuple : rightSide) {
+        int summedSources = AbstractionUtils.getSourceCount(leftSources)
+            + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
 
-          if (summedSources <= sourcesCount
-              && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())
-              && AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes())) {
+        if (summedSources <= sourcesCount
+            && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())
+            && AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes())) {
 
-            triplet.setIdAndTuples(leftTuple, rightTuple);
+          triplet.setIdAndTuples(leftTuple, rightTuple);
 
           LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
           LOG.info(triplet.toString());
-            out.collect(triplet);
-          }
+          out.collect(triplet);
         }
       }
-//    } else if (domain == DataDomain.MUSIC) {
-//      for (T leftGenericTuple : leftSide) {
-//        MergeMusicTuple leftTuple = (MergeMusicTuple) leftGenericTuple;
-//        MergeTriplet<T> triplet = new MergeTriplet<>();
-//        Integer leftSources = leftTuple.getIntSources();
-//
-//        triplet.setBlockingLabel(leftTuple.getBlockingLabel());
-//        rightSide.remove(leftGenericTuple);
-//        for (T rightGenericTuple : rightSide) {
-//          MergeMusicTuple rightTuple = (MergeMusicTuple) rightGenericTuple;
-//          int summedSources = AbstractionUtils.getSourceCount(leftSources)
-//              + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
-//
-//          if (summedSources <= sourcesCount
-//              && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())) {
-//
-//            triplet.setIdAndTuples(leftGenericTuple, rightGenericTuple, domain);
-//
-////          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
-////          LOG.info(reuseTriplet.toString());
-//            out.collect(triplet);
-//          }
-//        }
-//      }
-//    }
+    }
   }
 }

@@ -5,6 +5,8 @@ import org.mappinganalysis.model.api.Identifiable;
 import org.mappinganalysis.model.api.IntSources;
 import org.mappinganalysis.model.api.Labeled;
 import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
+import scala.Int;
 
 import java.util.Set;
 
@@ -37,6 +39,32 @@ public class MergeMusicTuple
    */
   public MergeMusicTuple(Long id) {
     super(id, "", "", "", "", 0, 0, "", 0, new LongSet(id), "", false);
+  }
+
+  public String getString(String attribute) {
+    switch (attribute) {
+      case Constants.LABEL:
+        return getLabel();
+      case Constants.ALBUM:
+        return getAlbum();
+      case Constants.ARTIST:
+        return getArtist();
+      case Constants.NUMBER:
+        return getNumber();
+      default:
+        return null;
+    }
+  }
+
+  public Integer getInt(String attribute) {
+    switch (attribute) {
+      case Constants.LENGTH:
+        return getLength();
+      case Constants.YEAR:
+        return getYear();
+      default:
+        return null;
+    }
   }
 
   public String getAlbum() {

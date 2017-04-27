@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeGeoTriplet;
+import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
@@ -14,14 +15,14 @@ import java.util.Set;
  *
  * TODO most attributes missing
  */
-public class MergeMusicMapFunction<T>
-    implements FlatMapFunction<MergeGeoTriplet, T> {
+public class MergeMusicMapFunction
+    implements FlatMapFunction<MergeMusicTriplet, MergeMusicTuple> {
   private static final Logger LOG = Logger.getLogger(MergeMusicMapFunction.class);
 
   @Override
-  public void flatMap(MergeGeoTriplet triplet, Collector<T> out) throws Exception {
-    MergeMusicTuple priority = null;// triplet.getSrcTuple();
-    MergeMusicTuple minor = null; //triplet.getTrgTuple();
+  public void flatMap(MergeMusicTriplet triplet, Collector<MergeMusicTuple> out) throws Exception {
+    MergeMusicTuple priority = triplet.getSrcTuple();
+    MergeMusicTuple minor = triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();
@@ -49,7 +50,7 @@ public class MergeMusicMapFunction<T>
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
 
-    out.collect((T) fakeCluster);
-    out.collect((T) mergedCluster);
+    out.collect(fakeCluster);
+    out.collect(mergedCluster);
   }
 }

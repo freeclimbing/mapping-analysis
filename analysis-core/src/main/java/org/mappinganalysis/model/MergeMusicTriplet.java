@@ -1,12 +1,14 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.mappinganalysis.util.Constants;
 
 /**
- * Created by markus on 4/27/17.
  */
 public class MergeMusicTriplet
     extends Tuple6<Long, Long, MergeMusicTuple, MergeMusicTuple, Double, String> {
+  public MergeMusicTriplet() {
+  }
 
   public MergeMusicTriplet(MergeMusicTuple srcTuple, MergeMusicTuple trgTuple, Double similarity) {
     this.f2 = srcTuple;

@@ -41,21 +41,14 @@ public class MergeExecution
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-
     if (domain == DataDomain.GEOGRAPHY) {
       // initial solution set
       DataSet<MergeGeoTuple> clusters = baseClusters
           .map(new AddShadingTypeMapFunction())
-          .map(new MergeTupleCreator(domain));
+          .map(new MergeGeoTupleCreator());
 
-      SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction;
-      if (domain == DataDomain.GEOGRAPHY) {
-        simFunction = new MergeTripletGeoLabelSimilarity(new MeanAggregationMode());
-//      } else if (domain == DataDomain.MUSIC) {
-//        simFunction = new GeoMergeSimilarity(new MeanAggregationMode<>());// TODO CHECK
-      } else {
-        throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
-      }
+      SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
+          new MergeGeoSimilarity(new MeanAggregationMode());
 
       SimilarityComputation<MergeGeoTriplet,
           MergeGeoTriplet> similarityComputation
@@ -63,14 +56,14 @@ public class MergeExecution
           .SimilarityComputationBuilder<MergeGeoTriplet,
           MergeGeoTriplet>()
           .setSimilarityFunction(simFunction)
-          .setStrategy(SimilarityStrategy.MERGE) // TODO check
-          .setThreshold(0.5) // TODO CHECK
+          .setStrategy(SimilarityStrategy.MERGE)
+          .setThreshold(0.5)
           .build();
 
       // initial working set
       DataSet<MergeGeoTriplet> initialWorkingSet = clusters
           .filter(new SourceCountRestrictionFilter<>(domain, sourcesCount))
-          .groupBy(7) // TODO
+          .groupBy(7) // MergeGeoTuple::getBlockingLabel not working
           .reduceGroup(new MergeGeoTripletCreator(sourcesCount))
           .runOperation(similarityComputation);
 
@@ -83,7 +76,7 @@ public class MergeExecution
 //        .map(x->x); // why do we need this line, not working without
 
       // start step function
-      MergeStepFunction stepFunction = new MergeStepFunction(
+      MergeGeoStepFunction stepFunction = new MergeGeoStepFunction(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,
@@ -99,41 +92,53 @@ public class MergeExecution
     /**
      * MUSIC
      */
-//    if (domain == DataDomain.MUSIC) {
-//      // initial solution set
-//      DataSet<MergeMusicTuple> clusters = baseClusters
-//          .map(new MergeTupleCreator<>(domain));
-//
-//      // initial working set
-//      DataSet<MergeTriplet> initialWorkingSet = clusters
-//          .filter(new SourceCountRestrictionFilter<>(sourcesCount))
-//          .groupBy(MergeMusicTuple::getBlockingLabel)
-//          .reduceGroup(new MergeTripletCreator<>(domain, sourcesCount))
-//          .runOperation(similarityComputation);
-//
-//      // initialize the iteration
-//      DeltaIteration<MergeMusicTuple, MergeTriplet> iteration = clusters
-//          .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
-//
-//      // log superstep
-////    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
-////        .map(x->x); // why do we need this line, not working without
-//
-//      // start step function
-//      MergeStepFunction<MergeMusicTuple> stepFunction = new MergeStepFunction<>(
-//          iteration.getWorkset(),
-//          similarityComputation,
-//          sourcesCount,
-//          MergeMusicTuple.class,
-//          domain);
-//
-//      return iteration
-//          .closeWith(stepFunction.getDelta(), stepFunction.getWorkset())
-//          .leftOuterJoin(baseClusters)
-//          .where(0)
-//          .equalTo(0)
-//          .with(new FinalMergeVertexCreator());
-//    } else
+    if (domain == DataDomain.MUSIC) {
+      // initial solution set
+      DataSet<MergeMusicTuple> clusters = baseClusters
+          .map(new MergeMusicTupleCreator());
+
+      SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
+          new MergeMusicSimilarity();
+
+      SimilarityComputation<MergeMusicTriplet,
+          MergeMusicTriplet> similarityComputation
+          = new SimilarityComputation
+          .SimilarityComputationBuilder<MergeMusicTriplet,
+          MergeMusicTriplet>()
+          .setSimilarityFunction(simFunction)
+          .setStrategy(SimilarityStrategy.MERGE)
+          .setThreshold(0.5)
+          .build();
+
+      // initial working set
+      DataSet<MergeMusicTriplet> initialWorkingSet = clusters
+          .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount))
+          .groupBy(10)
+          .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
+          .runOperation(similarityComputation);
+
+      // initialize the iteration
+      DeltaIteration<MergeMusicTuple, MergeMusicTriplet> iteration = clusters
+          .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
+
+      // log superstep
+//    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
+//        .map(x->x); // why do we need this line, not working without
+
+      // start step function
+      MergeMusicStepFunction stepFunction = new MergeMusicStepFunction(
+          iteration.getWorkset(),
+          similarityComputation,
+          sourcesCount,
+          domain);
+
+      return iteration
+          .closeWith(stepFunction.getDelta(), stepFunction.getWorkset())
+          .leftOuterJoin(baseClusters)
+          .where(0)
+          .equalTo(0)
+          .with(new FinalMergeVertexCreator());
+    } else
     {
       throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
     }

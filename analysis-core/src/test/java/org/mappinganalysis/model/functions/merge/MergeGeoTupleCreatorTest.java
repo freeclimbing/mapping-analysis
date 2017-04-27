@@ -13,7 +13,7 @@ import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFuncti
 
 import static org.junit.Assert.assertTrue;
 
-public class MergeTupleCreatorTest {
+public class MergeGeoTupleCreatorTest {
   private static ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(MergeTest.class);
 
@@ -32,7 +32,7 @@ public class MergeTupleCreatorTest {
     DataSet<MergeGeoTuple> result = new JSONDataSource(graphPath, true, env)
         .getVertices()
         .map(new AddShadingTypeMapFunction())
-        .map(new MergeTupleCreator(DataDomain.GEOGRAPHY));
+        .map(new MergeGeoTupleCreator());
 
     assertTrue(11 == result.collect().size());
   }
@@ -52,7 +52,7 @@ public class MergeTupleCreatorTest {
     DataSet<MergeGeoTuple> result = new JSONDataSource(graphPath, true, env)
         .getVertices()
         .map(new AddShadingTypeMapFunction())
-        .map(new MergeTupleCreator(DataDomain.GEOGRAPHY));
+        .map(new MergeGeoTupleCreator());
 
     DataSet<MergeGeoTriplet> initialWorkingSet = result
         .filter(new SourceCountRestrictionFilter<>(DataDomain.GEOGRAPHY, 5))

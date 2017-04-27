@@ -12,15 +12,15 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 
 /**
- * Geo merge
+ * Advanced Geo Merge Similarity Computation, not yet working.
  */
-public class GeoMergeSimilarity
+public class AdvGeoMergeSimilarity
     extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
-  private static final Logger LOG = Logger.getLogger(GeoMergeSimilarity.class);
+  private static final Logger LOG = Logger.getLogger(AdvGeoMergeSimilarity.class);
   AggregationMode<MergeGeoTriplet> mode;
 
-  public GeoMergeSimilarity(AggregationMode<MergeGeoTriplet> mode) {
+  public AdvGeoMergeSimilarity(AggregationMode<MergeGeoTriplet> mode) {
     this.mode = mode;
   }
 

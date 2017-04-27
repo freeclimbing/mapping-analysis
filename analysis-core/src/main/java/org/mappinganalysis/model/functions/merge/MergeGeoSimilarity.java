@@ -18,13 +18,13 @@ import java.util.HashMap;
 /**
  * Add similarities to Merge Triplets based on property values.
  */
-class MergeTripletGeoLabelSimilarity
+public class MergeGeoSimilarity
     extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
-  private static final Logger LOG = Logger.getLogger(MergeTripletGeoLabelSimilarity.class);
+  private static final Logger LOG = Logger.getLogger(MergeGeoSimilarity.class);
   AggregationMode<MergeGeoTriplet> mode;
 
-  public MergeTripletGeoLabelSimilarity(AggregationMode<MergeGeoTriplet> mode) {
+  public MergeGeoSimilarity(AggregationMode<MergeGeoTriplet> mode) {
     this.mode = mode;
   }
 

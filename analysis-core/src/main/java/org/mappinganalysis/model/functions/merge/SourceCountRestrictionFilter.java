@@ -11,7 +11,7 @@ import org.mappinganalysis.util.AbstractionUtils;
 /**
  * Check cluster for contained element count, if lower than max source count, return true.
  */
-class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
+public class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
   private static final Logger LOG = Logger.getLogger(SourceCountRestrictionFilter.class);
 
   private DataDomain domain;

@@ -16,9 +16,9 @@ import java.util.Set;
  *
  * Do not use reuse tuple.
  */
-public class MergeGeoMapFunction
+public class MergeGeoMergeFunction
     implements FlatMapFunction<MergeGeoTriplet, MergeGeoTuple> {
-  private static final Logger LOG = Logger.getLogger(MergeGeoMapFunction.class);
+  private static final Logger LOG = Logger.getLogger(MergeGeoMergeFunction.class);
 
   @Override
   public void flatMap(MergeGeoTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {

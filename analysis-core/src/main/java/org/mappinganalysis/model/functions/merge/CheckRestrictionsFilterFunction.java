@@ -8,7 +8,7 @@ import org.mappinganalysis.util.AbstractionUtils;
 /**
  * Created by markus on 4/27/17.
  */
-class CheckRestrictionsFilterFunction
+public class CheckRestrictionsFilterFunction
     implements FilterFunction<MergeGeoTriplet> {
   private int sourcesCount;
 

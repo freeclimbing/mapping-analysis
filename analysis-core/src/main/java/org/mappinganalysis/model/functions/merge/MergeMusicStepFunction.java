@@ -1,46 +1,41 @@
 package org.mappinganalysis.model.functions.merge;
 
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
+import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
 /**
- * Merge step function logic.
  */
-public class MergeStepFunction {
-  private static final Logger LOG = Logger.getLogger(MergeStepFunction.class);
+public class MergeMusicStepFunction {
+  private static final Logger LOG = Logger.getLogger(MergeMusicStepFunction.class);
   private DataDomain domain;
-  private DataSet<MergeGeoTriplet> workset;
-  private SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation;
+  private DataSet<MergeMusicTriplet> workset;
+  private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
   private int sourcesCount;
-  private DataSet<MergeGeoTuple> delta;
+  private DataSet<MergeMusicTuple> delta;
 
-  public MergeStepFunction(DataSet<MergeGeoTriplet> workset,
-                           SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation,
-                           int sourcesCount,
-                           DataDomain domain) {
+  public MergeMusicStepFunction(DataSet<MergeMusicTriplet> workset,
+                              SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+                              int sourcesCount,
+                              DataDomain domain) {
     this.workset = workset;
     this.similarityComputation = similarityComputation;
     this.sourcesCount = sourcesCount;
-//    this.clazz = clazz;
     this.domain = domain;
 
     this.compute(); // TODO REMOVE
   }
 
   public void compute() {
-    DataSet<MergeGeoTriplet> maxTriplets = getIterationMaxTriplets(workset);
-//    if (domain == DataDomain.GEOGRAPHY) {
-      delta = maxTriplets.flatMap(new MergeGeoMapFunction());
-//    } else {
-//      delta = maxTriplets.flatMap(new MergeMusicMapFunction<>()); // TODO
+    DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
+      delta = maxTriplets.flatMap(new MergeMusicMapFunction()); // TODO
 //    }
 
     // remove max triplets from workset, they are getting merged anyway
@@ -50,7 +45,7 @@ public class MergeStepFunction {
         .with(new LeftMinusRightSideJoinFunction<>());
 
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets
-        .flatMap(new TransitionElementsFlatMapFunction());
+        .flatMap(new TransitionElementsFlatMapFunction<>(domain));
 
     workset = workset
         .runOperation(new NonChangedWorksetPartOperation<>(transitions))
@@ -60,11 +55,11 @@ public class MergeStepFunction {
             .runOperation(similarityComputation));
   }
 
-  public DataSet<MergeGeoTriplet> getWorkset() {
+  public DataSet<MergeMusicTriplet> getWorkset() {
     return workset;
   }
 
-  public DataSet<MergeGeoTuple> getDelta() {
+  public DataSet<MergeMusicTuple> getDelta() {
     return delta;
   }
 
@@ -73,7 +68,7 @@ public class MergeStepFunction {
    * more than one triplet has highest similarity, take lowest entity id.
    * @return only maximal similatrity riplet for each blocking key
    */
-  private static DataSet<MergeGeoTriplet> getIterationMaxTriplets(DataSet<MergeGeoTriplet> workset) {
+  private static DataSet<MergeMusicTriplet> getIterationMaxTriplets(DataSet<MergeMusicTriplet> workset) {
 //    DataSet<Tuple2<Double, String>> maxFilter =
     return workset
         .groupBy(5)
@@ -96,20 +91,5 @@ public class MergeStepFunction {
 //        .groupBy(5)
 //        .maxBy(4)
 //        .returns(new TypeHint<MergeTriplet>() {});
-  }
-
-
-  private static class TransitionElementsFlatMapFunction
-      implements FlatMapFunction<MergeGeoTriplet, Tuple2<Long, Long>> {
-    @Override
-    public void flatMap(
-        MergeGeoTriplet triplet,
-        Collector<Tuple2<Long, Long>> out) throws Exception {
-      Long min = triplet.getSrcId() < triplet.getTrgId()
-          ? triplet.getSrcId() : triplet.getTrgId();
-//            LOG.info(triplet.getSrcId() + " " + triplet.getTrgId() + " " + min);
-      out.collect(new Tuple2<>(triplet.getSrcId(), min));
-      out.collect(new Tuple2<>(triplet.getTrgId(), min));
-    }
   }
 }
