@@ -4,6 +4,8 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.DeltaIteration;
+import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -16,27 +18,24 @@ import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
-import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.*;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.*;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
-/**
- * Created by markus on 4/25/17.
- */
 public class MusicBrainzTest {
   private static final Logger LOG = Logger.getLogger(MusicBrainzTest.class);
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   /**
-   * TMP test remove later
+   * read input, preprocessing, representative creation
    * @throws Exception
    */
   @Test
@@ -72,20 +71,13 @@ public class MusicBrainzTest {
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
-//    String graphPath = SimSortTest.class.getResource("/data/musicbrainz/simsort/").getFile();
-//    Graph<Long, ObjectMap, ObjectMap> graph =
-//        new JSONDataSource(graphPath, true, env)
-//            .getGraph();
-
-    DataSet<Vertex<Long, ObjectMap>> vertices =
-        graph
-            .run(new TypeGroupBy(env)) // not needed? TODO
+    DataSet<Vertex<Long, ObjectMap>> representatives = graph
+            .run(new TypeGroupBy(env))
             .run(new SimSort(DataDomain.MUSIC, 0.7, env))
             .getVertices()
             .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
 
-//    vertices.collect();
-    vertices.print();
+    representatives.print();
   }
 
   @Test
@@ -110,6 +102,10 @@ public class MusicBrainzTest {
     mergedVertices.print();
   }
 
+  /**
+   * detailed merge part test, not needed anymore?
+   * @throws Exception
+   */
   @Test
   public void testMusicMergeFirstPart() throws Exception {
     env = TestBase.setupLocalEnvironment();
@@ -147,7 +143,12 @@ public class MusicBrainzTest {
 
     DataSet<Tuple2<Long, Long>> transitions = initialWorkingSet
         .flatMap(new TransitionElementsFlatMapFunction<>(DataDomain.MUSIC));
+
+    initialWorkingSet.print();
     transitions.print();
-//    initialWorkingSet.print();
+    // no elements, need real test for testing NonChanged
+    initialWorkingSet
+      .runOperation(new NonChangedWorksetOperation<>(transitions))
+      .print();
   }
 }

@@ -6,25 +6,24 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
 /**
+ * Merge step function logic.
  */
-public class MergeMusicStepFunction {
-  private static final Logger LOG = Logger.getLogger(MergeMusicStepFunction.class);
+public class MergeGeoStep {
+  private static final Logger LOG = Logger.getLogger(MergeGeoStep.class);
   private DataDomain domain;
-  private DataSet<MergeMusicTriplet> workset;
-  private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
+  private DataSet<MergeGeoTriplet> workset;
+  private SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation;
   private int sourcesCount;
-  private DataSet<MergeMusicTuple> delta;
+  private DataSet<MergeGeoTuple> delta;
 
-  public MergeMusicStepFunction(DataSet<MergeMusicTriplet> workset,
-                              SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
-                              int sourcesCount,
-                              DataDomain domain) {
+  public MergeGeoStep(DataSet<MergeGeoTriplet> workset,
+                      SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation,
+                      int sourcesCount,
+                      DataDomain domain) {
     this.workset = workset;
     this.similarityComputation = similarityComputation;
     this.sourcesCount = sourcesCount;
@@ -34,9 +33,8 @@ public class MergeMusicStepFunction {
   }
 
   public void compute() {
-    DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
-      delta = maxTriplets.flatMap(new MergeMusicMapFunction()); // TODO
-//    }
+    DataSet<MergeGeoTriplet> maxTriplets = getIterationMaxTriplets(workset);
+    delta = maxTriplets.flatMap(new MergeGeoMergeFunction());
 
     // remove max triplets from workset, they are getting merged anyway
     workset = workset.leftOuterJoin(maxTriplets)
@@ -48,18 +46,18 @@ public class MergeMusicStepFunction {
         .flatMap(new TransitionElementsFlatMapFunction<>(domain));
 
     workset = workset
-        .runOperation(new NonChangedWorksetPartOperation<>(transitions))
+        .runOperation(new NonChangedWorksetOperation<>(transitions))
         .union(workset
-            .runOperation(new ChangesOperation(delta, transitions, domain))
-            .runOperation(new ComputePrepareOperation(domain, sourcesCount))
+            .runOperation(new ChangesGeoOperation(delta, transitions, domain))
+            .runOperation(new ComputePrepareGeoOperation(domain, sourcesCount))
             .runOperation(similarityComputation));
   }
 
-  public DataSet<MergeMusicTriplet> getWorkset() {
+  public DataSet<MergeGeoTriplet> getWorkset() {
     return workset;
   }
 
-  public DataSet<MergeMusicTuple> getDelta() {
+  public DataSet<MergeGeoTuple> getDelta() {
     return delta;
   }
 
@@ -68,11 +66,11 @@ public class MergeMusicStepFunction {
    * more than one triplet has highest similarity, take lowest entity id.
    * @return only maximal similatrity riplet for each blocking key
    */
-  private static DataSet<MergeMusicTriplet> getIterationMaxTriplets(DataSet<MergeMusicTriplet> workset) {
+  private static DataSet<MergeGeoTriplet> getIterationMaxTriplets(DataSet<MergeGeoTriplet> workset) {
 //    DataSet<Tuple2<Double, String>> maxFilter =
     return workset
         .groupBy(5)
-        .reduce(new MaxSimMinIdReducer());
+        .reduce(new MaxSimMinIdGeoReducer());
 //        .max(4)
 //        .map(triplet -> {
 //          LOG.info("##############  " + triplet.toString());

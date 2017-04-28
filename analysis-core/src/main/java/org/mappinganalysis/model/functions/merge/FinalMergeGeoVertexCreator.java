@@ -13,21 +13,28 @@ import org.mappinganalysis.util.Constants;
  * Create final vertices from merge tuples.
  * Only active merge tuples are translated to default Gelly vertices.
  */
-public class FinalMergeVertexCreator
+public class FinalMergeGeoVertexCreator
     extends RichFlatJoinFunction<MergeGeoTuple, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   @Override
-  public void join(MergeGeoTuple left,
+  public void join(MergeGeoTuple tuple,
                    Vertex<Long, ObjectMap> second,
                    Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-    if (left.isActive()) {
+    if (tuple.isActive()) {
       ObjectMap map = new ObjectMap(Constants.GEO);
-      map.setLabel(left.getLabel());
-      map.setGeoProperties(left.getLatitude(), left.getLongitude());
-      map.setClusterDataSources(AbstractionUtils.getSourcesStringSet(Constants.GEO, left.getIntSources()));
-      map.setTypes(Constants.TYPE_INTERN, AbstractionUtils.getTypesStringSet(left.getIntTypes()));
-      map.setClusterVertices(Sets.newHashSet(left.getClusteredElements()));
+      map.setLabel(tuple.getLabel());
 
-      out.collect(new Vertex<>(left.getId(), map));
+      map.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
+      map.setClusterDataSources(
+          AbstractionUtils.getSourcesStringSet(
+              Constants.GEO,
+              tuple.getIntSources()));
+      map.setTypes(
+          Constants.TYPE_INTERN,
+          AbstractionUtils.getTypesStringSet(tuple.getIntTypes()));
+      map.setClusterVertices(
+          Sets.newHashSet(tuple.getClusteredElements()));
+
+      out.collect(new Vertex<>(tuple.getId(), map));
     }
   }
 }

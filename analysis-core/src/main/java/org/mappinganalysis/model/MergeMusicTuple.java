@@ -6,7 +6,7 @@ import org.mappinganalysis.model.api.IntSources;
 import org.mappinganalysis.model.api.Labeled;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import scala.Int;
+import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
@@ -38,7 +38,88 @@ public class MergeMusicTuple
    * Constructor for fake tuples (with fake values)
    */
   public MergeMusicTuple(Long id) {
-    super(id, "", "", "", "", 0, 0, "", 0, new LongSet(id), "", false);
+    super(id,
+        Constants.EMPTY_STRING,
+        Constants.EMPTY_STRING,
+        Constants.EMPTY_STRING,
+        Constants.EMPTY_STRING,
+        0,
+        0,
+        Constants.EMPTY_STRING,
+        0,
+        new LongSet(id),
+        Constants.EMPTY_STRING,
+        false);
+  }
+
+  public void setAttribute(String attribute, MergeMusicTuple priority, MergeMusicTuple minor) {
+    switch (attribute) {
+      case Constants.LABEL:
+        if (Utils.isSane(priority.getLabel())) {
+          setLabel(priority.getLabel());
+        } else if (Utils.isSane(minor.getLabel())) {
+          setLabel(minor.getLabel());
+        } else {
+          setLabel(Constants.EMPTY_STRING);
+        }
+        break;
+      case Constants.ALBUM:
+        if (Utils.isSane(priority.getAlbum())) {
+          setAlbum(priority.getAlbum());
+        } else if (Utils.isSane(minor.getAlbum())) {
+          setAlbum(minor.getAlbum());
+        } else {
+          setAlbum(Constants.EMPTY_STRING);
+        }
+        break;
+      case Constants.ARTIST:
+        if (Utils.isSane(priority.getArtist())) {
+          setArtist(priority.getArtist());
+        } else if (Utils.isSane(minor.getArtist())) {
+          setArtist(minor.getArtist());
+        } else {
+          setArtist(Constants.EMPTY_STRING);
+        }
+        break;
+      case Constants.NUMBER:
+        if (Utils.isSane(priority.getNumber())) {
+          setNumber(priority.getNumber());
+        } else if (Utils.isSane(minor.getNumber())) {
+          setNumber(minor.getNumber());
+        } else {
+          setNumber(Constants.EMPTY_STRING);
+        }
+        break;
+      case Constants.BLOCKING_LABEL:
+        if (Utils.isSane(priority.getBlockingLabel())) {
+          setBlockingLabel(priority.getBlockingLabel());
+        } else if (Utils.isSane(minor.getBlockingLabel())) {
+          setBlockingLabel(minor.getBlockingLabel());
+        } else {
+          setBlockingLabel(Constants.EMPTY_STRING);
+        }
+        break;
+      case Constants.YEAR:
+        if (Utils.isSaneInt(priority.getYear())) {
+          setYear(priority.getYear());
+        } else if (Utils.isSaneInt(minor.getYear())) {
+          setYear(minor.getYear());
+        } else {
+          setYear(Constants.EMPTY_INT);
+        }
+        break;
+      case Constants.LENGTH:
+        if (Utils.isSaneInt(priority.getLength())) {
+          setLength(priority.getLength());
+        } else if (Utils.isSaneInt(minor.getLength())) {
+          setLength(minor.getLength());
+        } else {
+          setLength(Constants.EMPTY_INT);
+        }
+        break;
+      default:
+        throw new IllegalArgumentException("no attribute like " + attribute);
+    }
   }
 
   public String getString(String attribute) {

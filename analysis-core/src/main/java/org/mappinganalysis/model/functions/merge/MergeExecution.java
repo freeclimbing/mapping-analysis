@@ -76,7 +76,7 @@ public class MergeExecution
 //        .map(x->x); // why do we need this line, not working without
 
       // start step function
-      MergeGeoStepFunction stepFunction = new MergeGeoStepFunction(
+      MergeGeoStep stepFunction = new MergeGeoStep(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,
@@ -87,7 +87,7 @@ public class MergeExecution
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
-          .with(new FinalMergeVertexCreator());
+          .with(new FinalMergeGeoVertexCreator());
     } else
     /**
      * MUSIC
@@ -126,7 +126,7 @@ public class MergeExecution
 //        .map(x->x); // why do we need this line, not working without
 
       // start step function
-      MergeMusicStepFunction stepFunction = new MergeMusicStepFunction(
+      MergeMusicStep stepFunction = new MergeMusicStep(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,
@@ -137,7 +137,7 @@ public class MergeExecution
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
-          .with(new FinalMergeVertexCreator());
+          .with(new FinalMergeMusicVertexCreator());
     } else
     {
       throw new IllegalArgumentException("Unsupported domain: " + domain.toString());

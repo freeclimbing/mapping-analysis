@@ -1,19 +1,15 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.*;
+import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.HashMap;
 
 /**
  * Add restrictions if only 1 similarity is available. TODO look MeanAggregationMode
@@ -53,25 +49,15 @@ public class MergeMusicSimilarity
     String left = triplet.getSrcTuple().getString(attrName);
     String right = triplet.getTrgTuple().getString(attrName);
 
-    if (left == null
-        || left.equals(Constants.NO_LABEL_FOUND)
-        || left.equals(Constants.NO_VALUE)
-        || left.equals(Constants.CSV_NO_VALUE)
-        || right == null
-        || right.equals(Constants.NO_LABEL_FOUND)
-        || right.equals(Constants.NO_VALUE)
-        || right.equals(Constants.CSV_NO_VALUE)) {
+    if (!Utils.isSane(left) || !Utils.isSane(right)) {
       return null;
     }
 
     double similarity = Utils.getTrigramMetricAndSimplifyStrings()
         .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
 
-    BigDecimal result = new BigDecimal(similarity);
-
-    double v = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-    LOG.info("left: " + left + " right: " + right + " " + attrName + ": " + v);
-
-    return v;
+    return new BigDecimal(similarity)
+        .setScale(6, BigDecimal.ROUND_HALF_UP)
+        .doubleValue();
   }
 }

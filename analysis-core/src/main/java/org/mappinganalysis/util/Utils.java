@@ -77,6 +77,24 @@ public class Utils {
   }
 
   /**
+   * Check for null and other anomaly values.
+   */
+  public static Boolean isSane(String value) {
+    return !(value == null
+        || value.equals(Constants.NO_LABEL_FOUND)
+        || value.equals(Constants.NO_VALUE)
+        || value.equals(Constants.CSV_NO_VALUE));
+  }
+
+  /**
+   * Check for null and other anomaly values.
+   */
+  public static Boolean isSaneInt(Integer value) {
+    return !(value == null
+        || value == Constants.EMPTY_INT);
+  }
+
+  /**
    * Sort a hash map by descending values
    */
   public static <T> HashMap<T, Integer> sortByValue(HashMap<T, Integer> map) {

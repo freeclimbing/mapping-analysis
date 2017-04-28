@@ -73,6 +73,38 @@ public class ObjectMap
     return operation.createResult();
   }
 
+  /**
+   * currently supported: geo or music dataset
+   */
+  public <T> void addProperties(T input) {
+    if (mode.equals(Constants.MUSIC)) {
+      MergeMusicTuple tuple = (MergeMusicTuple) input;
+      if (!tuple.getLabel().equals(Constants.EMPTY_STRING)) {
+        setLabel(tuple.getLabel());
+      }
+      if (!tuple.getAlbum().equals(Constants.EMPTY_STRING)) {
+        setAlbum(tuple.getAlbum());
+      }
+      if (!tuple.getArtist().equals(Constants.EMPTY_STRING)) {
+        setArtist(tuple.getArtist());
+      }
+      if (!tuple.getNumber().equals(Constants.EMPTY_STRING)) {
+        setNumber(tuple.getNumber());
+      }
+      if (!tuple.getLang().equals(Constants.EMPTY_STRING)) {
+        setLanguage(tuple.getLang());
+      }
+      if (!tuple.getYear().equals(Constants.EMPTY_INT)) {
+        setYear(tuple.getYear());
+      }
+      if (!tuple.getLength().equals(Constants.EMPTY_INT)) {
+        setLength(tuple.getLength());
+      }
+    } else {
+//      MergeGeoTuple tuple = (MergeGeoTuple) input; //TODO
+    }
+  }
+
   public String toString() {
     return "(" + StringUtils.arrayAwareToString(map) + ")";
   }

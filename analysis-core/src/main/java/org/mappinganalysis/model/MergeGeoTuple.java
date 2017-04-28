@@ -3,6 +3,7 @@ package org.mappinganalysis.model;
 import org.apache.flink.api.java.tuple.Tuple9;
 import org.mappinganalysis.model.api.ClusteredGeoEntity;
 import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.Set;
 
@@ -33,15 +34,15 @@ public class MergeGeoTuple
    * Constructor for fake tuples (with fake values)
    */
   public MergeGeoTuple(Long id) {
-    this.f0 = id;
-    this.f1 = "";
-    this.f2 = 1000D;
-    this.f3 = 1000D;
-    this.f4 = 0;
-    this.f5 = 0;
-    this.f6 = new LongSet(id);
-    this.f7 = "";
-    this.f8 = false;
+    super(id,
+        Constants.EMPTY_STRING,
+        1000D,
+        1000D,
+        0,
+        0,
+        new LongSet(id),
+        Constants.EMPTY_STRING,
+        false);
   }
 
   @Override

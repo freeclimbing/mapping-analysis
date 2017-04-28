@@ -3,19 +3,15 @@ package org.mappinganalysis.model.functions.merge;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeGeoTriplet;
+import org.mappinganalysis.model.MergeMusicTriplet;
 
 /**
- * If similarity is the same for several MergeTriplets, random value was taken previously.
- * Made post processing more complex. New:
- * Now we select the MergeTriplet, where the source or target id is the lowest.
- * TODO MergeTriplet smaller value is always first!? if yes, dont need all the lines
  */
-public class MaxSimMinIdReducer implements ReduceFunction<MergeGeoTriplet> {
-  private static final Logger LOG = Logger.getLogger(MaxSimMinIdReducer.class);
+public class MaxSimMinIdMusicReducer implements ReduceFunction<MergeMusicTriplet> {
+  private static final Logger LOG = Logger.getLogger(MaxSimMinIdGeoReducer.class);
 
   @Override
-  public MergeGeoTriplet reduce(MergeGeoTriplet left, MergeGeoTriplet right) throws Exception {
+  public MergeMusicTriplet reduce(MergeMusicTriplet left, MergeMusicTriplet right) throws Exception {
 //    LOG.info(left.toString() + " #### " + right.toString());
 
     if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) > 0 ) {

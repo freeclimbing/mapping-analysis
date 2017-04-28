@@ -84,6 +84,8 @@ public class Constants {
   public static final String NO_TYPE = "no_type";
   public static final String NO_VALUE = "no_value";
   public static final String CSV_NO_VALUE = "--";
+  public static final String EMPTY_STRING = "";
+  public static final int EMPTY_INT = 0;
 
   /**
    * Field name for sim value names
@@ -159,6 +161,7 @@ public class Constants {
   public static final String ARTIST = "artist";
   public static final String ALBUM = "album";
   public static final String NUMBER = "number";
+  public static final String BLOCKING_LABEL = "blockingLabel";
 
   /**
    * Language vocab
