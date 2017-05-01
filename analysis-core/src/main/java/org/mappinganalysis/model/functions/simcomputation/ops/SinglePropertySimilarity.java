@@ -92,7 +92,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     Integer srcYear = triplet.getSrcVertex().getValue().getYear();
     Integer trgYear = triplet.getTrgVertex().getValue().getYear();
 
-    if (srcYear == null || trgYear == null) {
+    if (srcYear == Constants.EMPTY_INT || trgYear == Constants.EMPTY_INT) {
       return triplet;
     }
 
@@ -114,7 +114,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     Integer srcLength = triplet.getSrcVertex().getValue().getLength();
     Integer trgLength = triplet.getTrgVertex().getValue().getLength();
 
-    if (srcLength == null || trgLength == null) {
+    if (srcLength == Constants.EMPTY_INT || trgLength == Constants.EMPTY_INT) {
       return triplet;
     }
 

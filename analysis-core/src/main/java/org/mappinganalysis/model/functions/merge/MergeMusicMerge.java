@@ -63,8 +63,8 @@ public class MergeMusicMerge
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
 
-    LOG.info("fake: " + fakeCluster.toString());
-    LOG.info("merged: " + mergedCluster.toString());
+//    LOG.info("fake: " + fakeCluster.toString());
+//    LOG.info("merged: " + mergedCluster.toString());
 
     out.collect(fakeCluster);
     out.collect(mergedCluster);

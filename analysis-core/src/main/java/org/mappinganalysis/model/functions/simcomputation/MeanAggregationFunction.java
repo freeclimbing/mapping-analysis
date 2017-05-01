@@ -26,7 +26,7 @@ public class MeanAggregationFunction implements CustomOperation<ObjectMap> {
     double aggregatedSim = 0;
     int propCount = 0;
 
-    LOG.info("properties: " + properties.toString());
+//    LOG.info("properties: " + properties.toString());
 
     for (String simKey : Constants.SIM_VALUES) {
       if (properties.containsKey(simKey)) {
@@ -35,10 +35,14 @@ public class MeanAggregationFunction implements CustomOperation<ObjectMap> {
       }
     }
 
-    BigDecimal result = new BigDecimal(aggregatedSim / propCount);
-    result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
+    if (propCount == 0) {
+      properties.setEdgeSimilarity(0D);
+    } else {
+      BigDecimal result = new BigDecimal(aggregatedSim / propCount);
+      result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
 
-    properties.setEdgeSimilarity(result.doubleValue());
+      properties.setEdgeSimilarity(result.doubleValue());
+    }
 
     return properties;
   }

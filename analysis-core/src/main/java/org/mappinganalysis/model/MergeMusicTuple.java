@@ -52,6 +52,10 @@ public class MergeMusicTuple
         false);
   }
 
+  public void setAttribute(String attribute, MergeMusicTuple value) {
+    setAttribute(attribute, value, new MergeMusicTuple(value.getId()));
+  }
+
   public void setAttribute(String attribute, MergeMusicTuple priority, MergeMusicTuple minor) {
     switch (attribute) {
       case Constants.LABEL:

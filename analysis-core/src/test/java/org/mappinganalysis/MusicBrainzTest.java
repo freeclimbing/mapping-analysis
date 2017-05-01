@@ -1,11 +1,12 @@
 package org.mappinganalysis;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.DeltaIteration;
-import org.apache.flink.api.java.operators.JoinOperator;
+import org.apache.flink.api.java.operators.MapPartitionOperator;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -13,26 +14,88 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.corruption.EdgeCreateCorruptionFunction;
+import org.mappinganalysis.corruption.EdgeRemoveCorruptionFunction;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.*;
+import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.*;
-import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 public class MusicBrainzTest {
   private static final Logger LOG = Logger.getLogger(MusicBrainzTest.class);
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+  @Test
+  public void testEdgeDataCorruption() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String path = MusicBrainzTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> inputVertices =
+        new CSVDataSource(path, vertexFileName, env)
+            .getVertices();
+
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+
+    System.out.println(inputEdges.count());
+
+    DataSet<Edge<Long, NullValue>> edges = inputEdges
+        .mapPartition(new EdgeRemoveCorruptionFunction(10));
+
+    System.out.println(edges.count());
+    // 8526
+  }
+
+  @Test
+  public void testEdgeDataAddCorruption() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String path = MusicBrainzTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> inputVertices =
+        new CSVDataSource(path, vertexFileName, env)
+            .getVertices();
+
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+
+    System.out.println(inputEdges.count());
+
+    DataSet<Edge<Long, NullValue>> newEdges = inputVertices
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Long>() {
+      @Override
+      public Long map(Vertex<Long, ObjectMap> value) throws Exception {
+        return value.getId();
+      }
+    })
+        .mapPartition(new EdgeCreateCorruptionFunction(10));
+
+    System.out.println(newEdges.count());
+
+//    DataSet<Edge<Long, NullValue>> edges =
+
+//    System.out.println(edges.count());
+    // 8526
+  }
 
   /**
    * read input, preprocessing, representative creation
@@ -80,22 +143,18 @@ public class MusicBrainzTest {
     representatives.print();
   }
 
+  /**
+   * test music merge on simple playground example data
+   */
   @Test
   public void testMusicMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();
-
     String path = MusicBrainzTest.class
-        .getResource("/data/musicbrainz/merge/")
-        .getFile();
+        .getResource("/data/musicbrainz/merge/").getFile();
 
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(path, true, env)
             .getVertices()
-            .map(x -> {
-              LOG.info("input vertex: " + x.toString());
-              return x;
-            })
-            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
             .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
 

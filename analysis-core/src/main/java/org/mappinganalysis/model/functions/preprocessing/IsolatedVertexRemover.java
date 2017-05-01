@@ -1,9 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -17,12 +14,10 @@ import org.mappinganalysis.model.ObjectMap;
 public class IsolatedVertexRemover<EV>
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private final DataSet<Tuple2<Long, Long>> edges;
-//  private final Class<VV> vertexClass;
   private DataSet<Vertex<Long, ObjectMap>> initialVertices;
 
-  public IsolatedVertexRemover(DataSet<Edge<Long, EV>> edges) {//}, Class<VV> vertexClass) {
+  public IsolatedVertexRemover(DataSet<Edge<Long, EV>> edges) {
     this.edges = edges.<Tuple2<Long, Long>>project(0, 1);
-//    this.vertexClass = vertexClass;
   }
 
   @Override
@@ -36,14 +31,6 @@ public class IsolatedVertexRemover<EV>
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-
-//    TypeHint hint = new TypeHint() {
-//      @Override
-//      public TypeInformation getTypeInfo() {
-//        return TypeInformation.of(vertexClass);
-//      }
-//    };
-
     DataSet<Vertex<Long, ObjectMap>> left = initialVertices
         .join(edges)
         .where(0)

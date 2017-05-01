@@ -53,10 +53,12 @@ public class JSONDataSink {
    * TODO What happens with empty edge collection?
    */
   public <VV, EV> void writeGraph(Graph<Long, VV, EV> graph) {
+    System.out.println("JSONDataSink: " + vertexPath);
     graph.getVertices()
         .writeAsFormattedText(vertexPath,
             FileSystem.WriteMode.OVERWRITE,
             new VertexToJSONFormatter<>());
+    System.out.println("JSONDataSink: " + edgePath);
     graph.getEdges()
         .writeAsFormattedText(edgePath,
             FileSystem.WriteMode.OVERWRITE,

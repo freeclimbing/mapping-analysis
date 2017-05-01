@@ -1,4 +1,4 @@
-package org.mappinganalysis.benchmark.musikbrainz;
+package org.mappinganalysis.benchmark.musicbrainz;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -22,6 +22,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.simmetrics.StringMetric;
@@ -88,7 +89,7 @@ public class MusicbrainzBenchmarkTest {
   }
 
   @Test
-  public void testSongLengthPrintOutput() throws Exception {
+  public void labelSpecialTestOutput() throws Exception {
     env = setupLocalEnvironment();
 
     final String path = MusicbrainzBenchmarkTest.class
@@ -175,6 +176,35 @@ public class MusicbrainzBenchmarkTest {
   }
 
   @Test
+  public void lengthTest() throws Exception {
+    env = setupLocalEnvironment();
+
+    String path = MusicbrainzBenchmarkTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+        .getVertices();
+
+    Map<String, Long> result = new LinkedHashMap<>();
+
+    vertices
+        .collect()
+        .stream()
+        .collect(Collectors
+            .groupingBy(v -> v.getValue().getLength().toString(), Collectors.counting()))
+        .entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
+
+    for (Map.Entry<String, Long> entry : result.entrySet()) {
+      System.out.println(entry.toString());
+    }
+  }
+
+  @Test
   public void languageTest() throws Exception {
     env = setupLocalEnvironment();
 
@@ -189,20 +219,44 @@ public class MusicbrainzBenchmarkTest {
     Map<String, Long> result = new LinkedHashMap<>();
 
     vertices
-        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-          @Override
-          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-//            return vertex.getValue().containsKey("orig")
-//                && vertex.getValue().get("orig") != null;
-            return vertex.getValue().containsKey("lang")
-                && vertex.getValue().get("lang") != null;
-          }
-        })
         .collect()
         .stream()
         .collect(Collectors
-//            .groupingBy(v -> v.getValue().get("orig").toString(), Collectors.counting()))
-            .groupingBy(v -> v.getValue().get("lang").toString(), Collectors.counting()))
+            .groupingBy(v -> v.getValue().get(Constants.LANGUAGE).toString(), Collectors.counting()))
+        .entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
+
+    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
+      System.out.println(stringLongEntry.toString());
+    }
+  }
+
+  /**
+   * Show blocking label distribution
+   * @throws Exception
+   */
+  @Test
+  public void blockingLabelTest() throws Exception {
+    env = setupLocalEnvironment();
+
+    String path = MusicbrainzBenchmarkTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+        .getVertices();
+
+    Map<String, Long> result = new LinkedHashMap<>();
+
+    vertices
+        .collect()
+        .stream()
+        .collect(Collectors
+            .groupingBy(v -> Utils.getBlockingLabel(v.getValue().get(Constants.LABEL).toString()), Collectors.counting()))
+//        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.<String, Long>comparingByValue())
@@ -224,20 +278,21 @@ public class MusicbrainzBenchmarkTest {
 
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices()
-        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-          @Override
-          public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
-            return value.getValue().containsKey("year")
-                && value.getValue().get("year") != null;
-//                && value.getValue().get("year") == null;
-          }
-        });
+//        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
+//          @Override
+//          public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
+//            return value.getValue().containsKey("year")
+//                && value.getValue().get("year") != null;
+////                && value.getValue().get("year") == null;
+//          }
+//        })
+        ;
 
     Map<String, Long> result = new LinkedHashMap<>();
     vertices.collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> v.getValue().get("oYear").toString(), Collectors.counting()))
+            .groupingBy(v -> v.getValue().getYear().toString(), Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.<String, Long>comparingByValue())

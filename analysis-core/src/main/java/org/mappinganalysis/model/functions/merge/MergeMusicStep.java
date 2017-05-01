@@ -33,7 +33,7 @@ public class MergeMusicStep {
 
   public void compute() {
     DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
-      delta = maxTriplets.flatMap(new MergeMusicMerge()); // TODO
+      delta = maxTriplets.flatMap(new MergeMusicMerge());
 
     // remove max triplets from workset, they are getting merged anyway
     workset = workset.leftOuterJoin(maxTriplets)

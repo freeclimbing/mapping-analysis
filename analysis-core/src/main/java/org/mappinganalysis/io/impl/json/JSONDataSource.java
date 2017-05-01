@@ -16,6 +16,7 @@ public class JSONDataSource implements DataSource {
   private final String vertexPath;
   private final String edgePath;
   private final ExecutionEnvironment environment;
+  private final String step;
 
   /**
    * Default constructor for reading input graph, files in directory "input"
@@ -42,11 +43,16 @@ public class JSONDataSource implements DataSource {
    * @param isAbsolutePath absolute is for testing only
    * @param environment env
    */
-  public JSONDataSource(String path, String step, Boolean isAbsolutePath, ExecutionEnvironment environment) {
+  public JSONDataSource(String path,
+                        String step,
+                        Boolean isAbsolutePath,
+                        ExecutionEnvironment environment) {
     this.environment = environment;
     if (!path.endsWith(Constants.SLASH)) {
       path = path.concat(Constants.SLASH);
     }
+    this.step = step;
+
     if (isAbsolutePath) { // no need to care for step
       this.vertexPath = path.concat(Constants.VERTICES);
       this.edgePath = path.concat(Constants.EDGES);
@@ -88,7 +94,8 @@ public class JSONDataSource implements DataSource {
    * @return generic graph
    */
   public <VV, EV> Graph<Long, VV, EV> getGraph(Class<VV> vertexClass, Class<EV> edgeClass) {
-
+    System.out.println("JSONDataSource: " + vertexPath);
+    System.out.println("JSONDataSource step: " + step);
     DataSet<Vertex<Long, VV>> vertices = environment.readTextFile(vertexPath)
         .map(new JSONToVertexFormatter<>(vertexClass));
     DataSet<Edge<Long, EV>> edges = environment.readTextFile(edgePath)

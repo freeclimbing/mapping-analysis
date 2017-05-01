@@ -384,18 +384,51 @@ public class Utils {
    * Get the first 3 chars of string. If label is shorter, fill up with '#'.
    */
   public static String getBlockingLabel(String label) {
-    if (label.length() < 3) {
-      label += StringUtils.repeat("#", 3 - label.length());
+    String tmp = label;
+    int blockingLength = 5;
+    // fill up to blockinglength
+    if (label.length() < blockingLength) {
+      label += StringUtils.repeat("#", blockingLength - label.length());
+    }
+    label = label.toLowerCase();
+
+    ArrayList<String> check = Lists.newArrayList("the ", "001-", "003-", "005-", "002-", "004-",
+        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
+        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp", "no_va");
+    boolean isContained = false;
+    for (String elem : check) {
+      if (label.startsWith(elem)) {
+//        System.out.println(label);
+        isContained = true;
+        label = label.substring(blockingLength-1);
+      }
+    }
+    if (isContained) {
+      for (String elem : check) { // stupid, replace
+        if (label.startsWith(elem)) {
+//        System.out.println(label);
+          label = label.substring(blockingLength-1);
+        }
+      }
     }
 
-    label = label.substring(0, 3).toLowerCase();
-    label = label.replaceAll("[^a-zA-Z0-9#]+","#");
+    // fill again
+    if (label.length() < blockingLength) {
+      label += StringUtils.repeat("#", blockingLength - label.length());
+    }
+
+    label = label.substring(0, blockingLength);
+//    label = label.replaceAll("[^a-zA-Z0-9#]+","#");
 
     // needed for chinese chars for example
-    if (label.length() < 3) {
-      label += StringUtils.repeat("#", 3 - label.length());
+    if (label.length() < blockingLength) {
+      label += StringUtils.repeat("#", blockingLength - label.length());
     }
 
+    if (label.equals("#####")) {
+      System.out.println(label + " --- " + tmp);
+      return tmp;
+    }
     return label;
   }
 

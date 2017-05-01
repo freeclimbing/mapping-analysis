@@ -471,7 +471,7 @@ public class ObjectMap
     if (map.containsKey(Constants.LENGTH) && map.get(Constants.LENGTH) != null) {
       return Ints.tryParse(map.get(Constants.LENGTH).toString());
     } else {
-      return null;
+      return Constants.EMPTY_INT;
     }
   }
 
@@ -486,7 +486,7 @@ public class ObjectMap
     if (map.containsKey(Constants.YEAR) && map.get(Constants.YEAR) != null) {
       return Ints.tryParse(map.get(Constants.YEAR).toString());
     } else {
-      return null;
+      return Constants.EMPTY_INT;
     }
   }
 

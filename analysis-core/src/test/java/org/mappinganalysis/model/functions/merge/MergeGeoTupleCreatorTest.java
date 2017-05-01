@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 
 public class MergeGeoTupleCreatorTest {
   private static ExecutionEnvironment env;
-  private static final Logger LOG = Logger.getLogger(MergeTest.class);
+  private static final Logger LOG = Logger.getLogger(MergeGeoBlockingTest.class);
 
   /**
    * 1. part
@@ -26,7 +26,7 @@ public class MergeGeoTupleCreatorTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String graphPath = MergeTest.class
+    String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec/").getFile();
 
     DataSet<MergeGeoTuple> result = new JSONDataSource(graphPath, true, env)
@@ -46,7 +46,7 @@ public class MergeGeoTupleCreatorTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String graphPath = MergeTest.class
+    String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec/").getFile();
 
     DataSet<MergeGeoTuple> result = new JSONDataSource(graphPath, true, env)

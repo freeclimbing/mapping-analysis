@@ -1,4 +1,4 @@
-package org.mappinganalysis.benchmark.musikbrainz;
+package org.mappinganalysis.benchmark.musicbrainz;
 
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.ProgramDescription;
@@ -31,18 +31,17 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 public class MusicbrainzBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  public static final String INPUT = "musicbrainz-input";
-  public static final String PREPROCESSING = "musicbrainz-preprocessing";
-  public static final String DECOMPOSITION = "musicbrainz-decomposition-representatives";
-  public static final String MERGE = "musicbrainz-merged-clusters";
-  public static final String INP_JOB = "Musicbrainz Preprocessing";
+  public static final String INPUT_STEP = "musicbrainz-input";
+  public static final String PREPROCESSING_STEP = "musicbrainz-preprocessing";
+  public static final String DECOMPOSITION_STEP = "musicbrainz-decomposition-representatives";
+  public static final String MERGE_STEP = "musicbrainz-merged-clusters";
+  public static final String INP_JOB = "Musicbrainz Input";
   public static final String PRE_JOB = "Musicbrainz Preprocessing";
   public static final String DEC_JOB = "Musicbrainz Decomposition + Representatives";
   public static final String MER_JOB = "Musicbrainz Merge";
 
   public static String INPUT_PATH;
   public static String VERTEX_FILE_NAME;
-
 
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 2, "args[0]: input dir" +
@@ -61,7 +60,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
 
-    new JSONDataSink(INPUT_PATH, INPUT)
+    new JSONDataSink(INPUT_PATH, INPUT_STEP)
         .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
     env.execute(INP_JOB);
 
@@ -69,10 +68,10 @@ public class MusicbrainzBenchmark implements ProgramDescription {
      * preprocessing
      */
     Graph<Long, ObjectMap, NullValue> graph =
-        new JSONDataSource(INPUT_PATH, Constants.INPUT, env)
+        new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
             .getGraph(ObjectMap.class, NullValue.class);
 
-    new JSONDataSink(INPUT_PATH, PREPROCESSING)
+    new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
         .writeGraph(graph.run(new DefaultPreprocessing(domain, env)));
     env.execute(PRE_JOB);
 
@@ -80,14 +79,14 @@ public class MusicbrainzBenchmark implements ProgramDescription {
      * decomposition with representative creation
      */
     DataSet<Vertex<Long, ObjectMap>> vertices =
-        new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
+        new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
             .getGraph()
             .run(new TypeGroupBy(env)) // not needed? TODO
             .run(new SimSort(domain, 0.5, env))
             .getVertices()
             .runOperation(new RepresentativeCreator(domain));
 
-    new JSONDataSink(INPUT_PATH, DECOMPOSITION)
+    new JSONDataSink(INPUT_PATH, DECOMPOSITION_STEP)
         .writeVertices(vertices);
     env.execute(DEC_JOB);
 
@@ -95,15 +94,14 @@ public class MusicbrainzBenchmark implements ProgramDescription {
      * merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(INPUT_PATH, DECOMPOSITION, env)
+        new JSONDataSource(INPUT_PATH, DECOMPOSITION_STEP, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
             .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT));
 
-    new JSONDataSink(INPUT_PATH, MERGE)
+    new JSONDataSink(INPUT_PATH, MERGE_STEP)
         .writeVertices(mergedVertices);
     env.execute(MER_JOB);
-
   }
 
   @Override

@@ -18,9 +18,9 @@ import java.util.HashMap;
 import static org.junit.Assert.*;
 
 
-public class MergeTest {
+public class MergeGeoBlockingTest {
   private static ExecutionEnvironment env;
-  private static final Logger LOG = Logger.getLogger(MergeTest.class);
+  private static final Logger LOG = Logger.getLogger(MergeGeoBlockingTest.class);
 
   /**
    * Check (especially) rejoin single vertices from SimSort:
@@ -34,7 +34,7 @@ public class MergeTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String filePath = MergeTest.class
+    String filePath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeInit/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(filePath, true, env)
             .getVertices()
@@ -66,7 +66,7 @@ public class MergeTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String graphPath = MergeTest.class
+    String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices =
 
@@ -122,7 +122,7 @@ public class MergeTest {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();
 
-    String graphPath = MergeTest.class
+    String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
