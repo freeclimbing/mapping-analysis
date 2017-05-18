@@ -67,17 +67,17 @@ public class MusicbrainzBenchmarkTest {
         .getVertices()
         .map(vertex -> {
           if (vertex.getId() == 1L) {
-            assertEquals(219, vertex.getValue().getLength().intValue()); // 219
+            assertEquals(219, vertex.getValue().getLength()); // 219
           } else if (vertex.getId() == 15184L) {
-            assertEquals(220, vertex.getValue().getLength().intValue()); // 3.663
+            assertEquals(220, vertex.getValue().getLength()); // 3.663
           } else if (vertex.getId() == 13138L) {
-            assertEquals(147, vertex.getValue().getLength().intValue()); // 2m 27sec
+            assertEquals(147, vertex.getValue().getLength()); // 2m 27sec
           } else if (vertex.getId() == 4L) {
-            assertEquals(null, vertex.getValue().getLength()); // unk.
+            assertEquals(0, vertex.getValue().getLength()); // unk.
           } else if (vertex.getId() == 15382L) {
-            assertEquals(403, vertex.getValue().getLength().intValue()); // 402840
+            assertEquals(403, vertex.getValue().getLength()); // 402840
           } else if (vertex.getId() == 10291L) {
-            assertEquals(222, vertex.getValue().getLength().intValue()); // 03:42
+            assertEquals(222, vertex.getValue().getLength()); // 03:42
           }
           return vertex;
         })
@@ -192,7 +192,7 @@ public class MusicbrainzBenchmarkTest {
         .collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> v.getValue().getLength().toString(), Collectors.counting()))
+            .groupingBy(v -> String.valueOf(v.getValue().getLength()), Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.<String, Long>comparingByValue())

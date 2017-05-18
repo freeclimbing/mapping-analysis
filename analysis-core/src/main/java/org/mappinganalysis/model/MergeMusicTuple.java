@@ -6,7 +6,6 @@ import org.mappinganalysis.model.api.IntSources;
 import org.mappinganalysis.model.api.Labeled;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
@@ -52,80 +51,6 @@ public class MergeMusicTuple
         false);
   }
 
-  public void setAttribute(String attribute, MergeMusicTuple value) {
-    setAttribute(attribute, value, new MergeMusicTuple(value.getId()));
-  }
-
-  public void setAttribute(String attribute, MergeMusicTuple priority, MergeMusicTuple minor) {
-    switch (attribute) {
-      case Constants.LABEL:
-        if (Utils.isSane(priority.getLabel())) {
-          setLabel(priority.getLabel());
-        } else if (Utils.isSane(minor.getLabel())) {
-          setLabel(minor.getLabel());
-        } else {
-          setLabel(Constants.EMPTY_STRING);
-        }
-        break;
-      case Constants.ALBUM:
-        if (Utils.isSane(priority.getAlbum())) {
-          setAlbum(priority.getAlbum());
-        } else if (Utils.isSane(minor.getAlbum())) {
-          setAlbum(minor.getAlbum());
-        } else {
-          setAlbum(Constants.EMPTY_STRING);
-        }
-        break;
-      case Constants.ARTIST:
-        if (Utils.isSane(priority.getArtist())) {
-          setArtist(priority.getArtist());
-        } else if (Utils.isSane(minor.getArtist())) {
-          setArtist(minor.getArtist());
-        } else {
-          setArtist(Constants.EMPTY_STRING);
-        }
-        break;
-      case Constants.NUMBER:
-        if (Utils.isSane(priority.getNumber())) {
-          setNumber(priority.getNumber());
-        } else if (Utils.isSane(minor.getNumber())) {
-          setNumber(minor.getNumber());
-        } else {
-          setNumber(Constants.EMPTY_STRING);
-        }
-        break;
-      case Constants.BLOCKING_LABEL:
-        if (Utils.isSane(priority.getBlockingLabel())) {
-          setBlockingLabel(priority.getBlockingLabel());
-        } else if (Utils.isSane(minor.getBlockingLabel())) {
-          setBlockingLabel(minor.getBlockingLabel());
-        } else {
-          setBlockingLabel(Constants.EMPTY_STRING);
-        }
-        break;
-      case Constants.YEAR:
-        if (Utils.isSaneInt(priority.getYear())) {
-          setYear(priority.getYear());
-        } else if (Utils.isSaneInt(minor.getYear())) {
-          setYear(minor.getYear());
-        } else {
-          setYear(Constants.EMPTY_INT);
-        }
-        break;
-      case Constants.LENGTH:
-        if (Utils.isSaneInt(priority.getLength())) {
-          setLength(priority.getLength());
-        } else if (Utils.isSaneInt(minor.getLength())) {
-          setLength(minor.getLength());
-        } else {
-          setLength(Constants.EMPTY_INT);
-        }
-        break;
-      default:
-        throw new IllegalArgumentException("no attribute like " + attribute);
-    }
-  }
-
   public String getString(String attribute) {
     switch (attribute) {
       case Constants.LABEL:
@@ -136,17 +61,6 @@ public class MergeMusicTuple
         return getArtist();
       case Constants.NUMBER:
         return getNumber();
-      default:
-        return null;
-    }
-  }
-
-  public Integer getInt(String attribute) {
-    switch (attribute) {
-      case Constants.LENGTH:
-        return getLength();
-      case Constants.YEAR:
-        return getYear();
       default:
         return null;
     }
@@ -176,19 +90,19 @@ public class MergeMusicTuple
     f4 = number;
   }
 
-  public Integer getYear() {
+  public int getYear() {
     return f5;
   }
 
-  public void setYear(Integer year) {
+  public void setYear(int year) {
     f5 = year;
   }
 
-  public Integer getLength() {
+  public int getLength() {
     return f6;
   }
 
-  public void setLength(Integer length) {
+  public void setLength(int length) {
     f6 = length;
   }
 

@@ -220,6 +220,10 @@ public class ObjectMap
     return getGeoValue(Constants.LAT);
   }
 
+  public Double getLongitude() {
+    return getGeoValue(Constants.LON);
+  }
+
   private void setLatitude(Double latitude) {
     map.put(Constants.LAT, latitude);
   }
@@ -233,10 +237,6 @@ public class ObjectMap
       setLatitude(latitude);
       setLongitude(longitude);
     }
-  }
-
-  public Double getLongitude() {
-    return getGeoValue(Constants.LON);
   }
 
   private Double getGeoValue(String latOrLon) {
@@ -435,12 +435,16 @@ public class ObjectMap
     map.put(Constants.LENGTH, length);
   }
 
-  public Integer getLength() {
-    if (map.containsKey(Constants.LENGTH) && map.get(Constants.LENGTH) != null) {
-      return Ints.tryParse(map.get(Constants.LENGTH).toString());
-    } else {
-      return Constants.EMPTY_INT;
+  public int getLength() {
+    if (map.containsKey(Constants.LENGTH)
+        && map.get(Constants.LENGTH) != null) {
+      Integer result = Ints.tryParse(map.get(Constants.LENGTH).toString());
+      if (result != null) {
+        return result;
+      }
     }
+
+    return Constants.EMPTY_INT;
   }
 
   public void setYear(Integer year) {

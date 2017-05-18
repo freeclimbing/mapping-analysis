@@ -7,6 +7,7 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
@@ -41,15 +42,71 @@ public class MergeMusicMerge
         minor.getIntSources()));
 
     // attributes
-    mergedCluster.setAttribute(Constants.BLOCKING_LABEL, priority, minor);
-    mergedCluster.setAttribute(Constants.LABEL, priority, minor);
-    mergedCluster.setAttribute(Constants.ALBUM, priority, minor);
-    mergedCluster.setAttribute(Constants.ARTIST, priority, minor);
-    mergedCluster.setAttribute(Constants.NUMBER, priority, minor);
+    //Constants.BLOCKING_LABEL, priority, minor);
+    if (Utils.isSane(priority.getBlockingLabel())) {
+      mergedCluster.setBlockingLabel(priority.getBlockingLabel());
+    } else if (Utils.isSane(minor.getBlockingLabel())) {
+      mergedCluster.setBlockingLabel(minor.getBlockingLabel());
+    } else {
+      mergedCluster.setBlockingLabel(Constants.EMPTY_STRING);
+    }
+
+    //  Constants.LABEL
+    if (Utils.isSane(priority.getLabel())) {
+      mergedCluster.setLabel(priority.getLabel());
+    } else if (Utils.isSane(minor.getLabel())) {
+      mergedCluster.setLabel(minor.getLabel());
+    } else {
+      mergedCluster.setLabel(Constants.EMPTY_STRING);
+    }
+
+    //Constants.ALBUM
+    if (Utils.isSane(priority.getAlbum())) {
+      mergedCluster.setAlbum(priority.getAlbum());
+    } else if (Utils.isSane(minor.getAlbum())) {
+      mergedCluster.setAlbum(minor.getAlbum());
+    } else {
+      mergedCluster.setAlbum(Constants.EMPTY_STRING);
+    }
+
+    //Constants.ARTIST, priority, minor);
+    if (Utils.isSane(priority.getArtist())) {
+      mergedCluster.setArtist(priority.getArtist());
+    } else if (Utils.isSane(minor.getArtist())) {
+      mergedCluster.setArtist(minor.getArtist());
+    } else {
+      mergedCluster.setArtist(Constants.EMPTY_STRING);
+    }
+
+    //Constants.NUMBER, priority, minor);
+    if (Utils.isSane(priority.getNumber())) {
+      mergedCluster.setNumber(priority.getNumber());
+    } else if (Utils.isSane(minor.getNumber())) {
+      mergedCluster.setNumber(minor.getNumber());
+    } else {
+      mergedCluster.setNumber(Constants.EMPTY_STRING);
+    }
+
 //    mergedCluster.setAttribute(Constants.LANGUAGE, priority, minor);
     mergedCluster.setLang(Constants.EMPTY_STRING); // TODO check
-    mergedCluster.setAttribute(Constants.YEAR, priority, minor);
-    mergedCluster.setAttribute(Constants.LENGTH, priority, minor);
+
+    //Constants.YEAR, priority, minor);
+    if (Utils.isSaneInt(priority.getYear())) {
+      mergedCluster.setYear(priority.getYear());
+    } else if (Utils.isSaneInt(minor.getYear())) {
+      mergedCluster.setYear(minor.getYear());
+    } else {
+      mergedCluster.setYear(Constants.EMPTY_INT);
+    }
+
+    //Constants.LENGTH, priority, minor);
+    if (Utils.isSaneInt(priority.getLength())) {
+      mergedCluster.setLength(priority.getLength());
+    } else if (Utils.isSaneInt(minor.getLength())) {
+      mergedCluster.setLength(minor.getLength());
+    } else {
+      mergedCluster.setLength(Constants.EMPTY_INT);
+    }
 
     MergeMusicTuple fakeCluster = new MergeMusicTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
