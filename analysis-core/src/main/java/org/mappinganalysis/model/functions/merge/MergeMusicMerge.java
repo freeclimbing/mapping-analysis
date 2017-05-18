@@ -7,14 +7,11 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 import java.util.Set;
 
 /**
  * Merge implementation for music dataset.
- *
- * TODO most attributes missing
  */
 public class MergeMusicMerge
     implements FlatMapFunction<MergeMusicTriplet, MergeMusicTuple> {
@@ -43,11 +40,7 @@ public class MergeMusicMerge
         priority.getIntSources(),
         minor.getIntSources()));
 
-//    mergedCluster.setBlockingLabel(priority.getBlockingLabel());
-
-    /**
-     * test things
-     */
+    // attributes
     mergedCluster.setAttribute(Constants.BLOCKING_LABEL, priority, minor);
     mergedCluster.setAttribute(Constants.LABEL, priority, minor);
     mergedCluster.setAttribute(Constants.ALBUM, priority, minor);
@@ -58,10 +51,8 @@ public class MergeMusicMerge
     mergedCluster.setAttribute(Constants.YEAR, priority, minor);
     mergedCluster.setAttribute(Constants.LENGTH, priority, minor);
 
-//    LOG.info("### new cluster: " + mergedCluster.toString());
     MergeMusicTuple fakeCluster = new MergeMusicTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
-//    LOG.info("### fake cluster: " + fakeCluster.toString());
 
 //    LOG.info("fake: " + fakeCluster.toString());
 //    LOG.info("merged: " + mergedCluster.toString());

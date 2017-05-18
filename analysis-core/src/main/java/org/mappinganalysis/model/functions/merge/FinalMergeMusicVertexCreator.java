@@ -20,7 +20,28 @@ public class FinalMergeMusicVertexCreator
                    Collector<Vertex<Long, ObjectMap>> out) throws Exception {
     if (tuple.isActive()) {
       ObjectMap map = new ObjectMap(Constants.MUSIC);
-      map.addProperties(tuple);
+
+      if (!tuple.getLabel().equals(Constants.EMPTY_STRING)) {
+        map.setLabel(tuple.getLabel());
+      }
+      if (!tuple.getAlbum().equals(Constants.EMPTY_STRING)) {
+        map.setAlbum(tuple.getAlbum());
+      }
+      if (!tuple.getArtist().equals(Constants.EMPTY_STRING)) {
+        map.setArtist(tuple.getArtist());
+      }
+      if (!tuple.getNumber().equals(Constants.EMPTY_STRING)) {
+        map.setNumber(tuple.getNumber());
+      }
+      if (!tuple.getLang().equals(Constants.EMPTY_STRING)) {
+        map.setLanguage(tuple.getLang());
+      }
+      if (tuple.getYear() != Constants.EMPTY_INT) {
+        map.setYear(tuple.getYear());
+      }
+      if (tuple.getLength() != Constants.EMPTY_INT) {
+        map.setLength(tuple.getLength());
+      }
 
       map.setClusterDataSources(
           AbstractionUtils.getSourcesStringSet(

@@ -36,7 +36,7 @@ public class MergeGeoTupleCreator
     tuple.setIntTypes(properties.getIntTypes());
     tuple.setIntSources(properties.getIntDataSources());
     tuple.addClusteredElements(properties.getVerticesList());
-    tuple.setBlockingLabel(Utils.getBlockingLabel(properties.getLabel()));
+    tuple.setBlockingLabel(Utils.getGeoBlockingLabel(properties.getLabel()));
 
 //    LOG.info("### CREATE: " + tuple.toString());
     return tuple;

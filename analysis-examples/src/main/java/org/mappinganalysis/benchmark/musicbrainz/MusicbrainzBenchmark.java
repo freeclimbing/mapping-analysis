@@ -81,7 +81,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
             .getGraph()
-            .run(new TypeGroupBy(env)) // not needed? TODO
+            .run(new TypeGroupBy(env))
             .run(new SimSort(domain, 0.5, env))
             .getVertices()
             .runOperation(new RepresentativeCreator(domain));

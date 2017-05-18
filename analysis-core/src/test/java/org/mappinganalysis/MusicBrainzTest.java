@@ -2,11 +2,8 @@ package org.mappinganalysis;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.MapPartitionOperator;
-import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -38,7 +35,7 @@ public class MusicBrainzTest {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
-  public void testEdgeDataCorruption() throws Exception {
+  public void testEdgeRemoveCorruption() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
     String path = MusicBrainzTest.class
@@ -63,7 +60,7 @@ public class MusicBrainzTest {
   }
 
   @Test
-  public void testEdgeDataAddCorruption() throws Exception {
+  public void testEdgeAddCorruption() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
     String path = MusicBrainzTest.class
@@ -90,6 +87,12 @@ public class MusicBrainzTest {
         .mapPartition(new EdgeCreateCorruptionFunction(10));
 
     System.out.println(newEdges.count());
+
+    DataSet<Edge<Long, NullValue>> unionEdges = inputEdges
+        .union(newEdges)
+        .distinct();
+
+    System.out.println(unionEdges.count());
 
 //    DataSet<Edge<Long, NullValue>> edges =
 

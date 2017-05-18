@@ -135,35 +135,35 @@ public class MergeGeoBlockingTest {
   @Test
   public void testAddBlockingLabel() throws Exception {
     String testLabel = "foobar";
-    String blockingLabel = Utils.getBlockingLabel(testLabel);
+    String blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("foo"));
-    blockingLabel = Utils.getBlockingLabel(testLabel.substring(0, 1));
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel.substring(0, 1));
     assertTrue(blockingLabel.equals("f##"));
     testLabel = "+5";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("#5#"));
 
     testLabel = "Long Island, NY";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("lon"));
 
     testLabel = "N123";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("n12"));
     testLabel = "1ABC";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("1ab"));
 
     testLabel = "安市";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("###"));
 
     testLabel = "ﻚﻓﺭ ﺐﻬﻣ";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("###"));
 
     testLabel = "Pułaczów";
-    blockingLabel = Utils.getBlockingLabel(testLabel);
+    blockingLabel = Utils.getGeoBlockingLabel(testLabel);
     assertTrue(blockingLabel.equals("pu#"));
   }
 

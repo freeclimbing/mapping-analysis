@@ -3,7 +3,6 @@ package org.mappinganalysis.benchmark.musicbrainz;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -255,7 +254,8 @@ public class MusicbrainzBenchmarkTest {
         .collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> Utils.getBlockingLabel(v.getValue().get(Constants.LABEL).toString()), Collectors.counting()))
+            .groupingBy(v -> Utils.getMusicBlockingLabel(v.getValue().get(Constants.LABEL).toString()),
+                Collectors.counting()))
 //        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
         .entrySet()
         .stream()

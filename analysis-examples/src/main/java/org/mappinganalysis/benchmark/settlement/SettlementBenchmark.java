@@ -7,7 +7,6 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.example.ConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.corruption.DataCorruption;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
@@ -45,8 +44,9 @@ public class SettlementBenchmark implements ProgramDescription {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 1, "args[0]: input dir");
+    Preconditions.checkArgument(args.length == 2, "args[0]: input dir, args[1]: isCorrupted");
     Constants.SOURCE_COUNT = 4;
+    boolean isCorrupted = args[1].equals("isCorrupted");
     INPUT_PATH = args[0];
     Double minSimSortSim = 0.7;
 
@@ -56,19 +56,20 @@ public class SettlementBenchmark implements ProgramDescription {
     Graph<Long, ObjectMap, NullValue> preprocGraph =
         new JSONDataSource(INPUT_PATH, env)
             .getGraph(ObjectMap.class, NullValue.class)
-        .run(new DataCorruption(env));
+            .run(new DataCorruption(env));
 
-    // additional corrupt
-    Graph<Long, ObjectMap, NullValue> tmpGraph = preprocGraph
-        .run(new ConnectedComponentIdAdder<>(env));
+    if (isCorrupted) {
+      // additional corrupt
+      Graph<Long, ObjectMap, NullValue> tmpGraph = preprocGraph
+          .run(new ConnectedComponentIdAdder<>(env));
 
-    DataSet<Edge<Long, NullValue>> distinctEdges = tmpGraph
-        .getVertices()
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+      DataSet<Edge<Long, NullValue>> distinctEdges = tmpGraph
+          .getVertices()
+          .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
-    new JSONDataSink(INPUT_PATH, CORRUPTED)
-        .writeGraph(Graph.fromDataSet(tmpGraph.getVertices(), distinctEdges, env));
-    // end corrupt
+      new JSONDataSink(INPUT_PATH, CORRUPTED)
+          .writeGraph(Graph.fromDataSet(tmpGraph.getVertices(), distinctEdges, env));
+    }
 
     new JSONDataSink(INPUT_PATH, PREPROCESSING)
         .writeGraph(preprocGraph

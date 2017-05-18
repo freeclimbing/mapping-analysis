@@ -21,7 +21,10 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.*;
+import org.mappinganalysis.model.EdgeComponentTuple3;
+import org.mappinganalysis.model.MergeGeoTuple;
+import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.VertexComponentTuple2;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.simplifiers.Simplifiers;
@@ -381,9 +384,10 @@ public class Utils {
   }
 
   /**
-   * Get the first 3 chars of string. If label is shorter, fill up with '#'.
+   * music blocking
+   * Get the first 5 chars of string. If label is shorter, fill up with '#'.
    */
-  public static String getBlockingLabel(String label) {
+  public static String getMusicBlockingLabel(String label) {
     String tmp = label;
     int blockingLength = 5;
     // fill up to blockinglength
@@ -429,6 +433,26 @@ public class Utils {
       System.out.println(label + " --- " + tmp);
       return tmp;
     }
+    return label;
+  }
+
+  /**
+   * "old" geo blocking
+   * Get the first 3 chars of string. If label is shorter, fill up with '#'.
+   */
+  public static String getGeoBlockingLabel(String label) {
+    if (label.length() < 3) {
+      label += StringUtils.repeat("#", 3 - label.length());
+    }
+
+    label = label.substring(0, 3).toLowerCase();
+    label = label.replaceAll("[^a-zA-Z0-9#]+","#");
+
+    // needed for chinese chars for example
+    if (label.length() < 3) {
+      label += StringUtils.repeat("#", 3 - label.length());
+    }
+
     return label;
   }
 
