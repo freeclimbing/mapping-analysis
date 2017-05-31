@@ -1,21 +1,17 @@
 package org.mappinganalysis;
 
-import com.google.common.cache.Cache;
 import com.google.common.collect.Lists;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.s1ck.gdl.GDLHandler;
 
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.Map;
 
 /**
  * basic test class
@@ -53,6 +49,18 @@ public class MappingAnalysisExampleTest {
     for (org.s1ck.gdl.model.Edge edge : handler.getEdges()) {
       ObjectMap map = new ObjectMap(); // edge
       // edges shall not be null
+//      if (edge.getProperties().size() == 0) {
+//        System.out.println("size 0");
+//      }
+      System.out.println(edge.toString());
+      if (edge.getProperties() == null) {
+        System.out.println("null");
+      }
+
+      for (Map.Entry<String, Object> stringObjectEntry : map.entrySet()) {
+        System.out.println(stringObjectEntry);
+      }
+
       map.putAll(edge.getProperties());
       edgeList.add(new Edge<>(edge.getSourceVertexId(),
           edge.getTargetVertexId(), map));

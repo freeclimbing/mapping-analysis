@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -22,8 +21,6 @@ import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -252,7 +249,8 @@ public class PreprocessingTest {
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
     Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(graphPath, true, env)
-        .getGraph(ObjectMap.class, NullValue.class);
+        .getGraph(ObjectMap.class, NullValue.class)
+        .mapVertices(new InternalTypeMapFunction());
 
     assertEquals(6, graph
         .run(new TypeMisMatchCorrection(env))

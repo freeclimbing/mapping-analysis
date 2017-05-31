@@ -149,7 +149,7 @@ public class MusicBrainzTest {
         .getVertices()
         .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
 
-//    representatives.print();
+    representatives.print();
 
     // compute edges within representatives
     DataSet<Edge<Long, NullValue>> edgeResultSet = representatives
@@ -159,14 +159,14 @@ public class MusicBrainzTest {
 //    edgeResultSet.print();
 
     printQuality(inputVertices, edgeResultSet);
-    // merge
 
-    DataSet<Vertex<Long, ObjectMap>> merged = representatives
-        .runOperation(new MergeInitialization(DataDomain.MUSIC))
-        .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
-
-    printQuality(inputVertices, merged.runOperation(new EdgeComputationVertexCcSet())
-        .map(new SmallEdgeIdFirstMapFunction()));
+//    // merge
+//    DataSet<Vertex<Long, ObjectMap>> merged = representatives
+//        .runOperation(new MergeInitialization(DataDomain.MUSIC))
+//        .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
+//
+//    printQuality(inputVertices, merged.runOperation(new EdgeComputationVertexCcSet())
+//        .map(new SmallEdgeIdFirstMapFunction()));
   }
 
   private void printQuality(DataSet<Vertex<Long, ObjectMap>> inputVertices,
