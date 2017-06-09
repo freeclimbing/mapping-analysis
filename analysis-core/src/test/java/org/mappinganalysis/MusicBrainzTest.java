@@ -3,7 +3,6 @@ package org.mappinganalysis;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -31,7 +30,6 @@ import org.mappinganalysis.model.functions.merge.*;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
-import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import static org.junit.Assert.assertEquals;
@@ -124,9 +122,9 @@ public class MusicBrainzTest {
 
     DataSet<Vertex<Long, ObjectMap>> inputVertices =
         new CSVDataSource(path, vertexFileName, env)
-            .getVertices()
-            .filter(vertex -> vertex.getValue().getCcId() < 200L)
-            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+            .getVertices();
+//            .filter(vertex -> vertex.getValue().getCcId() < 500L)
+//            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
         .runOperation(new EdgeComputationVertexCcSet(
@@ -153,8 +151,8 @@ public class MusicBrainzTest {
 
     // compute edges within representatives
     DataSet<Edge<Long, NullValue>> edgeResultSet = representatives
-        .runOperation(new EdgeComputationVertexCcSet())
-        .map(new SmallEdgeIdFirstMapFunction()); // include in edge comp
+        .runOperation(new EdgeComputationVertexCcSet());
+//        .map(new SmallEdgeIdFirstMapFunction()); // include in edge comp
 
 //    edgeResultSet.print();
 
@@ -177,7 +175,10 @@ public class MusicBrainzTest {
     LOG.info("checkcount: " + checkCount);
 
     DataSet<Edge<Long, NullValue>> goldEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), EdgeComputationStrategy.ALL, true));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.ALL,
+            true));
     long goldCount = goldEdges.count();
 //    goldEdges.print();
 

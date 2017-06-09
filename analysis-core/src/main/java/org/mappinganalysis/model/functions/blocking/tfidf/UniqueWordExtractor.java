@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Copied from
+ * Copied in parts from
  * https://github.com/dataArtisans/flink-training-exercises/blob/master/src/main/java/com/dataartisans/flinktraining/exercises/dataset_java/tf_idf/MailTFIDF.java
  */
 public class UniqueWordExtractor
@@ -36,7 +36,7 @@ public class UniqueWordExtractor
   @Override
   public void open(Configuration config) {
     this.emittedWords = new HashSet<>();
-    this.wordPattern = Pattern.compile("(\\p{Alpha})+"); // Alnum ?
+    this.wordPattern = Pattern.compile("(\\p{Alpha})+");
   }
 
   @Override
@@ -49,8 +49,9 @@ public class UniqueWordExtractor
     // for each word candidate
     while(st.hasMoreTokens()) {
       String word = st.nextToken().toLowerCase();
-
-//      System.out.println(word);
+      if (word.length() == 1) {
+        continue;
+      }
 
       Matcher m = this.wordPattern.matcher(word);
       if(m.matches() && !this.stopWords.contains(word)

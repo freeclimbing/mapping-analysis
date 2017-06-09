@@ -162,6 +162,8 @@ public class Constants {
   public static final String ALBUM = "album";
   public static final String NUMBER = "number";
   public static final String BLOCKING_LABEL = "blockingLabel";
+  public static final String ARTIST_TITLE_ALBUM = "artistTitleAlbum";
+  public static final String IDF_VALUES = "idfValues";
 
   /**
    * Language vocab

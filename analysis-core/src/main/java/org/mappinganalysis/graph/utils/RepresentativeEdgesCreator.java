@@ -28,19 +28,23 @@ public class RepresentativeEdgesCreator
   public DataSet<Edge<Long, NullValue>> createResult() {
     return vertices
         .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, Edge<Long, NullValue>>() {
-          @Override
-          public void flatMap(Vertex<Long, ObjectMap> vertex,
-                              Collector<Edge<Long, NullValue>> out) throws Exception {
-            HashSet<Long> rightVerticesList = Sets.newHashSet(
-                vertex.getValue().getVerticesList());
-            HashSet<Long> leftVerticesList = Sets.newHashSet(rightVerticesList);
-            for (Long left : leftVerticesList) {
-              rightVerticesList.remove(left);
-              for (Long right : rightVerticesList) {
-                out.collect(new Edge<>(left, right, NullValue.getInstance()));
-              }
+      @Override
+      public void flatMap(Vertex<Long, ObjectMap> vertex,
+                          Collector<Edge<Long, NullValue>> out) throws Exception {
+        HashSet<Long> rightVerticesList = Sets.newHashSet(
+            vertex.getValue().getVerticesList());
+        HashSet<Long> leftVerticesList = Sets.newHashSet(rightVerticesList);
+        for (Long left : leftVerticesList) {
+          rightVerticesList.remove(left);
+          for (Long right : rightVerticesList) {
+            if (left < right) {
+              out.collect(new Edge<>(left, right, NullValue.getInstance()));
+            } else {
+              out.collect(new Edge<>(right, left, NullValue.getInstance()));
             }
           }
-        });
+        }
+      }
+    });
   }
 }

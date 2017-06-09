@@ -35,46 +35,36 @@ public class MusicCSVToVertexFormatter
   @Override
   public Vertex<Long, ObjectMap> map(
       Tuple10<Long,  //0 TID --> vertex id
-                Long,  //1 CID --> cluster id
-      //          Long,  // CTID --> cluster intern id
-                Long,  //2 SourceID, 1 to 5
-      //          String,  //IGNORE - strange mix numbers and letters
-                String,  //3 number - song number? sometimes letters involved
-                String,  //4 title
-                String,  //5 length, e.g., 4m 32sec, 432, 432000, 4.58
-                String,  //6 artist
-                String,  //7 album
-                String,  //8 year, e.g., 2009, '09
-                String> value)  //9 language
+          Long,  //1 CID --> cluster id
+          //          Long,  // CTID --> cluster intern id
+          Long,  //2 SourceID, 1 to 5
+          //          String,  //IGNORE - strange mix numbers and letters
+          String,  //3 number - song number? sometimes letters involved
+          String,  //4 title
+          String,  //5 length, e.g., 4m 32sec, 432, 432000, 4.58
+          String,  //6 artist
+          String,  //7 album
+          String,  //8 year, e.g., 2009, '09
+          String> value)  //9 language
       throws Exception {
-        vertex.setValue(new ObjectMap(Constants.MUSIC));
-        vertex.setId(value.f0);
-        ObjectMap properties = vertex.getValue();
+    vertex.setValue(new ObjectMap(Constants.MUSIC));
+    vertex.setId(value.f0);
+    ObjectMap properties = vertex.getValue();
 
-        properties.setCcId(value.f1);
-        properties.setLabel(value.f4);
+    properties.setCcId(value.f1);
+    properties.setLabel(value.f4);
 
-        properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
-        properties.put(Constants.NUMBER, value.f3);
-//        if (value.f0 == 4L) {
-//          LOG.info("test: " + value.toString());
-//        }
-//        if (value.f0 == 4L)
-//          LOG.info("N: " + vertex.toString());
-        fixSongLength(value.f5);
-//        if (value.f0 == 4L)
-//          LOG.info("L: " + vertex.toString());
+    properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
+    properties.put(Constants.NUMBER, value.f3);
+    fixSongLength(value.f5);
 //        properties.put(Constants.LENGTH, fixSongLength(value.f5));
 //        properties.put("oLength", value.f5);
-        properties.put(Constants.ARTIST, value.f6);
-        properties.put(Constants.ALBUM, value.f7);
-        fixYear(value.f8);
+    properties.put(Constants.ARTIST, value.f6);
+    properties.put(Constants.ALBUM, value.f7);
+    fixYear(value.f8);
 //         properties.put("oYear", value.f8);
-        properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
+    properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
 //         properties.put("orig", value.f9);  // tmp for test
-
-//        if (value.f0 == 4L)
-//        LOG.info(vertex.toString());
 
     return vertex;
   }

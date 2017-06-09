@@ -4,6 +4,7 @@ import org.apache.flink.api.java.tuple.Tuple6;
 import org.mappinganalysis.util.Constants;
 
 /**
+ * L, L, T, T, sim, blocking label
  */
 public class MergeMusicTriplet
     extends Tuple6<Long, Long, MergeMusicTuple, MergeMusicTuple, Double, String> {
@@ -16,6 +17,15 @@ public class MergeMusicTriplet
     this.f4 = similarity;
   }
 
+  public MergeMusicTriplet(MergeMusicTuple left, MergeMusicTuple right) {
+    setIdAndTuples(left, right);
+    this.f4 = 0d;
+    this.f5 = Constants.EMPTY_STRING;
+  }
+
+  /**
+   * Sort left tuple to be the smaller id.
+   */
   public void setIdAndTuples(MergeMusicTuple left, MergeMusicTuple right) {
     if (left.getId() < right.getId()) {
       setSrcId(left.getId());

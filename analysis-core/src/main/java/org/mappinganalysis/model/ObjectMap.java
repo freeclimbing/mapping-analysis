@@ -116,6 +116,26 @@ public class ObjectMap
     }
   }
 
+  public void setArtistTitleAlbum(String value) {
+    map.put(Constants.ARTIST_TITLE_ALBUM, value);
+  }
+
+  public String getArtistTitleAlbum() {
+    return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
+  }
+
+  public HashMap<String, Double> getIDFs() {
+    if (map.containsKey(Constants.IDF_VALUES)) {
+      return (HashMap<String, Double>) map.get(Constants.IDF_VALUES);
+    } else {
+      return Maps.newHashMap();
+    }
+  }
+
+  public void setIDFs(HashMap<String, Double> idfs) {
+      map.put(Constants.IDF_VALUES, idfs);
+  }
+
   /**
    * Get the set of type strings for a vertex from the input graph.
    * @return String set of rdf:type values
@@ -540,6 +560,24 @@ public class ObjectMap
     } else {
       return Constants.NO_VALUE;
     }
+  }
+
+  /**
+   * TF/IDF method to get max values from tmp result and add to result
+   */
+  public void addMaxValueToResult(HashMap<String, Double> tmpResult) {
+    double minValue = tmpResult.values().stream().min(Double::compare).get();
+    HashMap<String, Double> idfs = getIDFs();
+
+    for(Iterator<Map.Entry<String, Double>> it = tmpResult.entrySet().iterator(); it.hasNext(); ) {
+      Map.Entry<String, Double> entry = it.next();
+
+      if (entry.getValue() == minValue) {
+        idfs.put(entry.getKey(), entry.getValue());
+        it.remove();
+      }
+    }
+    setIDFs(idfs);
   }
 
   /**

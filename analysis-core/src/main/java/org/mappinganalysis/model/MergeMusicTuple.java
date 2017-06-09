@@ -1,6 +1,6 @@
 package org.mappinganalysis.model;
 
-import org.apache.flink.api.java.tuple.Tuple12;
+import org.apache.flink.api.java.tuple.Tuple13;
 import org.mappinganalysis.model.api.Identifiable;
 import org.mappinganalysis.model.api.IntSources;
 import org.mappinganalysis.model.api.Labeled;
@@ -22,10 +22,11 @@ import java.util.Set;
  * 9. clustered elements list - LongSet
  * 10. blocking label - String
  * 11. activity flag - Bool
+ * 12. complex artist title album string
  */
 public class MergeMusicTuple
-    extends Tuple12<Long, String, String, String, String, Integer, Integer,
-    String, Integer, LongSet, String, Boolean>
+    extends Tuple13<Long, String, String, String, String, Integer, Integer,
+        String, Integer, LongSet, String, Boolean, String>
     implements Identifiable, Labeled, IntSources, MergeTupleAttributes {
 
   public MergeMusicTuple() {
@@ -48,7 +49,8 @@ public class MergeMusicTuple
         0,
         new LongSet(id),
         Constants.EMPTY_STRING,
-        false);
+        false,
+        Constants.EMPTY_STRING);
   }
 
   public String getString(String attribute) {
@@ -112,6 +114,14 @@ public class MergeMusicTuple
 
   public void setLang(String lang) {
     f7 = lang;
+  }
+
+  public void setArtistTitleAlbum(String value) {
+    f12 = value;
+  }
+
+  public String getArtistTitleAlbum() {
+    return f12;
   }
 
   @Override

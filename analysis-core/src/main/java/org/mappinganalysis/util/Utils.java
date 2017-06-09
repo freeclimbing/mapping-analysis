@@ -433,6 +433,37 @@ public class Utils {
   }
 
   /**
+   * Create custom artist title album string for blocking.
+   */
+  public static String createArtistTitleAlbum(Vertex<Long, ObjectMap> value) {
+    String artistTitleAlbum = Constants.EMPTY_STRING;
+    String artist = value.getValue().getArtist();
+    if (!artist.equals(Constants.CSV_NO_VALUE)) {
+      artistTitleAlbum = artist;
+    }
+    String label = value.getValue().getLabel();
+    if (!label.equals(Constants.CSV_NO_VALUE)) {
+      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+        artistTitleAlbum = label;
+      } else {
+        artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(label);
+      }
+    }
+    String album = value.getValue().getAlbum();
+    if (!album.equals(Constants.CSV_NO_VALUE)) {
+      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+        artistTitleAlbum = album;
+      } else {
+        artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(album);
+      }
+    }
+
+    artistTitleAlbum = artistTitleAlbum.replaceAll("\\W", " ").replaceAll("\\p{Punct}", " ");
+
+    return artistTitleAlbum;
+  }
+
+  /**
    * Get label substring of according length
    */
   private static String updateBlockedLabel(String label, int blockingLength) {

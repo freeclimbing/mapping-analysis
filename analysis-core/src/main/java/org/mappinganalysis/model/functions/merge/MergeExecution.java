@@ -8,6 +8,8 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.*;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.blocking.tfidf.IdfBlockingOperation;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
@@ -93,7 +95,12 @@ public class MergeExecution
     if (domain == DataDomain.MUSIC) {
       // initial solution set
       DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator());
+          .map(new MergeMusicTupleCreator()); // added artist title album
+//          .map(x -> {
+//            LOG.info(x.toString());
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeMusicTuple>() {});
 
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
           new MergeMusicSimilarity();
@@ -108,12 +115,37 @@ public class MergeExecution
           .setThreshold(0.5)
           .build();
 
+      // prep phase initial working set
+
+      DataSet<MergeMusicTuple> preBlockingClusters = clusters
+          .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
+
+      BlockingStrategy blockingStrategy = BlockingStrategy.IDF_BLOCKING;
       // initial working set
       DataSet<MergeMusicTriplet> initialWorkingSet = clusters
           .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount))
           .groupBy(10)
           .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
           .runOperation(similarityComputation);
+      DataSet<MergeMusicTriplet> initialWorkingSet;
+
+      if (blockingStrategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
+        initialWorkingSet = preBlockingClusters
+            .groupBy(10) // blocking key
+            .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
+            .runOperation(similarityComputation);
+//          .map(x -> {
+//            LOG.info(x.toString());
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeMusicTriplet>() {});
+      } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
+        initialWorkingSet = preBlockingClusters
+            .runOperation(new IdfBlockingOperation(2)) // TODO define support globally
+            .runOperation(similarityComputation);
+      } else  {
+        throw new IllegalArgumentException("Unsupported strategy: " + blockingStrategy);
+      }
 
       // initialize the iteration
       DeltaIteration<MergeMusicTuple, MergeMusicTriplet> iteration = clusters

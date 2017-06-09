@@ -2,11 +2,10 @@ package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeMusicTriplet;
 
 /**
- * Created by markus on 4/28/17.
+ * Join to create triplet.
  */
 public class TransitionMusicJoinFunction
     implements JoinFunction<MergeMusicTriplet, Tuple2<Long, Long>, MergeMusicTriplet> {

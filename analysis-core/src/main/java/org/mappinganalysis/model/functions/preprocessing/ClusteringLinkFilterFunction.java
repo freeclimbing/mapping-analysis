@@ -26,12 +26,14 @@ public class ClusteringLinkFilterFunction extends LinkFilterFunction {
   public ClusteringLinkFilterFunction(ExecutionEnvironment env) {
     this.env = env;
   }
+
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
       DataSet<Tuple3<Long, String, Double>> oneToManyCandidates = graph
         .groupReduceOnNeighbors(new FinalOneToManyRemovalFunction(), EdgeDirection.ALL);
 
-    DataSet<Vertex<Long, ObjectMap>> bestCandidates = oneToManyCandidates.groupBy(1)
+    DataSet<Vertex<Long, ObjectMap>> bestCandidates = oneToManyCandidates
+        .groupBy(1)
         .max(2).andMin(0)
         .map(tuple -> new Tuple2<>(tuple.f1, tuple.f2)) // string, double
         .returns(new TypeHint<Tuple2<String, Double>>() {})

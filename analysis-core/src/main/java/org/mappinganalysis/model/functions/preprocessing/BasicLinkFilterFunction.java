@@ -30,14 +30,18 @@ public class BasicLinkFilterFunction
   private Boolean removeIsolatedVertices;
   private ExecutionEnvironment env;
 
-  public BasicLinkFilterFunction(List<String> sources, Boolean removeIsolatedVertices, ExecutionEnvironment env) {
+  public BasicLinkFilterFunction(
+      List<String> sources,
+      Boolean removeIsolatedVertices,
+      ExecutionEnvironment env) {
     this.sources = sources;
     this.removeIsolatedVertices = removeIsolatedVertices;
     this.env = env;
   }
 
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+  public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph)
+      throws Exception {
     graph = graph.run(new ConnectedComponentIdAdder<>(env));
 
     // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
