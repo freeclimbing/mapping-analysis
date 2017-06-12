@@ -115,6 +115,8 @@ public class MergeMusicMerge
 //    LOG.info("merged: " + mergedCluster.toString());
 
     out.collect(fakeCluster);
+//    LOG.info("fake: " + fakeCluster.toString());
+//    LOG.info("merge: " + mergedCluster.toString());
     out.collect(mergedCluster);
   }
 }

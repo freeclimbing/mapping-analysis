@@ -1,26 +1,39 @@
 package org.mappinganalysis.model.functions.blocking.tfidf;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 
 /**
  * Created by markus on 6/9/17.
  */
 public class HighIDFValueMapper
     extends RichMapFunction<MergeMusicTuple, Tuple2<Long, ObjectMap>> {
-  private List<Tuple2<String, Double>> idfs;
+//  private List<Tuple2<String, Double>> idfs;
+  private Map<String, Double> valueMap = Maps.newHashMap();
+  private Set<String> stopWords;
+
+  public HighIDFValueMapper(String[] stopWords) {
+    this.stopWords = Sets.newHashSet(stopWords);
+  }
 
   @Override
   public void open(Configuration parameters) {
-    this.idfs = getRuntimeContext().getBroadcastVariable("idf");
+
+    List<Tuple2<String, Double>> idf = getRuntimeContext().getBroadcastVariable("idf");
+
+    for (Tuple2<String, Double> stringDoubleTuple2 : idf) {
+      valueMap.put(stringDoubleTuple2.f0, stringDoubleTuple2.f1);
+    }
+//    System.out.println(valueMap.toString());
+
+//    this.idfs = getRuntimeContext().getBroadcastVariable("idf");
   }
 
   @Override
@@ -31,11 +44,17 @@ public class HighIDFValueMapper
     while (st.hasMoreTokens()) {
       String word = st.nextToken().toLowerCase();
 
-      for (Tuple2<String, Double> idf : idfs) {
-        if (idf.f0.equals(word)) {
-          tmpResult.put(idf.f0, idf.f1);
-        }
+      if (word.length() == 1 || stopWords.contains(word) || valueMap.get(word) == null) {
+        continue;
       }
+
+      tmpResult.put(word, valueMap.get(word));
+
+//      for (Tuple2<String, Double> idf : idfs) {
+//        if (idf.f0.equals(word)) {
+//          tmpResult.put(idf.f0, idf.f1);
+//        }
+//      }
     }
 //        LOG.info("tmpResult size: " + tmpResult.size());
 

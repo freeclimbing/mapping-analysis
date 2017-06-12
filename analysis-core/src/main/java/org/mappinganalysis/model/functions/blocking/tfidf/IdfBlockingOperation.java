@@ -44,7 +44,7 @@ public class IdfBlockingOperation
         .runOperation(new TfIdfComputer(STOP_WORDS));
 
     DataSet<Tuple2<Long, ObjectMap>> idfExtracted = inputData
-        .map(new HighIDFValueMapper())
+        .map(new HighIDFValueMapper(STOP_WORDS))
         .withBroadcastSet(idfValues, "idf");
 
     DataSet<Edge<Long, Integer>> idfSupportEdges = idfExtracted

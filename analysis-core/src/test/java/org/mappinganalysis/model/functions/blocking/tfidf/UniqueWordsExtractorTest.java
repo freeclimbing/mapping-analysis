@@ -16,17 +16,14 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Test;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
 import org.mappinganalysis.util.Utils;
-import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,13 +61,13 @@ public class UniqueWordsExtractorTest {
         .getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
-        .getVertices();
+        .getVertices();//;
 //        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
 //          @Override
 //          public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
 //            return vertex.getValue().getCcId() < 10L;
 //          }
-//        })
+//        });
 
 //    vertices.print();
 
@@ -107,8 +104,10 @@ public class UniqueWordsExtractorTest {
         .runOperation(new TfIdfComputer(STOP_WORDS));
 
     DataSet<Tuple2<Long, ObjectMap>> idfExtracted = mmTuples
-        .map(new HighIDFValueMapper())
+        .map(new HighIDFValueMapper(STOP_WORDS))
         .withBroadcastSet(idfValues, "idf");
+
+//    idfExtracted.collect();
 
     DataSet<Edge<Long, Integer>> idfSupportEdges = idfExtracted
         .flatMap(new FlatMapFunction<Tuple2<Long, ObjectMap>, Tuple2<Long, String>>() {
@@ -144,27 +143,27 @@ public class UniqueWordsExtractorTest {
         .groupBy(0, 1)
         .sum(2);
 
-    LOG.info("all: " + idfSupportEdges.count());
-
-    DataSet<Edge<Long, Integer>> fourPlusEdges = idfSupportEdges
-        .filter(new FilterFunction<Edge<Long, Integer>>() {
-      @Override
-      public boolean filter(Edge<Long, Integer> value) throws Exception {
-        return value.f2 > 3;
-      }
-    });
-
-    LOG.info("four plus: " + fourPlusEdges.count());
-
-    DataSet<Edge<Long, Integer>> threePlusEdges = idfSupportEdges
-        .filter(new FilterFunction<Edge<Long, Integer>>() {
-          @Override
-          public boolean filter(Edge<Long, Integer> value) throws Exception {
-            return value.f2 > 2;
-          }
-        });
-
-    LOG.info("three plus: " + threePlusEdges.count());
+//    LOG.info("all: " + idfSupportEdges.count());
+//
+//    DataSet<Edge<Long, Integer>> fourPlusEdges = idfSupportEdges
+//        .filter(new FilterFunction<Edge<Long, Integer>>() {
+//      @Override
+//      public boolean filter(Edge<Long, Integer> value) throws Exception {
+//        return value.f2 > 3;
+//      }
+//    });
+//
+//    LOG.info("four plus: " + fourPlusEdges.count());
+//
+//    DataSet<Edge<Long, Integer>> threePlusEdges = idfSupportEdges
+//        .filter(new FilterFunction<Edge<Long, Integer>>() {
+//          @Override
+//          public boolean filter(Edge<Long, Integer> value) throws Exception {
+//            return value.f2 > 2;
+//          }
+//        });
+//
+//    LOG.info("three plus: " + threePlusEdges.count());
 
     DataSet<Edge<Long, Integer>> twoPlusEdges = idfSupportEdges
         .filter(new FilterFunction<Edge<Long, Integer>>() {
@@ -176,10 +175,10 @@ public class UniqueWordsExtractorTest {
 
     LOG.info("two plus: " + twoPlusEdges.count());
 
-    DataSet<Edge<Long, NullValue>> ccEdges = vertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
-
-    LOG.info("cc edges: " + ccEdges.count());
+//    DataSet<Edge<Long, NullValue>> ccEdges = vertices
+//        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+//
+//    LOG.info("cc edges: " + ccEdges.count());
 
 
 //    idfValues.collect()

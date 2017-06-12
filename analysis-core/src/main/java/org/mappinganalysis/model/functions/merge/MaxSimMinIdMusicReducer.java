@@ -7,15 +7,17 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 
 /**
  */
-public class MaxSimMinIdMusicReducer implements ReduceFunction<MergeMusicTriplet> {
+public class MaxSimMinIdMusicReducer
+    implements ReduceFunction<MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(MaxSimMinIdGeoReducer.class);
 
   @Override
-  public MergeMusicTriplet reduce(MergeMusicTriplet left, MergeMusicTriplet right) throws Exception {
+  public MergeMusicTriplet reduce(MergeMusicTriplet left,
+                                  MergeMusicTriplet right) throws Exception {
 //    LOG.info(left.toString() + " #### " + right.toString());
 
     if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) > 0 ) {
-//      LOG.info("### take left");
+//      LOG.info("### take left: " + left.toString());
       return left;
     } else if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) == 0) {
       Long first = left.getSrcId() < left.getTrgId() ? left.getSrcId() : left.getTrgId();
@@ -38,7 +40,7 @@ public class MaxSimMinIdMusicReducer implements ReduceFunction<MergeMusicTriplet
         return right;
       }
     } else {
-//      LOG.info("### take right");
+//      LOG.info("### take right: " + right.toString());
       return right;
     }
   }
