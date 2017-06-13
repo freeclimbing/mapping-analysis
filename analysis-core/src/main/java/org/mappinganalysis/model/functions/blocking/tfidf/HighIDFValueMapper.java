@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 /**
- * Created by markus on 6/9/17.
+ * Get best TF/IDF values for each input.
  */
 public class HighIDFValueMapper
     extends RichMapFunction<MergeMusicTuple, Tuple2<Long, ObjectMap>> {

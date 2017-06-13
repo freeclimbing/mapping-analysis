@@ -57,8 +57,8 @@ public class MusicBrainzTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
-//    System.out.println(inputEdges.count());
     assertEquals(9375, inputEdges.count());
+//    System.out.println(inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> edges = inputEdges
         .mapPartition(new EdgeRemoveCorruptionFunction(10));
@@ -85,8 +85,7 @@ public class MusicBrainzTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
-    assertEquals(9375, inputEdges.count());
-//    System.out.println(inputEdges.count());
+    System.out.println(inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> newEdges = inputVertices
         .map(new MapFunction<Vertex<Long, ObjectMap>, Long>() {

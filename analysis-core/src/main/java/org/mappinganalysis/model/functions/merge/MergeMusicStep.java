@@ -6,7 +6,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -36,10 +35,9 @@ public class MergeMusicStep {
 
   public void compute() {
     DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
-      delta = maxTriplets.flatMap(new MergeMusicMerge());
+    delta = maxTriplets.flatMap(new MergeMusicMerge());
 
-//    workset = printSuperstep(workset)
-//        .map(x->x); // why do we need this line, not working without
+    workset = printSuperstep(workset);
 
     // remove max triplets from workset, they are getting merged anyway
     workset = workset.leftOuterJoin(maxTriplets)
@@ -69,9 +67,10 @@ public class MergeMusicStep {
   /**
    * In each iteration, get the highest triplet similarity for each blocking key. If
    * more than one triplet has highest similarity, take lowest entity id.
-   * @return only maximal similatrity riplet for each blocking key
+   * @return only maximal similarity triplet for each blocking key
    */
-  private static DataSet<MergeMusicTriplet> getIterationMaxTriplets(DataSet<MergeMusicTriplet> workset) {
+  private static DataSet<MergeMusicTriplet> getIterationMaxTriplets(
+      DataSet<MergeMusicTriplet> workset) {
     return workset
         .groupBy(5)
         .reduce(new MaxSimMinIdMusicReducer());
@@ -80,22 +79,26 @@ public class MergeMusicStep {
   /**
    * optional Helper method to write the current iteration superstep to the log.
    */
-  private static DataSet<MergeGeoTriplet> printSuperstep(DataSet<MergeGeoTriplet> iteration) {
-    DataSet<MergeGeoTriplet> superstepPrinter = iteration
+  private static <T> DataSet<T> printSuperstep(DataSet<T> iteration) {
+    DataSet<T> superstepPrinter = iteration
         .first(1)
-        .filter(new RichFilterFunction<MergeGeoTriplet>() {
-          private Integer superstep = null;
-          @Override
-          public void open(Configuration parameters) throws Exception {
-            this.superstep = getIterationRuntimeContext().getSuperstepNumber();
-          }
-          @Override
-          public boolean filter(MergeGeoTriplet vertex) throws Exception {
-            LOG.info("Superstep: " + superstep);
-            return false;
-          }
-        });
+        .filter(new SuperStepFilter<T>());
 
     return iteration.union(superstepPrinter);
+  }
+
+  private static class SuperStepFilter<T> extends RichFilterFunction<T> {
+    private Integer superstep = null;
+
+    @Override
+    public void open(Configuration parameters) throws Exception {
+      this.superstep = getIterationRuntimeContext().getSuperstepNumber();
+    }
+
+    @Override
+    public boolean filter(T vertex) throws Exception {
+      LOG.info("Superstep: " + superstep);
+      return false;
+    }
   }
 }

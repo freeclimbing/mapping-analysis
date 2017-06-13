@@ -13,10 +13,6 @@ import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.gsa.ApplyFunction;
-import org.apache.flink.graph.gsa.GatherFunction;
-import org.apache.flink.graph.gsa.Neighbor;
-import org.apache.flink.graph.gsa.SumFunction;
 import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
@@ -53,12 +49,11 @@ public class IdfBlockingOperation
     DataSet<Tuple2<String, Double>> idfValues = inputData
         .runOperation(new TfIdfComputer(STOP_WORDS));
 
-    DataSet<Tuple2<Long, ObjectMap>> idfExtracted = inputData
-        .map(new HighIDFValueMapper(STOP_WORDS))
-        .withBroadcastSet(idfValues, "idf");
+//    DataSet<Tuple2<Long, ObjectMap>> idfExtracted = ;
 
-    DataSet<Edge<Long, Integer>> idfSupportEdges = idfExtracted
-        .flatMap(new VertexIdfSingleValueExtractor())
+    DataSet<Edge<Long, Integer>> idfSupportEdges = inputData
+        .flatMap(new HighIDFValueFlatMapper(STOP_WORDS))
+        .withBroadcastSet(idfValues, "idf")
         .groupBy(1) // idf string
         .reduceGroup(new IdfBasedEdgeCreator())
         .groupBy(0, 1)
@@ -110,33 +105,6 @@ public class IdfBlockingOperation
             return first;
           }
         });
-  }
-
-
-  @SuppressWarnings("serial")
-  private static final class GatherNeighborIds extends GatherFunction<Long, NullValue, Long> {
-
-    public Long gather(Neighbor<Long, NullValue> neighbor) {
-      return neighbor.getNeighborValue();
-    }
-  };
-
-  @SuppressWarnings("serial")
-  private static final class SelectMinId extends SumFunction<Long, NullValue, Long> {
-
-    public Long sum(Long newValue, Long currentValue) {
-      return Math.min(newValue, currentValue);
-    }
-  };
-
-  @SuppressWarnings("serial")
-  private static final class UpdateComponentId extends ApplyFunction<Long, Long, Long> {
-
-    public void apply(Long summedValue, Long origValue) {
-      if (summedValue < origValue) {
-        setResult(summedValue);
-      }
-    }
   }
 
   /**
