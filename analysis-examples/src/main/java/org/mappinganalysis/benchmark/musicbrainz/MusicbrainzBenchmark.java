@@ -98,7 +98,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, DECOMPOSITION_STEP, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT));
+            .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT, env));
 
     new JSONDataSink(INPUT_PATH, MERGE_STEP)
         .writeVertices(mergedVertices);

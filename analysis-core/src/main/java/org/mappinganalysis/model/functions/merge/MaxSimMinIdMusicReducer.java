@@ -20,6 +20,7 @@ public class MaxSimMinIdMusicReducer
 //      LOG.info("### take left: " + left.toString());
       return left;
     } else if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) == 0) {
+//      LOG.info("### others");
       Long first = left.getSrcId() < left.getTrgId() ? left.getSrcId() : left.getTrgId();
       Long second = right.getSrcId() < right.getTrgId() ? right.getSrcId() : right.getTrgId();
       if (first < second) {

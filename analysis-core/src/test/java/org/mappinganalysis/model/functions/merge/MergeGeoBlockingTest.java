@@ -72,7 +72,7 @@ public class MergeGeoBlockingTest {
 
         new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5, env));
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
@@ -126,7 +126,7 @@ public class MergeGeoBlockingTest {
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5, env));
 
 //    vertices.print();
     assertEquals(4, vertices.count());

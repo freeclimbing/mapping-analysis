@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.graph.Vertex;
@@ -23,11 +24,13 @@ public class MergeExecution
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
   private DataDomain domain;
   private int sourcesCount;
+  private ExecutionEnvironment env;
   private DataSet<Vertex<Long, ObjectMap>> baseClusters;
 
-  public MergeExecution(DataDomain domain, int sourcesCount) {
+  public MergeExecution(DataDomain domain, int sourcesCount, ExecutionEnvironment env) {
     this.domain = domain;
     this.sourcesCount = sourcesCount;
+    this.env = env;
   }
 
   @Override
@@ -136,7 +139,7 @@ public class MergeExecution
 //          .returns(new TypeHint<MergeMusicTriplet>() {});
       } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
         initialWorkingSet = preBlockingClusters
-            .runOperation(new IdfBlockingOperation(2)) // TODO define support globally
+            .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
             .runOperation(similarityComputation);
       } else  {
         throw new IllegalArgumentException("Unsupported strategy: " + blockingStrategy);

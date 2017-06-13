@@ -162,7 +162,7 @@ public class MusicBrainzTest {
 //    // merge
     DataSet<Vertex<Long, ObjectMap>> merged = representatives
         .runOperation(new MergeInitialization(DataDomain.MUSIC))
-        .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
+        .runOperation(new MergeExecution(DataDomain.MUSIC, 5, env));
 //
     printQuality(inputVertices, merged
         .runOperation(new EdgeComputationVertexCcSet())
@@ -276,7 +276,7 @@ public class MusicBrainzTest {
 //            })
 //            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
+            .runOperation(new MergeExecution(DataDomain.MUSIC, 5, env));
 
     mergedVertices.print();
   }

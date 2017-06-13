@@ -16,7 +16,7 @@ import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 /**
  * Add connected component ids to vertices in graph.
  */
-public class ConnectedComponentIdAdder <T>
+public class ConnectedComponentIdAdder<T>
     implements GraphAlgorithm<Long, ObjectMap, T, Graph<Long, ObjectMap, T>> {
   private ExecutionEnvironment env;
 

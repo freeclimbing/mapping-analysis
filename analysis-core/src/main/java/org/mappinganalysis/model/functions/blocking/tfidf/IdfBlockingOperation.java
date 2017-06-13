@@ -3,12 +3,22 @@ package org.mappinganalysis.model.functions.blocking.tfidf;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.FunctionAnnotation.ForwardedFieldsSecond;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Vertex;
+import org.apache.flink.graph.gsa.ApplyFunction;
+import org.apache.flink.graph.gsa.GatherFunction;
+import org.apache.flink.graph.gsa.Neighbor;
+import org.apache.flink.graph.gsa.SumFunction;
+import org.apache.flink.graph.library.GSAConnectedComponents;
+import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
@@ -28,9 +38,11 @@ public class IdfBlockingOperation
       "to", "not", "be", "with", "you", "have", "as", "can", "me", "my", "la", "all"
   };
   private Integer support;
+  private ExecutionEnvironment env;
 
-  public IdfBlockingOperation(Integer support) {
+  public IdfBlockingOperation(Integer support, ExecutionEnvironment env) {
     this.support = support;
+    this.env = env;
   }
 
   @Override
@@ -49,20 +61,84 @@ public class IdfBlockingOperation
 
     DataSet<Edge<Long, Integer>> idfSupportEdges = idfExtracted
         .flatMap(new VertexIdfSingleValueExtractor())
-        .groupBy(1)
+        .groupBy(1) // idf string
         .reduceGroup(new IdfBasedEdgeCreator())
         .groupBy(0, 1)
         .sum(2)
         .filter(new SupportFilterFunction(support));
 
+
+    DataSet<Edge<Long, NullValue>> edges = idfSupportEdges
+        .map(new MapFunction<Edge<Long, Integer>, Edge<Long, NullValue>>() {
+      @Override
+      public Edge<Long, NullValue> map(Edge<Long, Integer> value) throws Exception {
+        return new Edge<Long, NullValue>(value.getSource(), value.getTarget(), NullValue.getInstance());
+      }
+    });
+
+    DataSet<Vertex<Long, Long>> vertices = edges.flatMap(new FlatMapFunction<Edge<Long, NullValue>, Vertex<Long, Long>>() {
+      @Override
+      public void flatMap(Edge<Long, NullValue> value, Collector<Vertex<Long, Long>> out) throws Exception {
+        out.collect(new Vertex<>(value.getSource(), value.getSource()));
+        out.collect(new Vertex<>(value.getTarget(), value.getTarget()));
+      }
+    }).distinct();
+
+    Graph<Long, Long, NullValue> ccGraph = Graph.fromDataSet(vertices, edges, env);
+
+    DataSet<Vertex<Long, Long>> run = null;
+    try {
+      run = ccGraph.run(new GSAConnectedComponents<>(Integer.MAX_VALUE));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
     // edge values are not longer important,
-    // filter was the last step where the support was needed
+        // filter was the last step where the support was needed
+    assert run != null;
     return inputData.join(idfSupportEdges)
         .where(0).equalTo(0)
         .with(new JoinIdfFirstFunction())
         .join(inputData)
         .where(1).equalTo(0)
-        .with(new JoinIdfSecondFunction());
+        .with(new JoinIdfSecondFunction())
+        .join(run)
+        .where(0)
+        .equalTo(0)
+        .with(new JoinFunction<MergeMusicTriplet, Vertex<Long, Long>, MergeMusicTriplet>() {
+          @Override
+          public MergeMusicTriplet join(MergeMusicTriplet first, Vertex<Long, Long> second) throws Exception {
+            first.setBlockingLabel(second.getValue().toString());
+            return first;
+          }
+        });
+  }
+
+
+  @SuppressWarnings("serial")
+  private static final class GatherNeighborIds extends GatherFunction<Long, NullValue, Long> {
+
+    public Long gather(Neighbor<Long, NullValue> neighbor) {
+      return neighbor.getNeighborValue();
+    }
+  };
+
+  @SuppressWarnings("serial")
+  private static final class SelectMinId extends SumFunction<Long, NullValue, Long> {
+
+    public Long sum(Long newValue, Long currentValue) {
+      return Math.min(newValue, currentValue);
+    }
+  };
+
+  @SuppressWarnings("serial")
+  private static final class UpdateComponentId extends ApplyFunction<Long, Long, Long> {
+
+    public void apply(Long summedValue, Long origValue) {
+      if (summedValue < origValue) {
+        setResult(summedValue);
+      }
+    }
   }
 
   /**

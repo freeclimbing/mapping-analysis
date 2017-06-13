@@ -98,7 +98,7 @@ public class SettlementBenchmark implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, DECOMPOSITION, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
-            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, Constants.SOURCE_COUNT));
+            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, Constants.SOURCE_COUNT, env));
 
     new JSONDataSink(INPUT_PATH, MERGE)
         .writeVertices(mergedVertices);

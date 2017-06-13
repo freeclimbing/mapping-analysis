@@ -77,7 +77,6 @@ public class MergeMusicStep {
         .reduce(new MaxSimMinIdMusicReducer());
   }
 
-
   /**
    * optional Helper method to write the current iteration superstep to the log.
    */
