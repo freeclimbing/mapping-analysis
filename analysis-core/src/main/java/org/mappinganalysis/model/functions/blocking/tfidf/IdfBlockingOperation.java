@@ -24,8 +24,6 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 
-import java.util.HashMap;
-
 /**
  * tf idf blocking
  */
@@ -67,7 +65,6 @@ public class IdfBlockingOperation
         .sum(2)
         .filter(new SupportFilterFunction(support));
 
-
     DataSet<Edge<Long, NullValue>> edges = idfSupportEdges
         .map(new MapFunction<Edge<Long, Integer>, Edge<Long, NullValue>>() {
       @Override
@@ -76,7 +73,8 @@ public class IdfBlockingOperation
       }
     });
 
-    DataSet<Vertex<Long, Long>> vertices = edges.flatMap(new FlatMapFunction<Edge<Long, NullValue>, Vertex<Long, Long>>() {
+    DataSet<Vertex<Long, Long>> vertices = edges
+        .flatMap(new FlatMapFunction<Edge<Long, NullValue>, Vertex<Long, Long>>() {
       @Override
       public void flatMap(Edge<Long, NullValue> value, Collector<Vertex<Long, Long>> out) throws Exception {
         out.collect(new Vertex<>(value.getSource(), value.getSource()));
@@ -150,9 +148,9 @@ public class IdfBlockingOperation
     @Override
     public void flatMap(Tuple2<Long, ObjectMap> tuple,
                         Collector<Tuple2<Long, String>> out) throws Exception {
-      HashMap<String, Double> idfs = tuple.f1.getIDFs();
-      for (String idf : idfs.keySet()) {
-        out.collect(new Tuple2<>(tuple.f0, idf));
+//      HashMap<String, Double> idfs = tuple.f1.getIDFs();
+      for (String idfString : tuple.f1.keySet()) {
+        out.collect(new Tuple2<>(tuple.f0, idfString));
       }
     }
   }

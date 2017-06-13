@@ -565,19 +565,21 @@ public class ObjectMap
   /**
    * TF/IDF method to get max values from tmp result and add to result
    */
-  public void addMaxValueToResult(HashMap<String, Double> tmpResult) {
+  public void addMinValueToResult(HashMap<String, Double> tmpResult) {
     double minValue = tmpResult.values().stream().min(Double::compare).get();
-    HashMap<String, Double> idfs = getIDFs();
+
+//    HashMap<String, Double> idfs = getIDFs();
 
     for(Iterator<Map.Entry<String, Double>> it = tmpResult.entrySet().iterator(); it.hasNext(); ) {
       Map.Entry<String, Double> entry = it.next();
 
       if (entry.getValue() == minValue) {
-        idfs.put(entry.getKey(), entry.getValue());
+        map.put(entry.getKey(), entry.getValue());
+//        idfs.put(entry.getKey(), entry.getValue());
         it.remove();
       }
     }
-    setIDFs(idfs);
+//    setIDFs(idfs);
   }
 
   /**

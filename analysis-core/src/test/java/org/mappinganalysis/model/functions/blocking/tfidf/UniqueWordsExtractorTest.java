@@ -47,7 +47,7 @@ public class UniqueWordsExtractorTest {
     check.put("foo", 2d);
     check.put("bar", 2d);
 
-    map.addMaxValueToResult(check);
+    map.addMinValueToResult(check);
 
     System.out.println(map.getIDFs().toString());
   }
@@ -110,11 +110,14 @@ public class UniqueWordsExtractorTest {
 //    idfExtracted.collect();
 
     DataSet<Edge<Long, Integer>> idfSupportEdges = idfExtracted
+        // VertexIdfSingleValueExtractor in IdfBlockingOperation
         .flatMap(new FlatMapFunction<Tuple2<Long, ObjectMap>, Tuple2<Long, String>>() {
           @Override
-          public void flatMap(Tuple2<Long, ObjectMap> tuple, Collector<Tuple2<Long, String>> out) throws Exception {
-            HashMap<String, Double> idfs = tuple.f1.getIDFs();
-            for (String idf : idfs.keySet()) {
+          public void flatMap(Tuple2<Long, ObjectMap> tuple,
+                              Collector<Tuple2<Long, String>> out) throws Exception {
+            ObjectMap idfValues = tuple.f1;
+//            HashMap<String, Double> idfs = tuple.f1;
+            for (String idf : idfValues.keySet()) {
               out.collect(new Tuple2<>(tuple.f0, idf));
             }
           }

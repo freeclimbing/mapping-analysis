@@ -8,15 +8,17 @@ import org.apache.flink.configuration.Configuration;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * Created by markus on 6/9/17.
  */
 public class HighIDFValueMapper
     extends RichMapFunction<MergeMusicTuple, Tuple2<Long, ObjectMap>> {
-//  private List<Tuple2<String, Double>> idfs;
-  private Map<String, Double> valueMap = Maps.newHashMap();
+  private HashMap<String, Double> valueMap = Maps.newHashMap();
   private Set<String> stopWords;
 
   public HighIDFValueMapper(String[] stopWords) {
@@ -25,15 +27,11 @@ public class HighIDFValueMapper
 
   @Override
   public void open(Configuration parameters) {
+    List<Tuple2<String, Double>> idfList = getRuntimeContext().getBroadcastVariable("idf");
 
-    List<Tuple2<String, Double>> idf = getRuntimeContext().getBroadcastVariable("idf");
-
-    for (Tuple2<String, Double> stringDoubleTuple2 : idf) {
-      valueMap.put(stringDoubleTuple2.f0, stringDoubleTuple2.f1);
+    for (Tuple2<String, Double> tuple : idfList) {
+      valueMap.put(tuple.f0, tuple.f1);
     }
-//    System.out.println(valueMap.toString());
-
-//    this.idfs = getRuntimeContext().getBroadcastVariable("idf");
   }
 
   @Override
@@ -49,21 +47,16 @@ public class HighIDFValueMapper
       }
 
       tmpResult.put(word, valueMap.get(word));
-
-//      for (Tuple2<String, Double> idf : idfs) {
-//        if (idf.f0.equals(word)) {
-//          tmpResult.put(idf.f0, idf.f1);
-//        }
-//      }
     }
 //        LOG.info("tmpResult size: " + tmpResult.size());
 
     ObjectMap result = new ObjectMap();
     if (tmpResult.size() > 2) {
-      while (result.getIDFs().isEmpty() || result.getIDFs().size() < 2) {
+//      while (result.getIDFs().isEmpty() || result.getIDFs().size() < 2) {
+        while (result.isEmpty() || result.size() < 2) {
 //          System.out.println("preResultSize: " + result.size());
 //          try {
-        result.addMaxValueToResult(tmpResult);
+        result.addMinValueToResult(tmpResult);
 //          } catch (NoSuchElementException e) {
 //            System.err.println("result: " + result.toString());
 //            System.err.println("tmp: " + tmpResult.toString());
@@ -73,7 +66,7 @@ public class HighIDFValueMapper
       }
     } else if (tmpResult.size() > 0) {
 //        for (String value : tmpResult.keySet()) {
-      result.setIDFs(tmpResult);
+      result.putAll(tmpResult);
 //        }
     } else {
 //        HashMap<String, Double> foo = Maps.newHashMap();
