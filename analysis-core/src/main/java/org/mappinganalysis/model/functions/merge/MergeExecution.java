@@ -1,10 +1,15 @@
 package org.mappinganalysis.model.functions.merge;
 
+import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -98,12 +103,12 @@ public class MergeExecution
     if (domain == DataDomain.MUSIC) {
       // initial solution set
       DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator()); // added artist title album
-//          .map(x -> {
-//            LOG.info(x.toString());
-//            return x;
-//          })
-//          .returns(new TypeHint<MergeMusicTuple>() {});
+          .map(new MergeMusicTupleCreator())//; // added artistTitleAlbum
+          .map(x -> {
+            LOG.info(x.toString());
+            return x;
+          })
+          .returns(new TypeHint<MergeMusicTuple>() {});
 
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
           new MergeMusicSimilarity();
@@ -131,16 +136,42 @@ public class MergeExecution
         initialWorkingSet = preBlockingClusters
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
-            .runOperation(similarityComputation);
-//          .map(x -> {
-//            LOG.info(x.toString());
-//            return x;
-//          })
-//          .returns(new TypeHint<MergeMusicTriplet>() {});
+            .runOperation(similarityComputation)//;
+          .map(x -> {
+//            LOG.info("sim: " + x.toString());
+            return x;
+          })
+          .returns(new TypeHint<MergeMusicTriplet>() {});
       } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
-        initialWorkingSet = preBlockingClusters
+        DataSet<MergeMusicTriplet> idfPartTriplets = preBlockingClusters
             .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
             .runOperation(similarityComputation);
+
+        DataSet<MergeMusicTuple> simpleTuples = idfPartTriplets.<Tuple2<Long, Long>>project(0, 1)
+            .flatMap((Tuple2<Long, Long> tuple, Collector<Tuple1<Long>> out) -> {
+              out.collect(new Tuple1<>(tuple.f0));
+              out.collect(new Tuple1<>(tuple.f1));
+            })
+            .returns(new TypeHint<Tuple1<Long>>() {
+            })
+            .rightOuterJoin(preBlockingClusters)
+            .where(0)
+            .equalTo(0)
+            .with(new FlatJoinFunction<Tuple1<Long>, MergeMusicTuple, MergeMusicTuple>() {
+              @Override
+              public void join(Tuple1<Long> idfIds, MergeMusicTuple unmatchedTuple,
+                               Collector<MergeMusicTuple> out) throws Exception {
+                if (idfIds == null) {
+                  out.collect(unmatchedTuple);
+                }
+              }
+            });
+
+        DataSet<MergeMusicTriplet> simpleTriplets = simpleTuples.groupBy(10) // blocking key
+            .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
+            .runOperation(similarityComputation);
+
+        initialWorkingSet = idfPartTriplets.union(simpleTriplets);
       } else  {
         throw new IllegalArgumentException("Unsupported strategy: " + blockingStrategy);
       }

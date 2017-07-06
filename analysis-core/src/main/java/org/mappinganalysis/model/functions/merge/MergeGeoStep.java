@@ -46,7 +46,7 @@ public class MergeGeoStep {
         .flatMap(new TransitionElementsFlatMapFunction<>(domain));
 
     workset = workset
-        .runOperation(new NonChangedWorksetOperation<>(transitions))
+        .runOperation(new WorksetNewClusterRemoveOperation<>(transitions))
         .union(workset
             .runOperation(new ChangesGeoOperation(delta, transitions, domain))
             .runOperation(new ComputePrepareGeoOperation(domain, sourcesCount))
