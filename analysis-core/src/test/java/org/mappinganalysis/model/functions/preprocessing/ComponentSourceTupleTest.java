@@ -1,28 +1,16 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
-import com.google.common.collect.Maps;
-import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
 public class ComponentSourceTupleTest {
-  private static final Logger LOG = Logger.getLogger(ComponentSourceTupleTest.class);
-
-  private static final HashMap<String, Integer> SOURCES;
-  static {
-    SOURCES = Maps.newLinkedHashMap();
-    SOURCES.put(Constants.NYT_NS, 1);
-    SOURCES.put(Constants.DBP_NS, 2);
-    SOURCES.put(Constants.LGD_NS, 4);
-    SOURCES.put(Constants.FB_NS, 8);
-    SOURCES.put(Constants.GN_NS, 16);
-  }
+  private static final HashMap<String, Integer> SOURCES = Constants.GEO_MAP;
 
   @Test
   public void testAddSource() throws Exception {
@@ -46,15 +34,15 @@ public class ComponentSourceTupleTest {
     assertEquals(31, differentOrderTuple.getSourcesInt().intValue());
 
     ComponentSourceTuple maxSingleValue = new ComponentSourceTuple(3L, SOURCES);
-    maxSingleValue.addSource(Constants.NYT_NS);
-    maxSingleValue.addSource(Constants.NYT_NS);
+    maxSingleValue.addSource(Constants.GN_NS);
+    maxSingleValue.addSource(Constants.GN_NS);
 
     assertEquals(16, maxSingleValue.getSourcesInt().intValue());
 
 
     ComponentSourceTuple minSingleValue = new ComponentSourceTuple(4L, SOURCES);
-    minSingleValue.addSource(Constants.DBP_NS);
-    minSingleValue.addSource(Constants.DBP_NS);
+    minSingleValue.addSource(Constants.NYT_NS);
+    minSingleValue.addSource(Constants.NYT_NS);
 
     assertEquals(1, minSingleValue.getSourcesInt().intValue());
 

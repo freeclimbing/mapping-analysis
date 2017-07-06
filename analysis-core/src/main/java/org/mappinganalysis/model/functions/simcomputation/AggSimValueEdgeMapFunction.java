@@ -42,7 +42,9 @@ public class AggSimValueEdgeMapFunction
     } else { // old default
       double aggregatedSim;
       if (isMeanSimActivated) {
-        aggregatedSim = SimilarityComputation.getMeanSimilarity(edgeValue);
+        aggregatedSim = edgeValue
+            .runOperation(new MeanAggregationFunction())
+            .getEdgeSimilarity();
       } else {
         aggregatedSim = SimilarityComputation.getWeightedAggSim(edgeValue);
       }

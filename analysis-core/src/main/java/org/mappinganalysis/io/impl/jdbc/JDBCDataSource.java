@@ -15,7 +15,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.io.functions.BasicVertexCreator;
 import org.mappinganalysis.io.functions.FlinkEdgeCreator;
 import org.mappinganalysis.io.functions.FlinkPropertyMapper;
@@ -32,7 +31,6 @@ import java.util.ResourceBundle;
  */
 @Deprecated
 public class JDBCDataSource {
-  private static final Logger LOG = Logger.getLogger(JDBCDataSource.class);
 
   private ExecutionEnvironment env;
   private final ResourceBundle prop;

@@ -1,4 +1,4 @@
-{"source":53,"target":83,"data":{"distance":0.55483,"trigramSim":0.843274,"aggSimValue":0.71}}
-{"source":53,"target":83,"data":{"distance":0.55483,"trigramSim":0.843274,"aggSimValue":0.71}}
-{"source":53,"target":52,"data":{"distance":0.55483,"trigramSim":0.843274,"aggSimValue":0.71}}
-{"source":12,"target":116,"data":{"distance":0.55483,"trigramSim":0.843274,"aggSimValue":0.71}}
+{"source":53,"target":83,"data":{"simDistance":0.55483,"simLabel":0.843274,"aggSimValue":0.71}}
+{"source":53,"target":83,"data":{"simDistance":0.55483,"simLabel":0.843274,"aggSimValue":0.71}}
+{"source":53,"target":52,"data":{"simDistance":0.55483,"simLabel":0.843274,"aggSimValue":0.71}}
+{"source":12,"target":116,"data":{"simDistance":0.55483,"simLabel":0.843274,"aggSimValue":0.71}}

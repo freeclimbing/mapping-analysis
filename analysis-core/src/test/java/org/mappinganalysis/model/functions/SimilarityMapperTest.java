@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.mappinganalysis.BasicTest;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
@@ -23,27 +24,6 @@ import static org.simmetrics.builders.StringMetricBuilder.with;
 public class SimilarityMapperTest extends BasicTest {
   private static final Logger LOG = Logger.getLogger(SimilarityMapperTest.class);
   private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-
-  // needs rework
-//  @Test
-//  public void trigramSimilarityTest() throws Exception {
-//    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-//    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
-//
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> exactSim
-//      = baseTriplets
-//      .map(new TrigramSimilarityMapper()); // filter deleted, maybe test no longer working?
-//
-//    for (Triplet<Long, ObjectMap, ObjectMap> triplet : exactSim.collect()) {
-//      if (triplet.getSrcVertex().getId() == 5680) {
-//        if (triplet.getTrgVertex().getId() == 5984 || triplet.getTrgVertex().getId() == 5681) {
-//          assertEquals(0.6324555f, triplet.getEdge().getValue().get("trigramSim"));
-//        } else {
-//          assertFalse(true);
-//        }
-//      }
-//    }
-//  }
 
   /**
    * check simmetrics metric, check for utf8 support
@@ -83,42 +63,15 @@ public class SimilarityMapperTest extends BasicTest {
         .getGraph()
         .getEdges()
         .collect()
-        .iterator().next().getValue();
+        .iterator().next().getValue()
+        .runOperation(new MeanAggregationFunction());
 
     double weightedAggSim = SimilarityComputation.getWeightedAggSim(edgeValue);
-    double mean = SimilarityComputation.getMeanSimilarity(edgeValue);
+    double mean = edgeValue.getEdgeSimilarity();
 
     assertEquals(0.5459223d, weightedAggSim, 0.00001);
     assertEquals(0.699052d, mean, 0.00001);
   }
-
-  /**
-   * JDBC test, not working
-   * @throws Exception
-   */
-  // TODO rewrite
-//  @Test
-//  public void typeSimilarityTest() throws Exception {
-//    Graph<Long, ObjectMap, NullValue> graph = createSimpleGraph();
-//
-//    graph = Graph.fromDataSet(
-//        Preprocessing.applyTypeToInternalTypeMapping(graph),
-//        graph.getEdges(),
-//        env);
-//
-//    final DataSet<Triplet<Long, ObjectMap, NullValue>> baseTriplets = graph.getTriplets();
-//
-//    baseTriplets.print();
-//
-//    DataSet<Triplet<Long, ObjectMap, ObjectMap>> typeSim
-//        = baseTriplets
-//        .map(new TypeSimilarityMapper())
-//        .filter(new TypeFilter());
-//
-//    for (Triplet<Long, ObjectMap, ObjectMap> triplet : typeSim.collect()) {
-//      System.out.println(triplet);
-//    }
-//  }
 
   /**
    * not a test

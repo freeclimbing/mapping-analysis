@@ -40,11 +40,15 @@ public class MergeGeoBlockingTest {
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY));
 
+//    vertices.print();
+
     int count = 0;
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
 //      LOG.info(vertex.toString());
       ++count;
       if (vertex.getId() == 395207L) {
+//        System.out.println(vertex.toString());
+//        System.out.println(vertex.getValue().getVerticesList());
         assertTrue(vertex.getValue().getVerticesList().contains(395207L)
             && vertex.getValue().getVerticesList().contains(513732L));
       } else {
@@ -54,7 +58,6 @@ public class MergeGeoBlockingTest {
     assertEquals(6, count);
   }
 
-  @Test
   /**
    * Long Island, real data mixed with fake data.
    *
@@ -62,6 +65,7 @@ public class MergeGeoBlockingTest {
    *
    * 1, 2, 3: two have only one geo attribute
    */
+  @Test
   public void testExecuteMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();
     TestBase.setupConstants();

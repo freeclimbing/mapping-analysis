@@ -6,6 +6,7 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.GeographicMajorityPropertiesGroupReduceFunction;
@@ -23,6 +24,8 @@ import org.mappinganalysis.util.functions.keyselector.OldHashCcKeySelector;
  */
 public class MergeInitialization
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(MergeInitialization.class);
+
 
   private DataSet<Vertex<Long, ObjectMap>> vertices;
   private DataDomain domain;

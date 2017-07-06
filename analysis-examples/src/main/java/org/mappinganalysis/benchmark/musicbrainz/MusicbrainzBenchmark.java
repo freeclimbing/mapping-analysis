@@ -73,12 +73,6 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         return;
       }
 
-      /*
-        preprocessing
-       */
-      Graph<Long, ObjectMap, NullValue> graph =
-          new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
-              .getGraph(ObjectMap.class, NullValue.class);
     /*
       preprocessing
      */

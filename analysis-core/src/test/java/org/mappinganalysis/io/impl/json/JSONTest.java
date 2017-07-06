@@ -13,7 +13,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.model.ObjectMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class JSONTest {
   private static final Logger LOG = Logger.getLogger(JSONTest.class);
@@ -82,26 +82,43 @@ public class JSONTest {
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(path, true, env).getGraph();
 
     /**
-     * Write graph to JSON file - todo
+     * Write graph to JSON file
      */
     String tmpDir = temporaryFolder.getRoot().toString();
-    String vertexOutFile = tmpDir + "/outVertices.json";
-    String edgeOutFile = tmpDir + "/outEdges.json";
-    JSONDataSink dataSink = new JSONDataSink(tmpDir, "steptodo");
+    String step = "testStep";
+    JSONDataSink dataSink = new JSONDataSink(tmpDir, step);
 
     dataSink.writeGraph(graph);
+    env.execute();
+
+    /**
+     * Read again from tmp folder
+     */
+    Graph<Long, ObjectMap, ObjectMap> inOutGraph = new JSONDataSource(tmpDir, step, env)
+        .getGraph();
+
+    DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
+    for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {
+      LOG.info("inn result: " + vertex);
+    }
+
+//    // ?? TODO
+//    GraphEquality equality = new GraphEquality(
+//        new GraphHeadToDataString(),
+//        new VertexToDataString(),
+//        new EdgeToDataString(),
+//        false
+//    );
+//
+//
+//    GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
+//    LogicalGraph.fromDataSets(graph.getVertices(), graph.getEdges(), config);
 
     /**
      * todo better compare in and out file?
+     *
+     * todo actual test missing
      */
-    Graph<Long, ObjectMap, ObjectMap> inOutGraph = new JSONDataSource(tmpDir, true, env)
-        .getGraph();
-
-//    DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
-//    for (Vertex<Long, ObjectMap> vertex : inVertices.collect()) {
-//      LOG.info("in result: " + vertex);
-//    }
-
     DataSet<Vertex<Long, ObjectMap>> outVertices = inOutGraph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : outVertices.collect()) {
       LOG.info("out result: " + vertex);

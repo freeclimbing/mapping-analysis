@@ -46,8 +46,9 @@ public class Constants {
 
   /**
    * similarity default values.
+   * 150000m default distance
    */
-  public static final Double MAXIMAL_GEO_DISTANCE = 15000D;
+  public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 1D;
 
   /**

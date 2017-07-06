@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
@@ -117,45 +116,9 @@ public abstract class SimilarityComputation<T, O>
   }
 
   /**
-   * Compose similarity values based on existence: if property is missing, its not considered at all.
-   *
-   * Move to AggregationMode class
-   * @param values property map
-   * @return mean similarity value
-   * TODO use new MeanSimilarityFunction()
-   */
-  @Deprecated
-  public static double getMeanSimilarity(ObjectMap values) {
-    double aggregatedSim = 0;
-    int propCount = 0;
-
-    if (values.containsKey(Constants.SIM_LABEL)) {
-      ++propCount;
-      aggregatedSim = (double) values.get(Constants.SIM_LABEL);
-    }
-    if (values.containsKey(Constants.SIM_TYPE)) {
-      ++propCount;
-      aggregatedSim += (double) values.get(Constants.SIM_TYPE);
-    }
-    if (values.containsKey(Constants.SIM_DISTANCE)) {
-      double distanceSim = (double) values.get(Constants.SIM_DISTANCE);
-      Preconditions.checkArgument(Doubles.compare(distanceSim, 0) >= 0,
-          "distance sim should never be below 0 " + values);
-      if (Doubles.compare(distanceSim, -1.0) > 0) {
-        aggregatedSim += distanceSim;
-        ++propCount;
-      }
-    }
-
-    BigDecimal result = new BigDecimal(aggregatedSim / propCount);
-    result = result.setScale(10, BigDecimal.ROUND_HALF_UP);
-
-    return result.doubleValue();
-  }
-
-  /**
    * Compose similarity values based on weights for each of the properties, missing values are counted as zero.
    *
+   * create a similar function to MeanAggregationFunction for this one, if needed at all
    * Move to AggregationMode class
    * @param values property map
    * @return aggregated similarity value

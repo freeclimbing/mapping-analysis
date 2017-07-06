@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
@@ -171,6 +172,43 @@ public class Utils {
   public static boolean isValidLongitude(Double longitude) {
     return longitude != null
         && Doubles.compare(longitude, 180) <= 0 && Doubles.compare(longitude, -180) >= 0;
+  }
+
+
+  /**
+   * Gets geo distance for lat/lon on source/target. Validity check and normalization to max geo distance.
+   * Care for max distance value from constants file
+   */
+  public static Double getGeoSimilarity(Double latLeft, Double lonLeft, Double latRight, Double lonRight) {
+    if (isValidGeoObject(latLeft, lonLeft)
+        && isValidGeoObject(latRight, lonRight)) {
+      Double distance = GeoDistance.distance(latLeft, lonLeft, latRight, lonRight);
+
+      if (distance >= Constants.MAXIMAL_GEO_DISTANCE) {
+        return 0D;
+      } else {
+        double tmp = 1D - (distance / Constants.MAXIMAL_GEO_DISTANCE);
+        BigDecimal tmpResult = new BigDecimal(tmp);
+
+        return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
+      }
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Basic trigram similarity for 2 labels.
+   */
+  public static Double getLabelSimilarity(String left, String right) {
+    Preconditions.checkNotNull(left);
+    Preconditions.checkNotNull(right);
+
+    double similarity = getTrigramMetricAndSimplifyStrings()
+        .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
+    BigDecimal tmpResult = new BigDecimal(similarity);
+
+    return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
   }
 
   @Deprecated
@@ -512,60 +550,6 @@ public class Utils {
     } else {
       return label;
     }
-  }
-
-  /**
-   * music blocking
-   * Get the first 5 chars of string. If label is shorter, fill up with '#'.
-   */
-  @Deprecated
-  public static String getOldMusicBlockingLabel(String label) {
-    String tmp = label;
-    int blockingLength = 5;
-    // fill up to blockinglength
-    if (label.length() < blockingLength) {
-      label += StringUtils.repeat("#", blockingLength - label.length());
-    }
-    label = label.toLowerCase();
-
-    Set<String> check = Sets.newHashSet("the ", "001-", "003-", "005-", "002-", "004-",
-        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
-        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp", "no_va");
-    boolean isContained = false;
-    for (String elem : check) {
-      if (label.startsWith(elem)) {
-//        System.out.println(label);
-        isContained = true;
-        label = label.substring(blockingLength-1);
-      }
-    }
-    if (isContained) {
-      for (String elem : check) { // stupid, replace
-        if (label.startsWith(elem)) {
-//        System.out.println(label);
-          label = label.substring(blockingLength-1);
-        }
-      }
-    }
-
-    // fill again
-    if (label.length() < blockingLength) {
-      label += StringUtils.repeat("#", blockingLength - label.length());
-    }
-
-    label = label.substring(0, blockingLength);
-//    label = label.replaceAll("[^a-zA-Z0-9#]+","#");
-
-    // needed for chinese chars for example
-    if (label.length() < blockingLength) {
-      label += StringUtils.repeat("#", blockingLength - label.length());
-    }
-
-    if (label.equals("#####")) {
-//      System.out.println(label + " --- " + tmp);
-      return tmp;
-    }
-    return label;
   }
 
   /**

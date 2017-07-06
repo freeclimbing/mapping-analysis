@@ -6,12 +6,9 @@ import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.GeoDistance;
 import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Set;
 
 /**
@@ -28,15 +25,29 @@ public class EdgeSimilarityFunction
     this.maxDistInMeter = maxDistInMeter;
   }
 
+  // options
   // Constants.SIM_GEO_LABEL_STRATEGY
   // Constants.DEFAULT_VALUE
 
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
+    ObjectMap srcProps = triplet.getSrcVertex().getValue();
+    ObjectMap trgProps = triplet.getTrgVertex().getValue();
+    Triplet<Long, ObjectMap, ObjectMap> result = initResultTriplet(triplet);
 
-    Triplet<Long, ObjectMap, ObjectMap> result = addBasicLabelSimilarity(triplet);
-    result = addGeoSimilarity(result);
+    Double labelSimilarity = Utils.getLabelSimilarity(srcProps.getLabel(),
+        trgProps.getLabel());
+    result.getEdge().getValue().put(Constants.SIM_LABEL, labelSimilarity);
+
+    Double geoSimilarity = Utils.getGeoSimilarity(srcProps.getLatitude(),
+        srcProps.getLongitude(),
+        trgProps.getLatitude(),
+        trgProps.getLongitude());
+    if (geoSimilarity != null) {
+      result.getEdge().getValue().setGeoSimilarity(geoSimilarity);
+    }
+
     if (usedPropertiesCombination.equals(Constants.GEO)) {
       result = addTypeSimilarity(result);
     }
@@ -59,55 +70,6 @@ public class EdgeSimilarityFunction
     }
 
     return triplet;
-  }
-
-  /**
-   * add basic geo similarity
-   */
-  private Triplet<Long,ObjectMap,ObjectMap> addGeoSimilarity(
-      Triplet<Long, ObjectMap, ObjectMap> triplet) {
-    ObjectMap source = triplet.getSrcVertex().getValue();
-    ObjectMap target = triplet.getTrgVertex().getValue();
-
-    if (source.hasGeoPropertiesValid() && target.hasGeoPropertiesValid()) {
-      Double distance = GeoDistance.distance(source.getLatitude(),
-          source.getLongitude(), target.getLatitude(), target.getLongitude());
-
-      if (distance >= maxDistInMeter) {
-        triplet.getEdge().getValue().setGeoSimilarity(0D);
-      } else {
-        BigDecimal tmpResult = null;
-        double tmp = 1D - (distance / maxDistInMeter);
-        tmpResult = new BigDecimal(tmp);
-        double result = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-        triplet.getEdge().getValue().setGeoSimilarity(result);
-      }
-    }
-
-    return triplet;
-  }
-
-  /**
-   * basic label similarity
-   */
-  private Triplet<Long, ObjectMap, ObjectMap> addBasicLabelSimilarity(
-      Triplet<Long, ObjectMap, NullValue> triplet) {
-    final String srcLabel = triplet.getSrcVertex().getValue().getLabel();
-    final String trgLabel = triplet.getTrgVertex().getValue().getLabel();
-    Triplet<Long, ObjectMap, ObjectMap> resultTriplet = initResultTriplet(triplet);
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
-
-    if (!srcLabel.equals(Constants.NO_LABEL_FOUND) && !trgLabel.equals(Constants.NO_LABEL_FOUND)) {
-      double similarity = metric.compare(srcLabel.toLowerCase().trim(), trgLabel.toLowerCase().trim());
-      BigDecimal tmpResult = new BigDecimal(similarity);
-      similarity = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-
-      resultTriplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
-
-      return resultTriplet;
-    } else {
-      return resultTriplet;
-    }
   }
 
   private Triplet<Long, ObjectMap, ObjectMap> initResultTriplet(
