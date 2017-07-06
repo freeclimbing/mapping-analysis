@@ -40,6 +40,7 @@ public class MergeMusicStep {
     workset = printSuperstep(workset);
 
     // remove max triplets from workset, they are getting merged anyway
+    // duplicate of WorksetNewClusterRemoveOperation
     workset = workset.leftOuterJoin(maxTriplets)
         .where(0,1)
         .equalTo(0,1)
@@ -48,12 +49,16 @@ public class MergeMusicStep {
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets
         .flatMap(new TransitionElementsFlatMapFunction<>(domain));
 
-    workset = workset
-        .runOperation(new NonChangedWorksetOperation<>(transitions))
-        .union(workset
-            .runOperation(new ChangesMusicOperation(delta, transitions, domain))
-            .runOperation(new ComputePrepareMusicOperation(domain, sourcesCount))
-            .runOperation(similarityComputation));
+    DataSet<MergeMusicTriplet> removeTmp = workset
+        .runOperation(new WorksetNewClusterRemoveOperation<>(transitions));
+
+    workset
+        = workset
+        .runOperation(new ChangesMusicOperation(delta, transitions, domain))
+        .runOperation(new ComputePrepareMusicOperation(domain, sourcesCount))
+        .runOperation(similarityComputation)
+        .union(removeTmp)
+    ;
   }
 
   public DataSet<MergeMusicTriplet> getWorkset() {
@@ -82,7 +87,7 @@ public class MergeMusicStep {
   private static <T> DataSet<T> printSuperstep(DataSet<T> iteration) {
     DataSet<T> superstepPrinter = iteration
         .first(1)
-        .filter(new SuperStepFilter<T>());
+        .filter(new SuperStepFilter<>());
 
     return iteration.union(superstepPrinter);
   }

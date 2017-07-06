@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.simcomputation.ops;
 
 import com.google.common.collect.Sets;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.api.CustomOperation;
 import org.mappinganalysis.util.Constants;
@@ -11,10 +12,14 @@ import java.util.HashSet;
 
 /**
  * Compute similarity for a single property.
+ *
+ * TODO is this really a good idea? ;)
  */
 public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTriplet> {
   private EdgeObjectMapTriplet triplet;
   private String property;
+  private static final Logger LOG = Logger.getLogger(SinglePropertySimilarity.class);
+
 
   static final HashSet<String> LANGUAGES;
   static {
@@ -154,6 +159,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
       triplet.getEdge().getValue().put(Constants.SIM_ARTIST,
           Utils.computeWithMetric(metric, srcArtist, trgArtist));
     }
+//    LOG.info(triplet.getEdge().getValue().toString());
     return triplet;
   }
 

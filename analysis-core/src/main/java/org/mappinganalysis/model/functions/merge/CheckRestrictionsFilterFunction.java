@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
@@ -12,6 +13,8 @@ import org.mappinganalysis.util.AbstractionUtils;
  */
 public class CheckRestrictionsFilterFunction<T>
     implements FilterFunction<T> {
+  private static final Logger LOG = Logger.getLogger(CheckRestrictionsFilterFunction.class);
+
   private DataDomain domain;
   private int sourcesCount;
 
@@ -22,7 +25,7 @@ public class CheckRestrictionsFilterFunction<T>
 
   @Override
   public boolean filter(T input) throws Exception {
-    // LOG.info("CHANGED AND GETS NEW SIM " + triplet.toString());
+//     LOG.info("CHANGED AND GETS NEW SIM " + input.toString());
     int srcIntSources;
     int trgIntSources;
 

@@ -39,7 +39,7 @@ public class AggSimValueEdgeMapFunction
 
     if (combination.equals(Constants.MUSIC)) {
       edgeValue.runOperation(new MeanAggregationFunction());
-    } else {
+    } else { // old default
       double aggregatedSim;
       if (isMeanSimActivated) {
         aggregatedSim = SimilarityComputation.getMeanSimilarity(edgeValue);

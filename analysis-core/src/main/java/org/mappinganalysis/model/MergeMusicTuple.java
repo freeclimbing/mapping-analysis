@@ -61,6 +61,8 @@ public class MergeMusicTuple
         return getAlbum();
       case Constants.ARTIST:
         return getArtist();
+      case Constants.ARTIST_TITLE_ALBUM:
+        return getArtistTitleAlbum();
       case Constants.NUMBER:
         return getNumber();
       default:

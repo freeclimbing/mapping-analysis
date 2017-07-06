@@ -11,7 +11,7 @@ import org.mappinganalysis.model.functions.decomposition.typegroupby.HashCcIdOve
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
- * type overlap
+ * type overlap - this is not in typeGroupBy because of some testing issues
  */
 public class TypeOverlapCcCreator
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {

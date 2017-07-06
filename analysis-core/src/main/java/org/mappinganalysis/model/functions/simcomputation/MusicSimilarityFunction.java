@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.SimilarityFunction;
@@ -37,7 +36,7 @@ public class MusicSimilarityFunction
         .runOperation(new SinglePropertySimilarity(Constants.YEAR))
         .runOperation(new SinglePropertySimilarity(Constants.LENGTH));
 
-//    System.out.println(result.getEdge().getValue().toString());
+//    System.out.println("muSiFu: " + result.getEdge().getValue().toString());
     return result;
   }
 

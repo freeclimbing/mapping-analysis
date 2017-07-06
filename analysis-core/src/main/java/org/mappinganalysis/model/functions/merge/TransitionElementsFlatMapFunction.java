@@ -13,6 +13,10 @@ public class TransitionElementsFlatMapFunction<T>
     implements FlatMapFunction<T, Tuple2<Long, Long>> {
   private DataDomain domain;
 
+  /**
+   * For each incoming triplet, we return 2 tuples: (srcId, min(srcId, trgId))
+   * and (trgId, min(srcId, trgId))
+   */
   public TransitionElementsFlatMapFunction(DataDomain domain) {
     this.domain = domain;
   }
