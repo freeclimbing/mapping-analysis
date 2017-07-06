@@ -21,20 +21,42 @@ public class MergeMusicSimilarity
   // TODO add min sim check
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
-    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
-    Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet);
-    Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet);
+//    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
+//    Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet);
+//    Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet);
+
+    Double artistLabelAlbumSim = getAttributeSimilarity(Constants.ARTIST_TITLE_ALBUM, triplet);
+    Double yearSim = getAttributeSimilarity(Constants.YEAR, triplet);
+    Double lengthSim = getAttributeSimilarity(Constants.LENGTH, triplet);
+    Double numberSim = getAttributeSimilarity(Constants.NUMBER, triplet);
+    Double languageSim = getAttributeSimilarity(Constants.LANGUAGE, triplet);
 
     ObjectMap values = new ObjectMap();
 
-    if (labelSimilarity != null) {
-      values.put(Constants.SIM_LABEL, labelSimilarity);
+    if (artistLabelAlbumSim != null) {
+      values.put(Constants.SIM_ARTIST_LABEL_ALBUM, artistLabelAlbumSim);
     }
-    if (artistSimilarity != null) {
-      values.put(Constants.SIM_ARTIST, artistSimilarity);
+
+//    if (labelSimilarity != null) {
+//      values.put(Constants.SIM_LABEL, labelSimilarity);
+//    }
+//    if (artistSimilarity != null) {
+//      values.put(Constants.SIM_ARTIST, artistSimilarity);
+//    }
+//    if (albumSimilarity != null) {
+//      values.put(Constants.SIM_ALBUM, albumSimilarity);
+//    }
+    if (yearSim != null) {
+      values.put(Constants.SIM_YEAR, yearSim);
     }
-    if (albumSimilarity != null) {
-      values.put(Constants.SIM_ALBUM, albumSimilarity);
+    if (lengthSim != null) {
+      values.put(Constants.SIM_LENGTH, lengthSim);
+    }
+    if (numberSim != null) {
+      values.put(Constants.SIM_NUMBER, numberSim);
+    }
+    if (languageSim != null) { // TODO
+      values.put(Constants.SIM_LANG, languageSim);
     }
 
     triplet.setSimilarity(values
