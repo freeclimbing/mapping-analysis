@@ -108,6 +108,14 @@ public class MergeMusicMerge
       mergedCluster.setLength(Constants.EMPTY_INT);
     }
 
+    if (Utils.isSane(priority.getArtistTitleAlbum())) {
+      mergedCluster.setArtistTitleAlbum(priority.getArtistTitleAlbum());
+    } else if (Utils.isSane(minor.getArtistTitleAlbum())) {
+      mergedCluster.setArtistTitleAlbum(minor.getArtistTitleAlbum());
+    } else {
+      mergedCluster.setArtistTitleAlbum(Constants.EMPTY_STRING);
+    }
+
     MergeMusicTuple fakeCluster = new MergeMusicTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 
