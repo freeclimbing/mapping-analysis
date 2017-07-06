@@ -367,7 +367,7 @@ public class UniqueWordsExtractorTest {
         .map(new MapFunction<Vertex<Long, ObjectMap>, Tuple1<String>>() {
           @Override
           public Tuple1<String> map(Vertex<Long, ObjectMap> value) throws Exception {
-            return new Tuple1<>(Utils.createArtistTitleAlbum(value));
+            return new Tuple1<>(Utils.createSimpleArtistTitleAlbum(value));
           }
         }).distinct().count());
 

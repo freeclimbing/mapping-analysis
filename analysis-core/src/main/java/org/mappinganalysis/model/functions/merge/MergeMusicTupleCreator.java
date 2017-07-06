@@ -33,7 +33,7 @@ public class MergeMusicTupleCreator
 
     tuple.setIntSources(properties.getIntDataSources());
     tuple.addClusteredElements(properties.getVerticesList());
-    String artistTitleAlbum = Utils.createArtistTitleAlbum(vertex);
+    String artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex);
 //    tuple.setBlockingLabel(
 //        Utils.getMusicBlockingLabel(artistTitleAlbum));
     tuple.setBlockingLabel(Utils.getMusicBlockingLabel(properties.getLabel()));

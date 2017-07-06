@@ -32,6 +32,8 @@ import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.simmetrics.builders.StringMetricBuilder.with;
@@ -108,6 +110,18 @@ public class Utils {
         .forEachOrdered(value -> result.put(value.getKey(), value.getValue()));
 
     return result;
+  }
+
+  public static double getExactDoubleResult(double value) {
+    return new BigDecimal(value)
+        .setScale(6, BigDecimal.ROUND_HALF_UP)
+        .doubleValue();
+  }
+
+  public static double getExactDoubleResult(double dividend, long divisor) {
+    return new BigDecimal(dividend / divisor)
+        .setScale(6, BigDecimal.ROUND_HALF_UP)
+        .doubleValue();
   }
 
   public static class DataSetTextFormatter<V>
@@ -385,7 +399,7 @@ public class Utils {
 
   /**
    * music blocking
-   * Get the first 5 chars of string. If label is shorter, fill up with '#'.
+   * Get the first 4 chars of string.
    *
    * Check dataset for blocked prefix values!
    */
@@ -430,9 +444,31 @@ public class Utils {
   }
 
   /**
-   * Create custom artist title album string for blocking.
+   * replace non-word characters and special characters by white spaces for idf
    */
-  public static String createArtistTitleAlbum(Vertex<Long, ObjectMap> value) {
+  public static String createArtistTitleAlbum(String simpleArtistTitleAlbum) {
+    simpleArtistTitleAlbum = simpleArtistTitleAlbum
+        .replaceAll("[\\W\\p{Punct}]", " ");
+
+    Pattern regex = Pattern
+        .compile("([a-z])([A-Z])");
+    Matcher matcher = regex.matcher(simpleArtistTitleAlbum);
+
+    while (matcher.find()) {
+      simpleArtistTitleAlbum = matcher.replaceAll("$1 $2");
+//      System.out.println("replaced: " + s);
+
+//      System.out.println("ata: " + artistTitleAlbum);
+    }
+
+    return simpleArtistTitleAlbum;
+  }
+
+  /**
+   * Blocking key string, no hard replacement of non words and special characters.
+   * @return simple concatenated album title artist
+   */
+  public static String createSimpleArtistTitleAlbum(Vertex<Long, ObjectMap> value) {
     String artistTitleAlbum = Constants.EMPTY_STRING;
     String artist = value.getValue().getArtist();
     if (!artist.equals(Constants.CSV_NO_VALUE)) {
@@ -492,7 +528,7 @@ public class Utils {
     }
     label = label.toLowerCase();
 
-    ArrayList<String> check = Lists.newArrayList("the ", "001-", "003-", "005-", "002-", "004-",
+    Set<String> check = Sets.newHashSet("the ", "001-", "003-", "005-", "002-", "004-",
         "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
         "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp", "no_va");
     boolean isContained = false;
@@ -526,7 +562,7 @@ public class Utils {
     }
 
     if (label.equals("#####")) {
-      System.out.println(label + " --- " + tmp);
+//      System.out.println(label + " --- " + tmp);
       return tmp;
     }
     return label;
