@@ -66,14 +66,14 @@ public class HashCcIdOverlappingFunction
     }
 
     for (Vertex<Long, ObjectMap> vertex : vertexSet) {
-      String rndVertexType = vertex.getValue()
+      String randomVertexType = vertex.getValue()
           .getTypes(Constants.COMP_TYPE).iterator().next();
 
       vertex.getValue()
-          .put(Constants.HASH_CC, typeHashDict.get(rndVertexType));
+          .put(Constants.HASH_CC, typeHashDict.get(randomVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
       vertex.getValue().remove(Constants.CC_ID);
-      if (domain == DataDomain.MUSIC) {
+      if (domain == DataDomain.MUSIC) { // music has no type at all
         vertex.getValue().remove(Constants.TYPE_INTERN);
       }
 //      LOG.info("###hashOverlap###: " + vertex.toString());

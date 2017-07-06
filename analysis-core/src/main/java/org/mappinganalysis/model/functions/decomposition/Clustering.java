@@ -26,6 +26,7 @@ public class Clustering {
   /**
    * Connected components and minor refinement steps.
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> createInitialClustering(
       Graph<Long, ObjectMap, ObjectMap> graph,
       String verbosity,
@@ -50,6 +51,9 @@ public class Clustering {
   }
 
   /**
+   *
+   * REPLACE
+   *
    * Create edges from transitive closure and compute edge similarity
    *
    * 1. Compute transitive closure for a given graph and add the computed edges to the graph.
@@ -57,6 +61,7 @@ public class Clustering {
    * 2. For each of the computed edges, we compute a similarity value based on
    * label and geo coordinates.
    */
+  @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> computeTransitiveClosureEdgeSimilarities(
       Graph<Long, ObjectMap, ObjectMap> graph,
       ExecutionEnvironment env) throws Exception {

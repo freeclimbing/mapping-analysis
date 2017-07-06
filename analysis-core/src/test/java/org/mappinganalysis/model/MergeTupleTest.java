@@ -7,6 +7,8 @@ import org.junit.Test;
  */
 public class MergeTupleTest {
 
+  // TODO check result of mergetuple containing all properties
+
   @Test
   public void testMergeTuple() throws Exception {
 //    MergeTupleFactory factory = new MergeTupleFactory<>(MergeGeoTuple.class);

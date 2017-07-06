@@ -10,7 +10,8 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
 /**
- * Extract similarities and relevant properties from neighbor vertices.
+ * For each vertex having no type, extract similarities and relevant properties
+ * from neighbor vertices.
  */
 class NeighborTupleCreator
     implements NeighborsFunctionWithVertexValue<Long, ObjectMap, ObjectMap, NeighborTuple> {

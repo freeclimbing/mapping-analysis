@@ -58,6 +58,8 @@ public class HighIDFValueFlatMapper
     }
 //    System.out.println(tmpResult.toString());
 
+
+    // set limit to 2 for more frequent check
     int limit = (int) Math.ceil((double) tmpResult.size() / 2);
     limit = limit < 2 ? 2 : limit;
 
@@ -72,7 +74,7 @@ public class HighIDFValueFlatMapper
           if (entry.getValue() == maxValue) {
 //            System.out.println(new Tuple2<>(entry.getValue().longValue(), entry.getKey()).toString());
             out.collect(new Tuple2<>(tuple.f0, dictMap.get(entry.getKey())));
-//            if (tuple.f0 == 887L || tuple.f0 == 17706L) {
+//            if (tuple.f0 == 9265L || tuple.f0 == 5237L || tuple.f0 == 9578 || tuple.f0 == 16724L) {
 //              System.out.println("high idf: " + tuple.toString() + " entry: " + entry.getKey());
 //            }
             it.remove();
@@ -84,7 +86,7 @@ public class HighIDFValueFlatMapper
     } else if (tmpResult.size() > 0) {
       for (String s : tmpResult.keySet()) {
 //        System.out.println(new Tuple2<>(tmpResult.get(s).longValue(), s).toString());
-//        if (tuple.f0 == 887L || tuple.f0 == 17706L) {
+//        if (tuple.f0 == 9265L || tuple.f0 == 5237L || tuple.f0 == 9578 || tuple.f0 == 16724L) {
 //          System.out.println("high idf: " + tuple.toString() + " s: " + s);
 //        }
         out.collect(new Tuple2<>(tuple.f0, dictMap.get(s)));

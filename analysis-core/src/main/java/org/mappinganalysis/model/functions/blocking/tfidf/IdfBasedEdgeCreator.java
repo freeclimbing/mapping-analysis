@@ -38,6 +38,9 @@ class IdfBasedEdgeCreator
           reuseEdge.setTarget(leftTuple.f0);
         }
 //        System.out.println("IdfBasedEdgeCreator: " + reuseEdge.toString() + " " + rightTuple.f1);
+        if (reuseEdge.getSource() == 9265L || reuseEdge.getTarget() == 9265L) {
+          System.out.println(reuseEdge.toString());
+        }
         out.collect(reuseEdge);
       }
     }

@@ -135,6 +135,7 @@ public class MusicBrainzTest {
         .fromDataSet(inputVertices, inputEdges, env)
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
+    graph.getVertices().print();
     // too low sims because of bad sim metric
 //    graph.getEdges().print();
 
@@ -264,16 +265,16 @@ public class MusicBrainzTest {
   public void testMusicMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();
     String path = MusicBrainzTest.class
-        .getResource("/data/musicbrainz/merge/").getFile();
+        .getResource("/data/musicbrainz/mergeAdv/").getFile();
 
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(path, true, env)
             .getVertices()
-//            .map(x -> {
+            .map(x -> {
 //              LOG.info("repr: " + x.toString());
-//              return x;
-//            })
-//            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+              return x;
+            })
+            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
             .runOperation(new MergeExecution(DataDomain.MUSIC, 5, env));
 
@@ -325,7 +326,7 @@ public class MusicBrainzTest {
     transitions.print();
     // no elements, need real test for testing NonChanged
     initialWorkingSet
-      .runOperation(new NonChangedWorksetOperation<>(transitions))
+      .runOperation(new WorksetNewClusterRemoveOperation<>(transitions))
       .print();
   }
 }

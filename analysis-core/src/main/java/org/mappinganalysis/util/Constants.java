@@ -102,6 +102,8 @@ public class Constants {
   public static final String SIM_NUMBER = "simNumber";
 
   public static final HashSet<String> SIM_VALUES;
+  public static final String SIM_ARTIST_LABEL_ALBUM = "simArtistLabelAlbum";
+
   static {
     SIM_VALUES = Sets.newHashSet();
     SIM_VALUES.add(SIM_TYPE);

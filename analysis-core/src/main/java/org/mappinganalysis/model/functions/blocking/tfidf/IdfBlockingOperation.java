@@ -17,7 +17,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
-import org.mappinganalysis.io.impl.json.JSONDataSink;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -27,6 +27,7 @@ import org.mappinganalysis.model.ObjectMap;
  */
 public class IdfBlockingOperation
     implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
+  private static final Logger LOG = Logger.getLogger(IdfBlockingOperation.class);
   private DataSet<MergeMusicTuple> inputData;
   private final static String[] STOP_WORDS = {
       "the", "i", "a", "an", "at", "are", "am", "for", "and", "or", "is",
@@ -80,21 +81,21 @@ public class IdfBlockingOperation
     // create cc graph
     DataSet<Vertex<Long, Long>> ccVertices = createCcBlockingKeyVertices(idfSupportEdges);
 
-    DataSet<Tuple2<Long, Long>> sum = ccVertices
-        .map(new MapFunction<Vertex<Long, Long>, Tuple2<Long, Long>>() {
-      @Override
-      public Tuple2<Long, Long> map(Vertex<Long, Long> vertex) throws Exception {
-        return new Tuple2<>(vertex.getValue(), 1L);
-      }
-    })
-        .groupBy(0)
-        .sum(1);
+//    DataSet<Tuple2<Long, Long>> sum = ccVertices
+//        .map(new MapFunction<Vertex<Long, Long>, Tuple2<Long, Long>>() {
+//      @Override
+//      public Tuple2<Long, Long> map(Vertex<Long, Long> vertex) throws Exception {
+//        return new Tuple2<>(vertex.getValue(), 1L);
+//      }
+//    })
+//        .groupBy(0)
+//        .sum(1);
 
     // TODO remove this helper construct
-    new JSONDataSink(
-            "hdfs://dbc0.informatik.intern.uni-leipzig.de:9000/user/markus/musicbrainz-benchmark/",
-            "word-frequency-aggr-cc2mio")
-        .writeTuples(sum);
+//    new JSONDataSink(
+//            "hdfs://dbc0.informatik.intern.uni-leipzig.de:9000/user/markus/musicbrainz-benchmark/",
+//            "word-frequency-aggr-cc2mio")
+//        .writeTuples(sum);
 
     // edge values are not longer important,
         // filter was the last step where the support was needed
@@ -113,7 +114,12 @@ public class IdfBlockingOperation
             triplet.setBlockingLabel(second.getValue().toString());
             return triplet;
           }
-        });
+        })
+//        .map(x -> {
+//          LOG.info(x.toString());
+//          return x;
+//        })
+        ;
   }
 
   private DataSet<Vertex<Long, Long>> createCcBlockingKeyVertices(DataSet<Edge<Long, Integer>> idfSupportEdges) {
