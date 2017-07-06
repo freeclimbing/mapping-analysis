@@ -70,7 +70,7 @@ public class SimSort
     }
 
     if (prepareEnabled) {
-      DataSet<Edge<Long, NullValue>> distinctEdges = graph // TODO #126
+      DataSet<Edge<Long, NullValue>> distinctEdges = graph
           .getVertices()
           .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
 

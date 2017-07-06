@@ -10,11 +10,13 @@ import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * VertexUpdateFunction for SimSort, optimized version with Tuple4 instead of ObjectMap.
+ *
+ * Each iteration starts with sending messages as specified in MessagingFunction, then
+ * VertexUpdateFunction is executed.
  */
 public class SimSortOptVertexUpdateFunction
     extends VertexUpdateFunction<Long, SimSortVertexTuple, AggSimValueTuple> {
@@ -44,8 +46,7 @@ public class SimSortOptVertexUpdateFunction
         neighborList.add(message.getVertexSim());
         iterationAggSim += message.getEdgeSim();
       }
-      BigDecimal result = new BigDecimal(iterationAggSim / messageCount);
-      iterationAggSim = result.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
+      iterationAggSim = Utils.getExactDoubleResult(iterationAggSim, messageCount);
 //      LOG.debug(vertex.getId() + " itAggSim: " + iterationAggSim + " old: " + vertex.getValue().getSim());
 
       if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0

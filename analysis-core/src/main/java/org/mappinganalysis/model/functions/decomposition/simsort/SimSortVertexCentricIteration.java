@@ -3,11 +3,13 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.*;
+import org.apache.flink.graph.EdgeDirection;
+import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.GraphAlgorithm;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.util.Constants;
 
 /**
  * Execute SimSort procedure based on vertex-centric-iteration
@@ -33,7 +35,8 @@ public class SimSortVertexCentricIteration
      // set solution set unmanaged in order to reduce out of memory exception on non-cluster setup
 //    aggParameters.setSolutionSetUnmanagedMemory(true);
 
-    DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = createSimSortInputGraph(graph, env)
+    DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = graph
+        .run(new SimSortInputGraphCreator(env))
         .runVertexCentricIteration(
             new SimSortOptVertexUpdateFunction(minSimilarity),
             new SimSortOptMessagingFunction(), Integer.MAX_VALUE, aggParameters)
@@ -57,31 +60,5 @@ public class SimSortVertexCentricIteration
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     return Graph.fromDataSet(resultingVertices, graph.getEdges(), env);
-  }
-
-
-  /**
-   * Converts input graph to SimSort input format using TupleX instead of complex ObjectMap.
-   */
-  private static Graph<Long, SimSortVertexTuple, SimSortEdgeTuple> createSimSortInputGraph(
-      Graph<Long, ObjectMap, ObjectMap> graph,
-      ExecutionEnvironment env) {
-
-    DataSet<Edge<Long, SimSortEdgeTuple>> edges = graph.getEdges()
-        .map(edge -> new Edge<>(edge.getSource(),
-            edge.getTarget(),
-            new SimSortEdgeTuple(edge.getValue().getEdgeSimilarity())))
-        .returns(new TypeHint<Edge<Long, SimSortEdgeTuple>>() {});
-
-    DataSet<Vertex<Long, SimSortVertexTuple>> vertices = graph
-        .getVertices()
-        .map(vertex -> new Vertex<>(vertex.getId(),
-            new SimSortVertexTuple(vertex.getValue().getHashCcId(),
-                Long.MIN_VALUE, // not safe to assume
-                -1D,
-                Boolean.TRUE)))
-        .returns(new TypeHint<Vertex<Long, SimSortVertexTuple>>() {});
-
-    return Graph.fromDataSet(vertices, edges, env);
   }
 }

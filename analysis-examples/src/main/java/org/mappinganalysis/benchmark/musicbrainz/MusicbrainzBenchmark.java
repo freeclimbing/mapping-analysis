@@ -94,6 +94,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
           .writeVertices(vertices);
       env.execute(DEC_JOB);
     }
+
     /*
       merge
      */
