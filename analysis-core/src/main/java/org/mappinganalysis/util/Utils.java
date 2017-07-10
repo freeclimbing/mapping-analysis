@@ -48,7 +48,7 @@ public class Utils {
    */
   public static <T> void writeToFile(DataSet<T> data, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
-      data.writeAsFormattedText(Constants.INPUT_DIR + "output/" + outDir,
+      data.writeAsFormattedText(Constants.INPUT_PATH + "output/" + outDir,
           FileSystem.WriteMode.OVERWRITE,
           new DataSetTextFormatter<>());
     }

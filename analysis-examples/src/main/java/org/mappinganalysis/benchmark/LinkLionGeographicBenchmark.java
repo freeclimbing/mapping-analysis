@@ -27,47 +27,60 @@ import org.mappinganalysis.util.Constants;
 public class LinkLionGeographicBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  public static final String PREPROCESSING = "settlement-preprocessing";
-  public static final String CORRUPTED = "settlement-corrupted";
-  public static final String DECOMPOSITION = "settlement-decomposition-representatives";
-  public static final String MERGE = "settlement-merged-clusters";
-  public static final String PRE_JOB = "Settlement Preprocessing";
-  public static final String DEC_JOB = "Settlement Decomposition + Representatives";
-  public static final String MER_JOB = "Settlement Merge";
-
-  public static String INPUT_PATH;
+  public static final String PREPROCESSING = "geographic-preprocessing";
+  public static final String DECOMPOSITION = "geographic-decomposition-representatives";
+  public static final String MERGE = "geographic-merged-clusters";
+  public static final String PRE_JOB = "Geographic Preprocessing";
+  public static final String DEC_JOB = "Geographic Decomposition + Representatives";
+  public static final String MER_JOB = "Geographic Merge";
 
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 2, "args[0]: input dir, " +
             "args[1]: min SimSort similarity (e.g., 0.7)");
 
     Double minSimilarity = Doubles.tryParse(args[1]);
-    Constants.INPUT_DIR = args[0];
+    final String inputPath = args[0];
     Constants.SOURCE_COUNT = 5;
 
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
-        Constants.INPUT_DIR,
+        // TODO check path
+        Constants.INPUT_PATH,
         Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
         env)
         .getGraph(ObjectMap.class, NullValue.class)
         .run(new DefaultPreprocessing(true, env));;
 
-    graph = graph
-        .run(new TypeGroupBy(env))
-        .run(new SimSort(minSimilarity, env));
+    new JSONDataSink(inputPath, PREPROCESSING)
+        .writeGraph(graph);
+    env.execute(PRE_JOB);
 
-    DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
-        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
+    /**
+     * Decomposition
+     */
+    DataSet<Vertex<Long, ObjectMap>> representatives =
+        new JSONDataSource(inputPath, PREPROCESSING, env)
+            .getGraph()
+            .run(new TypeGroupBy(env))
+            .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env))
+            .getVertices()
+            .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
 
-    representatives = representatives
-        .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, Constants.SOURCE_COUNT, env));
-
-    new JSONDataSink(Constants.INPUT_DIR, "6-merged-clusters-json")
+    new JSONDataSink(inputPath, DECOMPOSITION)
         .writeVertices(representatives);
-//    Utils.writeVerticesToJSONFile(representatives, "6-merged-clusters-json");
+    env.execute(DEC_JOB);
 
-    env.execute("Representatives and Merge");
+    /**
+     * Merge
+     */
+    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
+        new JSONDataSource(inputPath, DECOMPOSITION, env)
+            .getVertices()
+            .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
+            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, Constants.SOURCE_COUNT, env));
+
+    new JSONDataSink(inputPath, MERGE)
+        .writeVertices(mergedVertices);
+    env.execute(MER_JOB);
   }
 
   @Override

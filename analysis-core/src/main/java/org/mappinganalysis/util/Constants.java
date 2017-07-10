@@ -274,7 +274,7 @@ public class Constants {
   /**
    * Command line option names.
    */
-  public static String INPUT_DIR;
+  public static String INPUT_PATH;
 
   public static final String VERTICES = "vertices/";
   public static final String EDGES = "edges/";

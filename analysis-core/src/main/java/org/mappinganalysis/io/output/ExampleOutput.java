@@ -17,11 +17,9 @@ import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.FrequencyMapByFunction;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.filter.ClusterSizeSimpleFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -186,13 +184,13 @@ public class ExampleOutput {
   public void printEvalThreePercent(String caption,
                                     DataSet<Vertex<Long, ObjectMap>> mergedClusters,
                                     DataSet<Vertex<Long, ObjectMap>> vertices) {
-    if (Constants.INPUT_DIR.contains("perfect")) {
+    if (Constants.INPUT_PATH.contains("perfect")) {
       addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 6); // 2
       addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 9); // 8
       addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 64); //72
     }
 
-    if (Constants.INPUT_DIR.contains("linklion")) {
+    if (Constants.INPUT_PATH.contains("linklion")) {
       addClusterSampleToOutput(caption + " 2 size cluster", mergedClusters, vertices, 2, 37);
       addClusterSampleToOutput(caption + " 3 size cluster", mergedClusters, vertices, 3, 36);
       addClusterSampleToOutput(caption + " 4 size cluster", mergedClusters, vertices, 4, 48);
@@ -220,7 +218,7 @@ public class ExampleOutput {
     /**
      * Write eval clusters for a certain size to disk for later reuse.
      */
-    new JSONDataSink(Constants.INPUT_DIR, evalFile)
+    new JSONDataSink(Constants.INPUT_PATH, evalFile)
         .writeVertices(resultClusters);
 //      Utils.writeVerticesToJSONFile(resultClusters, evalFile);
 

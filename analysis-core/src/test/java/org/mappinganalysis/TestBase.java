@@ -15,7 +15,7 @@ public class TestBase {
   private static final Logger LOG = Logger.getLogger(TestBase.class);
 
   public static void setupConstants() {
-    Constants.INPUT_DIR = "linklion";
+    Constants.INPUT_PATH = "linklion";
     Constants.SOURCE_COUNT = 5;
   }
 
