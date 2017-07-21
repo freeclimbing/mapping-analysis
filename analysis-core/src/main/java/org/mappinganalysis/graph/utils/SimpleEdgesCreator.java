@@ -37,7 +37,8 @@ public class SimpleEdgesCreator
         .reduceGroup(new SimpleEdgeCreatorGroupReducer());
   }
 
-  private static class SimpleEdgeCreatorGroupReducer implements GroupReduceFunction<Vertex<Long,ObjectMap>, Edge<Long, NullValue>> {
+  private static class SimpleEdgeCreatorGroupReducer
+      implements GroupReduceFunction<Vertex<Long,ObjectMap>, Edge<Long, NullValue>> {
     @Override
     public void reduce(
         Iterable<Vertex<Long, ObjectMap>> vertexIterable,
@@ -51,7 +52,10 @@ public class SimpleEdgesCreator
           isFirstEdge = false;
         } else {
 //          LOG.info("new Edge: " + firstVertexId + " " + vertex.getId());
-          out.collect(new Edge<>(firstVertexId, vertex.getId(), NullValue.getInstance()));
+          Long id = vertex.getId();
+          Long second = id > firstVertexId ? id : firstVertexId;
+          firstVertexId = firstVertexId.longValue() == second ? id : firstVertexId;
+          out.collect(new Edge<>(firstVertexId, second, NullValue.getInstance()));
         }
 
       }

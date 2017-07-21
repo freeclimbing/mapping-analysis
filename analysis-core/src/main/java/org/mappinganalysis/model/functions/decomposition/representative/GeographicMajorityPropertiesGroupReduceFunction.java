@@ -37,14 +37,14 @@ public class GeographicMajorityPropertiesGroupReduceFunction
     Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here
     ObjectMap resultProps = new ObjectMap(Constants.GEO);
     Set<Long> clusterVertices = Sets.newHashSet();
-    Set<String> clusterOntologies = Sets.newHashSet();
+    Set<String> clusterDataSources = Sets.newHashSet();
     HashMap<String, Integer> labelMap = Maps.newHashMap();
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
 
     for (Vertex<Long, ObjectMap> vertex : vertices) {
       updateVertexId(resultVertex, vertex);
       updateClusterVertexIds(clusterVertices, vertex);
-      updateClusterOntologies(clusterOntologies, vertex);
+      updateClusterOntologies(clusterDataSources, vertex);
 
       addLabelToMap(labelMap, vertex);
 
@@ -64,11 +64,13 @@ public class GeographicMajorityPropertiesGroupReduceFunction
       resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
     }
 
-    resultProps.setClusterDataSources(clusterOntologies);
+    resultProps.setClusterDataSources(clusterDataSources);
     resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
+
+//    System.out.println(" result: " + resultVertex.toString());
 
     collector.collect(resultVertex);
   }
@@ -76,6 +78,8 @@ public class GeographicMajorityPropertiesGroupReduceFunction
   private void updateClusterOntologies(
       Set<String> clusterOntologies,
       Vertex<Long, ObjectMap> currentVertex) {
+//    System.out.println("geo maj prop current: " + currentVertex.toString());
+//    System.out.println("geo maj prop cluster: " + clusterOntologies.toString());
     if (currentVertex.getValue().containsKey(Constants.DATA_SOURCE)) {
       clusterOntologies.add(currentVertex.getValue().getDataSource());
     }

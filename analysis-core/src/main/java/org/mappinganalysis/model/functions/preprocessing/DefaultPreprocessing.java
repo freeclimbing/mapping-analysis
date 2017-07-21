@@ -1,8 +1,10 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
+import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -56,6 +58,7 @@ public class DefaultPreprocessing
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     Graph<Long, ObjectMap, NullValue> tmpGraph = graph
         .mapVertices(new InternalTypeMapFunction())
+        .mapVertices(new DataSourceMapFunction())
         .run(new EqualDataSourceLinkRemover(env))
         .run(new TypeMisMatchCorrection(env));
 
@@ -83,6 +86,18 @@ public class DefaultPreprocessing
           .run(new TypeOverlapCcCreator(domain, env)); // each vertex has "no type" with music dataset
     } else {
       return resultGraph;
+    }
+  }
+
+  /**
+   * Temporary map function for compatibility with old 'ontology' values.
+   */
+  private static class DataSourceMapFunction implements MapFunction<Vertex<Long,ObjectMap>, ObjectMap> {
+    @Override
+    public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
+      vertex.getValue().getDataSource();
+
+      return vertex.getValue();
     }
   }
 }

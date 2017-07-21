@@ -18,7 +18,7 @@ public class JSONToEntity {
   /**
    * Possible property names where several values can occur, i.e, typeIntern=Settlement, Country
    */
-  List<String> arrayOptions = Arrays.asList(
+  private List<String> arrayOptions = Arrays.asList(
       Constants.TYPE_INTERN,
       Constants.COMP_TYPE,
       Constants.DATA_SOURCES,
@@ -26,7 +26,7 @@ public class JSONToEntity {
       Constants.TYPE
   );
 
-  List<String> longOptions = Arrays.asList(
+  private List<String> longOptions = Arrays.asList(
       Constants.HASH_CC,
       Constants.CC_ID,
       Constants.SOURCE,

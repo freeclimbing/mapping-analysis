@@ -46,16 +46,19 @@ public class JSONTest {
 
   /**
    * Simple JSON input reader test
-   * @throws Exception
    */
   @Test
   public void readJSONTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    String path = JSONTest.class.getResource("/data/preprocessing/input/").getFile();
+    String path = JSONTest.class
+        .getResource("/data/preprocessing/input/")
+        .getFile();
 
-    Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(path, true, env)
+    Graph<Long, ObjectMap, NullValue> graph
+        = new JSONDataSource(path, true, env)
         .getGraph(ObjectMap.class, NullValue.class);
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices();
+
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
       assertTrue(vertex.getId() == 109L
           || vertex.getId() == 7380L
@@ -73,16 +76,21 @@ public class JSONTest {
 
   /**
    * not working
-   * @throws Exception
    */
   @Test
   public void readWriteJSONTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    String path = JSONTest.class.getResource("/data/preprocessing/input/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(path, true, env).getGraph();
+    String path = JSONTest.class
+        .getResource("/data/preprocessing/general/")
+        .getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph
+        = new JSONDataSource(path, true, env).getGraph();
 
-    /**
-     * Write graph to JSON file
+    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+      System.out.println(vertex);
+    }
+    /*
+      Write graph to JSON file
      */
     String tmpDir = temporaryFolder.getRoot().toString();
     String step = "testStep";
@@ -91,10 +99,11 @@ public class JSONTest {
     dataSink.writeGraph(graph);
     env.execute();
 
-    /**
-     * Read again from tmp folder
+    /*
+      Read again from tmp folder
      */
-    Graph<Long, ObjectMap, ObjectMap> inOutGraph = new JSONDataSource(tmpDir, step, env)
+    Graph<Long, ObjectMap, ObjectMap> inOutGraph
+        = new JSONDataSource(tmpDir, step, env)
         .getGraph();
 
     DataSet<Vertex<Long, ObjectMap>> inVertices = graph.getVertices();
@@ -114,10 +123,10 @@ public class JSONTest {
 //    GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
 //    LogicalGraph.fromDataSets(graph.getVertices(), graph.getEdges(), config);
 
-    /**
-     * todo better compare in and out file?
-     *
-     * todo actual test missing
+    /*
+      todo better compare in and out file?
+
+      todo actual test missing
      */
     DataSet<Vertex<Long, ObjectMap>> outVertices = inOutGraph.getVertices();
     for (Vertex<Long, ObjectMap> vertex : outVertices.collect()) {

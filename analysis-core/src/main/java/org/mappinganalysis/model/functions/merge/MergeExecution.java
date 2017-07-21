@@ -97,18 +97,13 @@ public class MergeExecution
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator());
     } else
-    /**
-     * MUSIC
+    /*
+      MUSIC
      */
     if (domain == DataDomain.MUSIC) {
       // initial solution set
       DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator())//; // added artistTitleAlbum
-          .map(x -> {
-            LOG.info(x.toString());
-            return x;
-          })
-          .returns(new TypeHint<MergeMusicTuple>() {});
+          .map(new MergeMusicTupleCreator());
 
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
           new MergeMusicSimilarity();
@@ -136,16 +131,13 @@ public class MergeExecution
         initialWorkingSet = preBlockingClusters
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
-            .runOperation(similarityComputation)//;
-          .map(x -> {
-//            LOG.info("sim: " + x.toString());
-            return x;
-          })
-          .returns(new TypeHint<MergeMusicTriplet>() {});
+            .runOperation(similarityComputation)
+            .rebalance();
       } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
         DataSet<MergeMusicTriplet> idfPartTriplets = preBlockingClusters
             .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
-            .runOperation(similarityComputation);
+            .runOperation(similarityComputation)
+            .rebalance();
 
         DataSet<MergeMusicTuple> simpleTuples = idfPartTriplets.<Tuple2<Long, Long>>project(0, 1)
             .flatMap((Tuple2<Long, Long> tuple, Collector<Tuple1<Long>> out) -> {

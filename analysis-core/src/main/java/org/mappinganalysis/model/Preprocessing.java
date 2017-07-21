@@ -15,6 +15,7 @@ import org.mappinganalysis.util.Constants;
 /**
  * Preprocessing.
  */
+@Deprecated
 public class Preprocessing {
   private static final Logger LOG = Logger.getLogger(Preprocessing.class);
 

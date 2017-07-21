@@ -30,7 +30,8 @@ public class BasicVertexCreator
   public Vertex<Long, ObjectMap> map(Tuple3<Integer, String, String> tuple) throws Exception {
     reuseVertex.setId((long) tuple.f0);
 //    reuseVertex.getValue().put(Constants.DB_URL_FIELD, tuple.f1);
-    reuseVertex.getValue().put(Constants.DATA_SOURCE, tuple.f2);
+    reuseVertex.getValue().setDataSource(tuple.f2);
+//        put(Constants.DATA_SOURCE, tuple.f2);
 
     vertexCounter.add(1L);
     return reuseVertex;

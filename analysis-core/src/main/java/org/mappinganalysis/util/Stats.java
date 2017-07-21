@@ -318,7 +318,7 @@ public class Stats {
    * @throws Exception
    */
   public static DataSet<Tuple2<String, Integer>> printVertexSourceCounts(
-      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
 
     return graph.getVertices()
         .map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, String, Integer>>() {
@@ -340,7 +340,7 @@ public class Stats {
    * @throws Exception
    */
   public static DataSet<Tuple3<String, String, Integer>> printEdgeSourceCounts(
-      Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
+      Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     DataSet<Tuple2<Long, Long>> edges = graph.getEdgeIds()
         .distinct();
 
@@ -356,7 +356,7 @@ public class Stats {
    * @return tuple (1, 2, dbp, gn)
    */
   private static DataSet<Tuple4<Long, Long, String, String>> getEdgeSourceTuples(
-      Graph<Long, ObjectMap, ObjectMap> graph,
+      Graph<Long, ObjectMap, NullValue> graph,
       DataSet<Tuple2<Long, Long>> edges) {
 
     return edges

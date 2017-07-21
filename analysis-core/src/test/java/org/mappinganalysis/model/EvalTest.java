@@ -24,6 +24,8 @@ public class EvalTest {
   /**
    * Remove a single link where source equals target dataset name.
    * @throws Exception
+   *
+   * Note: one of the vertices has still a "ontology" property for testing deprecated behavior.
    */
   @Test
   public void linksWithIdenticalSourceOrDuplicateTest() throws Exception {
@@ -46,7 +48,9 @@ public class EvalTest {
   public void printEdgeSourceCountsTest() throws Exception {
     String graphPath = EvalTest.class
         .getResource("/data/preprocessing/general/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
+    Graph<Long, ObjectMap, NullValue> graph =
+        new JSONDataSource(graphPath, true, env)
+          .getGraph(ObjectMap.class, NullValue.class);
 
     DataSet<Tuple3<String, String, Integer>> result = Stats.printEdgeSourceCounts(graph);
 

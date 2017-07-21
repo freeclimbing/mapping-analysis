@@ -399,7 +399,15 @@ public class ObjectMap
    * Get source dataset name for vertex.
    */
   public String getDataSource() {
+    // needed for deprecated "ontology" value
+    if (!map.containsKey(Constants.DATA_SOURCE)) {
+      setDataSource(map.get("ontology").toString());
+      map.remove("ontology");
+//      return map.get("ontology").toString();
+    }
+//    else {
     return map.get(Constants.DATA_SOURCE).toString();
+//    }
   }
 
   public void setDataSource(String source) {
@@ -410,12 +418,12 @@ public class ObjectMap
    * Get list of source dataset names which are contained in the cluster.
    */
   public Set<String> getDataSourcesList() {
-    Object ontologies = map.get(Constants.DATA_SOURCES);
+    Object dataSources = map.get(Constants.DATA_SOURCES);
 
-    if (ontologies instanceof Set) {
-      return (Set<String>) ontologies;
+    if (dataSources instanceof Set) {
+      return (Set<String>) dataSources;
     } else {
-      return Sets.newHashSet(ontologies.toString());
+      return Sets.newHashSet(dataSources.toString());
     }
   }
 

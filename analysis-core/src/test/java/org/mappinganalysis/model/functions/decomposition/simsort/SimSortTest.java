@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.decomposition.simsort;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -43,11 +44,22 @@ public class SimSortTest {
             .getGraph()
             .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env));
 
-    DataSet<Vertex<Long, ObjectMap>> representatives = graph.getVertices()
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
+        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+          @Override
+          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+            System.out.println(vertex.toString());
+            vertex.getValue().getDataSource();
+            System.out.println(vertex.toString() + "\n");
+            return vertex;
+          }
+        });
+
+    DataSet<Vertex<Long, ObjectMap>> representatives = vertices//graph.getVertices()
         .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-//      LOG.info(vertex.toString());
+      LOG.info(vertex.toString());
       if (vertex.getId() == 2757L) {
         assertTrue(vertex.getValue().getVerticesCount().equals(1));
       } else {

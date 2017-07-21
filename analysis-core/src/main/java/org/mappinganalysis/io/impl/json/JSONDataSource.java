@@ -94,7 +94,9 @@ public class JSONDataSource implements DataSource {
    * @return generic graph
    */
   public <VV, EV> Graph<Long, VV, EV> getGraph(Class<VV> vertexClass, Class<EV> edgeClass) {
-    System.out.println("JSONDataSource: " + vertexPath);
+    System.out.println("JSONDataSource: vertexPath: " + vertexPath);
+    System.out.println("JSONDataSource: edgePath: " + edgePath);
+
     System.out.println("JSONDataSource step: " + step);
     DataSet<Vertex<Long, VV>> vertices = environment.readTextFile(vertexPath)
         .map(new JSONToVertexFormatter<>(vertexClass));
