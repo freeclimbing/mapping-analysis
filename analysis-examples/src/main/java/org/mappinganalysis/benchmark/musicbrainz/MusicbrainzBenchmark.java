@@ -44,10 +44,11 @@ public class MusicbrainzBenchmark implements ProgramDescription {
   private static String MODE;
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 3, "args[0]: input dir, " +
-        "args[1]: file name, args[2]: all/merge mode selection" );
+    Preconditions.checkArgument(args.length == 4, "args[0]: input dir, " +
+        "args[1]: file name, args[2]: all/merge mode selection, args[3]: inputOnly");
     INPUT_PATH = args[0];
     VERTEX_FILE_NAME = args[1];
+    boolean runInputOnly = args[3].equals("inputOnly");
     MODE = args[2];
 
     Constants.SOURCE_COUNT = 5;
@@ -57,7 +58,8 @@ public class MusicbrainzBenchmark implements ProgramDescription {
       /*
         process input csv data, create basic clean graph
        */
-      DataSet<Vertex<Long, ObjectMap>> inputVertices =
+      if (runInputOnly) {
+        DataSet<Vertex<Long, ObjectMap>> inputVertices =
           new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
               .getVertices();
       DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
@@ -68,6 +70,15 @@ public class MusicbrainzBenchmark implements ProgramDescription {
           .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
       env.execute(INP_JOB);
 
+        return;
+      }
+
+      /*
+        preprocessing
+       */
+      Graph<Long, ObjectMap, NullValue> graph =
+          new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
+              .getGraph(ObjectMap.class, NullValue.class);
     /*
       preprocessing
      */
