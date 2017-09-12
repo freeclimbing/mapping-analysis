@@ -9,5 +9,6 @@ public enum EdgeComputationStrategy {
    */
   SIMPLE,
   ALL,
-  REPRESENTATIVE
+  REPRESENTATIVE,
+  NONE
 }

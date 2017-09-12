@@ -16,7 +16,7 @@ public class EdgeComputationVertexCcSet
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
 
   private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
-  private EdgeComputationStrategy strategy = EdgeComputationStrategy.SIMPLE;
+  private EdgeComputationStrategy strategy = EdgeComputationStrategy.NONE;
   @Deprecated
   private Boolean computeAllEdges;
   private Boolean isResultEdgeDistinct;
