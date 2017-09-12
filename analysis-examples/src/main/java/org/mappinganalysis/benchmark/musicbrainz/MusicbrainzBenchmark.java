@@ -8,6 +8,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
@@ -31,17 +32,17 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 public class MusicbrainzBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  public static final String INPUT_STEP = "musicbrainz-input";
-  public static final String PREPROCESSING_STEP = "musicbrainz-preprocessing";
-  public static final String DECOMPOSITION_STEP = "musicbrainz-decomposition-representatives";
-  public static final String MERGE_STEP = "musicbrainz-merged-clusters";
-  public static final String INP_JOB = "Musicbrainz Input";
-  public static final String PRE_JOB = "Musicbrainz Preprocessing";
-  public static final String DEC_JOB = "Musicbrainz Decomposition + Representatives";
-  public static final String MER_JOB = "Musicbrainz Merge";
+  private static final String INPUT_STEP = "musicbrainz-input";
+  private static final String PREPROCESSING_STEP = "musicbrainz-preprocessing";
+  private static final String DECOMPOSITION_STEP = "musicbrainz-decomposition-representatives";
+  private static final String MERGE_STEP = "musicbrainz-merged-clusters";
+  private static final String INP_JOB = "Musicbrainz Input";
+  private static final String PRE_JOB = "Musicbrainz Preprocessing";
+  private static final String DEC_JOB = "Musicbrainz Decomposition + Representatives";
+  private static final String MER_JOB = "Musicbrainz Merge";
 
-  public static String INPUT_PATH;
-  public static String VERTEX_FILE_NAME;
+  private static String INPUT_PATH;
+  private static String VERTEX_FILE_NAME;
 
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 2, "args[0]: input dir" +
@@ -58,7 +59,9 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
             .getVertices();
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
 
     new JSONDataSink(INPUT_PATH, INPUT_STEP)
         .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));

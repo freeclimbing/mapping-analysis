@@ -15,7 +15,9 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 public class EdgeComputationVertexCcSet
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
 
-  KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+  private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+  private EdgeComputationStrategy strategy = EdgeComputationStrategy.SIMPLE;
+  @Deprecated
   private Boolean computeAllEdges;
   private Boolean isResultEdgeDistinct;
   private DataSet<Vertex<Long, ObjectMap>> vertices;
@@ -52,6 +54,16 @@ public class EdgeComputationVertexCcSet
     this.computeAllEdges = computeAllEdges;
   }
 
+  /**
+   * For simple edge creator, edges are always distinct.
+   * @param keySelector used cc id key selector
+   * @param strategy needs to be false
+   */
+  public EdgeComputationVertexCcSet(CcIdKeySelector keySelector, EdgeComputationStrategy strategy) {
+    this.keySelector = keySelector;
+    this.strategy = strategy;
+  }
+
   @Override
   public void setInput(DataSet<Vertex<Long, ObjectMap>> vertices) {
     this.vertices = vertices;
@@ -66,7 +78,13 @@ public class EdgeComputationVertexCcSet
    */
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-    if (computeAllEdges) {
+    if (strategy.equals(EdgeComputationStrategy.ALL)) {
+      return vertices
+          .runOperation(new AllEdgesCreator(keySelector, isResultEdgeDistinct));
+    } else if (strategy.equals(EdgeComputationStrategy.SIMPLE)) {
+      return vertices
+          .runOperation(new SimpleEdgesCreator(keySelector));
+    } else if (computeAllEdges) {
       return vertices
           .runOperation(new AllEdgesCreator(keySelector, isResultEdgeDistinct));
     } else {
