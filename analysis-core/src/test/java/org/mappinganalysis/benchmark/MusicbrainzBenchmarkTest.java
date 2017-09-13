@@ -15,6 +15,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertEquals;
  * songLength.equals("0e1-fizzzyblood") // 7452 verschoben
  */
 public class MusicbrainzBenchmarkTest {
+  private static final Logger LOG = Logger.getLogger(MusicbrainzBenchmarkTest.class);
   private static ExecutionEnvironment env;
 //  public static final String TEST_TITLE = "005-Kantate, BWV 4 \"Christ lag in Todesbanden\": V. Coro Versus IV \"Es war ein wunderlicher Krieg\"";
 //  public static final String TEST_TITLE = "020-Kantate, BWV 212 \"Mer hahn en neue Oberkeet\": XX. Aria (Bass) \"Dein Wachstum sei feste und lache vor Lust\",0.263117";
@@ -106,7 +108,7 @@ public class MusicbrainzBenchmarkTest {
             .groupingBy(v -> v.getValue().getLabel(), Collectors.counting()))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> labelOccurance : result.entrySet()) {
@@ -140,7 +142,8 @@ public class MusicbrainzBenchmarkTest {
 //    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
-    DataSet<Vertex<Long, ObjectMap>> inputVertivces = new CSVDataSource(path, vertexFileName, env)
+    DataSet<Vertex<Long, ObjectMap>> inputVertivces =
+        new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertivces
@@ -148,7 +151,8 @@ public class MusicbrainzBenchmarkTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
-    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertivces, inputEdges, env)
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph
+        .fromDataSet(inputVertivces, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
@@ -197,7 +201,7 @@ public class MusicbrainzBenchmarkTest {
             .groupingBy(v -> String.valueOf(v.getValue().getLength()), Collectors.counting()))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> entry : result.entrySet()) {
@@ -226,7 +230,7 @@ public class MusicbrainzBenchmarkTest {
             .groupingBy(v -> v.getValue().get(Constants.LANGUAGE).toString(), Collectors.counting()))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
@@ -234,9 +238,16 @@ public class MusicbrainzBenchmarkTest {
     }
   }
 
+  @Test
+  public void basicBlockingLabelTest() throws Exception {
+    String test = "003-Symphony 1 in C minor,  some  op. 11: III. Menuetto & Trio";
+    String musicBlockingLabel = Utils.getMusicBlockingLabel(test);
+
+    System.out.println(musicBlockingLabel);
+  }
+
   /**
    * Show blocking label distribution
-   * @throws Exception
    */
   @Test
   public void blockingLabelTest() throws Exception {
@@ -261,13 +272,78 @@ public class MusicbrainzBenchmarkTest {
 //        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
       System.out.println(stringLongEntry.toString());
     }
   }
+
+  /**
+   * special for big input file, not a real test
+   *
+   * 5min - change log destination in properties file
+   */
+//  @Test
+//  public void extendedBlockingLabelTest() throws Exception {
+//    env = setupLocalEnvironment();
+//
+//    String path = MusicbrainzBenchmarkTest.class
+//        .getResource("/data/musicbrainz/")
+//        .getFile();
+////    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+//    final String[] vertexFileNames = new String[]{"xaa", "xab", "xac", "xad", "xae", "xaf", "xag", "xah", "xai", "xaj"};
+//
+//    for (String vertexFileName : vertexFileNames) {
+//
+//      DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+//          .getVertices();
+//
+//      Map<String, Long> result = new LinkedHashMap<>();
+//
+//      vertices
+//          .collect()
+//          .stream()
+//          .collect(Collectors
+//              .groupingBy(v -> {
+//                    String artistTitleAlbum = Constants.EMPTY_STRING;
+//                    String artist = v.getValue().getArtist();
+//                    if (!artist.equals(Constants.CSV_NO_VALUE)) {
+//                      artistTitleAlbum = artist;
+//                    }
+//                    String label = v.getValue().getLabel();
+//                    if (!label.equals(Constants.CSV_NO_VALUE)) {
+//                      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+//                        artistTitleAlbum = label;
+//                      } else {
+//                        artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(label);
+//                      }
+//                    }
+//                    String album = v.getValue().getAlbum();
+//                    if (!album.equals(Constants.CSV_NO_VALUE)) {
+//                      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+//                        artistTitleAlbum = album;
+//                      } else {
+//                        artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(album);
+//                      }
+//
+//                    }
+//                    return Utils.getMusicBlockingLabel(artistTitleAlbum);
+//                  }
+//                  , Collectors.counting()))
+////        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
+//          .entrySet()
+//          .stream()
+//          .sorted(Map.Entry.<String, Long>comparingByValue())
+//          .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
+//
+//      for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
+//        LOG.info(stringLongEntry.toString());
+////      System.out.println(stringLongEntry.toString());
+//      }
+//    }
+//  }
 
   @Test
   public void yearTest() throws Exception {
@@ -297,7 +373,7 @@ public class MusicbrainzBenchmarkTest {
             .groupingBy(v -> v.getValue().getYear().toString(), Collectors.counting()))
         .entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Long>comparingByValue())
+        .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
@@ -323,7 +399,7 @@ public class MusicbrainzBenchmarkTest {
 
   }
 
-  public static ExecutionEnvironment setupLocalEnvironment() {
+  private static ExecutionEnvironment setupLocalEnvironment() {
     Configuration conf = new Configuration();
     conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
     env = new LocalEnvironment(conf);

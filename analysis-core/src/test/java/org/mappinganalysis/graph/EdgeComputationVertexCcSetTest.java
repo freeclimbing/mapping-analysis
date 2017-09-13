@@ -32,13 +32,15 @@ public class EdgeComputationVertexCcSetTest {
   public void SimpleEdgesCreatorTest() throws Exception {
     String graphPath = EdgeComputationVertexCcSetTest
         .class.getResource("/data/typeGroupBy/").getFile();
-    DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
+    DataSet<Vertex<Long, ObjectMap>> vertices =
+        new JSONDataSource(graphPath, true, env)
         .getVertices();
 
     vertices.runOperation(new EdgeComputationVertexCcSet(
         new CcIdKeySelector(),
         EdgeComputationStrategy.SIMPLE))
         .print();
+    // TODO TEST
 //    vertices.print();
   }
 
@@ -56,16 +58,19 @@ public class EdgeComputationVertexCcSetTest {
     DataSet<Edge<Long, NullValue>> newEdges
         = restrictToNewEdges(graph.getEdges(), allEdges);
     assertEquals(1, newEdges.count());
-    assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+    assertTrue(newEdges.collect()
+        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
     final DataSet<Edge<Long, NullValue>> distinctEdges = inputVertices
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     assertEquals(3, distinctEdges.count());
-    assertTrue(distinctEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+    assertTrue(distinctEdges.collect()
+        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
   }
 
-  private DataSet<Vertex<Long, ObjectMap>> arrangeVertices(Graph<Long, NullValue, NullValue> graph) {
+  private DataSet<Vertex<Long, ObjectMap>> arrangeVertices(
+      Graph<Long, NullValue, NullValue> graph) {
     return graph
         .getVertices()
         .map(vertex -> {

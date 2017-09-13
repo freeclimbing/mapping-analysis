@@ -3,7 +3,6 @@ package org.mappinganalysis.util;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.mappinganalysis.io.impl.DataDomain;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +84,7 @@ public class Constants {
   public static final String NO_VALUE = "no_value";
   public static final String CSV_NO_VALUE = "--";
   public static final String EMPTY_STRING = "";
+  public static final String DEVIDER = " - ";
   public static final int EMPTY_INT = 0;
 
   /**

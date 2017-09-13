@@ -99,7 +99,7 @@ public class JSONDataSource implements DataSource {
     DataSet<Vertex<Long, VV>> vertices = environment.readTextFile(vertexPath)
         .map(new JSONToVertexFormatter<>(vertexClass));
     DataSet<Edge<Long, EV>> edges = environment.readTextFile(edgePath)
-          .map(new JSONToEdgeFormatter<>(edgeClass));
+        .map(new JSONToEdgeFormatter<>(edgeClass));
 
     return Graph.fromDataSet(vertices, edges, environment);
   }
