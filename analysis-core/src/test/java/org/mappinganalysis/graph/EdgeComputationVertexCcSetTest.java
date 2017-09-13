@@ -10,6 +10,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -34,7 +35,9 @@ public class EdgeComputationVertexCcSetTest {
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices();
 
-    vertices.runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false))
+    vertices.runOperation(new EdgeComputationVertexCcSet(
+        new CcIdKeySelector(),
+        EdgeComputationStrategy.SIMPLE))
         .print();
 //    vertices.print();
   }
@@ -44,7 +47,9 @@ public class EdgeComputationVertexCcSetTest {
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
     DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
     DataSet<Edge<Long, NullValue>> allEdges = inputVertices
-        .runOperation(new org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet(new CcIdKeySelector(), true, false));
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(),
+            EdgeComputationStrategy.ALL,
+            false));
 
     assertEquals(9, allEdges.count());
 
@@ -54,7 +59,7 @@ public class EdgeComputationVertexCcSetTest {
     assertTrue(newEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
     final DataSet<Edge<Long, NullValue>> distinctEdges = inputVertices
-        .runOperation(new org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet(new CcIdKeySelector()));
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     assertEquals(3, distinctEdges.count());
     assertTrue(distinctEdges.collect().contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));

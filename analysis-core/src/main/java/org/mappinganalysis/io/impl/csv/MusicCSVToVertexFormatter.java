@@ -56,14 +56,14 @@ public class MusicCSVToVertexFormatter
 
         properties.setDataSource(value.f2.toString()); // int would be better, but data source is string
         properties.put(Constants.NUMBER, value.f3);
-        if (value.f0 == 4L) {
-          LOG.info("test: " + value.toString());
-        }
-        if (value.f0 == 4L)
-          LOG.info("N: " + vertex.toString());
+//        if (value.f0 == 4L) {
+//          LOG.info("test: " + value.toString());
+//        }
+//        if (value.f0 == 4L)
+//          LOG.info("N: " + vertex.toString());
         fixSongLength(value.f5);
-        if (value.f0 == 4L)
-          LOG.info("L: " + vertex.toString());
+//        if (value.f0 == 4L)
+//          LOG.info("L: " + vertex.toString());
 //        properties.put(Constants.LENGTH, fixSongLength(value.f5));
 //        properties.put("oLength", value.f5);
         properties.put(Constants.ARTIST, value.f6);
@@ -73,8 +73,8 @@ public class MusicCSVToVertexFormatter
         properties.put(Constants.LANGUAGE, fixLanguage(value.f9));
 //         properties.put("orig", value.f9);  // tmp for test
 
-        if (value.f0 == 4L)
-        LOG.info(vertex.toString());
+//        if (value.f0 == 4L)
+//        LOG.info(vertex.toString());
 
     return vertex;
   }

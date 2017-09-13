@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.mappinganalysis.corruption.EdgeCreateCorruptionFunction;
 import org.mappinganalysis.corruption.EdgeRemoveCorruptionFunction;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
@@ -29,6 +30,8 @@ import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
+
+import static org.junit.Assert.assertEquals;
 
 public class MusicBrainzTest {
   private static final Logger LOG = Logger.getLogger(MusicBrainzTest.class);
@@ -48,15 +51,18 @@ public class MusicBrainzTest {
             .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
 
-    System.out.println(inputEdges.count());
+//    System.out.println(inputEdges.count());
+    assertEquals(8526, inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> edges = inputEdges
         .mapPartition(new EdgeRemoveCorruptionFunction(10));
 
-    System.out.println(edges.count());
-    // 8526
+//    System.out.println(edges.count());
+    assertEquals(8526, edges.count());
   }
 
   @Test
@@ -73,29 +79,33 @@ public class MusicBrainzTest {
             .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
 
-    System.out.println(inputEdges.count());
+    assertEquals(9375, inputEdges.count());
+//    System.out.println(inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> newEdges = inputVertices
         .map(new MapFunction<Vertex<Long, ObjectMap>, Long>() {
-      @Override
-      public Long map(Vertex<Long, ObjectMap> value) throws Exception {
-        return value.getId();
-      }
-    })
+          @Override
+          public Long map(Vertex<Long, ObjectMap> value) throws Exception {
+            return value.getId();
+          }
+        })
         .mapPartition(new EdgeCreateCorruptionFunction(10));
 
-    System.out.println(newEdges.count());
+    assertEquals(1758, newEdges.count());
+//    System.out.println(newEdges.count());
 
     DataSet<Edge<Long, NullValue>> unionEdges = inputEdges
         .union(newEdges)
         .distinct();
 
-    System.out.println(unionEdges.count());
+    assertEquals(11133, newEdges.count());
+//    System.out.println(unionEdges.count());
 
 //    DataSet<Edge<Long, NullValue>> edges =
-
 //    System.out.println(edges.count());
     // 8526
   }
@@ -131,9 +141,12 @@ public class MusicBrainzTest {
             });
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
 
-    Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertices, inputEdges, env)
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph
+        .fromDataSet(inputVertices, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
@@ -143,7 +156,9 @@ public class MusicBrainzTest {
             .getVertices()
             .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
 
-    representatives.print();
+    assertEquals(11, representatives.count());
+
+//    representatives.print();
   }
 
   /**

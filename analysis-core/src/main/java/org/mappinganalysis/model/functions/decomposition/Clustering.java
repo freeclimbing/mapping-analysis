@@ -25,7 +25,6 @@ public class Clustering {
 
   /**
    * Connected components and minor refinement steps.
-   * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> createInitialClustering(
       Graph<Long, ObjectMap, ObjectMap> graph,
@@ -57,7 +56,6 @@ public class Clustering {
    * Direction of edges may change, two vertices have exactly one edge.
    * 2. For each of the computed edges, we compute a similarity value based on
    * label and geo coordinates.
-   * @throws Exception
    */
   public static Graph<Long, ObjectMap, ObjectMap> computeTransitiveClosureEdgeSimilarities(
       Graph<Long, ObjectMap, ObjectMap> graph,

@@ -33,9 +33,25 @@ public class EdgeComputationVertexCcSet
    * Create edges for set of vertices having cc id - optionally create only as many edges
    * to connect all vertices within cc.
    * @param keySelector used cc id key selector
+   * @param strategy if false, only core edges will be computed in cc
+   * @param isResultEdgeDistinct if false, no distinct check for edges
+   */
+  public EdgeComputationVertexCcSet(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
+                                    EdgeComputationStrategy strategy,
+                                    Boolean isResultEdgeDistinct) {
+    this.keySelector = keySelector;
+    this.strategy = strategy;
+    this.isResultEdgeDistinct = isResultEdgeDistinct;
+  }
+
+  /**
+   * Create edges for set of vertices having cc id - optionally create only as many edges
+   * to connect all vertices within cc.
+   * @param keySelector used cc id key selector
    * @param computeAllEdges if false, only core edges will be computed in cc
    * @param isResultEdgeDistinct if false, no distinct check for edges
    */
+  @Deprecated
   public EdgeComputationVertexCcSet(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
                                     Boolean computeAllEdges,
                                     Boolean isResultEdgeDistinct) {
@@ -49,6 +65,7 @@ public class EdgeComputationVertexCcSet
    * @param keySelector used cc id key selector
    * @param computeAllEdges needs to be false
    */
+  @Deprecated
   public EdgeComputationVertexCcSet(CcIdKeySelector keySelector, boolean computeAllEdges) {
     this.keySelector = keySelector;
     this.computeAllEdges = computeAllEdges;
@@ -84,7 +101,9 @@ public class EdgeComputationVertexCcSet
     } else if (strategy.equals(EdgeComputationStrategy.SIMPLE)) {
       return vertices
           .runOperation(new SimpleEdgesCreator(keySelector));
-    } else if (computeAllEdges) {
+    } else
+      // deprecated
+      if (computeAllEdges) {
       return vertices
           .runOperation(new AllEdgesCreator(keySelector, isResultEdgeDistinct));
     } else {

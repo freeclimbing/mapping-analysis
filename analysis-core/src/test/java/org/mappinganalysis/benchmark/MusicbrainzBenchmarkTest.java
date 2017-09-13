@@ -1,4 +1,4 @@
-package org.mappinganalysis.benchmark.musicbrainz;
+package org.mappinganalysis.benchmark;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -16,6 +16,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
@@ -49,7 +50,7 @@ public class MusicbrainzBenchmarkTest {
 //  public static final String TEST_TITLE = "Igor Presents \"Rumors\"; Paulo Presents \"Against\"; Andreas Presents \"Hatred Aside\"; Derrick Presents \"Choke\" - Against - 4 Track Pre-Listening";
 //  public static final String TEST_TITLE = "English Folk Song Suite: III. Intermezzo \"My Bonny Boy\": Andantino";
 //  public static final String TEST_TITLE = "007-Chorus Finale on Schiller's 'Ode To Joy' from Symphony No. 9 in D minor, Op. 125 \"Choral\"";
-  public static final String TEST_TITLE = "All This Is That (Carl and the Passions: \"So Tough\")";
+  static final String TEST_TITLE = "All This Is That (Carl and the Passions: \"So Tough\")";
 
   /**
    * Song length test
@@ -144,14 +145,14 @@ public class MusicbrainzBenchmarkTest {
         .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertivces
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), false));
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), EdgeComputationStrategy.SIMPLE));
 
     Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertivces, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
 //    graph.getVertices().print();
-//    graph.getEdges().print();
+    graph.getEdges().print();
 
 //    String[] split = TEST_TITLE.split("\\\"");
 //    Matcher quoted = Pattern.compile("\"(.*?)\"").matcher(TEST_TITLE);
