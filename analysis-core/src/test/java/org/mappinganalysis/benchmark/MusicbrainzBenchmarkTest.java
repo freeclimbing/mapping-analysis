@@ -129,7 +129,6 @@ public class MusicbrainzBenchmarkTest {
 
   /**
    * other modules can not be used everywhere
-   * @throws Exception
    */
   @Test
   public void testSim() throws Exception {
@@ -145,7 +144,9 @@ public class MusicbrainzBenchmarkTest {
         .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertivces
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), EdgeComputationStrategy.SIMPLE));
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
 
     Graph<Long, ObjectMap, ObjectMap> graph = Graph.fromDataSet(inputVertivces, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run

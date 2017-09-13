@@ -56,7 +56,7 @@ public class MusicBrainzTest {
             EdgeComputationStrategy.SIMPLE));
 
 //    System.out.println(inputEdges.count());
-    assertEquals(8526, inputEdges.count());
+    assertEquals(9375, inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> edges = inputEdges
         .mapPartition(new EdgeRemoveCorruptionFunction(10));
@@ -102,7 +102,7 @@ public class MusicBrainzTest {
         .union(newEdges)
         .distinct();
 
-    assertEquals(11133, newEdges.count());
+    assertEquals(11133, unionEdges.count());
 //    System.out.println(unionEdges.count());
 
 //    DataSet<Edge<Long, NullValue>> edges =
