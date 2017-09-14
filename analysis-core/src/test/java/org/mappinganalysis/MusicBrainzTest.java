@@ -1,7 +1,9 @@
 package org.mappinganalysis;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -29,6 +31,7 @@ import org.mappinganalysis.model.functions.merge.*;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import static org.junit.Assert.assertEquals;
@@ -110,9 +113,100 @@ public class MusicBrainzTest {
     // 8526
   }
 
+  @Test
+  public void changeParamTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String path = MusicBrainzTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> inputVertices =
+        new CSVDataSource(path, vertexFileName, env)
+            .getVertices()
+            .filter(vertex -> vertex.getValue().getCcId() < 200L)
+            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
+
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph
+        .fromDataSet(inputVertices, inputEdges, env)
+        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+
+    // too low sims because of bad sim metric
+//    graph.getEdges().print();
+
+    /**
+     *  representative creation
+     */
+    DataSet<Vertex<Long, ObjectMap>> representatives = graph
+        .run(new TypeGroupBy(env))
+        .run(new SimSort(DataDomain.MUSIC, 0.7, env))
+        .getVertices()
+        .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
+
+//    representatives.print();
+
+    // compute edges within representatives
+    DataSet<Edge<Long, NullValue>> edgeResultSet = representatives
+        .runOperation(new EdgeComputationVertexCcSet())
+        .map(new SmallEdgeIdFirstMapFunction()); // include in edge comp
+
+//    edgeResultSet.print();
+
+    printQuality(inputVertices, edgeResultSet);
+    // merge
+
+    DataSet<Vertex<Long, ObjectMap>> merged = representatives
+        .runOperation(new MergeInitialization(DataDomain.MUSIC))
+        .runOperation(new MergeExecution(DataDomain.MUSIC, 5));
+
+    printQuality(inputVertices, merged.runOperation(new EdgeComputationVertexCcSet())
+        .map(new SmallEdgeIdFirstMapFunction()));
+  }
+
+  private void printQuality(DataSet<Vertex<Long, ObjectMap>> inputVertices,
+                            DataSet<Edge<Long, NullValue>> edgeResultSet) throws Exception {
+    long checkCount = edgeResultSet.count();
+//    assertEquals(199, checkCount);
+
+    LOG.info("checkcount: " + checkCount);
+
+    DataSet<Edge<Long, NullValue>> goldEdges = inputVertices
+        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(), EdgeComputationStrategy.ALL, true));
+    long goldCount = goldEdges.count();
+//    goldEdges.print();
+
+    DataSet<Edge<Long, NullValue>> truePositives = goldEdges.join(edgeResultSet)
+        .where(0, 1).equalTo(0, 1)
+        .with(new JoinFunction<Edge<Long, NullValue>, Edge<Long, NullValue>, Edge<Long, NullValue>>() {
+          @Override
+          public Edge<Long, NullValue> join(Edge<Long, NullValue> left, Edge<Long, NullValue> right) throws Exception {
+            return left;
+          }
+        })
+        .distinct();
+
+    long tpCount = truePositives.count();
+
+    double precision = (double) tpCount / checkCount;
+    double recall = (double) tpCount / goldCount;
+    LOG.info("###############");
+    LOG.info("Precision = tp count / check count = " + tpCount + " / " + checkCount + " = " + precision);
+    LOG.info("###############");
+    LOG.info("Recall = tp count / gold count = " + tpCount + " / " + goldCount + " = " + recall);
+    LOG.info("###############");
+    LOG.info("f1 = 2 * precision * recall / (precision + recall) = "
+        + 2 * precision * recall / (precision + recall));
+    LOG.info("###############");
+  }
+
   /**
    * read input, preprocessing, representative creation
-   * @throws Exception
    */
   @Test
   public void testMusicDataSim() throws Exception {
@@ -181,7 +275,6 @@ public class MusicBrainzTest {
 
   /**
    * detailed merge part test, not needed anymore?
-   * @throws Exception
    */
   @Test
   public void testMusicMergeFirstPart() throws Exception {

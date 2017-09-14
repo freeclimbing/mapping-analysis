@@ -20,6 +20,13 @@ public class EdgeComputationVertexCcSet
   private DataSet<Vertex<Long, ObjectMap>> vertices;
 
   /**
+   * Create all distinct edges for a set of representatives.
+   */
+  public EdgeComputationVertexCcSet() {
+    this.strategy = EdgeComputationStrategy.REPRESENTATIVE;
+  }
+
+  /**
    * Create all distinct edges for a set of vertices with cc ids.
    */
   public EdgeComputationVertexCcSet(
@@ -75,6 +82,9 @@ public class EdgeComputationVertexCcSet
     } else if (strategy.equals(EdgeComputationStrategy.SIMPLE)) {
       return vertices
           .runOperation(new SimpleEdgesCreator(keySelector));
+    } else if (strategy.equals(EdgeComputationStrategy.REPRESENTATIVE)) {
+      return vertices
+          .runOperation(new RepresentativeEdgesCreator());
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }

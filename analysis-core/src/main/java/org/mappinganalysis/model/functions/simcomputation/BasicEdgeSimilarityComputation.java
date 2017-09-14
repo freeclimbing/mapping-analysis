@@ -1,7 +1,5 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import com.sun.tools.internal.jxc.ap.Const;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
@@ -39,7 +37,6 @@ public class BasicEdgeSimilarityComputation
     this.env = env;
     this.matchCombination = matchCombination;
     if (matchCombination.equals(Constants.MUSIC)) {
-//      System.out.println("using MusicSimilarityFunction");
       this.simFunction = new MusicSimilarityFunction();
     } else {
       this.simFunction = new EdgeSimilarityFunction(
@@ -52,7 +49,6 @@ public class BasicEdgeSimilarityComputation
    * Run basic edge similarity computation.
    * @param graph input graph
    * @return graph with edge similarities
-   * @throws Exception
    */
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph)

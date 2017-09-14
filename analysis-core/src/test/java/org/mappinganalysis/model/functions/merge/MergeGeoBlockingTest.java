@@ -128,8 +128,8 @@ public class MergeGeoBlockingTest {
         .getVertices()
         .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5));
 
-    vertices.print();
-//    assertEquals(4, vertices.count());
+//    vertices.print();
+    assertEquals(4, vertices.count());
   }
 
   @Test

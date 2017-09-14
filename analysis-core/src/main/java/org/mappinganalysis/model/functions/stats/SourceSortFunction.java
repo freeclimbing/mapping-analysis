@@ -14,7 +14,7 @@ public class SourceSortFunction implements MapFunction<Tuple4<Long, Long, String
     Tuple3<String, String, Integer>> {
   private static final Logger LOG = Logger.getLogger(SourceSortFunction.class);
 
-  Tuple3<String, String, Integer> reuseTuple;
+  private Tuple3<String, String, Integer> reuseTuple;
 
   public SourceSortFunction() {
     this.reuseTuple = new Tuple3<>();

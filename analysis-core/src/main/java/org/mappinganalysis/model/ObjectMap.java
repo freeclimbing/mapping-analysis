@@ -59,6 +59,14 @@ public class ObjectMap
     this.mode = mode;
   }
 
+  public Map<String, Object> getMap() {
+    return map;
+  }
+
+  public void setMap(Map<String, Object> map) {
+    this.map = map;
+  }
+
   public void setMode(String mode) {
     this.mode = mode;
   }
