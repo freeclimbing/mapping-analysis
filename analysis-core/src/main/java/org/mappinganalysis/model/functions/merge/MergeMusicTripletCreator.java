@@ -4,8 +4,6 @@ import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeGeoTriplet;
-import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -13,7 +11,7 @@ import org.mappinganalysis.util.AbstractionUtils;
 import java.util.HashSet;
 
 /**
- * Created by markus on 4/27/17.
+ * Create Triplets and do blocking.
  */
 public class MergeMusicTripletCreator
     implements GroupReduceFunction<MergeMusicTuple, MergeMusicTriplet> {

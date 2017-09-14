@@ -1,10 +1,8 @@
 package org.mappinganalysis.model.functions.merge;
 
-import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
@@ -142,27 +140,5 @@ public class MergeExecution
     {
       throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
     }
-  }
-
-  /**
-   * optional Helper method to write the current iteration superstep to the log.
-   */
-  private static DataSet<MergeGeoTriplet> printSuperstep(DataSet<MergeGeoTriplet> iteration) {
-    DataSet<MergeGeoTriplet> superstepPrinter = iteration
-        .first(1)
-        .filter(new RichFilterFunction<MergeGeoTriplet>() {
-          private Integer superstep = null;
-          @Override
-          public void open(Configuration parameters) throws Exception {
-            this.superstep = getIterationRuntimeContext().getSuperstepNumber();
-          }
-          @Override
-          public boolean filter(MergeGeoTriplet vertex) throws Exception {
-            LOG.info("Superstep: " + superstep);
-            return false;
-          }
-        });
-
-    return iteration.union(superstepPrinter);
   }
 }

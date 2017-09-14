@@ -8,7 +8,7 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 
 /**
- * Created by markus on 4/28/17.
+ * Compute changes within one delta iteration step, music domain.
  */
 public class ChangesMusicOperation
     implements CustomUnaryOperation<MergeMusicTriplet, MergeMusicTriplet> {

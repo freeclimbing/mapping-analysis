@@ -58,8 +58,8 @@ public class MergeGeoTripletCreator
 
           triplet.setIdAndTuples(leftTuple, rightTuple);
 
-          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
-          LOG.info(triplet.toString());
+//          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
+//          LOG.info(triplet.toString());
           out.collect(triplet);
         }
       }

@@ -1,9 +1,12 @@
 package org.mappinganalysis.model.functions.merge;
 
+import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -34,6 +37,9 @@ public class MergeMusicStep {
   public void compute() {
     DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
       delta = maxTriplets.flatMap(new MergeMusicMerge());
+
+//    workset = printSuperstep(workset)
+//        .map(x->x); // why do we need this line, not working without
 
     // remove max triplets from workset, they are getting merged anyway
     workset = workset.leftOuterJoin(maxTriplets)
@@ -69,5 +75,28 @@ public class MergeMusicStep {
     return workset
         .groupBy(5)
         .reduce(new MaxSimMinIdMusicReducer());
+  }
+
+
+  /**
+   * optional Helper method to write the current iteration superstep to the log.
+   */
+  private static DataSet<MergeGeoTriplet> printSuperstep(DataSet<MergeGeoTriplet> iteration) {
+    DataSet<MergeGeoTriplet> superstepPrinter = iteration
+        .first(1)
+        .filter(new RichFilterFunction<MergeGeoTriplet>() {
+          private Integer superstep = null;
+          @Override
+          public void open(Configuration parameters) throws Exception {
+            this.superstep = getIterationRuntimeContext().getSuperstepNumber();
+          }
+          @Override
+          public boolean filter(MergeGeoTriplet vertex) throws Exception {
+            LOG.info("Superstep: " + superstep);
+            return false;
+          }
+        });
+
+    return iteration.union(superstepPrinter);
   }
 }

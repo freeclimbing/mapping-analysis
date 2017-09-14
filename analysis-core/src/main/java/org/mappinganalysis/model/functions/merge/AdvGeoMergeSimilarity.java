@@ -1,7 +1,6 @@
 package org.mappinganalysis.model.functions.merge;
 
 import com.google.common.collect.Maps;
-import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.MergeGeoTriplet;
@@ -14,10 +13,10 @@ import java.util.HashMap;
 /**
  * Advanced Geo Merge Similarity Computation, not yet working.
  */
+@Deprecated
 public class AdvGeoMergeSimilarity
     extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
-  private static final Logger LOG = Logger.getLogger(AdvGeoMergeSimilarity.class);
   AggregationMode<MergeGeoTriplet> mode;
 
   public AdvGeoMergeSimilarity(AggregationMode<MergeGeoTriplet> mode) {

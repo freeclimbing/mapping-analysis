@@ -6,7 +6,7 @@ import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeMusicTuple;
 
 /**
- * Created by markus on 4/28/17.
+ * Return only active vertices.
  */
 class ActiveFilterFunction<T>
     implements FilterFunction<T> {
