@@ -267,7 +267,8 @@ public class MusicbrainzBenchmarkTest {
         .collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> Utils.getMusicBlockingLabel(v.getValue().get(Constants.LABEL).toString()),
+            .groupingBy(v -> Utils.getMusicBlockingLabel(
+                v.getValue().get(Constants.LABEL).toString()),
                 Collectors.counting()))
 //        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
         .entrySet()

@@ -388,6 +388,64 @@ public class Utils {
    * Get the first 5 chars of string. If label is shorter, fill up with '#'.
    */
   public static String getMusicBlockingLabel(String label) {
+    label = label.toLowerCase();
+    String tmp = label;
+    int blockingLength = 4;
+
+    Set<String> blockElements = Sets.newHashSet(//"the ",
+        "001-", "003-", "005-", "002-", "004-",
+        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
+        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
+
+    String blockedLabel = updateBlockedLabel(label, blockingLength);
+//    System.out.println("current blocked label: " + blockedLabel);
+
+    while (blockElements.contains(blockedLabel)) {
+//      System.out.println("in while: " + blockedLabel);
+
+//      if (label.startsWith(blockedLabel)) {
+//        System.out.println("starts with " + blockedLabel);
+      label = label.substring(blockedLabel.length());
+//      }
+//      System.out.println("label: " + label);
+//      System.out.println("blabel: " + blockedLabel);
+      blockedLabel = updateBlockedLabel(label, blockingLength);
+//      System.out.println("current blocked label: " + blockedLabel);
+    }
+
+    if (label.length() >= blockingLength) {
+      label = label.substring(0, blockingLength);
+    }
+
+    if (label.equals("")) {
+//      System.out.println(label + " --- " + tmp);
+      if (tmp.length() >= blockingLength) {
+        tmp = tmp.substring(0, blockingLength);
+      }
+//      LOG.info(tmp);
+      return tmp;
+    }
+//    LOG.info(label);
+    return label;
+  }
+
+  /**
+   * Get label substring of according length
+   */
+  private static String updateBlockedLabel(String label, int blockingLength) {
+    if (label.length() >= blockingLength) {
+      return label.substring(0, blockingLength);
+    } else {
+      return label;
+    }
+  }
+
+  /**
+   * music blocking
+   * Get the first 5 chars of string. If label is shorter, fill up with '#'.
+   */
+  @Deprecated
+  public static String getOldMusicBlockingLabel(String label) {
     String tmp = label;
     int blockingLength = 5;
     // fill up to blockinglength
