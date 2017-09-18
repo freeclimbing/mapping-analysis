@@ -392,10 +392,13 @@ public class Utils {
     String tmp = label;
     int blockingLength = 4;
 
-    Set<String> blockElements = Sets.newHashSet(//"the ",
-        "001-", "003-", "005-", "002-", "004-",
+    Set<String> blockElements = Sets.newHashSet("the ", "001-", "003-", "005-", "002-", "004-",
         "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
-        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
+        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp", "no_va");
+//        (//"the ",
+//        "001-", "003-", "005-", "002-", "004-",
+//        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
+//        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
 
     String blockedLabel = updateBlockedLabel(label, blockingLength);
 //    System.out.println("current blocked label: " + blockedLabel);
