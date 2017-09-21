@@ -120,13 +120,8 @@ public class MergeExecution
       DataSet<MergeMusicTuple> preBlockingClusters = clusters
           .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
 
-      BlockingStrategy blockingStrategy = BlockingStrategy.IDF_BLOCKING;
+      BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
       // initial working set
-      DataSet<MergeMusicTriplet> initialWorkingSet = clusters
-          .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount))
-          .groupBy(10)
-          .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
-          .runOperation(similarityComputation);
       DataSet<MergeMusicTriplet> initialWorkingSet;
 
       if (blockingStrategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
@@ -168,8 +163,7 @@ public class MergeExecution
           .where(0)
           .equalTo(0)
           .with(new FinalMergeMusicVertexCreator());
-    } else
-    {
+    } else {
       throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
     }
   }

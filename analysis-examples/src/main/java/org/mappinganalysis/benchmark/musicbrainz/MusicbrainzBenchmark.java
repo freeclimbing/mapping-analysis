@@ -26,8 +26,6 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
  * benchmark musicbrainz dataset https://vsis-www.informatik.uni-hamburg.de/download/info.txt
- *
- * TODO check utf-8 csv input on server
  */
 public class MusicbrainzBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -52,8 +50,8 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.MUSIC;
 
-    /**
-     * process input csv data, create basic clean graph
+    /*
+      process input csv data, create basic clean graph
      */
     DataSet<Vertex<Long, ObjectMap>> inputVertices =
         new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
@@ -67,8 +65,8 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
     env.execute(INP_JOB);
 
-    /**
-     * preprocessing
+    /*
+      preprocessing
      */
     Graph<Long, ObjectMap, NullValue> graph =
         new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
@@ -78,8 +76,8 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         .writeGraph(graph.run(new DefaultPreprocessing(domain, env)));
     env.execute(PRE_JOB);
 
-    /**
-     * decomposition with representative creation
+    /*
+      decomposition with representative creation
      */
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
@@ -93,8 +91,8 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         .writeVertices(vertices);
     env.execute(DEC_JOB);
 
-    /**
-     * merge
+    /*
+      merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(INPUT_PATH, DECOMPOSITION_STEP, env)
