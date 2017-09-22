@@ -227,7 +227,8 @@ public class MusicbrainzBenchmarkTest {
         .collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> v.getValue().get(Constants.LANGUAGE).toString(), Collectors.counting()))
+            .groupingBy(v -> v.getValue().get(Constants.LANGUAGE).toString(),
+                Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.comparingByValue())
@@ -269,8 +270,8 @@ public class MusicbrainzBenchmarkTest {
         .collect(Collectors
             .groupingBy(v -> Utils.getMusicBlockingLabel(
                 v.getValue().get(Constants.LABEL).toString()),
+//                Utils.createArtistTitleAlbum(v)),
                 Collectors.counting()))
-//        .groupingBy(v -> v.getValue().get(Constants.LABEL).toString(), Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.comparingByValue())

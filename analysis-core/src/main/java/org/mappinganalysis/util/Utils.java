@@ -386,34 +386,32 @@ public class Utils {
   /**
    * music blocking
    * Get the first 5 chars of string. If label is shorter, fill up with '#'.
+   *
+   * Check dataset for blocked prefix values!
    */
   public static String getMusicBlockingLabel(String label) {
     label = label.toLowerCase();
     String tmp = label;
     int blockingLength = 4;
 
-    Set<String> blockElements = Sets.newHashSet("the ", "001-", "003-", "005-", "002-", "004-",
+    Set<String> blockElements = Sets.newHashSet
+        // artist first common start words
+//        ("the ", "john", "joha", "nn s", "ebas", "tian", " bac", "fran", "geor", "wolf", "gang",
+//            "chri", "unkn", "own ", "mich", " ama", "deus", " moz", "art ");
+        // titles + common start words, TITLE attribute
+        ("the ", "001-", "003-", "005-", "002-", "004-",
         "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
-        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp", "no_va");
-//        (//"the ",
-//        "001-", "003-", "005-", "002-", "004-",
+        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp");
+        // numbers only, TITLE attribute
+//            ("001-", "003-", "005-", "002-", "004-",
 //        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
 //        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
 
     String blockedLabel = updateBlockedLabel(label, blockingLength);
-//    System.out.println("current blocked label: " + blockedLabel);
 
     while (blockElements.contains(blockedLabel)) {
-//      System.out.println("in while: " + blockedLabel);
-
-//      if (label.startsWith(blockedLabel)) {
-//        System.out.println("starts with " + blockedLabel);
       label = label.substring(blockedLabel.length());
-//      }
-//      System.out.println("label: " + label);
-//      System.out.println("blabel: " + blockedLabel);
       blockedLabel = updateBlockedLabel(label, blockingLength);
-//      System.out.println("current blocked label: " + blockedLabel);
     }
 
     if (label.length() >= blockingLength) {
@@ -428,7 +426,6 @@ public class Utils {
 //      LOG.info(tmp);
       return tmp;
     }
-//    LOG.info(label);
     return label;
   }
 
@@ -458,7 +455,14 @@ public class Utils {
       }
     }
 
-    artistTitleAlbum = artistTitleAlbum.replaceAll("\\W", " ").replaceAll("\\p{Punct}", " ");
+    String tmp = artistTitleAlbum;
+    artistTitleAlbum = artistTitleAlbum
+//        .replaceAll("\\W", "")
+        .replaceAll("\\p{Punct}", "");
+
+    if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+      System.out.println(tmp);
+    }
 
     return artistTitleAlbum;
   }
