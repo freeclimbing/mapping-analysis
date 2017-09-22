@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions;
 
+import com.google.common.base.CharMatcher;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -190,6 +191,15 @@ public class SimilarityMapperTest extends BasicTest {
     System.out.println(cosine.compare(song4a, song3));
     System.out.println(dice.compare(song4a, song5));
     System.out.println(cosine.compare(song4a, song5));
+  }
+
+  // not a test
+  @Test
+  public void trimTest() {
+    String test = "10,                22           ";
+    String result = CharMatcher.WHITESPACE.trimFrom(test);
+    result = result.replaceAll("\\s+", " ");
+    System.out.println(result);
   }
 
 }

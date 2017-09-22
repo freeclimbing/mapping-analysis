@@ -41,29 +41,32 @@ public class MusicbrainzBenchmark implements ProgramDescription {
 
   private static String INPUT_PATH;
   private static String VERTEX_FILE_NAME;
+  private static String MODE;
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 2, "args[0]: input dir" +
-        "args[1]: processing mode (input, preproc, analysis, eval)");
+    Preconditions.checkArgument(args.length == 3, "args[0]: input dir, " +
+        "args[1]: file name, args[2]: all/merge mode selection" );
     INPUT_PATH = args[0];
     VERTEX_FILE_NAME = args[1];
+    MODE = args[2];
+
     Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.MUSIC;
 
-    /*
-      process input csv data, create basic clean graph
-     */
-    DataSet<Vertex<Long, ObjectMap>> inputVertices =
-        new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
-            .getVertices();
-    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
-            new CcIdKeySelector(),
-            EdgeComputationStrategy.SIMPLE));
+    if (!MODE.equals("merge")) {
+      /*
+        process input csv data, create basic clean graph
+       */
+      DataSet<Vertex<Long, ObjectMap>> inputVertices =
+          new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
+              .getVertices();
+      DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
+          .runOperation(new EdgeComputationVertexCcSet(
+              new CcIdKeySelector(), EdgeComputationStrategy.SIMPLE));
 
-    new JSONDataSink(INPUT_PATH, INPUT_STEP)
-        .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
-    env.execute(INP_JOB);
+      new JSONDataSink(INPUT_PATH, INPUT_STEP)
+          .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
+      env.execute(INP_JOB);
 
     /*
       preprocessing
@@ -72,9 +75,9 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
             .getGraph(ObjectMap.class, NullValue.class);
 
-    new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
-        .writeGraph(graph.run(new DefaultPreprocessing(domain, env)));
-    env.execute(PRE_JOB);
+      new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
+          .writeGraph(graph.run(new DefaultPreprocessing(domain, env)));
+      env.execute(PRE_JOB);
 
     /*
       decomposition with representative creation
@@ -87,10 +90,10 @@ public class MusicbrainzBenchmark implements ProgramDescription {
             .getVertices()
             .runOperation(new RepresentativeCreator(domain));
 
-    new JSONDataSink(INPUT_PATH, DECOMPOSITION_STEP)
-        .writeVertices(vertices);
-    env.execute(DEC_JOB);
-
+      new JSONDataSink(INPUT_PATH, DECOMPOSITION_STEP)
+          .writeVertices(vertices);
+      env.execute(DEC_JOB);
+    }
     /*
       merge
      */

@@ -7,13 +7,12 @@ import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.mappinganalysis.model.MergeMusicTuple;
 
 /**
  * Compute the TF-IDF score for a word combining TF, DF, and total count.
  */
 public class TfIdfComputer
-    implements CustomUnaryOperation<MergeMusicTuple, Tuple2<String, Double>> {
+    implements CustomUnaryOperation<Tuple2<Long, String>, Tuple2<String, Double>> {
 
   /**
    * default stop words list, can be overwritten
@@ -22,6 +21,9 @@ public class TfIdfComputer
       "the", "i", "a", "an", "at", "are", "am", "for", "and", "or", "is",
       "there", "it", "this", "that", "on", "was", "by", "of", "to", "in",
       "to", "not", "be", "with", "you", "have", "as", "can"
+      // 2
+      , "me", "my", "la", "all",
+      "love", "de", "no", "best", "music", "live", "hits", "from", "collection", "your"
   };
   private DataSet<Tuple1<String>> inputData;
 
@@ -30,9 +32,9 @@ public class TfIdfComputer
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTuple> inputData) {
+  public void setInput(DataSet<Tuple2<Long, String>> inputData) {
     this.inputData = inputData
-        .map(tuple -> new Tuple1<>(tuple.getArtistTitleAlbum()))
+        .map(tuple -> new Tuple1<>(tuple.f1))
         .returns(new TypeHint<Tuple1<String>>() {});
   }
 

@@ -1,21 +1,23 @@
 package org.mappinganalysis.model.functions.blocking.tfidf;
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.FunctionAnnotation.ForwardedFieldsSecond;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -29,7 +31,9 @@ public class IdfBlockingOperation
   private final static String[] STOP_WORDS = {
       "the", "i", "a", "an", "at", "are", "am", "for", "and", "or", "is",
       "there", "it", "this", "that", "on", "was", "by", "of", "to", "in",
-      "to", "not", "be", "with", "you", "have", "as", "can", "me", "my", "la", "all"
+      "to", "not", "be", "with", "you", "have", "as", "can", "me", "my", "la",
+      // old: "love", "de", "no", "best", "music", "live", "hits", "from", "collection", "your", "unknown", "volume"
+      "de", "no", "unknown"
   };
   private Integer support;
   private ExecutionEnvironment env;
@@ -46,25 +50,78 @@ public class IdfBlockingOperation
 
   @Override
   public DataSet<MergeMusicTriplet> createResult() {
-    DataSet<Tuple2<String, Double>> idfValues = inputData
+    DataSet<Tuple2<Long, String>> preparedInputData = inputData
+        .map(new PrepareInputMapper());
+
+    DataSet<Tuple2<String, Double>> idfValues = preparedInputData
         .runOperation(new TfIdfComputer(STOP_WORDS));
 
-//    DataSet<Tuple2<Long, ObjectMap>> idfExtracted = ;
+    DataSet<String> returns = idfValues.map(tuple -> tuple.f0)
+        .returns(new TypeHint<String>() {});
+    DataSet<Tuple2<Long, String>> tuple2DataSet = DataSetUtils.zipWithUniqueId(returns);
 
-    DataSet<Edge<Long, Integer>> idfSupportEdges = inputData
+    /**
+     * Best 2(+) tf idf values for a artist title album line
+     */
+    DataSet<Tuple2<Long, Long>> idfExtracted = preparedInputData
         .flatMap(new HighIDFValueFlatMapper(STOP_WORDS))
         .withBroadcastSet(idfValues, "idf")
+        .withBroadcastSet(tuple2DataSet, "idfDict");
+
+    DataSet<Edge<Long, Integer>> firstPart = idfExtracted
         .groupBy(1) // idf string
-        .reduceGroup(new IdfBasedEdgeCreator())
+        .reduceGroup(new IdfBasedEdgeCreator());
+
+    DataSet<Edge<Long, Integer>> idfSupportEdges = firstPart
         .groupBy(0, 1)
         .sum(2)
         .filter(new SupportFilterFunction(support));
 
+    // create cc graph
+    DataSet<Vertex<Long, Long>> ccVertices = createCcBlockingKeyVertices(idfSupportEdges);
+
+    DataSet<Tuple2<Long, Long>> sum = ccVertices
+        .map(new MapFunction<Vertex<Long, Long>, Tuple2<Long, Long>>() {
+      @Override
+      public Tuple2<Long, Long> map(Vertex<Long, Long> vertex) throws Exception {
+        return new Tuple2<>(vertex.getValue(), 1L);
+      }
+    })
+        .groupBy(0)
+        .sum(1);
+
+    // TODO remove this helper construct
+    new JSONDataSink(
+            "hdfs://dbc0.informatik.intern.uni-leipzig.de:9000/user/markus/musicbrainz-benchmark/",
+            "word-frequency-aggr-cc2mio")
+        .writeTuples(sum);
+
+    // edge values are not longer important,
+        // filter was the last step where the support was needed
+    return inputData.join(idfSupportEdges)
+        .where(0).equalTo(0)
+        .with(new JoinIdfFirstFunction())
+        .join(inputData)
+        .where(1).equalTo(0)
+        .with(new JoinIdfSecondFunction())
+        .join(ccVertices)
+        .where(0)
+        .equalTo(0)
+        .with(new JoinFunction<MergeMusicTriplet, Vertex<Long, Long>, MergeMusicTriplet>() {
+          @Override
+          public MergeMusicTriplet join(MergeMusicTriplet triplet, Vertex<Long, Long> second) throws Exception {
+            triplet.setBlockingLabel(second.getValue().toString());
+            return triplet;
+          }
+        });
+  }
+
+  private DataSet<Vertex<Long, Long>> createCcBlockingKeyVertices(DataSet<Edge<Long, Integer>> idfSupportEdges) {
     DataSet<Edge<Long, NullValue>> edges = idfSupportEdges
         .map(new MapFunction<Edge<Long, Integer>, Edge<Long, NullValue>>() {
       @Override
       public Edge<Long, NullValue> map(Edge<Long, Integer> value) throws Exception {
-        return new Edge<Long, NullValue>(value.getSource(), value.getTarget(), NullValue.getInstance());
+        return new Edge<>(value.getSource(), value.getTarget(), NullValue.getInstance());
       }
     });
 
@@ -79,38 +136,20 @@ public class IdfBlockingOperation
 
     Graph<Long, Long, NullValue> ccGraph = Graph.fromDataSet(vertices, edges, env);
 
-    DataSet<Vertex<Long, Long>> run = null;
+    DataSet<Vertex<Long, Long>> ccVertices = null;
     try {
-      run = ccGraph.run(new GSAConnectedComponents<>(Integer.MAX_VALUE));
+      ccVertices = ccGraph.run(new GSAConnectedComponents<>(Integer.MAX_VALUE));
     } catch (Exception e) {
       e.printStackTrace();
     }
-
-    // edge values are not longer important,
-        // filter was the last step where the support was needed
-    assert run != null;
-    return inputData.join(idfSupportEdges)
-        .where(0).equalTo(0)
-        .with(new JoinIdfFirstFunction())
-        .join(inputData)
-        .where(1).equalTo(0)
-        .with(new JoinIdfSecondFunction())
-        .join(run)
-        .where(0)
-        .equalTo(0)
-        .with(new JoinFunction<MergeMusicTriplet, Vertex<Long, Long>, MergeMusicTriplet>() {
-          @Override
-          public MergeMusicTriplet join(MergeMusicTriplet first, Vertex<Long, Long> second) throws Exception {
-            first.setBlockingLabel(second.getValue().toString());
-            return first;
-          }
-        });
+    return ccVertices;
   }
 
   /**
    * From the set of idf values within a vertex,
    * extract single values to tuple for further grouping
    */
+  @Deprecated
   private static class VertexIdfSingleValueExtractor
       implements FlatMapFunction<Tuple2<Long, ObjectMap>, Tuple2<Long, String>> {
     @Override
@@ -147,16 +186,4 @@ public class IdfBlockingOperation
     }
   }
 
-  private class SupportFilterFunction implements FilterFunction<Edge<Long, Integer>> {
-    private Integer support;
-
-    public SupportFilterFunction(Integer support) {
-      this.support = support;
-    }
-
-    @Override
-    public boolean filter(Edge<Long, Integer> value) throws Exception {
-      return value.f2 > support - 1;
-    }
-  }
 }
