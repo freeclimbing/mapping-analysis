@@ -27,15 +27,16 @@ import org.mappinganalysis.util.Constants;
 public class LinkLionGeographicBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  public static final String PREPROCESSING = "geographic-preprocessing";
-  public static final String DECOMPOSITION = "geographic-decomposition-representatives";
-  public static final String MERGE = "geographic-merged-clusters";
-  public static final String PRE_JOB = "Geographic Preprocessing";
-  public static final String DEC_JOB = "Geographic Decomposition + Representatives";
-  public static final String MER_JOB = "Geographic Merge";
+  private static final String PREPROCESSING = "geographic-preprocessing";
+  private static final String DECOMPOSITION = "geographic-decomposition-representatives";
+  private static final String MERGE = "geographic-merged-clusters";
+  private static final String PRE_JOB = "Geographic Preprocessing";
+  private static final String DEC_JOB = "Geographic Decomposition + Representatives";
+  private static final String MER_JOB = "Geographic Merge";
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 2, "args[0]: input dir, " +
+    Preconditions.checkArgument(args.length == 2,
+        "args[0]: input dir, " +
             "args[1]: min SimSort similarity (e.g., 0.7)");
 
     Double minSimilarity = Doubles.tryParse(args[1]);
@@ -48,14 +49,14 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
         env)
         .getGraph(ObjectMap.class, NullValue.class)
-        .run(new DefaultPreprocessing(true, env));;
+        .run(new DefaultPreprocessing(true, env));
 
     new JSONDataSink(inputPath, PREPROCESSING)
         .writeGraph(graph);
     env.execute(PRE_JOB);
 
-    /**
-     * Decomposition
+    /*
+      Decomposition
      */
     DataSet<Vertex<Long, ObjectMap>> representatives =
         new JSONDataSource(inputPath, PREPROCESSING, env)
@@ -69,8 +70,8 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         .writeVertices(representatives);
     env.execute(DEC_JOB);
 
-    /**
-     * Merge
+    /*
+      Merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(inputPath, DECOMPOSITION, env)

@@ -434,18 +434,32 @@ public class ObjectMap
   }
 
   /**
-   * Get internal represenation of all data sources in a cluster.
+   * Get internal representation of all data sources in a cluster.
    */
   public Integer getIntDataSources() {
     Object dataSources = map.get(Constants.DATA_SOURCES);
     Set<String> sources;
     if (dataSources instanceof Set) {
       sources = (Set<String>) dataSources;
+    } else if (dataSources == null) {
+      sources = Sets.newHashSet(getDataSource());
     } else {
-      sources = Sets.newHashSet(dataSources.toString());
+        sources = Sets.newHashSet(dataSources.toString());
     }
 
     return AbstractionUtils.getSourcesInt(mode, sources);
+  }
+
+  public Long getDataSourceEntityCount() {
+    if (map.containsKey(Constants.DS_COUNT)) {
+      return (long) map.get(Constants.DS_COUNT);
+    } else {
+      return 1L;
+    }
+  }
+
+  public void setDataSourceEntityCount(Long count) {
+    map.put(Constants.DS_COUNT, count);
   }
 
   /**
