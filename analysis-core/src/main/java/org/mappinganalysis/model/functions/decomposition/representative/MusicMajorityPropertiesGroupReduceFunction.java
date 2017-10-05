@@ -60,22 +60,22 @@ public class MusicMajorityPropertiesGroupReduceFunction
 
     // decide for best one
     if (!labelMap.isEmpty()) {
-      resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
+      resultProps.setLabel(Utils.getFinalValue(labelMap));
     }
     if (!artistMap.isEmpty()) {
-      resultProps.put(Constants.ARTIST, Utils.getFinalValue(artistMap, Constants.ARTIST));
+      resultProps.setArtist(Utils.getFinalValue(artistMap));
     }
     if (!albumMap.isEmpty()) {
-      resultProps.put(Constants.ALBUM, Utils.getFinalValue(albumMap, Constants.ALBUM));
+      resultProps.setAlbum(Utils.getFinalValue(albumMap));
     }
     if (!numberMap.isEmpty()) {
-      resultProps.put(Constants.NUMBER, Utils.getFinalValue(numberMap, Constants.NUMBER));
+      resultProps.setNumber(Utils.getFinalValue(numberMap));
     }
     if (!lengthMap.isEmpty()) {
-      resultProps.put(Constants.LENGTH, Utils.getFinalValue(lengthMap, Constants.LENGTH));
+      resultProps.setLength(Utils.getFinalValue(lengthMap));
     }
     if (!yearMap.isEmpty()) {
-      resultProps.put(Constants.YEAR, Utils.getFinalValue(yearMap, Constants.YEAR));
+      resultProps.setYear(Utils.getFinalValue(yearMap));
     }
 
     resultProps.setClusterDataSources(clusterOntologies);

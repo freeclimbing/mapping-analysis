@@ -76,7 +76,7 @@ public class IncrementalWorkflow implements ProgramDescription {
     IncrementalClustering clustering = new IncrementalClustering
         .IncrementalClusteringBuilder()
         .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.MINSIZE)
+        .setStrategy(IncrementalClusteringStrategy.FIXED)
         .build();
 
 

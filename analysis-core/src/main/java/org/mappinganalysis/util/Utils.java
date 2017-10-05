@@ -47,6 +47,7 @@ public class Utils {
   /**
    * Write any dataset to disk, not working currently, old.
    */
+  @Deprecated
   public static <T> void writeToFile(DataSet<T> data, String outDir) {
     if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
       data.writeAsFormattedText(Constants.INPUT_PATH + "output/" + outDir,
@@ -57,12 +58,14 @@ public class Utils {
 
   /**
    * Get the hash map value having the highest count of occurrence.
-   * For label property, if count is equal, a longer string is preferred.
+   * For string value property, if count is equal, a longer string is preferred.
    * @param map containing value options with count of occurrence
-   * @param propertyName if label, for same occurrence count the longer string is taken
    * @return resulting value
    */
-  public static <T> T getFinalValue(HashMap<T, Integer> map, String propertyName) {
+  public static <T> T getFinalValue(HashMap<T, Integer> map) {
+    if (map.isEmpty()) {
+      return null;
+    }
     Map.Entry<T, Integer> finalEntry = null;
     map = Utils.sortByValue(map);
 

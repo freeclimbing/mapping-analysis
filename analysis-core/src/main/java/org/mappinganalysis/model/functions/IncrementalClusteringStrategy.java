@@ -4,5 +4,6 @@ public enum IncrementalClusteringStrategy {
   ATTRIB,
   MINSIZE,
   MAXSIZE,
-  LINKS
+  LINKS,
+  FIXED
 }

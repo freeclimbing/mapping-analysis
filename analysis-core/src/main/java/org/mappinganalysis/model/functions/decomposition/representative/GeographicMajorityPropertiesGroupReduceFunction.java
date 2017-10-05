@@ -52,34 +52,24 @@ public class GeographicMajorityPropertiesGroupReduceFunction
       addGeoToMap(geoMap, vertex);
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
-        resultProps.put(Constants.OLD_HASH_CC,
-            vertex.getValue().get(Constants.OLD_HASH_CC));
+        resultProps.setOldHashCcId(vertex.getValue().getOldHashCcId());
       }
     }
 
-    if (!geoMap.isEmpty()) {
-      resultProps.setGeoProperties(geoMap);
-    }
-    if (!labelMap.isEmpty()) {
-      resultProps.put(Constants.LABEL, Utils.getFinalValue(labelMap, Constants.LABEL));
-    }
+    resultProps.setGeoProperties(geoMap);
+    resultProps.setLabel(Utils.getFinalValue(labelMap));
 
     resultProps.setClusterDataSources(clusterDataSources);
     resultProps.setClusterVertices(clusterVertices);
 
     resultVertex.setValue(resultProps);
     representativeCount.add(1L);
-
-//    System.out.println(" result: " + resultVertex.toString());
-
     collector.collect(resultVertex);
   }
 
   private void updateClusterOntologies(
       Set<String> clusterOntologies,
       Vertex<Long, ObjectMap> currentVertex) {
-//    System.out.println("geo maj prop current: " + currentVertex.toString());
-//    System.out.println("geo maj prop cluster: " + clusterOntologies.toString());
     if (currentVertex.getValue().containsKey(Constants.DATA_SOURCE)) {
       clusterOntologies.add(currentVertex.getValue().getDataSource());
     }
@@ -107,11 +97,6 @@ public class GeographicMajorityPropertiesGroupReduceFunction
       HashMap<String, GeoCode> geoMap,
       Vertex<Long, ObjectMap> vertex) {
     if (vertex.getValue().hasGeoPropertiesValid()) {
-//      if (!vertex.getValue().containsKey(Constants.DATA_SOURCE)
-//          && !vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
-//        LOG.info("no/more ont but geo: " + vertex);
-//      }
-
       Double latitude = vertex.getValue().getLatitude();
       Double longitude = vertex.getValue().getLongitude();
 

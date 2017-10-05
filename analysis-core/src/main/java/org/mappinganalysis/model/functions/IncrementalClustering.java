@@ -56,8 +56,8 @@ public class IncrementalClustering
       if (env != null) {
         if (strategy == IncrementalClusteringStrategy.MINSIZE) {
           return new MinSizeIncClustering(sources, env);
-//        } else if (strategy == IncrementalClusteringStrategy.CLUSTERING) {
-//          return new ClusteringLinkFilter(env);
+        } else if (strategy == IncrementalClusteringStrategy.FIXED) {
+          return new FixedIncrementalClustering(env); // basic test strategy
         } else {
           throw new IllegalArgumentException("Unsupported strategy: " + strategy);
         }

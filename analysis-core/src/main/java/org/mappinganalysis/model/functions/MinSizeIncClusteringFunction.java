@@ -45,6 +45,7 @@ public class MinSizeIncClusteringFunction extends IncrementalClusteringFunction 
           vertex.getValue().remove(Constants.LAT);
           vertex.getValue().remove(Constants.TYPE_INTERN);
           vertex.getValue().remove(Constants.DB_URL_FIELD);
+          vertex.getValue().remove(Constants.TYPE);
 
           return vertex;
         })

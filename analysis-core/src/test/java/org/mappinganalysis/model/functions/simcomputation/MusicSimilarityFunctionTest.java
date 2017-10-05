@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by markus on 4/13/17.
@@ -38,6 +38,10 @@ public class MusicSimilarityFunctionTest {
     final String ALBUM_ONE = "De vous à elle en passant par moi";
     final String ALBUM_TWO = "b";
     final String LANGUAGE = "french";
+
+    ObjectMap fail = new ObjectMap(Constants.MUSIC);
+    fail.setLabel(null);
+    assertTrue(fail.getLabel().equals(Constants.NO_VALUE));
 
     ObjectMap omOne = new ObjectMap(Constants.MUSIC);
     omOne.setLabel(TITLE_ONE);

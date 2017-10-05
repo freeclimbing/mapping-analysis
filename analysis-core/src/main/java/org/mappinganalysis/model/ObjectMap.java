@@ -109,7 +109,7 @@ public class ObjectMap
   }
 
   public void setLabel(String label) {
-    if (label.equals(Constants.CSV_NO_VALUE)) {
+    if (label == null || label.equals(Constants.CSV_NO_VALUE)) {
       map.put(Constants.LABEL, Constants.NO_VALUE);
     } else {
       map.put(Constants.LABEL, label);
@@ -293,6 +293,7 @@ public class ObjectMap
    * @param geoMap property map of vertex
    */
   public void setGeoProperties(HashMap<String, GeoCode> geoMap) {
+    if (!geoMap.isEmpty()) {
       if (geoMap.containsKey(Constants.GN_NS)) {
         setLatLon(geoMap.get(Constants.GN_NS));
       } else if (geoMap.containsKey(Constants.DBP_NS)) {
@@ -308,6 +309,7 @@ public class ObjectMap
         }
         setLatLon(result);
       }
+    }
   }
 
   private void setLatLon(GeoCode geocode) {

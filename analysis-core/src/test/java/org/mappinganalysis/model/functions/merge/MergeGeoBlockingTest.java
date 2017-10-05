@@ -10,7 +10,6 @@ import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.util.HashMap;
@@ -174,16 +173,20 @@ public class MergeGeoBlockingTest {
   @Test
   public void testGetFinalValue() throws Exception {
     HashMap<String, Integer> map = Maps.newHashMap();
+
+    String fail = Utils.getFinalValue(map);
+    assertNull(fail);
+
     map.put("Leipzig, Sachsen", 1);
     map.put("Leipzig Saxonia Germany", 1);
     map.put("Leipzig (Sachsen)", 1);
 
-    String finalValue = Utils.getFinalValue(map, Constants.LABEL);
+    String finalValue = Utils.getFinalValue(map);
     assertTrue("Leipzig Saxonia Germany".equals(finalValue));
 
     map.put("Leipzig", 3);
     map.put("Lipsia Test", 2);
-    finalValue = Utils.getFinalValue(map, Constants.LABEL);
+    finalValue = Utils.getFinalValue(map);
 
     assertTrue("Leipzig".equals(finalValue));
   }
