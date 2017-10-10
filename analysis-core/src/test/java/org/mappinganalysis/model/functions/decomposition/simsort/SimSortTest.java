@@ -11,7 +11,7 @@ import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 
 import static org.junit.Assert.assertTrue;
 
@@ -47,7 +47,7 @@ public class SimSortTest {
         });
 
     DataSet<Vertex<Long, ObjectMap>> representatives = vertices//graph.getVertices()
-        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
+        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
 //      LOG.info(vertex.toString());

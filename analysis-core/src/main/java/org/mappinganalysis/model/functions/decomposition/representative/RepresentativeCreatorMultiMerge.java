@@ -11,14 +11,14 @@ import org.mappinganalysis.util.functions.keyselector.HashCcIdKeySelector;
 /**
  * Create representatives based on hash component ids for each vertex in a graph.
  */
-public class RepresentativeCreator
+public class RepresentativeCreatorMultiMerge
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(RepresentativeCreator.class);
+  private static final Logger LOG = Logger.getLogger(RepresentativeCreatorMultiMerge.class);
 
   private DataSet<Vertex<Long, ObjectMap>> vertices;
   private DataDomain domain;
 
-  public RepresentativeCreator(DataDomain domain) {
+  public RepresentativeCreatorMultiMerge(DataDomain domain) {
     this.domain = domain;
   }
 

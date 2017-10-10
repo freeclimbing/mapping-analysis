@@ -12,7 +12,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
@@ -64,7 +64,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
             .run(new TypeGroupBy(env))
             .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env))
             .getVertices()
-            .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
+            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
     new JSONDataSink(inputPath, DECOMPOSITION)
         .writeVertices(representatives);

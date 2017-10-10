@@ -14,7 +14,7 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.IncrementalClustering;
 import org.mappinganalysis.model.functions.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.IncrementalPreprocessing;
@@ -85,7 +85,7 @@ public class IncrementalWorkflow implements ProgramDescription {
             .getGraph()
             .run(clustering) // todo implement
             .getVertices()
-            .runOperation(new RepresentativeCreator(domain));
+            .runOperation(new RepresentativeCreatorMultiMerge(domain));
 
     new JSONDataSink(INPUT_PATH, INCREMENTAL_STEP)
         .writeVertices(vertices);
@@ -97,7 +97,7 @@ public class IncrementalWorkflow implements ProgramDescription {
       merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(INPUT_PATH, INCREMENTAL_STEP, env)
+        new JSONDataSource(INPUT_PATH, INCREMENTAL_STEP, env) // check vars
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
             .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT, env));

@@ -23,7 +23,7 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.*;
@@ -146,7 +146,7 @@ public class MusicBrainzTest {
         .run(new TypeGroupBy(env))
         .run(new SimSort(DataDomain.MUSIC, 0.7, env))
         .getVertices()
-        .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
+        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
 //    representatives.print();
 
@@ -251,7 +251,7 @@ public class MusicBrainzTest {
             .run(new TypeGroupBy(env))
             .run(new SimSort(DataDomain.MUSIC, 0.7, env))
             .getVertices()
-            .runOperation(new RepresentativeCreator(DataDomain.MUSIC));
+            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
     assertEquals(11, representatives.count());
 

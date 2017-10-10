@@ -16,7 +16,7 @@ import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
@@ -102,7 +102,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
               .run(new TypeGroupBy(env))
               .run(new SimSort(domain, 0.5, env))
               .getVertices()
-              .runOperation(new RepresentativeCreator(domain));
+              .runOperation(new RepresentativeCreatorMultiMerge(domain));
 
       new JSONDataSink(INPUT_PATH, DECOMPOSITION_STEP)
           .writeVertices(vertices);

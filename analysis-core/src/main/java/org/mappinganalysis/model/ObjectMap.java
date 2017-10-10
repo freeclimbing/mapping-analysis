@@ -7,7 +7,9 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.api.CustomOperation;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -48,15 +50,24 @@ public class ObjectMap
    * Default constructor
    */
   public ObjectMap() {
-    this.map = Maps.newHashMap();
+    this.map = Maps.newHashMapWithExpectedSize(10);
   }
 
   /**
    * Constructor containing the current data set mode - music or geo domain
    */
   public ObjectMap(String mode) {
-    this.map = Maps.newHashMap();
+    this.map = Maps.newHashMapWithExpectedSize(10);
     this.mode = mode;
+  }
+
+  public ObjectMap(ObjectMap value, DataDomain domain) {
+    this.map = value;
+    if (domain.equals(DataDomain.GEOGRAPHY)) {
+      this.mode = Constants.GEO;
+    } else if (domain.equals(DataDomain.MUSIC)) {
+      this.mode = Constants.MUSIC;
+    }
   }
 
   public Map<String, Object> getMap() {
@@ -101,6 +112,12 @@ public class ObjectMap
    * @return label
    */
   public String getLabel() {
+    LOG.info("getLabel");
+    if (map == null) {
+      LOG.info("map null in get label");
+      return Constants.NO_LABEL_FOUND;
+    }
+
     if (map.containsKey(Constants.LABEL)) {
       return map.get(Constants.LABEL).toString();
     } else {
@@ -221,6 +238,10 @@ public class ObjectMap
     map.put(Constants.OLD_HASH_CC, value);
   }
 
+  /**
+   * Why not used?
+   */
+  @Deprecated
   public Boolean getVertexStatus() {
     if (map.containsKey(Constants.VERTEX_STATUS)) {
       return (boolean) map.get(Constants.VERTEX_STATUS);
@@ -229,6 +250,9 @@ public class ObjectMap
     }
   }
 
+  /**
+   * SimSort only value, check if deprecated
+   */
   public void setVertexStatus(Boolean value) {
     map.put(Constants.VERTEX_STATUS, value);
   }
@@ -429,6 +453,7 @@ public class ObjectMap
     }
   }
 
+  @Deprecated
   public void setClusterDataSources(Set<String> sources) {
     if (!sources.isEmpty()) {
       map.put(Constants.DATA_SOURCES, sources);
@@ -438,6 +463,7 @@ public class ObjectMap
   /**
    * Get internal representation of all data sources in a cluster.
    */
+  @Deprecated
   public Integer getIntDataSources() {
     Object dataSources = map.get(Constants.DATA_SOURCES);
     Set<String> sources;
@@ -606,6 +632,23 @@ public class ObjectMap
 //    setIDFs(idfs);
   }
 
+  public void setBlockingKey(BlockingStrategy strategy) {
+    LOG.info("set blocking key for " + getLabel());
+
+    if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
+      if (getMode().equals(Constants.GEO)) {
+        LOG.info("sbs gL: " + getLabel());
+        LOG.info("sbs map: " + getMap());
+        getMap().put(Constants.BLOCKING_LABEL, Utils.getGeoBlockingLabel(getLabel()));
+      } else if (getMode().equals(Constants.MUSIC)) {
+        LOG.info("music put blocking label");
+        getMap().put(Constants.BLOCKING_LABEL, Utils.getMusicBlockingLabel(getLabel()));
+      } else {
+        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+      }
+    }
+  }
+
   /**
    * Add a key value pair, if key already exists, a set of values is created or extended.
    * @param key property name
@@ -668,6 +711,11 @@ public class ObjectMap
 
   @Override
   public Object put(String s, Object o) {
+//    LOG.info("s: " + s);
+//    LOG.info("o: " + o);
+//    LOG.info(map);
+//    LOG.info(map.toString());
+//    LOG.info("l: " + getLabel());
     return map.put(s, o);
   }
 

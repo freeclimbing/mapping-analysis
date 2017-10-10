@@ -15,7 +15,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreator;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
@@ -84,7 +84,7 @@ public class SettlementBenchmark implements ProgramDescription {
 //        .run(new TypeGroupBy(env)) // not needed? TODO
         .run(new SimSort(DataDomain.GEOGRAPHY, minSimSortSim, env))
         .getVertices()
-        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
+        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
     new JSONDataSink(INPUT_PATH, DECOMPOSITION)
         .writeVertices(vertices);
