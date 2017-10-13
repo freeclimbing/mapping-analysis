@@ -5,13 +5,14 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.api.CustomOperation;
 import org.mappinganalysis.util.Constants;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
  * Compute the mean similarity for a set of properties. Use all {@value Constants#SIM_VALUES}
  * options given here.
  */
-public class MeanAggregationFunction implements CustomOperation<ObjectMap> {
+public class MeanAggregationFunction implements CustomOperation<ObjectMap>, Serializable {
   private static final Logger LOG = Logger.getLogger(MeanAggregationFunction.class);
 
   private ObjectMap properties;

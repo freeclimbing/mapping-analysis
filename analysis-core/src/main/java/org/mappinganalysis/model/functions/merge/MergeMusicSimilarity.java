@@ -17,6 +17,15 @@ public class MergeMusicSimilarity
     extends SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeMusicSimilarity.class);
+  private MeanAggregationFunction aggregationFunction;
+
+  public MergeMusicSimilarity() {
+    this(new MeanAggregationFunction());
+  }
+
+  public MergeMusicSimilarity(MeanAggregationFunction aggregationFunction) {
+    this.aggregationFunction = aggregationFunction;
+  }
 
   // TODO add min sim check
   @Override
@@ -31,7 +40,7 @@ public class MergeMusicSimilarity
 //    Double numberSim = getAttributeSimilarity(Constants.NUMBER, triplet);
 //    Double languageSim = getAttributeSimilarity(Constants.LANGUAGE, triplet);
 
-    ObjectMap values = new ObjectMap();
+    ObjectMap values = new ObjectMap(Constants.MUSIC);
 
     if (artistLabelAlbumSim != null) {
       values.put(Constants.SIM_ARTIST_LABEL_ALBUM, artistLabelAlbumSim);
@@ -61,7 +70,7 @@ public class MergeMusicSimilarity
 //    }
 
     triplet.setSimilarity(values
-        .runOperation(new MeanAggregationFunction())
+        .runOperation(aggregationFunction)
         .getEdgeSimilarity());
 
     return triplet;

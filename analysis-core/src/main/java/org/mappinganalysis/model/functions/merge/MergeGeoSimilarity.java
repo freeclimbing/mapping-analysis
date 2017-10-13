@@ -1,15 +1,14 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.collect.Maps;
-import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
+import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
-import java.util.HashMap;
 
 /**
  * Add similarities to Merge Triplets based on property values.
@@ -17,10 +16,22 @@ import java.util.HashMap;
 public class MergeGeoSimilarity
     extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
-  private AggregationMode<MergeGeoTriplet> mode;
 
-  public MergeGeoSimilarity(AggregationMode<MergeGeoTriplet> mode) {
-    this.mode = mode;
+  private MeanAggregationFunction aggregationFunction;
+
+  /**
+   * Default constructor
+   */
+  public MergeGeoSimilarity() {
+    this(new MeanAggregationFunction());
+  }
+
+  /**
+   * Constructor for custom aggregation function
+   * @param aggregationFunction custom
+   */
+  public MergeGeoSimilarity(MeanAggregationFunction aggregationFunction) {
+    this.aggregationFunction = aggregationFunction;
   }
 
   @Override
@@ -36,11 +47,15 @@ public class MergeGeoSimilarity
         trg.getLatitude(),
         trg.getLongitude());
 
-    HashMap<String, Double> values = Maps.newHashMap();
-    values.put(Constants.LABEL, labelSimilarity);
-    values.put(Constants.GEO, geoSimilarity);
+    ObjectMap values = new ObjectMap(Constants.GEO);
+    values.setLabelSimilarity(labelSimilarity);
+    if (geoSimilarity != null) {
+      values.setGeoSimilarity(geoSimilarity);
+    }
 
-    triplet.setSimilarity(mode.compute(values));
+    triplet.setSimilarity(values
+        .runOperation(aggregationFunction)
+        .getEdgeSimilarity());
 
     return triplet;
   }

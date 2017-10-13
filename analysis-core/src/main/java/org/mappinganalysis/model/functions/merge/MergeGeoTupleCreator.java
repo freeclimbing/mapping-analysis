@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.merge;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -35,6 +36,9 @@ public class MergeGeoTupleCreator
     }
     tuple.setIntTypes(properties.getIntTypes());
     tuple.setIntSources(properties.getIntDataSources());
+    if (properties.getVerticesList() == null) {
+      properties.setClusterVertices(Sets.newHashSet(vertex.getId()));
+    }
     tuple.addClusteredElements(properties.getVerticesList());
     tuple.setBlockingLabel(Utils.getGeoBlockingLabel(properties.getLabel()));
 

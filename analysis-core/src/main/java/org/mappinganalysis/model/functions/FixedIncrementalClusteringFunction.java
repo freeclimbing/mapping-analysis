@@ -8,6 +8,8 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
+import org.mappinganalysis.model.functions.incremental.SourceSelectFilter;
+import org.mappinganalysis.util.Constants;
 
 public class FixedIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private ExecutionEnvironment env;
@@ -29,18 +31,17 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
     // split to relevant sources
     // todo source select TreeSet?
     // reduce search space
-//    DataSet<Representative> first = baseClusters
-//        .filter(new SourceSelectFilter(Constants.GN_NS));
-//    DataSet<Representative> second = baseClusters
-//        .filter(new SourceSelectFilter(Constants.NYT_NS));
-//
-//    // todo union or param?
-//    DataSet<Representative> result = first.union(second)
-//        // TODO candidates based on blocking strategy
-//        // TODO restrict candidates to needed properties!?
-//        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY))
-//        // TODO merge 2 sources
-//        // TODO provenance
+    DataSet<Vertex<Long, ObjectMap>> first = baseClusters
+        .filter(new SourceSelectFilter(Constants.GN_NS));
+    DataSet<Vertex<Long, ObjectMap>> second = baseClusters
+        .filter(new SourceSelectFilter(Constants.NYT_NS));
+
+    // todo union or param?
+//    DataSet<Vertex<Long, ObjectMap>> result =
+        first.union(second)
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY));
+        // TODO merge 2 sources
+        // TODO provenance
 //        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY)); // todo rename
 
     return null;

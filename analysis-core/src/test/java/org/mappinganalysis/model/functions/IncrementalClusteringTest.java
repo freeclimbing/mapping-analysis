@@ -1,20 +1,35 @@
 package org.mappinganalysis.model.functions;
 
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
+import org.mappinganalysis.model.functions.incremental.SourceSelectFilter;
+import org.mappinganalysis.model.functions.incremental.StableMarriageReduceFunction;
+import org.mappinganalysis.model.functions.merge.MergeGeoSimilarity;
+import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
+import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.Representative;
 import org.mappinganalysis.model.impl.RepresentativeMap;
+import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 
 import static org.junit.Assert.assertEquals;
@@ -49,21 +64,85 @@ public class IncrementalClusteringTest {
         new JSONDataSource(graphPath, true, env)
           .getGraph();
 
-    DataSet<Vertex<Long, ObjectMap>> output = graph.getVertices()
-        .first(1)
+    DataSet<Vertex<Long, ObjectMap>> reps = graph.getVertices()
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             BlockingStrategy.STANDARD_BLOCKING));
 
-    for (Vertex<Long, ObjectMap> representative : output.collect()) {
-      LOG.info("result: " + representative.toString());
-    }
+    DataSet<Vertex<Long, ObjectMap>> first = reps
+        .filter(new SourceSelectFilter(Constants.GN_NS));
+    DataSet<Vertex<Long, ObjectMap>> second = reps
+        .filter(new SourceSelectFilter(Constants.NYT_NS));
 
-    // todo preprocess data
+    // temp
+    SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
+        new MergeGeoSimilarity();
+
+    // TODO check sim comp
+    SimilarityComputation<MergeGeoTriplet,
+            MergeGeoTriplet> similarityComputation
+        = new SimilarityComputation
+        .SimilarityComputationBuilder<MergeGeoTriplet,
+        MergeGeoTriplet>()
+        .setSimilarityFunction(simFunction)
+        .setStrategy(SimilarityStrategy.MERGE)
+        .setThreshold(0.5)
+        .build();
+
+    DataSet<MergeGeoTriplet> triplets = first.union(second)
+        .map(new AddShadingTypeMapFunction())
+        .map(new MergeGeoTupleCreator())
+        .groupBy(7)
+        .reduceGroup(new MergeGeoTripletCreator(4))
+        .runOperation(similarityComputation)
+        .map(x->{
+          LOG.info(x.toString());
+          return x;
+        })
+        .returns(new TypeHint<MergeGeoTriplet>() {})
+        // todo remove 2 lines
+//        .filter(triplet -> triplet.getBlockingLabel().equals("nor"))
+//        .returns(new TypeHint<MergeGeoTriplet>() {})
+        .groupBy(5)
+        .reduceGroup(new StableMarriageReduceFunction());
+    // temp
+
+    triplets = triplets.first(100);
+
+    LOG.info("triplets");
+    triplets.print();
+    LOG.info("first");
+//        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY));
+
+    DataSet<Tuple2<Long, Tuple1<Long>>> uniqueLeftMatrixIds = DataSetUtils
+        .zipWithUniqueId(triplets
+            .<Tuple1<Long>>project(0) // TODO tuple1 -> long??
+            .distinct());
+
+    LOG.info("second");
+    DataSet<Tuple2<Long, Tuple1<Long>>> uniqueRightMatrixIds = DataSetUtils
+        .zipWithUniqueId(triplets
+            .<Tuple1<Long>>project(1)
+            .distinct());
+
+    triplets.rightOuterJoin(uniqueLeftMatrixIds)
+        .where(0)
+        .equalTo(1)
+        .with(new JoinFunction<MergeGeoTriplet, Tuple2<Long, Tuple1<Long>>, MergeGeoTriplet>() {
+          @Override
+          public MergeGeoTriplet join(MergeGeoTriplet first, Tuple2<Long, Tuple1<Long>> second) throws Exception {
+            LOG.info(first + " ### " + second);
+            return first;
+          }
+        }).print();
 
     // todo check result
   }
 
+  /**
+   * TODO faulty test, fix Representative and ReprMap
+   * TODO more likely, fix ObjectMap implementing Map not properly!?
+   */
   @Test
   public void customReprTest() throws Exception {
         String graphPath = IncrementalClusteringTest.class
@@ -125,29 +204,6 @@ public class IncrementalClusteringTest {
         assertEquals(776, properties.getDataSourceEntityCount().longValue());
       }
     }
-
-//    DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-//        .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
-//          @Override
-//          public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-//            System.out.println(vertex.toString());
-//            vertex.getValue().getDataSource();
-//            System.out.println(vertex.toString() + "\n");
-//            return vertex;
-//          }
-//        });
-//
-//    DataSet<Vertex<Long, ObjectMap>> representatives = vertices//graph.getVertices()
-//        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
-//
-//    for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-//      LOG.info(vertex.toString());
-//      if (vertex.getId() == 2757L) {
-//        assertTrue(vertex.getValue().getVerticesCount().equals(1));
-//      } else {
-//        assertTrue(vertex.getValue().getVerticesCount().equals(3));
-//      }
-//    }
-
   }
+
 }

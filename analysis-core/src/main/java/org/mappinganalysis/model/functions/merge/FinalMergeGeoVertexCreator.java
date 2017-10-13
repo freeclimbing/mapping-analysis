@@ -20,21 +20,21 @@ public class FinalMergeGeoVertexCreator
                    Vertex<Long, ObjectMap> second,
                    Collector<Vertex<Long, ObjectMap>> out) throws Exception {
     if (tuple.isActive()) {
-      ObjectMap map = new ObjectMap(Constants.GEO);
-      map.setLabel(tuple.getLabel());
+      ObjectMap properties = new ObjectMap(Constants.GEO);
+      properties.setLabel(tuple.getLabel());
 
-      map.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
-      map.setClusterDataSources(
+      properties.setGeoProperties(tuple.getLatitude(), tuple.getLongitude());
+      properties.setClusterDataSources(
           AbstractionUtils.getSourcesStringSet(
               Constants.GEO,
               tuple.getIntSources()));
-      map.setTypes(
+      properties.setTypes(
           Constants.TYPE_INTERN,
           AbstractionUtils.getTypesStringSet(tuple.getIntTypes()));
-      map.setClusterVertices(
+      properties.setClusterVertices(
           Sets.newHashSet(tuple.getClusteredElements()));
 
-      out.collect(new Vertex<>(tuple.getId(), map));
+      out.collect(new Vertex<>(tuple.getId(), properties));
     }
   }
 }

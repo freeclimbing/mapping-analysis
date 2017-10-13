@@ -61,13 +61,26 @@ public class ObjectMap
     this.mode = mode;
   }
 
-  public ObjectMap(ObjectMap value, DataDomain domain) {
-    this.map = value;
+  /**
+   * Constructor to apply data domain on creation.
+   * @param propertyMap vertex property map
+   * @param domain data domain
+   */
+  public ObjectMap(ObjectMap propertyMap, DataDomain domain) {
+    this.map = propertyMap;
     if (domain.equals(DataDomain.GEOGRAPHY)) {
       this.mode = Constants.GEO;
     } else if (domain.equals(DataDomain.MUSIC)) {
       this.mode = Constants.MUSIC;
     }
+  }
+
+  /**
+   * Constructor to apply data domain on creation.
+   * @param domain data domain
+   */
+  public ObjectMap(DataDomain domain) {
+    this(new ObjectMap(), domain);
   }
 
   public Map<String, Object> getMap() {
@@ -112,7 +125,7 @@ public class ObjectMap
    * @return label
    */
   public String getLabel() {
-    LOG.info("getLabel");
+//    LOG.info("getLabel");
     if (map == null) {
       LOG.info("map null in get label");
       return Constants.NO_LABEL_FOUND;
@@ -414,6 +427,20 @@ public class ObjectMap
   }
 
   /**
+   * Set label similarity for vertex.
+   */
+  public void setLabelSimilarity(double labelSimilarity) {
+    map.put(Constants.SIM_LABEL, labelSimilarity);
+  }
+
+  /**
+   * Get label similarity for vertex.
+   */
+  public Double getLabelSimilarity() {
+    return Doubles.tryParse(map.get(Constants.SIM_LABEL).toString());
+  }
+
+  /**
    * Set computed aggregated similarity on vertex - all incoming or outgoing edge similarities aggregated
    * @param similarity double value of similarity
    */
@@ -453,6 +480,9 @@ public class ObjectMap
     }
   }
 
+  /**
+   * TODO Create representative map
+   */
   @Deprecated
   public void setClusterDataSources(Set<String> sources) {
     if (!sources.isEmpty()) {
@@ -633,19 +663,30 @@ public class ObjectMap
   }
 
   public void setBlockingKey(BlockingStrategy strategy) {
-    LOG.info("set blocking key for " + getLabel());
+//    LOG.info("set blocking key for " + getLabel());
 
     if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
       if (getMode().equals(Constants.GEO)) {
-        LOG.info("sbs gL: " + getLabel());
-        LOG.info("sbs map: " + getMap());
+//        LOG.info("sbs gL: " + getLabel());
+//        LOG.info("sbs map: " + getMap());
         getMap().put(Constants.BLOCKING_LABEL, Utils.getGeoBlockingLabel(getLabel()));
       } else if (getMode().equals(Constants.MUSIC)) {
-        LOG.info("music put blocking label");
+//        LOG.info("music put blocking label");
         getMap().put(Constants.BLOCKING_LABEL, Utils.getMusicBlockingLabel(getLabel()));
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
+    }
+  }
+
+  /**
+   * TODO Blocking key string for IDF?
+   */
+  public String getBlockingKey() {
+    if (this.get(Constants.BLOCKING_LABEL) == null) {
+      return Constants.EMPTY_STRING;
+    } else {
+      return this.get(Constants.BLOCKING_LABEL).toString();
     }
   }
 
@@ -709,6 +750,9 @@ public class ObjectMap
     return map.get(o);
   }
 
+  /**
+   * TODO understand and correct
+   */
   @Override
   public Object put(String s, Object o) {
 //    LOG.info("s: " + s);

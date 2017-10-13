@@ -19,7 +19,6 @@ public abstract class SimilarityComputation<T, O>
 
   private final Double threshold;
   private SimilarityFunction<T, O> function;
-  private AggregationMode<T> mode;
   private DataSet<T> inputData;
   private SimilarityStrategy strategy;
 

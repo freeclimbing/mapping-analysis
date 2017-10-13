@@ -56,7 +56,7 @@ public class MergeExecution
           .map(new MergeGeoTupleCreator());
 
       SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
-          new MergeGeoSimilarity(new MeanAggregationMode());
+          new MergeGeoSimilarity();
 
       SimilarityComputation<MergeGeoTriplet,
           MergeGeoTriplet> similarityComputation
