@@ -36,7 +36,6 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
     DataSet<Vertex<Long, ObjectMap>> second = baseClusters
         .filter(new SourceSelectFilter(Constants.NYT_NS));
 
-    // todo union or param?
 //    DataSet<Vertex<Long, ObjectMap>> result =
         first.union(second)
         .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY));

@@ -19,7 +19,6 @@ public class MergeGeoTupleCreatorTest {
 
   /**
    * 1. part
-   * @throws Exception
    */
   @Test
   public void testMergeTupleCreator() throws Exception {
@@ -35,32 +34,14 @@ public class MergeGeoTupleCreatorTest {
         .map(new MergeGeoTupleCreator());
 
     assertTrue(11 == result.collect().size());
-  }
-
-  /**
-   * 2. part
-   * @throws Exception
-   */
-  @Test
-  public void testMergeTripletCreator() throws Exception {
-    env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
-
-    String graphPath = MergeGeoBlockingTest.class
-        .getResource("/data/representative/mergeExec/").getFile();
-
-    DataSet<MergeGeoTuple> result = new JSONDataSource(graphPath, true, env)
-        .getVertices()
-        .map(new AddShadingTypeMapFunction())
-        .map(new MergeGeoTupleCreator());
 
     DataSet<MergeGeoTriplet> initialWorkingSet = result
         .filter(new SourceCountRestrictionFilter<>(DataDomain.GEOGRAPHY, 5))
         .groupBy(7) // TODO
         .reduceGroup(new MergeGeoTripletCreator(5));
 
-    initialWorkingSet.print();
+    for (MergeGeoTriplet mergeGeoTriplet : initialWorkingSet.collect()) {
+      assertTrue(mergeGeoTriplet.getSrcId() < mergeGeoTriplet.getTrgId());
+    }
   }
-
-
 }

@@ -1,7 +1,6 @@
 package org.mappinganalysis.model;
 
 import org.apache.flink.api.java.tuple.Tuple6;
-import org.mappinganalysis.io.impl.DataDomain;
 
 /**
  * srcId, trgId, srcTuple, trgTuple, sim, blocking label
@@ -17,18 +16,49 @@ public class MergeGeoTriplet
     this.f4 = similarity;
   }
 
+  /**
+   * Simple set id and tuples as given.
+   */
   public void setIdAndTuples(MergeGeoTuple left, MergeGeoTuple right) {
-    if (left.getId() < right.getId()) {
-      setSrcId(left.getId());
-      setSrcTuple(left);
-      setTrgId(right.getId());
-      setTrgTuple(right);
-    } else {
-      setTrgId(left.getId());
-      setTrgTuple(left);
-      setSrcId(right.getId());
-      setSrcTuple(right);
+    setSrcId(left.getId());
+    setSrcTuple(left);
+
+    setTrgId(right.getId());
+    setTrgTuple(right);
+  }
+
+  /**
+   * Set smaller source int value as left tuple in resulting triplet.
+   */
+  public void checkSourceSwitch(MergeGeoTuple left, MergeGeoTuple right) {
+    if (left.getIntSources() > right.getIntSources()) {
+      MergeGeoTuple tmp = left;
+      left = right;
+      right = tmp;
     }
+
+    setIdAndTuples(left, right);
+  }
+
+  @Deprecated
+  public void checkSwitch(MergeGeoTuple left, MergeGeoTuple right) {
+    if (left.getId() > right.getId()) {
+      MergeGeoTuple tmp = left;
+      left = right;
+      right = tmp;
+    }
+
+    setIdAndTuples(left, right);
+  }
+
+  /**
+   * Set one source to left tuple in resulting triplet.
+   */
+  public void checkSwitchSource(MergeGeoTuple left, MergeGeoTuple right) {
+
+    //TODO
+
+    setIdAndTuples(left, right);
   }
 
   public Long getSrcId() {

@@ -29,9 +29,21 @@ public class MergeGeoTripletCreator
     implements GroupReduceFunction<MergeGeoTuple, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(MergeGeoTripletCreator.class);
   private final int sourcesCount;
+  private boolean enableSourceBasedIdSwitch;
 
+  // (old) default behavior, switch ids and tuple if target id is bigger
   public MergeGeoTripletCreator(int sourcesCount) {
+    this(sourcesCount, false);
+  }
+
+  /**
+   * Incremental Clustering behavior: only 2 sources, each source always to left/right tuple side
+   * @param sourcesCount if sources count is 2, single block entities create a triplet, too
+   * @param enableSourceBasedIdSwitch true if ids should be switched based on data source side
+   */
+  public MergeGeoTripletCreator(int sourcesCount, boolean enableSourceBasedIdSwitch) {
     this.sourcesCount = sourcesCount;
+    this.enableSourceBasedIdSwitch = enableSourceBasedIdSwitch;
   }
 
   @Override
@@ -39,8 +51,10 @@ public class MergeGeoTripletCreator
                      Collector<MergeGeoTriplet> out) throws Exception {
     HashSet<MergeGeoTuple> leftSide = Sets.newHashSet(values);
     HashSet<MergeGeoTuple> rightSide = Sets.newHashSet(leftSide);
+    HashSet<MergeGeoTuple> checkSet = Sets.newHashSetWithExpectedSize(leftSide.size());
 
     for (MergeGeoTuple leftTuple : leftSide) {
+//      LOG.info("leftTuple: " + leftTuple.toString());
       MergeGeoTriplet triplet = new MergeGeoTriplet();
       Integer leftSources = leftTuple.getIntSources();
       Integer leftTypes = leftTuple.getIntTypes();
@@ -48,21 +62,50 @@ public class MergeGeoTripletCreator
       triplet.setBlockingLabel(leftTuple.getBlockingLabel());
       triplet.setSimilarity(0D);
       rightSide.remove(leftTuple);
+
       for (MergeGeoTuple rightTuple : rightSide) {
+//        LOG.info(leftTuple.getId() + "rightTuple: " + rightTuple.toString());
         int summedSources = AbstractionUtils.getSourceCount(leftSources)
             + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
+        boolean hasSrcOverlap = AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources());
+        boolean hasTypeOverlap = AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes());
 
-        if (summedSources <= sourcesCount
-            && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())
-            && AbstractionUtils.hasOverlap(leftTypes, rightTuple.getIntTypes())) {
-
-          triplet.setIdAndTuples(leftTuple, rightTuple);
-
-//          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
-//          LOG.info(triplet.toString());
+        if (summedSources <= sourcesCount && hasTypeOverlap && !hasSrcOverlap) {
+          if (enableSourceBasedIdSwitch) {
+            triplet.checkSourceSwitch(leftTuple, rightTuple);
+          } else {
+            triplet.setIdAndTuples(leftTuple, rightTuple);
+          }
+//          LOG.info(leftTuple.getId() + "out triplet in right for " + triplet.toString());
+          checkSet.add(triplet.getSrcTuple());
+          checkSet.add(triplet.getTrgTuple());
           out.collect(triplet);
         }
       }
+
+      /*
+      if left side has only one element, no triplet is created. for 2 sources
+      within incremental clustering, we still want a triplet
+       */
+      if (sourcesCount == 2 && rightSide.isEmpty() && leftSide.size() == 1) {
+        triplet.setIdAndTuples(leftTuple, leftTuple);
+        out.collect(triplet);
+      }
+
+      /*
+      if CURRENT leftTuple was not yet collected, we will still collect it
+
+      more:
+      if left side has only elements from one data source, no triplet is created.
+      in incremental clustering, we want triplets for each element.
+      */
+      if (sourcesCount == 2 && !checkSet.contains(leftTuple)) {
+        // && hasNeverSrcOverlap) { // && leftSide.size() != 1) {
+        triplet.setIdAndTuples(leftTuple, leftTuple);
+//          LOG.info(leftTuple.getId() + "collect: " + leftTuple.toString());
+        out.collect(triplet);
+      }
     }
+
   }
 }

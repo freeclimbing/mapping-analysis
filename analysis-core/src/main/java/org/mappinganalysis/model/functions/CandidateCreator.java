@@ -1,31 +1,33 @@
 package org.mappinganalysis.model.functions;
 
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.incremental.StableMarriageReduceFunction;
 import org.mappinganalysis.model.functions.merge.MergeGeoSimilarity;
 import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
 import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
+import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 
 // TODO candidates based on blocking strategy
 // TODO restrict candidates to needed properties!?
 public class CandidateCreator
-    implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+    implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
   private DataDomain domain;
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
 
+  /**
+   * Constructor for incremental clustering, ids are not
+   * @param domain
+   */
   public CandidateCreator(DataDomain domain) {
-    this.domain = domain;
+    this.domain = domain; // TODO USE domain
   }
 
   @Override
@@ -34,11 +36,9 @@ public class CandidateCreator
   }
 
   @Override
-  public DataSet<Vertex<Long, ObjectMap>> createResult() {
-
+  public DataSet<MergeGeoTriplet> createResult() {
     // TODO check sim function
-    SimilarityFunction<MergeGeoTriplet,
-        MergeGeoTriplet> simFunction =
+    SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
         new MergeGeoSimilarity();
 
     // TODO check sim comp
@@ -49,33 +49,18 @@ public class CandidateCreator
         MergeGeoTriplet>()
         .setSimilarityFunction(simFunction)
         .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.5)
+        .setThreshold(0.0)
         .build();
 
-    DataSet<MergeGeoTriplet> triplets = inputVertices
+    return inputVertices
+        .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
         .groupBy(7)
-        .reduceGroup(new MergeGeoTripletCreator(4))
-        .runOperation(similarityComputation);
-
-    DataSet<Tuple2<Long, Tuple>> uniqueLeftMatrixIds = DataSetUtils
-        .zipWithUniqueId(triplets
-            .project(0) // TODO tuple1 -> long??
-            .distinct());
-
-    DataSet<Tuple2<Long, Tuple>> uniqueRightMatrixIds = DataSetUtils
-        .zipWithUniqueId(triplets
-            .project(1)
-            .distinct());
-
-    triplets.map(new MapFunction<MergeGeoTriplet, Tuple2<Long, Long>>() {
-      @Override
-      public Tuple2<Long, Long> map(MergeGeoTriplet value) throws Exception {
-        return null;
-      }
-    });
-
-    return null;
+        .reduceGroup(new MergeGeoTripletCreator(2, true))
+        .runOperation(similarityComputation)
+        .distinct(0,1)
+        .groupBy(5)
+        .reduceGroup(new StableMarriageReduceFunction());
   }
 
 }
