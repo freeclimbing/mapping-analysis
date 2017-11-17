@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
@@ -17,6 +18,8 @@ import java.util.Set;
 public class EdgeSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>>
     implements Serializable {
+  private static final Logger LOG = Logger.getLogger(EdgeSimilarityFunction.class);
+
   private final String usedPropertiesCombination;
   private final double maxDistInMeter;
 
@@ -51,6 +54,8 @@ public class EdgeSimilarityFunction
     if (usedPropertiesCombination.equals(Constants.GEO)) {
       result = addTypeSimilarity(result);
     }
+//    LOG.info(result.toString());
+//    LOG.info("EDGE: " + result.getEdge().toString());
 
     return result;
   }
@@ -63,7 +68,7 @@ public class EdgeSimilarityFunction
     Set<String> srcTypes = triplet.getSrcVertex().getValue().getTypes(Constants.TYPE_INTERN);
     Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Constants.TYPE_INTERN);
 
-    if (Utils.hasEmptyType(srcTypes, trgTypes)) {
+    if (!Utils.hasEmptyType(srcTypes, trgTypes)) {
       triplet.getEdge()
           .getValue()
           .put(Constants.SIM_TYPE, Utils.getTypeSim(srcTypes, trgTypes));

@@ -41,15 +41,16 @@ public class UtilsTest {
     second = Sets.newHashSet("Country");
     assertEquals(1d, Utils.getTypeSim(first, second), 0.01);
 
+    // no type should not occur here, still tested
     second = Sets.newHashSet(Constants.NO_TYPE);
     assertEquals(0d, Utils.getTypeSim(first, second), 0.01);
 
     first = Sets.newHashSet(Constants.NO_TYPE);
-    assertEquals(0d, Utils.getTypeSim(first, second), 0.01);
+    assertEquals(1d, Utils.getTypeSim(first, second), 0.01);
   }
 
-  @Test
-  public void testGetHash() throws Exception {
-
-  }
+//  @Test
+//  public void testGetHash() throws Exception {
+//
+//  }
 }

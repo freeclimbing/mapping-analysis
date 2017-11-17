@@ -387,18 +387,13 @@ public class Utils {
    * Get type similarity for two sets of type strings,
    * indirect type shading sim is also computed.
    *
-   * no type check included
-   *
    * TODO rework if type shading sim is <1
    * TODO inefficient always to check type shadings
-   *
-   * Returns 0 if one of the types is empty
    */
   public static double getTypeSim(Set<String> srcTypes, Set<String> trgTypes) {
-    if (srcTypes.contains(Constants.NO_TYPE) || trgTypes.contains(Constants.NO_TYPE)) {
-      return 0;
-    }
-
+//    if (srcTypes.contains(Constants.NO_TYPE) || trgTypes.contains(Constants.NO_TYPE)) {
+//      return 0;
+//    }
     for (String srcType : srcTypes) {
       if (trgTypes.contains(srcType)) {
         return 1;

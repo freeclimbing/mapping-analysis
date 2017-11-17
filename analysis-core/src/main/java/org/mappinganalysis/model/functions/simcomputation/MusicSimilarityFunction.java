@@ -7,12 +7,8 @@ import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.ops.SinglePropertySimilarity;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.Set;
 
 /**
  * Music edge similarity function
@@ -38,46 +34,5 @@ public class MusicSimilarityFunction
 
 //    System.out.println("muSiFu: " + result.getEdge().getValue().toString());
     return result;
-  }
-
-  /**
-   * add type similarity
-   */
-  private Triplet<Long, ObjectMap, ObjectMap> addTypeSimilarity(
-      Triplet<Long, ObjectMap, ObjectMap> triplet) {
-    Set<String> srcTypes = triplet.getSrcVertex().getValue().getTypes(Constants.TYPE_INTERN);
-    Set<String> trgTypes = triplet.getTrgVertex().getValue().getTypes(Constants.TYPE_INTERN);
-
-    if (Utils.hasEmptyType(srcTypes, trgTypes)) {
-      triplet.getEdge()
-          .getValue()
-          .put(Constants.SIM_TYPE, Utils.getTypeSim(srcTypes, trgTypes));
-    }
-
-    return triplet;
-  }
-
-
-  /**
-   * basic label similarity
-   */
-  private Triplet<Long, ObjectMap, ObjectMap> addBasicLabelSimilarity(
-      Triplet<Long, ObjectMap, NullValue> triplet) {
-    final String srcLabel = triplet.getSrcVertex().getValue().getLabel();
-    final String trgLabel = triplet.getTrgVertex().getValue().getLabel();
-    EdgeObjectMapTriplet resultTriplet = new EdgeObjectMapTriplet(triplet);
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
-
-    if (!srcLabel.equals(Constants.NO_LABEL_FOUND) && !trgLabel.equals(Constants.NO_LABEL_FOUND)) {
-      double similarity = metric.compare(srcLabel.toLowerCase().trim(), trgLabel.toLowerCase().trim());
-      BigDecimal tmpResult = new BigDecimal(similarity);
-      similarity = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-
-      resultTriplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
-
-      return resultTriplet;
-    } else {
-      return resultTriplet;
-    }
   }
 }

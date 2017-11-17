@@ -2,9 +2,10 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.spargel.MessageIterator;
-import org.apache.flink.graph.spargel.VertexUpdateFunction;
+import org.apache.flink.graph.pregel.ComputeFunction;
+import org.apache.flink.graph.pregel.MessageIterator;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.AggSimValueTuple;
 import org.mappinganalysis.util.Constants;
@@ -12,30 +13,33 @@ import org.mappinganalysis.util.Utils;
 
 import java.util.List;
 
-/**
- * VertexUpdateFunction for SimSort, optimized version with Tuple4 instead of ObjectMap.
- *
- * Each iteration starts with sending messages as specified in MessagingFunction, then
- * VertexUpdateFunction is executed.
- */
-public class SimSortOptVertexUpdateFunction
-    extends VertexUpdateFunction<Long, SimSortVertexTuple, AggSimValueTuple> {
-  private static final Logger LOG = Logger.getLogger(SimSortOptVertexUpdateFunction.class);
+class SimSortComputeFunction
+    extends ComputeFunction<Long, SimSortVertexTuple, SimSortEdgeTuple, AggSimValueTuple> {
+  private static final Logger LOG = Logger.getLogger(SimSortComputeFunction.class);
 
   private final double threshold;
-  public SimSortOptVertexUpdateFunction(Double threshold) {
+  public SimSortComputeFunction(Double threshold) {
     this.threshold = threshold;
   }
 
   @Override
-  public void updateVertex(Vertex<Long, SimSortVertexTuple> vertex,
-                           MessageIterator<AggSimValueTuple> inMessages) throws Exception {
+  public void compute(
+      Vertex<Long, SimSortVertexTuple> vertex,
+      MessageIterator<AggSimValueTuple> inMessages) throws Exception {
+//    LOG.debug("Working on vertex: " + vertex.toString());
+
     SimSortVertexTuple properties = vertex.getValue();
     // default value is -1, changes with each run
     double vertexAggSim = properties.getSim();
 
-//    LOG.debug("Working on vertex: " + vertex.getId());
-    if (properties.isActive() || Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) == 0) {
+    if (Doubles.compare(vertex.getValue().getSim(), Constants.DEFAULT_VERTEX_SIM) == 0) {
+      vertexAggSim = -0.5;
+      properties.setSim(vertexAggSim);
+      setNewVertexValue(properties);
+
+      sendMessages(vertex);
+    } else if (properties.isActive()) {
+//        && Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0) {
       double iterationAggSim = 0;
       long messageCount = 0;
       List<Double> neighborList = Lists.newArrayList();
@@ -46,6 +50,7 @@ public class SimSortOptVertexUpdateFunction
         neighborList.add(message.getVertexSim());
         iterationAggSim += message.getEdgeSim();
       }
+
       iterationAggSim = Utils.getExactDoubleResult(iterationAggSim, messageCount);
 //      LOG.debug(vertex.getId() + " itAggSim: " + iterationAggSim + " old: " + vertex.getValue().getSim());
 
@@ -68,6 +73,26 @@ public class SimSortOptVertexUpdateFunction
         properties.setSim(iterationAggSim);
 //        LOG.debug("update vertex to: " + properties.toString());
         setNewVertexValue(properties);
+
+        sendMessages(vertex);
+      }
+    }
+  }
+
+  private void sendMessages(Vertex<Long, SimSortVertexTuple> vertex) {
+//    LOG.info("in edge send");
+    for (Edge<Long, SimSortEdgeTuple> edge : getEdges()) {
+//      LOG.info("Working on edge: " + edge.toString());
+
+      AggSimValueTuple message = new AggSimValueTuple(
+          vertex.getValue().getSim(),
+          edge.getValue().getSim());
+      if (vertex.getId() == edge.getSource().longValue()) {
+//        LOG.info(vertex.getId() + " Send msg " + message.toString() + " to " + edge.getTarget());
+        sendMessageTo(edge.getTarget(), message);
+      } else {
+//        LOG.info(vertex.getId() + " Send msg " + message.toString() + " to " + edge.getSource());
+        sendMessageTo(edge.getSource(), message);
       }
     }
   }

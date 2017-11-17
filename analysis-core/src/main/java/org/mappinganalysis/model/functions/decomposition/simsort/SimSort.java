@@ -57,7 +57,6 @@ public class SimSort
   /**
    * Execute SimSort procedure based on vertex-centric-iteration, as preparation:
    * create all missing edges, addGraph default vertex sim values
-   * @throws Exception
    */
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(

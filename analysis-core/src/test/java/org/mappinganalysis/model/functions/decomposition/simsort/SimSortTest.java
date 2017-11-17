@@ -19,18 +19,9 @@ public class SimSortTest {
   private static final Logger LOG = Logger.getLogger(SimSortTest.class);
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  private static final String SORT_CANAIMA = "g[" +
-      "(v1 {typeIntern = \"no_type_available\", label = \"Canaima (Venezuela)\", lat = 10.6311D, lon = -63.1917D, ccId = 284L})" +
-      "(v2 {typeIntern = \"Settlement\", label = \"Canaima\", lat = 10.62809D, lon = -63.19147D, ccId = 284L})" +
-      "(v3 {typeIntern = \"Park\", label = \"canaima national park\", lat = 6.166667D, lon = -62.5D, ccId = 284L})" +
-      "(v4 {typeIntern = \"Park\", label = \"Canaima National Park\", lat = 6.16667D, lon = -62.5D, ccId = 284L})]" +
-      "(v1)-[e1:sameAs {foo = \"bar\"}]->(v2)" +
-      "(v1)-[e2:sameAs {foo = \"bar\"}]->(v3)" +
-      "(v1)-[e3:sameAs {foo = \"bar\"}]->(v4)";
-
   /**
    * mystic example: simsort + representative
-   * todo check sims
+   * note: edge similarities are recomputed within test
    */
   @Test
   public void simSortJSONTest() throws Exception {
@@ -48,9 +39,9 @@ public class SimSortTest {
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
           public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-            System.out.println(vertex.toString());
+//            System.out.println(vertex.toString());
             vertex.getValue().getDataSource();
-            System.out.println(vertex.toString() + "\n");
+//            System.out.println(vertex.toString() + "\n");
             return vertex;
           }
         });
@@ -59,7 +50,7 @@ public class SimSortTest {
         .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY));
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-      LOG.info(vertex.toString());
+//      LOG.info(vertex.toString());
       if (vertex.getId() == 2757L) {
         assertTrue(vertex.getValue().getVerticesCount().equals(1));
       } else {

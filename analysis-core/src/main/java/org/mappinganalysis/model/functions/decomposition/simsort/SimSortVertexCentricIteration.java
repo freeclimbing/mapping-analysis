@@ -3,11 +3,9 @@ package org.mappinganalysis.model.functions.decomposition.simsort;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.graph.spargel.VertexCentricConfiguration;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 
@@ -29,17 +27,15 @@ public class SimSortVertexCentricIteration
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-    VertexCentricConfiguration aggParameters = new VertexCentricConfiguration();
-    aggParameters.setName("SimSort");
-    aggParameters.setDirection(EdgeDirection.ALL);
      // set solution set unmanaged in order to reduce out of memory exception on non-cluster setup
 //    aggParameters.setSolutionSetUnmanagedMemory(true);
 
     DataSet<Vertex<Long, SimSortVertexTuple>> workingVertices = graph
+        .getUndirected()
         .run(new SimSortInputGraphCreator(env))
-        .runVertexCentricIteration(
-            new SimSortOptVertexUpdateFunction(minSimilarity),
-            new SimSortOptMessagingFunction(), Integer.MAX_VALUE, aggParameters)
+        .runVertexCentricIteration(new SimSortComputeFunction(minSimilarity),
+            new SimSortMessageCombiner(),
+            Integer.MAX_VALUE)
         .getVertices();
 
     DataSet<Vertex<Long, ObjectMap>> resultingVertices = graph
@@ -61,4 +57,5 @@ public class SimSortVertexCentricIteration
 
     return Graph.fromDataSet(resultingVertices, graph.getEdges(), env);
   }
+
 }
