@@ -19,6 +19,7 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 /**
  * Methods needed for (initial) clustering.
  */
+@Deprecated
 public class Clustering {
   private static final Logger LOG = Logger.getLogger(Clustering.class);
 

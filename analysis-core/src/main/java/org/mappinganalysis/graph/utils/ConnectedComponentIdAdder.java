@@ -14,7 +14,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CcIdVertexJoinFunction;
 
 /**
- * Add connected component ids to vertices in graph.
+ * Add connected component ids to vertices in graph based on flink connected components.
  */
 public class ConnectedComponentIdAdder<T>
     implements GraphAlgorithm<Long, ObjectMap, T, Graph<Long, ObjectMap, T>> {
@@ -28,7 +28,6 @@ public class ConnectedComponentIdAdder<T>
    * Add connected component ids to vertices based on flink connected components.
    * @param graph input graph
    * @return graph containing vertices with additional property
-   * @throws Exception
    */
   @Override
   public Graph<Long, ObjectMap, T> run(Graph<Long, ObjectMap, T> graph) throws Exception {

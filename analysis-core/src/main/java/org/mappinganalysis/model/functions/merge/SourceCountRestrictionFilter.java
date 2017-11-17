@@ -5,7 +5,6 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.MergeMusicTuple;
-import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
 /**
@@ -26,7 +25,6 @@ public class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
    * Check cluster for contained element count and restrict if >= sourcesCount.
    * @param tuple MergeTuple to check
    * @return if contained element count lower than max source count, return true.
-   * @throws Exception
    */
   @Override
   public boolean filter(T tuple) throws Exception {

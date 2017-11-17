@@ -29,19 +29,18 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 public class SettlementBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
-  public static final String PREPROCESSING = "settlement-preprocessing";
-  public static final String CORRUPTED = "settlement-corrupted";
-  public static final String DECOMPOSITION = "settlement-decomposition-representatives";
-  public static final String MERGE = "settlement-merged-clusters";
-  public static final String PRE_JOB = "Settlement Preprocessing";
-  public static final String DEC_JOB = "Settlement Decomposition + Representatives";
-  public static final String MER_JOB = "Settlement Merge";
+  private static final String PREPROCESSING = "settlement-preprocessing";
+  private static final String CORRUPTED = "settlement-corrupted";
+  private static final String DECOMPOSITION = "settlement-decomposition-representatives";
+  private static final String MERGE = "settlement-merged-clusters";
+  private static final String PRE_JOB = "Settlement Preprocessing";
+  private static final String DEC_JOB = "Settlement Decomposition + Representatives";
+  private static final String MER_JOB = "Settlement Merge";
 
-  public static String INPUT_PATH;
+  private static String INPUT_PATH;
 
   /**
    * Main class for Settlement benchmark
-   * @throws Exception
    */
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 2, "args[0]: input dir, args[1]: isCorrupted");
@@ -50,8 +49,8 @@ public class SettlementBenchmark implements ProgramDescription {
     INPUT_PATH = args[0];
     Double minSimSortSim = 0.7;
 
-    /**
-     * preprocessing
+    /*
+      preprocessing
      */
     Graph<Long, ObjectMap, NullValue> preprocGraph =
         new JSONDataSource(INPUT_PATH, env)
@@ -76,8 +75,8 @@ public class SettlementBenchmark implements ProgramDescription {
             .run(new DefaultPreprocessing(true, env)));
     env.execute(PRE_JOB);
 
-    /**
-     * decomposition with representative creation
+    /*
+      decomposition with representative creation
      */
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
@@ -91,8 +90,8 @@ public class SettlementBenchmark implements ProgramDescription {
         .writeVertices(vertices);
     env.execute(DEC_JOB);
 
-    /**
-     * merge
+    /*
+      merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(INPUT_PATH, DECOMPOSITION, env)
