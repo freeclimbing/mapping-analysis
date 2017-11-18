@@ -1,8 +1,10 @@
 package org.mappinganalysis.model.functions;
 
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Vertex;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
@@ -19,6 +21,7 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 // TODO restrict candidates to needed properties!?
 public class CandidateCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
+  private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
   private DataDomain domain;
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
 
@@ -57,10 +60,14 @@ public class CandidateCreator
         .map(new MergeGeoTupleCreator())
         .groupBy(7)
         .reduceGroup(new MergeGeoTripletCreator(2, true))
+        .map(x-> {
+          LOG.info(x.toString());
+          return x;
+        })
+        .returns(new TypeHint<MergeGeoTriplet>() {})
         .runOperation(similarityComputation)
         .distinct(0,1)
         .groupBy(5)
         .reduceGroup(new StableMarriageReduceFunction());
   }
-
 }

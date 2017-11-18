@@ -19,13 +19,16 @@ import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
-import org.mappinganalysis.model.functions.incremental.SourceSelectFilter;
+import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
+import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
 import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.impl.Representative;
 import org.mappinganalysis.model.impl.RepresentativeMap;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 import static org.junit.Assert.assertEquals;
 
@@ -54,16 +57,14 @@ public class IncrementalClusteringTest {
   public void sourceSelectCountTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class
         .getResource("/data/geography").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph =
+    DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
-            .getGraph();
+            .getVertices();
 
-    DataSet<Vertex<Long, ObjectMap>> gn = graph
-        .getVertices()
-        .filter(new SourceSelectFilter(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> nyt = graph
-        .getVertices()
-        .filter(new SourceSelectFilter(Constants.NYT_NS));
+    DataSet<Vertex<Long, ObjectMap>> gn = vertices
+        .filter(new SourceFilterFunction(Constants.GN_NS));
+    DataSet<Vertex<Long, ObjectMap>> nyt = vertices
+        .filter(new SourceFilterFunction(Constants.NYT_NS));
 
     assertEquals(749L, gn.count());
     assertEquals(755, nyt.count());
@@ -74,23 +75,8 @@ public class IncrementalClusteringTest {
    */
   @Test
   public void manyOneSourceCreateTripletsTest() throws Exception {
-    String graphPath = IncrementalClusteringTest.class
-        .getResource("/data/geography").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph =
-        new JSONDataSource(graphPath, true, env)
-            .getGraph();
-    DataSet<Vertex<Long, ObjectMap>> reps = graph.getVertices()
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
-
-    DataSet<Vertex<Long, ObjectMap>> first = reps
-        .filter(new SourceSelectFilter(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> second = reps
-        .filter(new SourceSelectFilter(Constants.NYT_NS));
-
     // one source
-    DataSet<MergeGeoTriplet> sai = first.union(second)
+    DataSet<MergeGeoTriplet> sai = getGnNytVertices()
         .filter(vertex -> vertex.getValue().getBlockingKey().equals("sai"))
         .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
@@ -103,7 +89,7 @@ public class IncrementalClusteringTest {
     Assert.assertEquals(5, sai.count());
 
     // mixed sources
-    DataSet<MergeGeoTriplet> cha = first.union(second)
+    DataSet<MergeGeoTriplet> cha = getGnNytVertices()
         .filter(vertex -> vertex.getValue().getBlockingKey().equals("cha"))
         .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
@@ -117,35 +103,47 @@ public class IncrementalClusteringTest {
     Assert.assertEquals(25, cha.count());
   }
 
-  @Test
-  public void createReprTest() throws Exception {
+  /**
+   * Get all vertices from gn and nyt.
+   */
+  private DataSet<Vertex<Long, ObjectMap>> getGnNytVertices() {
+    DataSet<Vertex<Long, ObjectMap>> reps = getInputGeoGraph();
+
+    DataSet<Vertex<Long, ObjectMap>> first = reps
+        .filter(new SourceFilterFunction(Constants.GN_NS));
+    DataSet<Vertex<Long, ObjectMap>> second = reps
+        .filter(new SourceFilterFunction(Constants.NYT_NS));
+
+    return first.union(second);
+  }
+
+  /**
+   * Get all vertices from geo graph with basic representatives.
+   */
+  private DataSet<Vertex<Long, ObjectMap>> getInputGeoGraph() {
     String graphPath = IncrementalClusteringTest.class
         .getResource("/data/geography").getFile();
-
     Graph<Long, ObjectMap, ObjectMap> graph =
         new JSONDataSource(graphPath, true, env)
-          .getGraph();
+            .getGraph();
 
-    DataSet<Vertex<Long, ObjectMap>> reps = graph.getVertices()
+    return graph
+        .mapVertices(new InternalTypeMapFunction())
+        .getVertices()
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             BlockingStrategy.STANDARD_BLOCKING));
+  }
 
-    DataSet<Vertex<Long, ObjectMap>> first = reps
-        .filter(new SourceSelectFilter(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> second = reps
-        .filter(new SourceSelectFilter(Constants.NYT_NS));
-
-    DataSet<MergeGeoTriplet> result = first.union(second)
+  @Test
+  public void createReprTest() throws Exception {
+    DataSet<MergeGeoTriplet> result = getGnNytVertices()
         .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY));
 //        .map(new MergeGeoTupleCreator()) // 1504 correct
 //        // vertices having no 2. vertex in their block -> still candidate created
 //        .distinct(0,1); // TODO why is this not distinct in the first place!?
 ////    LOG.info(tmp.count()); // 2400
 ////    LOG.info(tmp.distinct(0,1).count()); // 2348
-//    DataSet<MergeGeoTriplet> result = tmp
-//        .groupBy(5)
-//        .reduceGroup(new StableMarriageReduceFunction());
 
     DataSet<MergeGeoTriplet> singleEntities = result.join(result)
         .where(0)
@@ -157,6 +155,40 @@ public class IncrementalClusteringTest {
 
     Assert.assertEquals(82, singleEntities.count());
     Assert.assertEquals(793, result.count());
+  }
+
+  // TODO WIP
+  @Test
+  public void multiSourceTest() throws Exception {
+    DataSet<Vertex<Long, ObjectMap>> baseClusters = getGnNytVertices();
+
+    DataSet<Vertex<Long, ObjectMap>> tmp = baseClusters
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY))
+        .flatMap(new DualMergeGeographyMapper(false))
+          .leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with(new FinalMergeGeoVertexCreator())
+        .runOperation(new RepresentativeCreator( // TODO CHECK THIS, is it single vertex only?
+        DataDomain.GEOGRAPHY,                    // needed to recompute representatives!?
+        BlockingStrategy.STANDARD_BLOCKING));
+
+    DataSet<Vertex<Long, ObjectMap>> reps = getInputGeoGraph();
+
+    DataSet<Vertex<Long, ObjectMap>> plusDbp = tmp
+        .union(reps.filter(new SourceFilterFunction(Constants.DBP_NS)))
+        .filter(vertex -> vertex.getValue().getBlockingKey().equals("ber"))
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY))
+        .flatMap(new DualMergeGeographyMapper(false))
+        .leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with(new FinalMergeGeoVertexCreator());
+
+    // TODO dbpedia is not merged to the existing 2 data sources. candidate creator?
+
+    plusDbp.print();
+    LOG.info(plusDbp.count());
   }
 
   @Test

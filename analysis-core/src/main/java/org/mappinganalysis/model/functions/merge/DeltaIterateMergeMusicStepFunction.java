@@ -12,19 +12,21 @@ import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
 /**
+ * Flink delta iteration step function for music domain.
  */
-public class MergeMusicStep {
-  private static final Logger LOG = Logger.getLogger(MergeMusicStep.class);
+public class DeltaIterateMergeMusicStepFunction {
+  private static final Logger LOG = Logger.getLogger(DeltaIterateMergeMusicStepFunction.class);
   private DataDomain domain;
   private DataSet<MergeMusicTriplet> workset;
   private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
   private int sourcesCount;
   private DataSet<MergeMusicTuple> delta;
 
-  public MergeMusicStep(DataSet<MergeMusicTriplet> workset,
-                        SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
-                        int sourcesCount,
-                        DataDomain domain) {
+  public DeltaIterateMergeMusicStepFunction(
+      DataSet<MergeMusicTriplet> workset,
+      SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+      int sourcesCount,
+      DataDomain domain) {
     this.workset = workset;
     this.similarityComputation = similarityComputation;
     this.sourcesCount = sourcesCount;
@@ -35,7 +37,11 @@ public class MergeMusicStep {
 
   public void compute() {
     DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
-    delta = maxTriplets.flatMap(new MergeMusicMerge());
+    /*
+      delta is the solution set which is changed over the iterations
+      contains the resulting clusters per iteration
+     */
+    delta = maxTriplets.flatMap(new DualMergeMusicMapper());
 
     workset = printSuperstep(workset);
 

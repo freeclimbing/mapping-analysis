@@ -12,18 +12,18 @@ import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 /**
  * Merge step function logic.
  */
-public class MergeGeoStep {
-  private static final Logger LOG = Logger.getLogger(MergeGeoStep.class);
+public class DeltaIterateGeographicMergeStepFunction {
+  private static final Logger LOG = Logger.getLogger(DeltaIterateGeographicMergeStepFunction.class);
   private DataDomain domain;
   private DataSet<MergeGeoTriplet> workset;
   private SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation;
   private int sourcesCount;
   private DataSet<MergeGeoTuple> delta;
 
-  public MergeGeoStep(DataSet<MergeGeoTriplet> workset,
-                      SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation,
-                      int sourcesCount,
-                      DataDomain domain) {
+  public DeltaIterateGeographicMergeStepFunction(DataSet<MergeGeoTriplet> workset,
+                                                 SimilarityComputation<MergeGeoTriplet, MergeGeoTriplet> similarityComputation,
+                                                 int sourcesCount,
+                                                 DataDomain domain) {
     this.workset = workset;
     this.similarityComputation = similarityComputation;
     this.sourcesCount = sourcesCount;
@@ -34,7 +34,7 @@ public class MergeGeoStep {
 
   public void compute() {
     DataSet<MergeGeoTriplet> maxTriplets = getIterationMaxTriplets(workset);
-    delta = maxTriplets.flatMap(new MergeGeoMergeFunction());
+    delta = maxTriplets.flatMap(new DualMergeGeographyMapper());
 
     // remove max triplets from workset, they are getting merged anyway
     workset = workset.leftOuterJoin(maxTriplets)

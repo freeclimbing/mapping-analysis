@@ -14,9 +14,9 @@ import java.util.Set;
 /**
  * Merge implementation for music dataset.
  */
-public class MergeMusicMerge
+public class DualMergeMusicMapper
     implements FlatMapFunction<MergeMusicTriplet, MergeMusicTuple> {
-  private static final Logger LOG = Logger.getLogger(MergeMusicMerge.class);
+  private static final Logger LOG = Logger.getLogger(DualMergeMusicMapper.class);
 
   @Override
   public void flatMap(MergeMusicTriplet triplet, Collector<MergeMusicTuple> out) throws Exception {

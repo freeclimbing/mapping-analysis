@@ -8,8 +8,10 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
-import org.mappinganalysis.model.functions.incremental.SourceSelectFilter;
+import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class FixedIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private ExecutionEnvironment env;
@@ -23,7 +25,9 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, ObjectMap> input) throws Exception {
 
-    DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
+    DataSet<Vertex<Long, ObjectMap>> baseClusters = input
+        .mapVertices(new InternalTypeMapFunction())
+        .getVertices()
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             BlockingStrategy.STANDARD_BLOCKING));
@@ -32,16 +36,23 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
     // todo source select TreeSet?
     // reduce search space
     DataSet<Vertex<Long, ObjectMap>> first = baseClusters
-        .filter(new SourceSelectFilter(Constants.GN_NS));
+        .filter(new SourceFilterFunction(Constants.GN_NS));
     DataSet<Vertex<Long, ObjectMap>> second = baseClusters
-        .filter(new SourceSelectFilter(Constants.NYT_NS));
+        .filter(new SourceFilterFunction(Constants.NYT_NS));
 
 //    DataSet<Vertex<Long, ObjectMap>> result =
         first.union(second)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY));
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY))
         // TODO merge 2 sources
         // TODO provenance
-//        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY)); // todo rename
+        .flatMap(new DualMergeGeographyMapper(false));
+//            .
+
+//        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
+
+    // TODO NEXT WORK
+    // add/fix merge for 2 sources
+    // add other fixed data sources
 
     return null;
   }

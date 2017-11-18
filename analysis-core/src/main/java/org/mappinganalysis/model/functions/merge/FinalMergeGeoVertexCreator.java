@@ -14,7 +14,8 @@ import org.mappinganalysis.util.Constants;
  * Only active merge tuples are translated to default Gelly vertices.
  */
 public class FinalMergeGeoVertexCreator
-    extends RichFlatJoinFunction<MergeGeoTuple, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+    extends RichFlatJoinFunction<MergeGeoTuple, Vertex<Long, ObjectMap>,
+    Vertex<Long, ObjectMap>> {
   @Override
   public void join(MergeGeoTuple tuple,
                    Vertex<Long, ObjectMap> second,

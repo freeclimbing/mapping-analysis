@@ -23,7 +23,7 @@ import java.util.HashSet;
  * - MergeTriplets have some properties which contain a start value to
  * avoid null pointer exceptions.
  * - reuse objects side effects, don't use here
- * - smaller id is always srcTuple
+ * - smaller id is always srcTuple (as long as enableSourceBasedIdSwitch is disabled)
  */
 public class MergeGeoTripletCreator
     implements GroupReduceFunction<MergeGeoTuple, MergeGeoTriplet> {

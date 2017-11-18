@@ -8,7 +8,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 
 /**
- * Map Vertex value to basic representative representation.
+ * Map Vertex value to intermediate representative representation.
  */
 class IntermedVertexReprMapFunction
     implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
@@ -19,6 +19,9 @@ class IntermedVertexReprMapFunction
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
 
+  /**
+   * Map Vertex value to intermediate representative representation.
+   */
   public IntermedVertexReprMapFunction(DataDomain domain, BlockingStrategy blockingStrategy) {
     this.domain = domain;
     this.blockingStrategy = blockingStrategy;

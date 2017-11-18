@@ -49,6 +49,9 @@ public class MergeExecution
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
+    /*
+      ########### GEOGRAPHY ##############
+     */
     if (domain == DataDomain.GEOGRAPHY) {
       // initial solution set
       DataSet<MergeGeoTuple> clusters = baseClusters
@@ -84,7 +87,7 @@ public class MergeExecution
 //        .map(x->x); // why do we need this line, not working without
 
       // start step function
-      MergeGeoStep stepFunction = new MergeGeoStep(
+      DeltaIterateGeographicMergeStepFunction stepFunction = new DeltaIterateGeographicMergeStepFunction(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,
@@ -98,7 +101,7 @@ public class MergeExecution
           .with(new FinalMergeGeoVertexCreator());
     } else
     /*
-      MUSIC
+      ########## MUSIC ##############
      */
     if (domain == DataDomain.MUSIC) {
       // initial solution set
@@ -119,7 +122,6 @@ public class MergeExecution
           .build();
 
       // prep phase initial working set
-
       DataSet<MergeMusicTuple> preBlockingClusters = clusters
           .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
 
@@ -127,6 +129,9 @@ public class MergeExecution
       // initial working set
       DataSet<MergeMusicTriplet> initialWorkingSet;
 
+      /*
+        Blocking (MUSIC only)
+       */
       if (blockingStrategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
         initialWorkingSet = preBlockingClusters
             .groupBy(10) // blocking key
@@ -176,8 +181,10 @@ public class MergeExecution
 //    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
 //        .map(x->x); // why do we need this line, not working without
 
-      // start step function
-      MergeMusicStep stepFunction = new MergeMusicStep(
+      /*
+        start step function - creates changed vertices and merges clusters
+       */
+      DeltaIterateMergeMusicStepFunction stepFunction = new DeltaIterateMergeMusicStepFunction(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,

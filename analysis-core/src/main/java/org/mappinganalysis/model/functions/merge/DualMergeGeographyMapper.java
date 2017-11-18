@@ -16,12 +16,32 @@ import java.util.Set;
  *
  * Do not use reuse tuple.
  */
-public class MergeGeoMergeFunction
+public class DualMergeGeographyMapper
     implements FlatMapFunction<MergeGeoTriplet, MergeGeoTuple> {
-  private static final Logger LOG = Logger.getLogger(MergeGeoMergeFunction.class);
+  private static final Logger LOG = Logger.getLogger(DualMergeGeographyMapper.class);
+  private boolean hasFakeResults;
+
+  /**
+   * Default constructor for delta iteration
+   */
+  public DualMergeGeographyMapper() {
+    this.hasFakeResults = true;
+  }
+
+  /**
+   * constructor for incremental clustering
+   * @param hasFakeResults should be false, no fake results wanted
+   */
+  public DualMergeGeographyMapper(boolean hasFakeResults) {
+    this.hasFakeResults = hasFakeResults;
+  }
 
   @Override
   public void flatMap(MergeGeoTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
+    if (triplet.getSrcId() == triplet.getTrgId().longValue()) {
+      out.collect(triplet.getSrcTuple());
+      return;
+    }
     MergeGeoTuple priority = triplet.getSrcTuple();
     MergeGeoTuple minor = triplet.getTrgTuple();
 
@@ -62,13 +82,15 @@ public class MergeGeoMergeFunction
         priority.getIntTypes(),
         minor.getIntTypes()));
     mergedCluster.setBlockingLabel(priority.getBlockingLabel());
-
-//    LOG.info("### new cluster: " + mergedCluster.toString());
-    MergeGeoTuple fakeCluster = new MergeGeoTuple(
-        priority.getId() > minor.getId() ? priority.getId() : minor.getId());
+    
+    if (hasFakeResults) {
+      MergeGeoTuple fakeCluster = new MergeGeoTuple(
+          priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
 
-    out.collect(fakeCluster);
+      out.collect(fakeCluster);
+    }
+//    LOG.info("### new cluster: " + mergedCluster.toString());
     out.collect(mergedCluster);
   }
 }
