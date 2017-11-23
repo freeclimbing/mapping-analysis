@@ -9,6 +9,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
+import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
@@ -21,8 +22,10 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
     this.env = env;
   }
 
+  // todo source select TreeSet?
+  // TODO provenance
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(
+  public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, ObjectMap> input) throws Exception {
 
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
@@ -32,28 +35,48 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
             DataDomain.GEOGRAPHY,
             BlockingStrategy.STANDARD_BLOCKING));
 
-    // split to relevant sources
-    // todo source select TreeSet?
-    // reduce search space
-    DataSet<Vertex<Long, ObjectMap>> first = baseClusters
+    DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> second = baseClusters
+    DataSet<Vertex<Long, ObjectMap>> nyt = baseClusters
         .filter(new SourceFilterFunction(Constants.NYT_NS));
+    DataSet<Vertex<Long, ObjectMap>> dbp = baseClusters
+        .filter(new SourceFilterFunction(Constants.DBP_NS));
+    DataSet<Vertex<Long, ObjectMap>> fb = baseClusters
+        .filter(new SourceFilterFunction(Constants.FB_NS));
 
-//    DataSet<Vertex<Long, ObjectMap>> result =
-        first.union(second)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY))
-        // TODO merge 2 sources
-        // TODO provenance
-        .flatMap(new DualMergeGeographyMapper(false));
-//            .
+    DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 2))
+        .flatMap(new DualMergeGeographyMapper(false))
+        .leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with(new FinalMergeGeoVertexCreator())
+        .runOperation(new RepresentativeCreator(
+            DataDomain.GEOGRAPHY,
+            BlockingStrategy.STANDARD_BLOCKING));
 
-//        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
+    result = result.union(dbp)
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 3))
+        .flatMap(new DualMergeGeographyMapper(false))
+        .leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with(new FinalMergeGeoVertexCreator())
+        .runOperation(new RepresentativeCreator(
+            DataDomain.GEOGRAPHY,
+            BlockingStrategy.STANDARD_BLOCKING));
 
-    // TODO NEXT WORK
-    // add/fix merge for 2 sources
-    // add other fixed data sources
+    return result.union(fb)
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 4))
+        .flatMap(new DualMergeGeographyMapper(false))
+        .leftOuterJoin(baseClusters)
+        .where(0)
+        .equalTo(0)
+        .with(new FinalMergeGeoVertexCreator())
+        .runOperation(new RepresentativeCreator(
+            DataDomain.GEOGRAPHY,
+            BlockingStrategy.STANDARD_BLOCKING));
 
-    return null;
+    // TODO sources count is fixed atm, how to have variable source count
   }
 }

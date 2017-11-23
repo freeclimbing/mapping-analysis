@@ -30,7 +30,7 @@ public class MinSizeIncClusteringFunction extends IncrementalClusteringFunction 
   }
 
   @Override
-  public Graph<Long, ObjectMap, ObjectMap> run(
+  public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, ObjectMap> input) throws Exception {
 
     // TODO
@@ -71,7 +71,8 @@ public class MinSizeIncClusteringFunction extends IncrementalClusteringFunction 
         });
 
 
-    return Graph.fromDataSet(dsCountVertices, input.getEdges(), env);
+    return dsCountVertices;
+//    return Graph.fromDataSet(dsCountVertices, input.getEdges(), env);
 //    return null;
   }
 }

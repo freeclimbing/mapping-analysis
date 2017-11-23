@@ -34,7 +34,7 @@ public class InternalTypeMapFunction
     }
 
     if (!resultTypes.isEmpty()) {
-      properties.put(Constants.TYPE_INTERN, resultTypes);
+      properties.addTypes(Constants.TYPE_INTERN, resultTypes);
       properties.remove(Constants.TYPE);
       properties.remove(Constants.GN_TYPE_DETAIL);
     }

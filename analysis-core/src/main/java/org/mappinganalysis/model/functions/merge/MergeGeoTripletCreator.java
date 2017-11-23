@@ -87,7 +87,7 @@ public class MergeGeoTripletCreator
       if left side has only one element, no triplet is created. for 2 sources
       within incremental clustering, we still want a triplet
        */
-      if (sourcesCount == 2 && rightSide.isEmpty() && leftSide.size() == 1) {
+      if (rightSide.isEmpty() && leftSide.size() == 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
         out.collect(triplet);
       }
@@ -99,7 +99,7 @@ public class MergeGeoTripletCreator
       if left side has only elements from one data source, no triplet is created.
       in incremental clustering, we want triplets for each element.
       */
-      if (sourcesCount == 2 && !checkSet.contains(leftTuple)) {
+      if (!checkSet.contains(leftTuple)) {
         // && hasNeverSrcOverlap) { // && leftSide.size() != 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
 //          LOG.info(leftTuple.getId() + "collect: " + leftTuple.toString());

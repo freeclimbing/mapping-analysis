@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Vertex;
@@ -23,14 +22,15 @@ public class CandidateCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
   private DataDomain domain;
+  private int sourceCount;
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
 
   /**
    * Constructor for incremental clustering, ids are not
-   * @param domain
    */
-  public CandidateCreator(DataDomain domain) {
+  public CandidateCreator(DataDomain domain, int sourceCount) {
     this.domain = domain; // TODO USE domain
+    this.sourceCount = sourceCount;
   }
 
   @Override
@@ -59,12 +59,7 @@ public class CandidateCreator
         .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
         .groupBy(7)
-        .reduceGroup(new MergeGeoTripletCreator(2, true))
-        .map(x-> {
-          LOG.info(x.toString());
-          return x;
-        })
-        .returns(new TypeHint<MergeGeoTriplet>() {})
+        .reduceGroup(new MergeGeoTripletCreator(sourceCount, true))
         .runOperation(similarityComputation)
         .distinct(0,1)
         .groupBy(5)

@@ -84,7 +84,6 @@ public class IncrementalWorkflow implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
             .getGraph()
             .run(clustering) // todo implement
-            .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(domain));
 
     new JSONDataSink(INPUT_PATH, INCREMENTAL_STEP)
