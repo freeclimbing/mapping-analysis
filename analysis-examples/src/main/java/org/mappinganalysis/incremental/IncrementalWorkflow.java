@@ -14,9 +14,6 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.IncrementalClustering;
 import org.mappinganalysis.model.functions.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
-import org.mappinganalysis.model.functions.merge.MergeExecution;
-import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.IncrementalPreprocessing;
 import org.mappinganalysis.util.Constants;
 
@@ -26,10 +23,8 @@ public class IncrementalWorkflow implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   private static final String PREPROCESSING_STEP = "incremental-preprocessing";
-  private static final String INCREMENTAL_STEP = "incremental-representatives";
   private static final String MERGE_STEP = "incremental-merged-clusters";
   private static final String PRE_JOB = "Incremental Preprocessing";
-  private static final String DEC_JOB = "Incremental Decomposition + Representatives";
   private static final String MER_JOB = "Incremental Merge";
 
   private static String INPUT_PATH;
@@ -47,7 +42,7 @@ public class IncrementalWorkflow implements ProgramDescription {
     JobExecutionResult result;
 
     /*
-      preprocessing
+      incremental preprocessing
      */
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
         Constants.INPUT_PATH,
@@ -79,30 +74,13 @@ public class IncrementalWorkflow implements ProgramDescription {
         .setStrategy(IncrementalClusteringStrategy.FIXED)
         .build();
 
-
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
             .getGraph()
-            .run(clustering) // todo implement
-            .runOperation(new RepresentativeCreatorMultiMerge(domain));
-
-    new JSONDataSink(INPUT_PATH, INCREMENTAL_STEP)
-        .writeVertices(vertices);
-    result = env.execute(DEC_JOB);
-    System.out.println(DEC_JOB + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-
-    /*
-      merge
-     */
-    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(INPUT_PATH, INCREMENTAL_STEP, env) // check vars
-            .getVertices()
-            .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC, Constants.SOURCE_COUNT, env));
+            .run(clustering);
 
     new JSONDataSink(INPUT_PATH, MERGE_STEP)
-        .writeVertices(mergedVertices);
+        .writeVertices(vertices);
     result = env.execute(MER_JOB);
     System.out.println(MER_JOB + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");

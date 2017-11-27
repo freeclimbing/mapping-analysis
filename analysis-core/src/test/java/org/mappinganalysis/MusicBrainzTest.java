@@ -248,10 +248,10 @@ public class MusicBrainzTest {
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph
-            .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.MUSIC, 0.7, env))
-            .getVertices()
-            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
+        .run(new TypeGroupBy(env))
+        .run(new SimSort(DataDomain.MUSIC, 0.7, env))
+        .getVertices()
+        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
     assertEquals(11, representatives.count());
 

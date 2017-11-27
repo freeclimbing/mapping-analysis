@@ -30,7 +30,7 @@ public class IncrementalPreprocessing
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     return graph
         .mapVertices(new InternalTypeMapFunction())
-        .mapVertices(new DataSourceMapFunction())
+        .mapVertices(new DataSourceMapFunction()) // compatibility only
         .run(new TypeMisMatchCorrection(env))
         // TODO remove sim comp
         .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));

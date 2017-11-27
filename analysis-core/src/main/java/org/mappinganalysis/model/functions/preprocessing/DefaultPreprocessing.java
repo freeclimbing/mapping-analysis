@@ -59,17 +59,19 @@ public class DefaultPreprocessing
     Graph<Long, ObjectMap, NullValue> tmpGraph = graph
         .mapVertices(new InternalTypeMapFunction())
         .mapVertices(new DataSourceMapFunction())
-        .run(new EqualDataSourceLinkRemover(env))
-        .run(new TypeMisMatchCorrection(env));
+        .run(new EqualDataSourceLinkRemover(env));
 
     Graph<Long, ObjectMap, ObjectMap> resultGraph;
     List<String> sources;
     if (domain == DataDomain.MUSIC) {
-      resultGraph = tmpGraph.run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
+      resultGraph = tmpGraph
+          .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
       sources = Constants.MUSIC_SOURCES;
     } else {
+      resultGraph = tmpGraph
+          .run(new TypeMisMatchCorrection(env))
+          .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
       sources = Constants.GEO_SOURCES;
-      resultGraph = tmpGraph.run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
     }
 
     if (linkFilterEnabled) {

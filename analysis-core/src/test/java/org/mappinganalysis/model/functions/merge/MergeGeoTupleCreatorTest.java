@@ -11,15 +11,13 @@ import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MergeGeoTupleCreatorTest {
   private static ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(MergeGeoBlockingTest.class);
 
-  /**
-   * 1. part
-   */
   @Test
   public void testMergeTupleCreator() throws Exception {
     env = TestBase.setupLocalEnvironment();
@@ -33,15 +31,12 @@ public class MergeGeoTupleCreatorTest {
         .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator());
 
-    assertTrue(11 == result.collect().size());
-
     DataSet<MergeGeoTriplet> initialWorkingSet = result
         .filter(new SourceCountRestrictionFilter<>(DataDomain.GEOGRAPHY, 5))
-        .groupBy(7) // TODO
+        .groupBy(7)
         .reduceGroup(new MergeGeoTripletCreator(5));
 
-    for (MergeGeoTriplet mergeGeoTriplet : initialWorkingSet.collect()) {
-      assertTrue(mergeGeoTriplet.getSrcId() < mergeGeoTriplet.getTrgId());
-    }
+    assertTrue(11 == result.collect().size());
+    assertEquals(25, initialWorkingSet.count());
   }
 }

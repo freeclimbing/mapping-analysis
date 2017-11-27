@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
 
 import java.util.HashSet;
 
@@ -29,11 +30,12 @@ public class MergeGeoTripletCreator
     implements GroupReduceFunction<MergeGeoTuple, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(MergeGeoTripletCreator.class);
   private final int sourcesCount;
+  private String newSource;
   private boolean enableSourceBasedIdSwitch;
 
   // (old) default behavior, switch ids and tuple if target id is bigger
   public MergeGeoTripletCreator(int sourcesCount) {
-    this(sourcesCount, false);
+    this(sourcesCount, Constants.EMPTY_STRING, false);
   }
 
   /**
@@ -41,8 +43,9 @@ public class MergeGeoTripletCreator
    * @param sourcesCount if sources count is 2, single block entities create a triplet, too
    * @param enableSourceBasedIdSwitch true if ids should be switched based on data source side
    */
-  public MergeGeoTripletCreator(int sourcesCount, boolean enableSourceBasedIdSwitch) {
+  public MergeGeoTripletCreator(int sourcesCount, String newSource, boolean enableSourceBasedIdSwitch) {
     this.sourcesCount = sourcesCount;
+    this.newSource = newSource;
     this.enableSourceBasedIdSwitch = enableSourceBasedIdSwitch;
   }
 
@@ -72,7 +75,7 @@ public class MergeGeoTripletCreator
 
         if (summedSources <= sourcesCount && hasTypeOverlap && !hasSrcOverlap) {
           if (enableSourceBasedIdSwitch) {
-            triplet.checkSourceSwitch(leftTuple, rightTuple);
+            triplet.checkSourceSwitch(leftTuple, rightTuple, newSource);
           } else {
             triplet.setIdAndTuples(leftTuple, rightTuple);
           }

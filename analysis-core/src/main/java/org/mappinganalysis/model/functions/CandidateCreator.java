@@ -4,7 +4,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
@@ -22,14 +21,16 @@ public class CandidateCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
   private DataDomain domain;
+  private String newSource;
   private int sourceCount;
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
 
   /**
    * Constructor for incremental clustering, ids are not
    */
-  public CandidateCreator(DataDomain domain, int sourceCount) {
+  public CandidateCreator(DataDomain domain, String newSource, int sourceCount) {
     this.domain = domain; // TODO USE domain
+    this.newSource = newSource;
     this.sourceCount = sourceCount;
   }
 
@@ -40,28 +41,24 @@ public class CandidateCreator
 
   @Override
   public DataSet<MergeGeoTriplet> createResult() {
-    // TODO check sim function
-    SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
-        new MergeGeoSimilarity();
-
     // TODO check sim comp
     SimilarityComputation<MergeGeoTriplet,
         MergeGeoTriplet> similarityComputation
         = new SimilarityComputation
         .SimilarityComputationBuilder<MergeGeoTriplet,
         MergeGeoTriplet>()
-        .setSimilarityFunction(simFunction)
+        .setSimilarityFunction(new MergeGeoSimilarity()) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.0)
+        .setThreshold(0.5)
         .build();
 
     return inputVertices
         .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
         .groupBy(7)
-        .reduceGroup(new MergeGeoTripletCreator(sourceCount, true))
+        .reduceGroup(new MergeGeoTripletCreator(sourceCount, newSource, true))
         .runOperation(similarityComputation)
-        .distinct(0,1)
+        .distinct(0, 1)
         .groupBy(5)
         .reduceGroup(new StableMarriageReduceFunction());
   }

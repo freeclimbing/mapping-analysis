@@ -1,6 +1,9 @@
 package org.mappinganalysis.model;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.mappinganalysis.util.AbstractionUtils;
+import org.mappinganalysis.util.Constants;
 
 /**
  * srcId, trgId, srcTuple, trgTuple, sim, blocking label
@@ -30,8 +33,9 @@ public class MergeGeoTriplet
   /**
    * Set smaller source int value as left tuple in resulting triplet.
    */
-  public void checkSourceSwitch(MergeGeoTuple left, MergeGeoTuple right) {
-    if (left.getIntSources() > right.getIntSources()) {
+  public void checkSourceSwitch(MergeGeoTuple left, MergeGeoTuple right, String newSource) {
+    int newSourceInt = AbstractionUtils.getSourcesInt(Constants.GEO, Sets.newHashSet(newSource));
+    if (left.getIntSources() == newSourceInt) {
       MergeGeoTuple tmp = left;
       left = right;
       right = tmp;

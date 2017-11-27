@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions;
 
+import com.google.common.collect.Maps;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -25,10 +26,14 @@ import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFu
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+import java.util.HashMap;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class IncrementalClusteringTest {
-  private static final Logger LOG = Logger.getLogger(org.mappinganalysis.model.functions.decomposition.simsort.SimSortTest.class);
+  private static final Logger LOG = Logger.getLogger(IncrementalClusteringTest.class);
   private static ExecutionEnvironment env = TestBase.setupLocalEnvironment();
 
   @Test
@@ -56,10 +61,9 @@ public class IncrementalClusteringTest {
     // one source
     DataSet<MergeGeoTriplet> sai = getGnNytVertices()
         .filter(vertex -> vertex.getValue().getBlockingKey().equals("sai"))
-        .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
         .groupBy(7) // tuple blocking key
-        .reduceGroup(new MergeGeoTripletCreator(2, true))
+        .reduceGroup(new MergeGeoTripletCreator(2, Constants.NYT_NS, true))
         .map(triplet -> {
           Assert.assertEquals(triplet.getSrcId(), triplet.getTrgId());
           return triplet;
@@ -69,10 +73,9 @@ public class IncrementalClusteringTest {
     // mixed sources
     DataSet<MergeGeoTriplet> cha = getGnNytVertices()
         .filter(vertex -> vertex.getValue().getBlockingKey().equals("cha"))
-        .map(new AddShadingTypeMapFunction())
         .map(new MergeGeoTupleCreator())
         .groupBy(7) // tuple blocking key
-        .reduceGroup(new MergeGeoTripletCreator(2, true))
+        .reduceGroup(new MergeGeoTripletCreator(2, Constants.NYT_NS, true))
         .map(triplet -> {
 //          LOG.info(triplet.toString());
           Assert.assertNotEquals(triplet.getSrcId(), triplet.getTrgId());
@@ -108,6 +111,7 @@ public class IncrementalClusteringTest {
     return graph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
+        .map(new AddShadingTypeMapFunction())
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             BlockingStrategy.STANDARD_BLOCKING));
@@ -116,7 +120,7 @@ public class IncrementalClusteringTest {
   @Test
   public void createReprTest() throws Exception {
     DataSet<MergeGeoTriplet> result = getGnNytVertices()
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 2));
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.NYT_NS, 2));
 //        .map(new MergeGeoTupleCreator()) // 1504 correct
 //        // vertices having no 2. vertex in their block -> still candidate created
 //        .distinct(0,1); // TODO why is this not distinct in the first place!?
@@ -131,11 +135,14 @@ public class IncrementalClusteringTest {
         })
         .distinct(0, 1);
 
-    Assert.assertEquals(82, singleEntities.count());
-    Assert.assertEquals(793, result.count());
+    Assert.assertEquals(60, singleEntities.count());
+    Assert.assertEquals(771, result.count());
   }
 
 
+  /**
+   * Strategy fixed incremental data sources + check for no duplicates
+   */
   @Test
   public void fixedIncClustImplTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class
@@ -150,13 +157,49 @@ public class IncrementalClusteringTest {
         .setStrategy(IncrementalClusteringStrategy.FIXED)
         .build();
 
-
     DataSet<Vertex<Long, ObjectMap>> vertices = graph
             .run(clustering);
 
-    vertices.print();
-    LOG.info(vertices.count());
-//            .runOperation(new RepresentativeCreatorMultiMerge(domain));
+    HashMap<Long, Integer> checkMap = Maps.newHashMap();
+    List<Vertex<Long, ObjectMap>> clusters = vertices.collect();
+
+    for (Vertex<Long, ObjectMap> vertex : clusters) {
+      for (Long single : vertex.getValue().getVerticesList()) {
+        if (checkMap.containsKey(single)) {
+          assertFalse(true);
+//          checkMap.put(single, checkMap.get(single) + 1);
+        } else {
+          checkMap.put(single, 1);
+        }
+      }
+    }
+
+//    vertices.print();
+    Assert.assertEquals(788, clusters.size());
+    // check for test if duplicates are available
+//    Set<Long> duplicateVertexId = Sets.newHashSet();
+//    for (Map.Entry<Long, Integer> entry : checkMap.entrySet()) {
+//      if (entry.getValue() > 1) {
+//        duplicateVertexId.add(entry.getKey());
+//      }
+//    }
+//
+//    HashMap<Long, Vertex<Long, ObjectMap>> duplicateVertex = Maps.newHashMap();
+//    for (Vertex<Long, ObjectMap> vertex : graph.getVertices().collect()) {
+//      if (duplicateVertexId.contains(vertex.getId())) {
+//        duplicateVertex.put(vertex.getId(), vertex);
+//      }
+//    }
+//
+//    for (Long aLong : duplicateVertexId) {
+//      LOG.info("\n vertex in 2+ clusters: " + aLong);
+//      LOG.info("Vertex: " + duplicateVertex.get(aLong).toString());
+//      for (Vertex<Long, ObjectMap> cluster : clusters) {
+//        if (cluster.getValue().getVerticesList().contains(aLong)) {
+//          LOG.info("Contained in cluster: " + cluster.toString());
+//        }
+//      }
+//    }
   }
   /**
    * Used for optimization.
@@ -170,7 +213,7 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> baseClusters = getGnNytVertices();
 
     DataSet<Vertex<Long, ObjectMap>> tmp = baseClusters
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 2))
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.NYT_NS, 2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -185,7 +228,7 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> plusDbp = tmp
         .union(reps.filter(new SourceFilterFunction(Constants.DBP_NS)))
 //        .filter(vertex -> vertex.getValue().getBlockingKey().equals("ber"))
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 3))
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
         .flatMap(new DualMergeGeographyMapper(false))
         .map(x-> {
           if (x.getBlockingLabel().equals("ber"))
@@ -213,7 +256,7 @@ public class IncrementalClusteringTest {
     DataSet<MergeGeoTriplet> tupleResult = plusDbp
         .union(reps.filter(new SourceFilterFunction(Constants.FB_NS)))
 //        .filter(vertex -> vertex.getValue().getBlockingKey().equals("ber"))
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, 4));
+        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.FB_NS, 4));
 
     DataSet<MergeGeoTriplet> singleEntities = tupleResult.join(tupleResult)
         .where(0)

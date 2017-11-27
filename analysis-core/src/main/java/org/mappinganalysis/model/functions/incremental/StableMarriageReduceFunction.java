@@ -110,10 +110,11 @@ public class StableMarriageReduceFunction
         triplet.setTrgTuple(triplet.getSrcTuple());
         triplet.setTrgId(srcId);
         triplet.setSimilarity(1D);
-
         checkSet.add(srcId);
+
         out.collect(triplet);
       } else if (resultMap.get(srcId) != null && resultMap.get(srcId) == trgId) {
+
         out.collect(triplet);
       } else if (rightSource.containsKey(trgId)) { // no (right side) match for vertex
         rightSource.remove(trgId);
