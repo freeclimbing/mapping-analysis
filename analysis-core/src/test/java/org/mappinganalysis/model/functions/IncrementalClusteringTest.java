@@ -6,11 +6,13 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
@@ -120,7 +122,11 @@ public class IncrementalClusteringTest {
   @Test
   public void createReprTest() throws Exception {
     DataSet<MergeGeoTriplet> result = getGnNytVertices()
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.NYT_NS, 2));
+        .runOperation(new CandidateCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.GEOGRAPHY,
+            Constants.NYT_NS,
+            2));
 //        .map(new MergeGeoTupleCreator()) // 1504 correct
 //        // vertices having no 2. vertex in their block -> still candidate created
 //        .distinct(0,1); // TODO why is this not distinct in the first place!?
@@ -139,6 +145,30 @@ public class IncrementalClusteringTest {
     Assert.assertEquals(771, result.count());
   }
 
+  @Test
+  public void noBlockingTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/geography").getFile();
+    Graph<Long, ObjectMap, NullValue> graph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    IncrementalClustering clustering = new IncrementalClustering
+        .IncrementalClusteringBuilder()
+        .setEnvironment(env)
+        .setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE)
+        .setBlockingStrategy(BlockingStrategy.NO_BLOCKING)
+        .build();
+
+    DataSet<Vertex<Long, ObjectMap>> resultVertices = graph
+        .run(clustering);
+
+//    LOG.info(resultVertices.count());
+    new JSONDataSink(graphPath.concat("/output-no-blocking/"), "test")
+        .writeVertices(resultVertices);
+    resultVertices.print();
+
+  }
 
   /**
    * Strategy fixed incremental data sources + check for no duplicates
@@ -147,22 +177,25 @@ public class IncrementalClusteringTest {
   public void fixedIncClustImplTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class
         .getResource("/data/geography").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph =
+    Graph<Long, ObjectMap, NullValue> graph =
         new JSONDataSource(graphPath, true, env)
-            .getGraph();
+            .getGraph(ObjectMap.class, NullValue.class);
 
     IncrementalClustering clustering = new IncrementalClustering
         .IncrementalClusteringBuilder()
         .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.FIXED)
+        .setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE)
         .build();
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = graph
-            .run(clustering);
+    DataSet<Vertex<Long, ObjectMap>> resultVertices = graph
+        .run(clustering);
+//    new JSONDataSink(graphPath.concat("/output/"), "test")
+//        .writeVertices(resultVertices);
+
+    List<Vertex<Long, ObjectMap>> clusters = resultVertices
+        .collect();
 
     HashMap<Long, Integer> checkMap = Maps.newHashMap();
-    List<Vertex<Long, ObjectMap>> clusters = vertices.collect();
-
     for (Vertex<Long, ObjectMap> vertex : clusters) {
       for (Long single : vertex.getValue().getVerticesList()) {
         if (checkMap.containsKey(single)) {
@@ -213,7 +246,11 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> baseClusters = getGnNytVertices();
 
     DataSet<Vertex<Long, ObjectMap>> tmp = baseClusters
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.NYT_NS, 2))
+        .runOperation(new CandidateCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.GEOGRAPHY,
+            Constants.NYT_NS,
+            2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -228,7 +265,11 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> plusDbp = tmp
         .union(reps.filter(new SourceFilterFunction(Constants.DBP_NS)))
 //        .filter(vertex -> vertex.getValue().getBlockingKey().equals("ber"))
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
+        .runOperation(new CandidateCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.GEOGRAPHY,
+            Constants.DBP_NS,
+            3))
         .flatMap(new DualMergeGeographyMapper(false))
         .map(x-> {
           if (x.getBlockingLabel().equals("ber"))
@@ -256,7 +297,11 @@ public class IncrementalClusteringTest {
     DataSet<MergeGeoTriplet> tupleResult = plusDbp
         .union(reps.filter(new SourceFilterFunction(Constants.FB_NS)))
 //        .filter(vertex -> vertex.getValue().getBlockingKey().equals("ber"))
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.FB_NS, 4));
+        .runOperation(new CandidateCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.GEOGRAPHY,
+            Constants.FB_NS,
+            4));
 
     DataSet<MergeGeoTriplet> singleEntities = tupleResult.join(tupleResult)
         .where(0)
@@ -291,7 +336,7 @@ public class IncrementalClusteringTest {
         .getResource("/data/geography").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
-            .getGraph()
+            .getGraph(ObjectMap.class, NullValue.class)
             .run(clustering);
 
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {

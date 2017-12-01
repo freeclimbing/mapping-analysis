@@ -4,6 +4,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
@@ -18,10 +19,12 @@ import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 public class FixedIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(FixedIncrementalClusteringFunction.class);
 
+  private BlockingStrategy blockingStrategy;
   private ExecutionEnvironment env;
 
-  public FixedIncrementalClusteringFunction(ExecutionEnvironment env) {
+  public FixedIncrementalClusteringFunction(BlockingStrategy blockingStrategy, ExecutionEnvironment env) {
     super();
+    this.blockingStrategy = blockingStrategy;
     this.env = env;
   }
 
@@ -31,14 +34,14 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
   // TODO optimize: remove transition between vertices and tuples between merge steps
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
-      Graph<Long, ObjectMap, ObjectMap> input) throws Exception {
+      Graph<Long, ObjectMap, NullValue> input) throws Exception {
 
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+            blockingStrategy));
 
     DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
@@ -52,7 +55,11 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
         .filter(new SourceFilterFunction(Constants.LGD_NS));
 
     DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.NYT_NS, 2))
+        .runOperation(new CandidateCreator(
+            blockingStrategy,
+            DataDomain.GEOGRAPHY,
+            Constants.NYT_NS,
+            2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -60,10 +67,11 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+            blockingStrategy));
 
     result = result.union(dbp)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
+        .runOperation(new CandidateCreator(
+            blockingStrategy, DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -71,10 +79,11 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+            blockingStrategy));
 
     result = result.union(fb)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
+        .runOperation(new CandidateCreator(
+            blockingStrategy, DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -82,10 +91,11 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+            blockingStrategy));
 
     DataSet<Vertex<Long, ObjectMap>> finalResult = result.union(lgd)
-        .runOperation(new CandidateCreator(DataDomain.GEOGRAPHY, Constants.LGD_NS, 5))
+        .runOperation(new CandidateCreator(
+            blockingStrategy, DataDomain.GEOGRAPHY, Constants.LGD_NS, 5))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -93,7 +103,7 @@ public class FixedIncrementalClusteringFunction extends IncrementalClusteringFun
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+            blockingStrategy));
 
     return result;
 //    return result.leftOuterJoin(finalResult)

@@ -26,6 +26,7 @@ import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.VertexComponentTuple2;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.simplifiers.Simplifiers;
@@ -114,6 +115,41 @@ public class Utils {
         .forEachOrdered(value -> result.put(value.getKey(), value.getValue()));
 
     return result;
+  }
+
+//  public void setBlockingKey(BlockingStrategy strategy, String mode, String label) {
+//    map.put(Constants.BLOCKING_LABEL,
+//        Utils.getBlockingKey(strategy, mode, label));
+//  }
+  /**
+   * Use outside of ObjectMap:
+   * Based on a blocking strategy and based on data domain
+   * set the blocking label for a single instance.
+   * @param strategy BlockingStrategy {@see BlockingStrategy}
+   */
+  public static String getBlockingKey(
+      BlockingStrategy strategy,
+      String bMode,
+      String label) {
+    if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
+      if (bMode.equals(Constants.GEO)) {
+//        LOG.info("sbs gL: " + getLabel());
+//        LOG.info("sbs map: " + getMap());
+
+        return Utils.getGeoBlockingLabel(label);
+      } else if (bMode.equals(Constants.MUSIC)) {
+//        LOG.info("music put blocking label");
+
+        return Utils.getMusicBlockingLabel(label);
+      } else {
+        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+      }
+    } else if (strategy.equals(BlockingStrategy.NO_BLOCKING)) {
+
+      return Constants.NO_VALUE;
+    } else {
+      throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+    }
   }
 
   public static double getExactDoubleResult(double value) {

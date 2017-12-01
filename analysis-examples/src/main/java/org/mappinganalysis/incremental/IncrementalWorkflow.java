@@ -40,13 +40,15 @@ public class IncrementalWorkflow implements ProgramDescription {
     Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.GEOGRAPHY;
     JobExecutionResult result;
+    Constants.LL_MODE = "all";
 
     /*
       incremental preprocessing
      */
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
-        Constants.INPUT_PATH,
-        Constants.LL_MODE.concat(Constants.INPUT_GRAPH), env)
+    Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(
+        INPUT_PATH,
+        Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
+        env)
         .getGraph(ObjectMap.class, NullValue.class)
         // todo adapt preprocessing
         .run(new IncrementalPreprocessing(env));
@@ -71,12 +73,12 @@ public class IncrementalWorkflow implements ProgramDescription {
     IncrementalClustering clustering = new IncrementalClustering
         .IncrementalClusteringBuilder()
         .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.FIXED)
+        .setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE)
         .build();
 
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
-            .getGraph()
+            .getGraph(ObjectMap.class, NullValue.class)
             .run(clustering);
 
     new JSONDataSink(INPUT_PATH, MERGE_STEP)

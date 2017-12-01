@@ -5,12 +5,14 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 
 import java.util.List;
 
 public class IncrementalClustering
-    implements GraphAlgorithm<Long, ObjectMap, ObjectMap, DataSet<Vertex<Long, ObjectMap>>> {
+    implements GraphAlgorithm<Long, ObjectMap, NullValue, DataSet<Vertex<Long, ObjectMap>>> {
 
   private IncrementalClusteringFunction function;
 
@@ -19,7 +21,7 @@ public class IncrementalClustering
   }
 
   @Override
-  public DataSet<Vertex<Long, ObjectMap>> run(Graph<Long, ObjectMap, ObjectMap> graph)
+  public DataSet<Vertex<Long, ObjectMap>> run(Graph<Long, ObjectMap, NullValue> graph)
       throws Exception {
     return graph.run(function);
   }
@@ -28,14 +30,16 @@ public class IncrementalClustering
    * Used for building a IncrementalClustering instance.
    */
   public static final class IncrementalClusteringBuilder {
-    private IncrementalClusteringStrategy strategy;
+    private IncrementalClusteringStrategy clusteringStrategy;
     private ExecutionEnvironment env = null;
     private List<String> sources;
     private Vertex<Long, ObjectMap> existingClusters;
+    private BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
-      this.strategy = strategy;
+      this.clusteringStrategy = strategy;
+
       return this;
     }
 
@@ -47,6 +51,7 @@ public class IncrementalClustering
     public IncrementalClusteringBuilder setDataSources(
         List<String> sources) {
       this.sources = sources;
+
       return this;
     }
 
@@ -58,6 +63,19 @@ public class IncrementalClustering
     public IncrementalClusteringBuilder setExistingClusters(
         Vertex<Long, ObjectMap> existingClusters) {
       this.existingClusters = existingClusters;
+
+      return this;
+    }
+
+    /**
+     * Set blocking strategy for incremental clustering. if not set: Standard blocking
+     * @param strategy blocking strategy
+     * @return IncrementalClusteringBuilder
+     */
+    public IncrementalClusteringBuilder setBlockingStrategy(
+        BlockingStrategy strategy) {
+      blockingStrategy = strategy;
+
       return this;
     }
 
@@ -68,6 +86,7 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setEnvironment(ExecutionEnvironment env) {
       this.env = env;
+
       return this;
     }
 
@@ -77,12 +96,12 @@ public class IncrementalClustering
      */
     public IncrementalClustering build() {
       if (env != null) {
-        if (strategy == IncrementalClusteringStrategy.MINSIZE) {
+        if (clusteringStrategy == IncrementalClusteringStrategy.MINSIZE) {
           return new MinSizeIncClustering(sources, env);
-        } else if (strategy == IncrementalClusteringStrategy.FIXED) {
-          return new FixedIncrementalClustering(env); // basic test strategy
+        } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
+          return new FixedIncrementalClustering(blockingStrategy, env); // basic test clusteringStrategy
         } else {
-          throw new IllegalArgumentException("Unsupported strategy: " + strategy);
+          throw new IllegalArgumentException("Unsupported clusteringStrategy: " + clusteringStrategy);
         }
       } else {
         throw new IllegalArgumentException("Execution environment null");

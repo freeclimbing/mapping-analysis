@@ -1,9 +1,10 @@
 package org.mappinganalysis.model.functions;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 
 class FixedIncrementalClustering extends IncrementalClustering {
-  FixedIncrementalClustering(ExecutionEnvironment env) {
-    super(new FixedIncrementalClusteringFunction(env));
+  FixedIncrementalClustering(BlockingStrategy blockingStrategy, ExecutionEnvironment env) {
+    super(new FixedIncrementalClusteringFunction(blockingStrategy, env));
   }
 }

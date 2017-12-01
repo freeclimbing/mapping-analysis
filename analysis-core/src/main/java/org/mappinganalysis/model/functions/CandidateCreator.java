@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.StableMarriageReduceFunction;
 import org.mappinganalysis.model.functions.merge.MergeGeoSimilarity;
 import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
@@ -20,6 +21,7 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 public class CandidateCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
+  private BlockingStrategy blockingStrategy;
   private DataDomain domain;
   private String newSource;
   private int sourceCount;
@@ -28,7 +30,12 @@ public class CandidateCreator
   /**
    * Constructor for incremental clustering, ids are not
    */
-  public CandidateCreator(DataDomain domain, String newSource, int sourceCount) {
+  public CandidateCreator(
+      BlockingStrategy blockingStrategy,
+      DataDomain domain,
+      String newSource,
+      int sourceCount) {
+    this.blockingStrategy = blockingStrategy;
     this.domain = domain; // TODO USE domain
     this.newSource = newSource;
     this.sourceCount = sourceCount;
@@ -54,7 +61,7 @@ public class CandidateCreator
 
     return inputVertices
         .map(new AddShadingTypeMapFunction())
-        .map(new MergeGeoTupleCreator())
+        .map(new MergeGeoTupleCreator(blockingStrategy))
         .groupBy(7)
         .reduceGroup(new MergeGeoTripletCreator(sourceCount, newSource, true))
         .runOperation(similarityComputation)

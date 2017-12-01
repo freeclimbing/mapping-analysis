@@ -13,6 +13,7 @@ import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.tfidf.PrepareInputMapper;
 import org.mappinganalysis.model.functions.blocking.tfidf.SingleIdfHighMapper;
 import org.mappinganalysis.model.functions.blocking.tfidf.TfIdfComputer;
@@ -47,7 +48,7 @@ public class SingleIdfComputation {
             .getVertices();
 
     DataSet<MergeMusicTuple> clusters = mergedVertices
-        .map(new MergeMusicTupleCreator());
+        .map(new MergeMusicTupleCreator(BlockingStrategy.IDF_BLOCKING));
 
     DataSet<MergeMusicTuple> preBlockingClusters = clusters
         .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, 5));

@@ -43,7 +43,10 @@ public class MergeGeoTripletCreator
    * @param sourcesCount if sources count is 2, single block entities create a triplet, too
    * @param enableSourceBasedIdSwitch true if ids should be switched based on data source side
    */
-  public MergeGeoTripletCreator(int sourcesCount, String newSource, boolean enableSourceBasedIdSwitch) {
+  public MergeGeoTripletCreator(
+      int sourcesCount,
+      String newSource,
+      boolean enableSourceBasedIdSwitch) {
     this.sourcesCount = sourcesCount;
     this.newSource = newSource;
     this.enableSourceBasedIdSwitch = enableSourceBasedIdSwitch;
@@ -82,6 +85,7 @@ public class MergeGeoTripletCreator
 //          LOG.info(leftTuple.getId() + "out triplet in right for " + triplet.toString());
           checkSet.add(triplet.getSrcTuple());
           checkSet.add(triplet.getTrgTuple());
+
           out.collect(triplet);
         }
       }
@@ -92,6 +96,7 @@ public class MergeGeoTripletCreator
        */
       if (rightSide.isEmpty() && leftSide.size() == 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
+
         out.collect(triplet);
       }
 
@@ -106,6 +111,7 @@ public class MergeGeoTripletCreator
         // && hasNeverSrcOverlap) { // && leftSide.size() != 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
 //          LOG.info(leftTuple.getId() + "collect: " + leftTuple.toString());
+
         out.collect(triplet);
       }
     }

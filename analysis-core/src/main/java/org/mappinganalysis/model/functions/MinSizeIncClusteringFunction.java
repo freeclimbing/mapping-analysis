@@ -7,6 +7,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
@@ -31,7 +32,7 @@ public class MinSizeIncClusteringFunction extends IncrementalClusteringFunction 
 
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
-      Graph<Long, ObjectMap, ObjectMap> input) throws Exception {
+      Graph<Long, ObjectMap, NullValue> input) throws Exception {
 
     // TODO
 

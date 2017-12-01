@@ -662,21 +662,15 @@ public class ObjectMap
 //    setIDFs(idfs);
   }
 
+  /**
+   * Based on a blocking strategy and based on data domain
+   * set the blocking label for a single instance.
+   * @param strategy BlockingStrategy {@see BlockingStrategy}
+   */
   public void setBlockingKey(BlockingStrategy strategy) {
 //    LOG.info("set blocking key for " + getLabel());
-
-    if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
-      if (getMode().equals(Constants.GEO)) {
-//        LOG.info("sbs gL: " + getLabel());
-//        LOG.info("sbs map: " + getMap());
-        getMap().put(Constants.BLOCKING_LABEL, Utils.getGeoBlockingLabel(getLabel()));
-      } else if (getMode().equals(Constants.MUSIC)) {
-//        LOG.info("music put blocking label");
-        getMap().put(Constants.BLOCKING_LABEL, Utils.getMusicBlockingLabel(getLabel()));
-      } else {
-        throw new IllegalArgumentException("Unsupported strategy: " + strategy);
-      }
-    }
+    map.put(Constants.BLOCKING_LABEL,
+        Utils.getBlockingKey(strategy, mode, getLabel()));
   }
 
   /**

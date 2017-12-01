@@ -6,6 +6,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -19,6 +20,22 @@ import org.mappinganalysis.util.Utils;
 public class MergeGeoTupleCreator
     implements MapFunction<Vertex<Long, ObjectMap>, MergeGeoTuple> {
   private static final Logger LOG = Logger.getLogger(MergeGeoTupleCreator.class);
+  private BlockingStrategy blockingStrategy;
+
+  /**
+   * Default Constructor standard blocking
+   */
+  public MergeGeoTupleCreator() {
+    blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+  }
+
+  /**
+   * Constructor for variable blocking strategy
+   * @param strategy blocking strategy
+   */
+  public MergeGeoTupleCreator(BlockingStrategy strategy) {
+    blockingStrategy = strategy;
+  }
 
   @Override
   public MergeGeoTuple map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -40,7 +57,10 @@ public class MergeGeoTupleCreator
       properties.setClusterVertices(Sets.newHashSet(vertex.getId()));
     }
     tuple.addClusteredElements(properties.getVerticesList());
-    tuple.setBlockingLabel(Utils.getGeoBlockingLabel(properties.getLabel()));
+    tuple.setBlockingLabel(Utils.getBlockingKey(
+        blockingStrategy,
+        Constants.GEO,
+        properties.getLabel()));
 
 //    LOG.info("### CREATE: " + tuple.toString());
     return tuple;

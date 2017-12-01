@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
 import org.mappinganalysis.util.Utils;
 
@@ -84,7 +85,7 @@ public class UniqueWordsExtractorTest {
             return vertex;
           }
         })
-        .map(new MergeMusicTupleCreator());
+        .map(new MergeMusicTupleCreator(BlockingStrategy.IDF_BLOCKING));
 
     // 2SmoothSavageLife2
     // UniversalBeing

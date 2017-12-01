@@ -5,6 +5,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -12,7 +13,16 @@ import org.mappinganalysis.util.Utils;
  */
 public class MergeMusicTupleCreator
     implements MapFunction<Vertex<Long, ObjectMap>, MergeMusicTuple> {
-  private static final Logger LOG = Logger.getLogger(MergeGeoTupleCreator.class);
+  private static final Logger LOG = Logger.getLogger(MergeMusicTupleCreator.class);
+  private BlockingStrategy blockingStrategy;
+
+  public MergeMusicTupleCreator(BlockingStrategy blockingStrategy) {
+    this.blockingStrategy = blockingStrategy;
+  }
+
+  public MergeMusicTupleCreator() {
+    blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+  }
 
   @Override
   public MergeMusicTuple map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -36,7 +46,10 @@ public class MergeMusicTupleCreator
     String artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex);
 //    tuple.setBlockingLabel(
 //        Utils.getMusicBlockingLabel(artistTitleAlbum));
-    tuple.setBlockingLabel(Utils.getMusicBlockingLabel(properties.getLabel()));
+    tuple.setBlockingLabel(Utils.getBlockingKey(
+        blockingStrategy,
+        Constants.GEO,
+        properties.getLabel()));
     tuple.setArtistTitleAlbum(artistTitleAlbum);
 
 //    LOG.info("### CREATE: " + tuple.toString());

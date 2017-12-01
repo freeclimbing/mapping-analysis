@@ -5,5 +5,6 @@ package org.mappinganalysis.model.functions.blocking;
  */
 public enum BlockingStrategy {
   STANDARD_BLOCKING,
-  IDF_BLOCKING
+  IDF_BLOCKING,
+  NO_BLOCKING
 }

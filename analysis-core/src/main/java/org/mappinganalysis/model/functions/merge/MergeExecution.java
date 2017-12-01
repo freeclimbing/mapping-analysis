@@ -56,7 +56,7 @@ public class MergeExecution
       // initial solution set
       DataSet<MergeGeoTuple> clusters = baseClusters
           .map(new AddShadingTypeMapFunction())
-          .map(new MergeGeoTupleCreator());
+          .map(new MergeGeoTupleCreator()); // TODO add custom blocking strategy option
 
       SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
           new MergeGeoSimilarity();
@@ -104,9 +104,11 @@ public class MergeExecution
       ########## MUSIC ##############
      */
     if (domain == DataDomain.MUSIC) {
+      BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+
       // initial solution set
       DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator());
+          .map(new MergeMusicTupleCreator(blockingStrategy));
 
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
           new MergeMusicSimilarity();
@@ -125,7 +127,6 @@ public class MergeExecution
       DataSet<MergeMusicTuple> preBlockingClusters = clusters
           .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
 
-      BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
       // initial working set
       DataSet<MergeMusicTriplet> initialWorkingSet;
 
