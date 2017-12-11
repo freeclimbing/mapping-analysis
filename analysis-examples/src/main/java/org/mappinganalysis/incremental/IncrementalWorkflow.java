@@ -27,15 +27,20 @@ public class IncrementalWorkflow implements ProgramDescription {
   private static final String PRE_JOB = "Incremental Preprocessing";
   private static final String MER_JOB = "Incremental Merge";
 
-  private static String INPUT_PATH;
-  private static String VERTEX_FILE_NAME;
-
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 2,
+    Preconditions.checkArgument(args.length == 3,
         "args[0]: input dir, " +
-            "args[1]: file name");
-    INPUT_PATH = args[0];
-    VERTEX_FILE_NAME = args[1];
+            "args[1]: file name, " +
+            "args[2]: Incremental Strategy (fixed, big)");
+    String INPUT_PATH = args[0];
+    String VERTEX_FILE_NAME = args[1];
+    String STRATEGY = args[2];
+    IncrementalClusteringStrategy strategy = null;
+    if (STRATEGY.equals("fixed")) {
+      strategy = IncrementalClusteringStrategy.FIXED_SEQUENCE;
+    } else if (STRATEGY.equals("big")) {
+      strategy = IncrementalClusteringStrategy.BIG;
+    }
 
     Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.GEOGRAPHY;
@@ -61,19 +66,15 @@ public class IncrementalWorkflow implements ProgramDescription {
 
     /*
       incremental clustering
-     */
-
-    /*
       1. Select sources to match first
       2. Find representative, merge attributes
 
       take more care of decisions/provenance information
      */
-
     IncrementalClustering clustering = new IncrementalClustering
         .IncrementalClusteringBuilder()
         .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE)
+        .setStrategy(strategy)
         .build();
 
     DataSet<Vertex<Long, ObjectMap>> vertices =

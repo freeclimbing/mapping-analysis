@@ -16,14 +16,16 @@ import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFu
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
-public class FixedIncrementalClusteringFunction
+public class BigIncrementalClusteringFunction
     extends IncrementalClusteringFunction {
-  private static final Logger LOG = Logger.getLogger(FixedIncrementalClusteringFunction.class);
+  private static final Logger LOG = Logger.getLogger(BigIncrementalClusteringFunction.class);
 
   private BlockingStrategy blockingStrategy;
   private ExecutionEnvironment env;
 
-  FixedIncrementalClusteringFunction(BlockingStrategy blockingStrategy, ExecutionEnvironment env) {
+  public BigIncrementalClusteringFunction(
+      BlockingStrategy blockingStrategy,
+      ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
     this.env = env;
@@ -55,11 +57,11 @@ public class FixedIncrementalClusteringFunction
     DataSet<Vertex<Long, ObjectMap>> lgd = baseClusters
         .filter(new SourceFilterFunction(Constants.LGD_NS));
 
-    DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
+    DataSet<Vertex<Long, ObjectMap>> result = gn.union(dbp)
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
-            Constants.NYT_NS,
+            Constants.DBP_NS,
             2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
@@ -70,30 +72,30 @@ public class FixedIncrementalClusteringFunction
             DataDomain.GEOGRAPHY,
             blockingStrategy));
 
-    result = result.union(dbp)
-        .runOperation(new CandidateCreator(
-            blockingStrategy, DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
-        .flatMap(new DualMergeGeographyMapper(false))
-        .leftOuterJoin(baseClusters)
-        .where(0)
-        .equalTo(0)
-        .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
-
-    result = result.union(fb)
-        .runOperation(new CandidateCreator(
-            blockingStrategy, DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
-        .flatMap(new DualMergeGeographyMapper(false))
-        .leftOuterJoin(baseClusters)
-        .where(0)
-        .equalTo(0)
-        .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
-
+//    result = result.union(dbp)
+//        .runOperation(new CandidateCreator(
+//            blockingStrategy, DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
+//        .flatMap(new DualMergeGeographyMapper(false))
+//        .leftOuterJoin(baseClusters)
+//        .where(0)
+//        .equalTo(0)
+//        .with(new FinalMergeGeoVertexCreator())
+//        .runOperation(new RepresentativeCreator(
+//            DataDomain.GEOGRAPHY,
+//            blockingStrategy));
+//
+//    result = result.union(fb)
+//        .runOperation(new CandidateCreator(
+//            blockingStrategy, DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
+//        .flatMap(new DualMergeGeographyMapper(false))
+//        .leftOuterJoin(baseClusters)
+//        .where(0)
+//        .equalTo(0)
+//        .with(new FinalMergeGeoVertexCreator())
+//        .runOperation(new RepresentativeCreator(
+//            DataDomain.GEOGRAPHY,
+//            blockingStrategy));
+//
 //    DataSet<Vertex<Long, ObjectMap>> finalResult = result.union(lgd)
 //        .runOperation(new CandidateCreator(
 //            blockingStrategy, DataDomain.GEOGRAPHY, Constants.LGD_NS, 5))
@@ -107,18 +109,5 @@ public class FixedIncrementalClusteringFunction
 //            blockingStrategy));
 
     return result;
-//    return result.leftOuterJoin(finalResult)
-//        .where(0)
-//        .equalTo(0)
-//        .with((FlatJoinFunction<Vertex<Long, ObjectMap>,
-//            Vertex<Long, ObjectMap>,
-//            Vertex<Long, ObjectMap>>)
-//            (first, second, out) -> {
-//          if (second == null) {
-//            LOG.info(first.toString());
-//            out.collect(first);
-//          }
-//        })
-//        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
   }
 }

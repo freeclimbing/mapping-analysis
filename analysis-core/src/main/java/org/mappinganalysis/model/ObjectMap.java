@@ -449,18 +449,19 @@ public class ObjectMap
   }
 
   /**
-   * Get source dataset name for vertex.
+   * Get source dataset name for vertex. Maps old "ontology" data source values to new ones.
    */
   public String getDataSource() {
     // needed for deprecated "ontology" value
     if (!map.containsKey(Constants.DATA_SOURCE)) {
-      setDataSource(map.get("ontology").toString());
-      map.remove("ontology");
-//      return map.get("ontology").toString();
+      if (map.get(Constants.ONTOLOGY) == null) {
+        return null;
+      }
+      setDataSource(map.get(Constants.ONTOLOGY).toString());
+      map.remove(Constants.ONTOLOGY);
     }
-//    else {
+
     return map.get(Constants.DATA_SOURCE).toString();
-//    }
   }
 
   public void setDataSource(String source) {
@@ -473,9 +474,15 @@ public class ObjectMap
   public Set<String> getDataSourcesList() {
     Object dataSources = map.get(Constants.DATA_SOURCES);
 
+//    if (dataSources == null) {
+//      return null;
+//    }
+
     if (dataSources instanceof Set) {
+
       return (Set<String>) dataSources;
     } else {
+
       return Sets.newHashSet(dataSources.toString());
     }
   }
@@ -510,7 +517,9 @@ public class ObjectMap
 
   public Long getDataSourceEntityCount() {
     if (map.containsKey(Constants.DS_COUNT)) {
+
       return (long) map.get(Constants.DS_COUNT);
+
     } else {
       return 1L;
     }
@@ -538,7 +547,6 @@ public class ObjectMap
   /**
    * Music dataset getter/setter
    */
-
   public void setLength(Integer length) {
     map.put(Constants.LENGTH, length);
   }
@@ -548,6 +556,7 @@ public class ObjectMap
         && map.get(Constants.LENGTH) != null) {
       Integer result = Ints.tryParse(map.get(Constants.LENGTH).toString());
       if (result != null) {
+
         return result;
       }
     }

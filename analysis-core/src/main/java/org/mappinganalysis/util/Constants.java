@@ -152,6 +152,7 @@ public class Constants {
   /**
    * source name of resource. internal name for db field ontID_fk
    */
+  public static final String ONTOLOGY = "ontology";
   public static final String DATA_SOURCE = "dataSource";
   public static final String DATA_SOURCES = "dataSources";
   public static final String DS_COUNT = "ds-count";

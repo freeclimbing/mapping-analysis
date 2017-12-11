@@ -35,6 +35,7 @@ public class IncrementalClustering
     private List<String> sources;
     private Vertex<Long, ObjectMap> existingClusters;
     private BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+    private String part;
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
@@ -74,7 +75,14 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setBlockingStrategy(
         BlockingStrategy strategy) {
-      blockingStrategy = strategy;
+      this.blockingStrategy = strategy;
+
+      return this;
+    }
+
+    // used for split incremental
+    public IncrementalClusteringBuilder setPart(String part) {
+      this.part = part;
 
       return this;
     }
@@ -100,6 +108,10 @@ public class IncrementalClustering
           return new MinSizeIncClustering(sources, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
           return new FixedIncrementalClustering(blockingStrategy, env); // basic test clusteringStrategy
+        } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {
+          return new BigIncrementalClustering(blockingStrategy, env);
+        } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
+          return new SplitIncrementalClustering(blockingStrategy, part, env);
         } else {
           throw new IllegalArgumentException("Unsupported clusteringStrategy: " + clusteringStrategy);
         }
