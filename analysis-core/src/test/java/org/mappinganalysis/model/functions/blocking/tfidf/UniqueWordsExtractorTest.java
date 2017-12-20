@@ -101,17 +101,17 @@ public class UniqueWordsExtractorTest {
 //        .flatMap(new UniqueWordExtractor(STOP_WORDS));
 //    printStats(vertices, uniqueWords);
 
-    DataSet<Tuple2<Long, String>> mmTuples = realMusicTuples
+    DataSet<Tuple2<Long, String>> idLabelTuples = realMusicTuples
         .map(new PrepareInputMapper());
 
-    DataSet<Tuple2<String, Double>> idfValues = mmTuples
+    DataSet<Tuple2<String, Double>> idfValues = idLabelTuples
         .runOperation(new TfIdfComputer(STOP_WORDS));
 
     DataSet<Tuple2<Long, String>> idfDict = DataSetUtils
         .zipWithUniqueId(idfValues.map(tuple -> tuple.f0)
             .returns(new TypeHint<String>() {}));
 
-    DataSet<Tuple2<Long, Long>> idfExtracted = mmTuples
+    DataSet<Tuple2<Long, Long>> idfExtracted = idLabelTuples
         .flatMap(new HighIDFValueFlatMapper(STOP_WORDS))
         .withBroadcastSet(idfValues, "idf")
         .withBroadcastSet(idfDict, "idfDict");
@@ -126,7 +126,7 @@ public class UniqueWordsExtractorTest {
 
 //    idfSupportEdges.print();
 
-    DataSet<Edge<Long, ObjectMap>> edgeLabels = idfSupportEdges.join(mmTuples)
+    DataSet<Edge<Long, ObjectMap>> edgeLabels = idfSupportEdges.join(idLabelTuples)
         .where(0)
         .equalTo(0)
         .with(new FlatJoinFunction<Edge<Long, Integer>, Tuple2<Long, String>, Edge<Long, ObjectMap>>() {
@@ -143,7 +143,7 @@ public class UniqueWordsExtractorTest {
             out.collect(new Edge<>(first.f0, first.f1, result));
           }
         })
-        .join(mmTuples)
+        .join(idLabelTuples)
         .where(1)
         .equalTo(0)
         .with(new FlatJoinFunction<Edge<Long, ObjectMap>, Tuple2<Long, String>, Edge<Long, ObjectMap>>() {

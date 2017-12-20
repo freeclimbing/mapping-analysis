@@ -26,6 +26,7 @@ import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.VertexComponentTuple2;
+import org.mappinganalysis.model.functions.CharSet;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
@@ -637,6 +638,25 @@ public class Utils {
     for (String value : input) {
       result.add(Long.valueOf(value));
     }
+    return result;
+  }
+
+  /**
+   * Get all lowercase trigrams as char set for a given String
+   */
+  public static CharSet getUnsortedTrigrams(String input) {
+    CharSet result = new CharSet();
+    input = input.toLowerCase();
+
+    for (int i = 0; i < input.length() - 2; i++) {
+      char[] chars = new char[3];
+      chars[0] = input.charAt(i);
+      chars[1] = input.charAt(i + 1);
+      chars[2] = input.charAt(i + 2);
+
+      result.add(chars);
+    }
+
     return result;
   }
 
