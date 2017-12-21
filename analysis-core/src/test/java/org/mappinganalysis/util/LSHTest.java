@@ -1,6 +1,7 @@
 package org.mappinganalysis.util;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -8,6 +9,7 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
@@ -51,19 +53,41 @@ public class LSHTest {
 
   @Test
   public void bitSetTest() throws Exception {
-    BitSet set = new BitSet();
+    BitSet testSet = new BitSet();
+    LOG.info(testSet.length());
+    LOG.info(testSet.get(1000));
 
-    LOG.info(set.length());
+    testSet.set(2000);
+    LOG.info(testSet.length());
+    LOG.info(testSet.get(2000));
+    LOG.info(testSet.get(1000) + " " + testSet.get(1001));
 
-    LOG.info(set.get(1000));
+    // second part
+    String bitsString = "0111000111000";
+    // TODO check why result sets 3,4,5 + 9,10,11 instead of 2,3,4, 8,9,10
+    BitSet bitset = new BitSet();
+    // bitset size is 64 or bigger, if more than 64 is used,
+    // size gets automatically increased to 128+
 
-    set.set(2000);
+//    LOG.info(bitsString.length()-1);
 
-    LOG.info(set.length());
+		final int lastBitIndex = bitsString.length() - 1;
 
-    LOG.info(set.get(2000));
-    LOG.info(set.get(1000) + " " + set.get(1001));
+		for (int i = lastBitIndex; i >= 0; i--){
+			if(bitsString.charAt(i) == '1'){
+//			  LOG.info("set " + (lastBitIndex - i));
+//			  LOG.info("bsize: " + bitset.size());
+				bitset.set(lastBitIndex - i);
+			}
+		}
 
+		assertEquals(13, bitsString.length());
+    assertEquals(12, bitset.length());
+//    LOG.info("bsize: " + bitset.size());
+
+    assertEquals(64, bitset.size()); // for small amount of elements
+
+    LOG.info(bitset.toString());
 
   }
 
@@ -77,9 +101,15 @@ public class LSHTest {
             .getVertices();
 
     DataSet<Tuple2<Long, CharSet>> trigramsPerVertex = vertices
-        .map(vertex -> new Tuple2<>(
-            vertex.getId(),
-            Utils.getUnsortedTrigrams(vertex.getValue().getLabel())))
+        .map(vertex -> {
+          Tuple2<Long, CharSet> result = new Tuple2<>(
+              vertex.getId(),
+              Utils.getUnsortedTrigrams(vertex.getValue().getLabel()));
+          if (result.f0 == 4051L) {
+            LOG.info(result.toString());
+          }
+          return result;
+        })
         .returns(new TypeHint<Tuple2<Long, CharSet>>() {});
 
     DataSet<Tuple1<char[]>> singleTrigrams = trigramsPerVertex
@@ -88,19 +118,63 @@ public class LSHTest {
             out.collect(new Tuple1<>(chars));
           }
         })
-        .returns(new TypeHint<Tuple1<char[]>>() {});
+        .returns(new TypeHint<Tuple1<char[]>>() {})
+        .distinct();
 
-    DataSet<Tuple2<Long, char[]>> idTrigrams = DataSetUtils.zipWithUniqueId(singleTrigrams)
+    DataSet<Tuple2<Long, char[]>> idTrigramsDict = DataSetUtils.zipWithUniqueId(singleTrigrams)
         .map(line -> new Tuple2<>(line.f0, line.f1.f0))
         .returns(new TypeHint<Tuple2<Long, char[]>>() {});
 
-    idTrigrams.print();
 
-//    idTrigrams.flatMap((tuple, out) -> {
-//      for (char c : tuple.f1) {
-//        out.collect(tuple.f0, char);
-//      }
-//    })
+
+//    idTrigramsDict.print();
+
+    DataSet<Tuple2<Long, Long>> vertexIdTrigramIdTuple = trigramsPerVertex
+        .flatMap((FlatMapFunction<Tuple2<Long, CharSet>,
+            Tuple2<Long, char[]>>) (vertex, out) -> {
+          for (char[] chars : vertex.f1) {
+            out.collect(new Tuple2<>(vertex.f0, chars));
+          }
+        })
+        .returns(new TypeHint<Tuple2<Long, char[]>>() {})
+        .join(idTrigramsDict)
+        .where(1)
+        .equalTo(1)
+        .with((vertexIdTrigram, idTrigramDictEntry) ->
+            new Tuple2<>(vertexIdTrigram.f0, idTrigramDictEntry.f0))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    DataSet<Tuple2<Long, BitSet>> vertexIdTrigramIds = vertexIdTrigramIdTuple
+        .groupBy(0)
+        .reduceGroup(new GroupReduceFunction<Tuple2<Long, Long>, Tuple2<Long, BitSet>>() {
+          @Override
+          public void reduce(
+              Iterable<Tuple2<Long, Long>> vertexTrigramIds,
+              Collector<Tuple2<Long, BitSet>> out)
+              throws Exception {
+            BitSet result = new BitSet();
+            Long id = null;
+
+            for (Tuple2<Long, Long> vIdTriId : vertexTrigramIds) {
+              if (id == null) {
+                id = vIdTriId.f0;
+              }
+              result.set(vIdTriId.f1.intValue());
+            }
+
+            out.collect(new Tuple2<>(id, result));
+          }
+        });
+
+    vertexIdTrigramIds.join(vertices)
+        .where(0)
+        .equalTo(0)
+        .with((left, right) -> {
+          LOG.info(left.toString() + " " + right.getValue().getLabel());
+          return left;
+        })
+        .returns(new TypeHint<Tuple2<Long, BitSet>>() {})
+        .collect();
 
     // size of vectors == number of different trigrams
 //    int trigramCount = (int) singleTrigrams.distinct().count();
