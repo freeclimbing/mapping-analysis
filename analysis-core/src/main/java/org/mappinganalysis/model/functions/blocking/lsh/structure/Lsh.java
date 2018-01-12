@@ -1,6 +1,6 @@
-package org.mappinganalysis.model.functions.blocking.lsh.utils;
+package org.mappinganalysis.model.functions.blocking.lsh.structure;
 
-import org.mappinganalysis.model.functions.blocking.lsh.LshKey;
+import org.mappinganalysis.model.functions.blocking.lsh.utils.BitSetHashFunction;
 
 import java.util.BitSet;
 import java.util.List;
@@ -47,16 +47,17 @@ public class Lsh<T extends BitSetHashFunction<Boolean>>{
 		int keyCount = hashFamilyGroup.getNumberOfHashFamilies();
 		LshKey[] keys = new LshKey[keyCount];
 		
-		List<List<Boolean>> hashValues = this.hashFamilyGroup.calculateHashes(this.bloomFilter.getBitset());
+		List<List<Boolean>> hashValues = this.hashFamilyGroup
+        .calculateHashes(this.bloomFilter.getBitset());
 		
 		for (int i = 0; i < hashValues.size(); i++){
-			keys[i] = this.calculateKey(hashValues.get(i), i);
+			keys[i] = calculateKey(hashValues.get(i), i);
 		}
 				
 		return keys;
 	}
 	
-	private LshKey calculateKey(List<Boolean> hashValues, Integer id){
+	public static LshKey calculateKey(List<Boolean> hashValues, Integer id){
 		int hashCount = hashValues.size();
 		
 		BitSet key = new BitSet(hashValues.size());
@@ -65,9 +66,7 @@ public class Lsh<T extends BitSetHashFunction<Boolean>>{
 			Boolean hash = hashValues.get(i);
 			key.set(i, hash);
 		}
-		
-		final LshKey lshKey = new LshKey(id, key);
-		
-		return lshKey;
+
+    return new LshKey(id, key);
 	}
 }

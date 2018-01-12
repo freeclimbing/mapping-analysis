@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+@Deprecated
 public class ConnectedComponent {
 	
 	int ccID;

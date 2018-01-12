@@ -69,6 +69,8 @@ public class Constants {
   public static final String LON = "lon";
   public static final String GEO = "geo";
   public static final String LABEL = "label";
+  public static final String IDF_LABEL = "idfLabel";
+
 
   /**
    * DB column name for GeoNames second type value field.

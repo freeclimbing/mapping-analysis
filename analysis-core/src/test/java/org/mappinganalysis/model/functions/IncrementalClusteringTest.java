@@ -2,13 +2,17 @@ package org.mappinganalysis.model.functions;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,6 +32,7 @@ import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 import java.util.HashMap;
@@ -145,12 +150,9 @@ public class IncrementalClusteringTest {
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
             Constants.NYT_NS,
-            2));
+            2,
+            env));
 //        .map(new MergeGeoTupleCreator()) // 1504 correct
-//        // vertices having no 2. vertex in their block -> still candidate created
-//        .distinct(0,1); // TODO why is this not distinct in the first place!?
-////    LOG.info(tmp.count()); // 2400
-////    LOG.info(tmp.distinct(0,1).count()); // 2348
 
     DataSet<MergeGeoTriplet> singleEntities = result.join(result)
         .where(0)
@@ -159,9 +161,79 @@ public class IncrementalClusteringTest {
         .returns(new TypeHint<MergeGeoTriplet>() {
         })
         .distinct(0, 1);
+    LOG.info(result.count());
+    LOG.info(singleEntities.count());
+//    Assert.assertEquals(771, result.count());
+//    Assert.assertEquals(60, singleEntities.count());
 
-    Assert.assertEquals(60, singleEntities.count());
-    Assert.assertEquals(771, result.count());
+    getGnNytVertices().leftOuterJoin(result)
+        .where(0)
+        .equalTo(0)
+        .with(new LeftMinusRightSideJoinFunction<>())
+        .leftOuterJoin(result)
+        .where(0)
+        .equalTo(1)
+        .with(new LeftMinusRightSideJoinFunction<>())
+        .print();
+  }
+
+  @Test
+  public void lshIdfOptBlockingTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/geography").getFile();
+    Graph<Long, ObjectMap, NullValue> graph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    IncrementalClustering clustering = new IncrementalClustering
+        .IncrementalClusteringBuilder()
+        .setEnvironment(env)
+        .setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE)
+        .setBlockingStrategy(BlockingStrategy.LSH_BLOCKING)
+        .build();
+
+    DataSet<Vertex<Long, ObjectMap>> clusteredVertices = graph
+        .run(clustering);
+
+    DataSet<Tuple2<Long, Long>> test = clusteredVertices
+        .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>>() {
+      @Override
+      public void flatMap(Vertex<Long, ObjectMap> value, Collector<Tuple2<Long, Long>> out) throws Exception {
+        for (Long aLong : value.getValue().getVerticesList()) {
+          out.collect(new Tuple2<>(value.getId(), aLong));
+        }
+      }
+    })
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    graph.getVertices().leftOuterJoin(test)
+        .where(0)
+        .equalTo(1)
+        .with(new LeftMinusRightSideJoinFunction<>())
+        .print();
+
+//    LOG.info("allverts: " + test.count());
+
+//    LOG.info(clusteredVertices.count());
+
+//    new JSONDataSink(graphPath.concat("/output-lsh-opt-blocking/"), "test")
+//        .writeVertices(clusteredVertices);
+//    env.execute();
+//
+    // check that no vertex contained in the clustered vertices is duplicated
+    DataSet<Tuple3<Long, Long, Integer>> sum = clusteredVertices
+        .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, Tuple3<Long, Long, Integer>>() {
+          @Override
+          public void flatMap(Vertex<Long, ObjectMap> value, Collector<Tuple3<Long, Long, Integer>> out) throws Exception {
+            for (Long aLong : value.getValue().getVerticesList()) {
+              out.collect(new Tuple3<>(value.getId(), aLong, 1));
+            }
+          }
+        })
+        .groupBy(1)
+        .sum(2);
+
+    assertEquals(0, sum.filter(tuple -> tuple.f2 > 1).count());
   }
 
   @Test
@@ -186,8 +258,8 @@ public class IncrementalClusteringTest {
     new JSONDataSink(graphPath.concat("/output-no-blocking/"), "test")
         .writeVertices(resultVertices);
     resultVertices.print();
-
   }
+
   @Test
   public void splitSettingIncrementalClusteringTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class
@@ -357,6 +429,7 @@ public class IncrementalClusteringTest {
 //      }
 //    }
   }
+
   /**
    * Used for optimization.
    */
@@ -373,7 +446,7 @@ public class IncrementalClusteringTest {
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
             Constants.NYT_NS,
-            2))
+            2, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -392,7 +465,7 @@ public class IncrementalClusteringTest {
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
             Constants.DBP_NS,
-            3))
+            3, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .map(x-> {
           if (x.getBlockingLabel().equals("ber"))
@@ -424,7 +497,7 @@ public class IncrementalClusteringTest {
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
             Constants.FB_NS,
-            4));
+            4, env));
 
     DataSet<MergeGeoTriplet> singleEntities = tupleResult.join(tupleResult)
         .where(0)

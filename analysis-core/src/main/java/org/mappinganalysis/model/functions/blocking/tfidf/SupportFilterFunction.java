@@ -6,7 +6,7 @@ import org.apache.flink.graph.Edge;
 /**
  * Created by markus on 6/15/17.
  */
-class SupportFilterFunction implements FilterFunction<Edge<Long, Integer>> {
+public class SupportFilterFunction implements FilterFunction<Edge<Long, Integer>> {
   private Integer support;
 
   public SupportFilterFunction(Integer support) {

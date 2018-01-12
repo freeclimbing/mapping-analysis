@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Create edges based on idf values of entities.
  */
-class IdfBasedEdgeCreator
+public class IdfBasedEdgeCreator
     implements GroupReduceFunction<Tuple2<Long, Long>, Edge<Long, Integer>> {
   private final Edge<Long, Integer> reuseEdge;
 

@@ -2,6 +2,7 @@ package org.mappinganalysis.model;
 
 import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 
@@ -10,6 +11,8 @@ import org.mappinganalysis.util.Constants;
  */
 public class MergeGeoTriplet
     extends Tuple6<Long, Long, MergeGeoTuple, MergeGeoTuple, Double, String> {
+  private static final Logger LOG = Logger.getLogger(MergeGeoTriplet.class);
+
   public MergeGeoTriplet() {
   }
 
@@ -17,6 +20,14 @@ public class MergeGeoTriplet
     this.f2 = srcTuple;
     this.f3 = trgTuple;
     this.f4 = similarity;
+  }
+
+  public MergeGeoTriplet(Long srcTuple, Long trgTuple) {
+    this.f0 = srcTuple;
+    this.f1 = trgTuple;
+    this.f2 = new MergeGeoTuple(srcTuple);
+    this.f3 = new MergeGeoTuple(trgTuple);
+    this.f4 = 0d;
   }
 
   /**
@@ -36,8 +47,13 @@ public class MergeGeoTriplet
   public void checkSourceSwitch(MergeGeoTuple left, MergeGeoTuple right, String newSource) {
     int newSourceInt = AbstractionUtils.getSourcesInt(Constants.GEO, Sets.newHashSet(newSource));
 
-    if (AbstractionUtils.hasOverlap(left.getIntSources(), newSourceInt)) {//left.getIntSources() == newSourceInt) {
-      MergeGeoTuple tmp = left;
+    if (left.getId() == 2935L && right.getId() == 237L || left.getId() == 237L && right.getId() == 2935L)
+      LOG.info("left: " + left.toString() + " right: " + right.toString() + " source: " + newSource);
+    if (AbstractionUtils.hasOverlap(left.getIntSources(), newSourceInt)) {
+//        || AbstractionUtils.hasOverlap(right.getIntSources(), newSourceInt)) {//left.getIntSources() == newSourceInt) {
+      if (left.getId() == 2935L && right.getId() == 237L || left.getId() == 237L && right.getId() == 2935L)
+        LOG.info("swap true");
+        MergeGeoTuple tmp = left;
       left = right;
       right = tmp;
     }
@@ -59,6 +75,7 @@ public class MergeGeoTriplet
   /**
    * Set one source to left tuple in resulting triplet.
    */
+  @Deprecated
   public void checkSwitchSource(MergeGeoTuple left, MergeGeoTuple right) {
 
     //TODO

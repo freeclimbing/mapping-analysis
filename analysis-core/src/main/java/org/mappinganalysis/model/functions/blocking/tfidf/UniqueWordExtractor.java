@@ -49,9 +49,9 @@ public class UniqueWordExtractor
     // for each word candidate
     while(st.hasMoreTokens()) {
       String word = st.nextToken().toLowerCase();
-      if (word.length() == 1) {
-        continue;
-      }
+//      if (word.length() == 1) {
+//        continue;
+//      }
 
       Matcher m = this.wordPattern.matcher(word);
       if(m.matches() && !this.stopWords.contains(word)

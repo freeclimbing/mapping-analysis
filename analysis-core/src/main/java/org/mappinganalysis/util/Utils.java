@@ -148,6 +148,9 @@ public class Utils {
     } else if (strategy.equals(BlockingStrategy.NO_BLOCKING)) {
 
       return Constants.NO_VALUE;
+    } else if (strategy.equals(BlockingStrategy.LSH_BLOCKING)) {
+
+      return Constants.NO_VALUE;
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }

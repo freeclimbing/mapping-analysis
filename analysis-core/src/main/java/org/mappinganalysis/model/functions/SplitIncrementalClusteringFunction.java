@@ -77,7 +77,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.NYT_NS,
-              2))
+              2,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
@@ -91,7 +92,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.DBP_NS, 3))
+              Constants.DBP_NS, 3,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
@@ -108,7 +110,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.GN_NS,
-              3))
+              3,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
@@ -123,7 +126,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.NYT_NS,
-              3))
+              3,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
@@ -138,7 +142,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.DBP_NS,
-              3))
+              3,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
@@ -155,7 +160,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.FB_NS,
-              4))
+              4,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
@@ -170,7 +176,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.GN_NS,
-              4))
+              4,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
@@ -185,7 +192,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.NYT_NS,
-              4))
+              4,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
@@ -200,7 +208,8 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
               blockingStrategy,
               DataDomain.GEOGRAPHY,
               Constants.DBP_NS,
-              4))
+              4,
+              env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)

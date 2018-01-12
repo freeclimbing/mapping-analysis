@@ -138,6 +138,27 @@ public class ObjectMap
     }
   }
 
+  public void setIdfLabel(String label) {
+    if (label == null) {
+      map.put(Constants.IDF_LABEL, Constants.NO_VALUE);
+    } else {
+      map.put(Constants.IDF_LABEL, label);
+    }
+  }
+
+  public String getIdfLabel() {
+    if (map == null) {
+      LOG.info("map null in get idf label");
+      return Constants.NO_LABEL_FOUND;
+    }
+
+    if (map.containsKey(Constants.IDF_LABEL)) {
+      return map.get(Constants.IDF_LABEL).toString();
+    } else {
+      return Constants.NO_LABEL_FOUND;
+    }
+  }
+
   public void setLabel(String label) {
     if (label == null || label.equals(Constants.CSV_NO_VALUE)) {
       map.put(Constants.LABEL, Constants.NO_VALUE);
@@ -488,13 +509,20 @@ public class ObjectMap
   }
 
   /**
-   * TODO Create representative map
+   * set clustered data sources to set of strings
    */
-  @Deprecated
   public void setClusterDataSources(Set<String> sources) {
-    if (!sources.isEmpty()) {
+    if (sources != null && !sources.isEmpty()) {
       map.put(Constants.DATA_SOURCES, sources);
     }
+  }
+
+  public boolean hasClusterDataSources() {
+    return map.get(Constants.DATA_SOURCES) != null;
+  }
+
+  public boolean hasClusterVertices() {
+    return map.get(Constants.CL_VERTICES) != null;
   }
 
   /**

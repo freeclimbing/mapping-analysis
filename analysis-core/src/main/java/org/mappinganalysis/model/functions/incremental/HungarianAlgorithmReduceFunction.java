@@ -19,9 +19,9 @@ import java.util.HashSet;
  *
  * On left as well as right side of stable marriage matrix isolated elements may occur.
  */
-public class StableMarriageReduceFunction
+public class HungarianAlgorithmReduceFunction
     implements GroupReduceFunction<MergeGeoTriplet, MergeGeoTriplet> {
-  private static final Logger LOG = Logger.getLogger(StableMarriageReduceFunction.class);
+  private static final Logger LOG = Logger.getLogger(HungarianAlgorithmReduceFunction.class);
 
   @Override
   public void reduce(Iterable<MergeGeoTriplet> values,
@@ -33,6 +33,24 @@ public class StableMarriageReduceFunction
       return;
     }
 
+//    if (triplets.size() == 2) {
+//      MergeGeoTriplet first = triplets.iterator().next();
+//      MergeGeoTriplet second = triplets.iterator().next();
+//
+//      if (first.getSrcId() == second.getSrcId().longValue()
+//        || first.getSrcId() == second.getTrgId().longValue()
+//        || first.getTrgId() == second.getSrcId().longValue()
+//        || first.getTrgId() == second.getTrgId().longValue()) {
+//
+//        if (first.getSimilarity() > second.getSimilarity()) {
+//          out.collect(first);
+//        } else {
+//          out.collect(second);
+//        }
+//        return;
+//      }
+//    }
+
     double[][] tmpWeights = new double[triplets.size()][triplets.size()];
     for (double[] weight : tmpWeights) {
       Arrays.fill(weight, 1.0);
@@ -43,6 +61,14 @@ public class StableMarriageReduceFunction
     int rightCounter = 0;
 
     for (MergeGeoTriplet triplet : triplets) {
+//      if (triplet.getSrcId() == 3335L
+//          || triplet.getSrcId() == 6507L
+//          || triplet.getSrcId() == 2380L
+//          || triplet.getTrgId() == 3335
+//          || triplet.getTrgId() == 6507L
+//          || triplet.getTrgId() == 2380L) {
+//        LOG.info("in HA: " + triplets.size()  + " " + triplet.toString());
+//      }
       int leftThisRound;
       int rightThisRound;
 

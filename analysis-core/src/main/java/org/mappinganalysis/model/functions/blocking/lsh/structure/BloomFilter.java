@@ -1,4 +1,6 @@
-package org.mappinganalysis.model.functions.blocking.lsh.utils;
+package org.mappinganalysis.model.functions.blocking.lsh.structure;
+
+import org.mappinganalysis.model.functions.blocking.lsh.utils.HashUtils;
 
 import java.util.BitSet;
 
@@ -15,15 +17,19 @@ import java.util.BitSet;
 public class BloomFilter {
 
   protected int size;
-  protected int hashFunctions;
+  private int hashFunctions;
   protected BitSet bitset;
 
   /**
    * Parses the given String into a BloomFilter object.
-   * @param bits string containing only 0s and 1s.
+   * @param bitSet string containing only 0s and 1s.
    */
+  public BloomFilter(BitSet bitSet) {
+    this(bitSet.length(), 0, bitSet);
+  }
+
+  @Deprecated
   public static BloomFilter from(BitSet bits){
-    // -1?
     return new BloomFilter(bits.length(), 0, bits);
   }
 
@@ -178,35 +184,6 @@ public class BloomFilter {
     }
   }
 
-  /**
-   * Calculates the Dice similarity between this Bloom Filter
-   * and the given one.
-   * @param other the other Bloom Filter.
-   * @return the Dice similarity value.
-   */
-  public Double calculateDiceSimilarity(BloomFilter other){
-    final int and = this.and(other).getCardinality();
-    final int card1 = this.getCardinality();
-    final int card2 = other.getCardinality();
-
-    return ((double) 2 * and) / (card1 + card2);
-  }
-
-  /**
-   * Calculates the Jaccard similarity between this Bloom Filter
-   * and the given one.
-   * @param other the other Bloom Filter.
-   * @return the Jaccard similarity value.
-   */
-  public Double calculateJaccardSimilarity(BloomFilter other){
-    final int card1 = this.getCardinality();
-    final int card2 = other.getCardinality();
-
-    final int and = this.and(other).getCardinality();
-
-    return ((double) and) / (card1 + card2 - and);
-  }
-
   @Override
   public String toString(){
     return toStringBinary();//"[" + this.bitset + "]";
@@ -269,13 +246,4 @@ public class BloomFilter {
   public void setSize(int size){
     this.size = size;
   }
-
-  public void setHashFunctions(int hashFunctions){
-    this.hashFunctions = hashFunctions;
-  }
-
-  public int getHashFunctions() {
-    return hashFunctions;
-  }
-
 }

@@ -85,7 +85,8 @@ public class UniqueWordsExtractorTest {
             return vertex;
           }
         })
-        .map(new MergeMusicTupleCreator(BlockingStrategy.IDF_BLOCKING));
+        .map(new MergeMusicTupleCreator(BlockingStrategy.STANDARD_BLOCKING));
+//            BlockingStrategy.IDF_BLOCKING));
 
     // 2SmoothSavageLife2
     // UniversalBeing

@@ -62,7 +62,7 @@ public class BigIncrementalClusteringFunction
             blockingStrategy,
             DataDomain.GEOGRAPHY,
             Constants.DBP_NS,
-            2))
+            2, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)

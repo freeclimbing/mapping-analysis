@@ -36,6 +36,8 @@ public class MergeGeoTupleCreatorTest {
         .groupBy(7)
         .reduceGroup(new MergeGeoTripletCreator(5));
 
+    result.print();
+
     assertTrue(11 == result.collect().size());
     assertEquals(25, initialWorkingSet.count());
   }

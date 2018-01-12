@@ -1,4 +1,6 @@
-package org.mappinganalysis.model.functions.blocking.lsh.utils;
+package org.mappinganalysis.model.functions.blocking.lsh.structure;
+
+import org.mappinganalysis.model.functions.blocking.lsh.utils.BitSetHashFunction;
 
 import java.io.Serializable;
 import java.util.*;
@@ -24,7 +26,7 @@ public class HashFamilyGroup<T extends BitSetHashFunction<U>, U> implements Seri
 	 * Creates a new {@link HashFamilyGroup} object.
 	 */
 	public HashFamilyGroup(int numberOfHashFamilies){
-		this.hashFamilies = new ArrayList<HashFamily<T, U>>(numberOfHashFamilies);
+		this.hashFamilies = new ArrayList<>(numberOfHashFamilies);
 	}
 	
 	/**
@@ -69,7 +71,7 @@ public class HashFamilyGroup<T extends BitSetHashFunction<U>, U> implements Seri
 	public List<List<U>> calculateHashes(BitSet bitset){
 		final int numberOfHashFamilies = this.hashFamilies.size();
 		
-		final List<List<U>> hashes = new ArrayList<List<U>>(numberOfHashFamilies);
+		final List<List<U>> hashes = new ArrayList<>(numberOfHashFamilies);
 		
 		for (int i = 0; i < numberOfHashFamilies; i++){
 			final HashFamily<T, U> hashFamily = this.hashFamilies.get(i);

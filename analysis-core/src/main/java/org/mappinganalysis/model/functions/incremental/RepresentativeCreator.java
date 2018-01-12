@@ -13,6 +13,7 @@ public class RepresentativeCreator
   private static final Logger LOG = Logger.getLogger(RepresentativeCreator.class);
 
   private DataSet<Vertex<Long, ObjectMap>> initialVertices;
+  @Deprecated
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
 
@@ -29,8 +30,7 @@ public class RepresentativeCreator
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
     return initialVertices
-        .map(new IntermedVertexReprMapFunction(domain, blockingStrategy));
-//        .map(new VertexRepresentativeMapFunction(domain, blockingStrategy));
+        .map(new IntermedVertexReprMapFunction(blockingStrategy));
   }
 
 }

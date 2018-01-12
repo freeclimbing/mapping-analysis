@@ -1,4 +1,6 @@
-package org.mappinganalysis.model.functions.blocking.lsh.utils;
+package org.mappinganalysis.model.functions.blocking.lsh.structure;
+
+import org.mappinganalysis.model.functions.blocking.lsh.utils.BitSetHashFunction;
 
 import java.io.Serializable;
 import java.util.*;

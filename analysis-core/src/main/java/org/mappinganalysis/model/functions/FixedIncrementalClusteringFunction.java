@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions;
 
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -7,6 +8,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
@@ -60,36 +62,115 @@ public class FixedIncrementalClusteringFunction
             blockingStrategy,
             DataDomain.GEOGRAPHY,
             Constants.NYT_NS,
-            2))
+            2, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
+        .map(x -> {
+          if (x.getValue().getVerticesList().contains(2478L)
+              || x.getValue().getVerticesList().contains(2479L)
+              || x.getValue().getVerticesList().contains(3640L)) {
+            LOG.info("gn+nyt FinalMergeGeoVertex: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
-            blockingStrategy));
+            blockingStrategy))
+        .map(x -> {
+          if (x.getValue().getVerticesList().contains(2478L)
+              || x.getValue().getVerticesList().contains(2479L)
+              || x.getValue().getVerticesList().contains(3640L)) {
+            LOG.info("gn+nyt repr: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
 
     result = result.union(dbp)
+        .map(x -> {
+          if (x.getValue().getVerticesList().contains(2478L)
+              || x.getValue().getVerticesList().contains(2479L)
+              || x.getValue().getVerticesList().contains(3640L)) {
+            LOG.info("2-3: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .runOperation(new CandidateCreator(
-            blockingStrategy, DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
+            blockingStrategy,
+            DataDomain.GEOGRAPHY,
+            Constants.DBP_NS,
+            3,
+            env))
+        .map(x -> {
+          if (x.getSrcTuple().getId() == 2478L
+              || x.getSrcTuple().getId() == 2479L
+              || x.getSrcTuple().getId() == 3640L
+              || x.getTrgTuple().getId() == 2478L
+              || x.getTrgTuple().getId() == 2479L
+              || x.getTrgTuple().getId() == 3640L) {
+            LOG.info("cluster contained: " + x.toString());
+          }
+          if (x.getSrcTuple().getClusteredElements().contains(2478L)
+              || x.getSrcTuple().getClusteredElements().contains(2479L)
+              || x.getSrcTuple().getClusteredElements().contains(3640L)
+              || x.getTrgTuple().getClusteredElements().contains(2479L)
+              || x.getTrgTuple().getClusteredElements().contains(3640L)
+              || x.getTrgTuple().getClusteredElements().contains(3640L)) {
+            LOG.info("2-3 cand: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<MergeGeoTriplet>() {})
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
+        .map(x -> {
+          if (x.getValue().getVerticesList().contains(2478L)
+              || x.getValue().getVerticesList().contains(2479L)
+              || x.getValue().getVerticesList().contains(3640L)) {
+            LOG.info("gn+nyt+dbp FinalMergeGeoVertex: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             blockingStrategy));
 
     result = result.union(fb)
         .runOperation(new CandidateCreator(
-            blockingStrategy, DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
+            blockingStrategy,
+            DataDomain.GEOGRAPHY,
+            Constants.FB_NS,
+            4,
+            env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
+        .map(x -> {
+          if (x.getValue().getVerticesList().contains(2478L)
+              || x.getValue().getVerticesList().contains(2479L)
+              || x.getValue().getVerticesList().contains(3640L)) {
+            LOG.info("gn+nyt+dbp+fb FinalMergeGeoVertex: " + x.toString());
+          }
+
+          return x;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
         .runOperation(new RepresentativeCreator(
             DataDomain.GEOGRAPHY,
             blockingStrategy));

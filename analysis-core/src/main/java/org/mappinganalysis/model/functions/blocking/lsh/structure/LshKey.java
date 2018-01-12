@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.blocking.lsh;
+package org.mappinganalysis.model.functions.blocking.lsh.structure;
 
 import java.util.BitSet;
 

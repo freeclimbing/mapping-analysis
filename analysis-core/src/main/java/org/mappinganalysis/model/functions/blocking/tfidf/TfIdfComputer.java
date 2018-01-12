@@ -15,7 +15,7 @@ public class TfIdfComputer
     implements CustomUnaryOperation<Tuple2<Long, String>, Tuple2<String, Double>> {
 
   /**
-   * default stop words list, can be overwritten
+   * default (music setting) stop words list, can be overwritten
    */
   private String[] stopWords = {
       "the", "i", "a", "an", "at", "are", "am", "for", "and", "or", "is",
