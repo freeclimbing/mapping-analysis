@@ -7,6 +7,7 @@ import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.DataSetUtils;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.functions.CharSet;
 
 /**
@@ -15,6 +16,8 @@ import org.mappinganalysis.model.functions.CharSet;
  */
 public class LongValueTrigramDictionaryCreator
     implements CustomUnaryOperation<Tuple2<Long, CharSet>, Tuple2<Long, Long>> {
+  private static final Logger LOG = Logger.getLogger(LongValueTrigramDictionaryCreator.class);
+
   private DataSet<Tuple2<Long, CharSet>> trigramsPerVertex;
 
   @Override
@@ -39,6 +42,13 @@ public class LongValueTrigramDictionaryCreator
         .returns(new TypeHint<Tuple2<Long, char[]>>() {});
 
     return trigramsPerVertex
+//        .map(x-> {
+//          if (x.f0 == 6730L || x.f0 == 3408L) {
+//            LOG.info("trigrams: " + x.toString() + " size: " + x.f1.size());
+//          }
+//              return x;
+//        })
+//        .returns(new TypeHint<Tuple2<Long, CharSet>>() {})
         .flatMap((FlatMapFunction<Tuple2<Long, CharSet>, Tuple2<Long, char[]>>)
             (vertex, out) -> {
               for (char[] chars : vertex.f1) {

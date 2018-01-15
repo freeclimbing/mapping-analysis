@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 
+/**
+ * Too mcuh special cases
+ */
 public class VertexIdfWeightsFunction
     extends RichMapFunction<Tuple2<Long, String>, Tuple2<Long, String>> {
   private static final Logger LOG = Logger.getLogger(VertexIdfWeightsFunction.class);
@@ -34,7 +37,7 @@ public class VertexIdfWeightsFunction
 
     // TODO handle non words
     while (st.hasMoreTokens()) {
-      String word = st.nextToken();
+      String word = st.nextToken().toLowerCase();
       Double value = valueMap.get(word);
       if (value != null) {
         if (value > 2.8) { // TODO REMOVE FIXED
@@ -49,6 +52,8 @@ public class VertexIdfWeightsFunction
 
     if (!builder.toString().isEmpty()) {
       if (Utils.getUnsortedTrigrams(builder.toString()).isEmpty()) {
+        labelTuple.f1 = label;
+      } else if (builder.toString().length() < 6) { // TODO remove fixed length
         labelTuple.f1 = label;
       } else {
         labelTuple.f1 = builder.toString();

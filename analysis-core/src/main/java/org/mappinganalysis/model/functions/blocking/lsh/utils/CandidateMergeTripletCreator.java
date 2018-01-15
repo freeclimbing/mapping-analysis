@@ -15,7 +15,8 @@ public class CandidateMergeTripletCreator
   }
 
   @Override
-  public void join(MergeGeoTriplet triplet, MergeGeoTuple mergeTuple, Collector<MergeGeoTriplet> out) throws Exception {
+  public void join(MergeGeoTriplet triplet, MergeGeoTuple mergeTuple,
+                   Collector<MergeGeoTriplet> out) throws Exception {
     if (side == 0) {
       triplet.setSrcTuple(mergeTuple);
 

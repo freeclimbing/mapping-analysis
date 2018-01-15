@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.blocking.lsh.trigrams;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.functions.blocking.lsh.structure.BloomFilter;
 import org.mappinganalysis.model.functions.blocking.lsh.structure.LinkageTuple;
 
@@ -14,6 +15,8 @@ import java.util.BitSet;
  */
 public class TrigramPositionsToBitSetReducer
     implements GroupReduceFunction<Tuple2<Long, Long>, LinkageTuple> {
+  private static final Logger LOG = Logger.getLogger(TrigramPositionsToBitSetReducer.class);
+
   @Override
   public void reduce(
       Iterable<Tuple2<Long, Long>> vertexTrigramIds,
@@ -29,6 +32,9 @@ public class TrigramPositionsToBitSetReducer
       result.set(vIdTriId.f1.intValue());
     }
 
+//    if (id == 6730L || id == 3408L) {
+//      LOG.info("TrigramPositions: " + id + " " + result.toString());
+//    }
     out.collect(new LinkageTuple(id, new BloomFilter(result)));
   }
 }

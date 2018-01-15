@@ -1,16 +1,20 @@
 package org.mappinganalysis.model.functions;
 
+import org.apache.flink.api.common.functions.FlatJoinFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -80,16 +84,16 @@ public class CandidateCreator
         MergeGeoTriplet>()
         .setSimilarityFunction(new MergeGeoSimilarity()) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.5) // TODO check
+        .setThreshold(0.4) // TODO check
         .build();
 
     if (blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
       boolean isIdfOptimizeEnabled = true;
 
       DataSet<Tuple2<Long, Long>> lshCandidates = inputVertices
-          .map(new TempLogSourceCountPrintFunction(sourceCount))
+          .map(new TempLogSourceCountPrintFunction(sourceCount)) // delete after test complete
           .map(x -> {
-            if (x.getId() == 2479L || x.getId() == 2478L || x.getId() == 3640L) {
+            if (x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) {
               LOG.info("pre LSH: " + x.toString());
             }
             return x;
@@ -99,8 +103,8 @@ public class CandidateCreator
 
       DataSet<MergeGeoTuple> geoTuples = inputVertices
           .map(x -> {
-            if (x.getId() == 2479L || x.getId() == 2478L || x.getId() == 3640L) {
-              LOG.info("pre: " + x.toString());
+            if (x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) {
+              LOG.info("preGeoTuple: " + x.toString());
             }
             return x;
           })
@@ -108,24 +112,28 @@ public class CandidateCreator
           .map(new AddShadingTypeMapFunction())
           .map(new MergeGeoTupleCreator(BlockingStrategy.NO_BLOCKING))
           .map(x -> {
-            if (x.getId() == 2479L || x.getId() == 2478L || x.getId() == 3640L) {
-              LOG.info("mgtc: " + x.toString());
+            if (x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) {
+              LOG.info("MergeTupleCreator: " + x.toString());
             }
             return x;
           })
           .returns(new TypeHint<MergeGeoTuple>() {});
 
+      // geo tuples aus alter runde müssen übernommen werden
+      // lsh candidates danach
       DataSet<MergeGeoTriplet> mergeGeoTriplets = lshCandidates
           .map(x -> {
-            if (x.f1 == 2479L || x.f0 == 2479L || x.f0 == 2478L
-                || x.f0 == 3640L|| x.f1 == 2478L || x.f1 == 3640L) {
+            if ((x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) &&
+                (x.f1 == 3408L || x.f1 == 3409L || x.f1 == 6730L || x.f1 == 5889L)) {
               LOG.info("after LSH: " + x.toString());
             }
             return x;
           })
-          .returns(new TypeHint<Tuple2<Long, Long>>() {})
+          .returns(new TypeHint<Tuple2<Long, Long>>() {
+          })
           .map(candidate -> new MergeGeoTriplet(candidate.f0, candidate.f1))
-          .returns(new TypeHint<MergeGeoTriplet>() {})
+          .returns(new TypeHint<MergeGeoTriplet>() {
+          })
           .join(geoTuples)
           .where(0)
           .equalTo(0)
@@ -136,8 +144,8 @@ public class CandidateCreator
           .with(new CandidateMergeTripletCreator(1))
           .map(new SwitchMapFunction(newSource))
           .map(x -> {
-            if (x.f1 == 2479L || x.f0 == 2479L || x.f0 == 2478L
-                || x.f0 == 3640L|| x.f1 == 2478L || x.f1 == 3640L) {
+            if ((x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) &&
+                (x.f1 == 3408L || x.f1 == 3409L || x.f1 == 6730L || x.f1 == 5889L)) {
               LOG.info("pre sim comp: " + x.toString());
             }
             return x;
@@ -145,20 +153,96 @@ public class CandidateCreator
           .returns(new TypeHint<MergeGeoTriplet>() {})
           .runOperation(similarityComputation)
           .map(x -> {
-            if (x.f1 == 2479L || x.f0 == 2479L || x.f0 == 2478L
-                || x.f0 == 3640L|| x.f1 == 2478L || x.f1 == 3640L) {
+            if ((x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) &&
+                (x.f1 == 3408L || x.f1 == 3409L || x.f1 == 6730L || x.f1 == 5889L)) {
               LOG.info("sim: " + x.toString());
             }
             return x;
           })
           .returns(new TypeHint<MergeGeoTriplet>() {});
 
+      DataSet<Tuple1<Long>> coveredTuples = mergeGeoTriplets
+          .flatMap(new FlatMapFunction<MergeGeoTriplet, Tuple1<Long>>() {
+            @Override
+            public void flatMap(MergeGeoTriplet triplet, Collector<Tuple1<Long>> out) throws Exception {
+              for (Long src : triplet.getSrcTuple().getClusteredElements()) {
+                out.collect(new Tuple1<>(src));
+              }
+              for (Long trg : triplet.getTrgTuple().getClusteredElements()) {
+                out.collect(new Tuple1<>(trg));
+              }
+            }
+          })
+          .distinct()
+          .map(x -> {
+            if (x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) {
+              LOG.info("covered Tuple: " + x.toString());
+            }
+            return x;
+          })
+          .returns(new TypeHint<Tuple1<Long>>() {});
+
+      DataSet<Tuple2<Long, Long>> flatMappedGeoTuples = geoTuples
+          .flatMap(new FlatMapFunction<MergeGeoTuple, Tuple2<Long, Long>>() {
+            @Override
+            public void flatMap(MergeGeoTuple cluster, Collector<Tuple2<Long, Long>> out) throws Exception {
+              for (Long vertex : cluster.getClusteredElements()) {
+//                LOG.info("flat geo tuple ITER: " + cluster.toString());
+                out.collect(new Tuple2<>(cluster.f0, vertex));
+              }
+            }
+          })
+          .distinct();
+
+      DataSet<MergeGeoTriplet> recovered = flatMappedGeoTuples
+          .leftOuterJoin(coveredTuples)
+          .where(1)
+          .equalTo(0)
+          .with(new FlatJoinFunction<Tuple2<Long, Long>, Tuple1<Long>, Tuple2<Long, Long>>() {
+            @Override
+            public void join(Tuple2<Long, Long> left, Tuple1<Long> right, Collector<Tuple2<Long, Long>> out) throws Exception {
+              if (right == null) {
+//                LOG.info("flat geo tuple: " + left.toString());
+                if (left.f1 == 3408L || left.f1 == 3409L || left.f1 == 6730L || left.f1 == 5889L) {
+                  LOG.info("loj: " + left.toString());
+                }
+                out.collect(left); // cluster, containedVertex
+              }
+            }
+          })
+          .join(geoTuples)
+          .where(0)
+          .equalTo(0)
+          .with((left, right) -> right)
+          .returns(new TypeHint<MergeGeoTuple>() {})
+          .map(tuple -> {
+//            LOG.info("rec tuple: " + tuple.toString());
+            return new MergeGeoTriplet(tuple, tuple, 0d);
+          })
+          .returns(new TypeHint<MergeGeoTriplet>() {});
+
+      mergeGeoTriplets = mergeGeoTriplets.union(recovered)
+          .map(x -> {
+            if ((x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) &&
+                (x.f1 == 3408L || x.f1 == 3409L || x.f1 == 6730L || x.f1 == 5889L)
+                && x.f0 == x.f1.longValue()) {
+              LOG.info("recovered tuple: " + x.toString());
+            }
+            return x;
+          })
+          .returns(new TypeHint<MergeGeoTriplet>() {})
+      .distinct(0,1);
+
       DataSet<Edge<Long, NullValue>> edges = mergeGeoTriplets
-          .map(candidate -> {
+          .map(x -> {
+            if ((x.f0 == 3408L || x.f0 == 3409L || x.f0 == 6730L || x.f0 == 5889L) &&
+                (x.f1 == 3408L || x.f1 == 3409L || x.f1 == 6730L || x.f1 == 5889L)) {
+              LOG.info("edge: " + x.toString());
+            }
 //              if (candidate.f0 == 3335L || candidate.f1 == 3335L) {
 //                LOG.info("edge in CandidateCreator: " + candidate.toString());
 //              }
-              return new Edge<>(candidate.f0, candidate.f1, NullValue.getInstance());
+              return new Edge<>(x.f0, x.f1, NullValue.getInstance());
           })
           .returns(new TypeHint<Edge<Long, NullValue>>() {});
 
@@ -193,35 +277,35 @@ public class CandidateCreator
       return inputVertices
           .map(new AddShadingTypeMapFunction())
           .map(new MergeGeoTupleCreator(blockingStrategy))
-          .map(x -> {
-            if (x.getId() == 237L) {
-              LOG.info("pre: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTuple>() {})
+//          .map(x -> {
+//            if (x.getId() == 237L) {
+//              LOG.info("pre: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTuple>() {})
           .groupBy(7)
           .reduceGroup(new MergeGeoTripletCreator(
               sourceCount, newSource, true))
           .distinct(0, 1)
           .runOperation(similarityComputation)
-          .map(x -> {
-            if (x.getSrcId() == 237L || x.getTrgId() == 237L) {
-              LOG.info("CandidateCreator: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTriplet>() {})
+//          .map(x -> {
+//            if (x.getSrcId() == 237L || x.getTrgId() == 237L) {
+//              LOG.info("CandidateCreator: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTriplet>() {})
           .groupBy(5)
           .reduceGroup(new HungarianAlgorithmReduceFunction());
     }
   }
 
-  private static class TempLogSourceCountPrintFunction implements MapFunction<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
+  private static class TempLogSourceCountPrintFunction
+      implements MapFunction<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
     private int sourceCount;
 
     public TempLogSourceCountPrintFunction(int sourceCount) {
-
       this.sourceCount = sourceCount;
     }
 

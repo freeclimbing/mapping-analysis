@@ -54,7 +54,7 @@ public class TrigramsPerVertexCreatorWithIdfOptimization
 //    idfValues.sortPartition(1, Order.ASCENDING)
 //        .setParallelism(1)
 //        .print();
-
+//    isIdfOptimizeEnabled = false;
     if (isIdfOptimizeEnabled) {
       DataSet<Tuple2<String, Double>> idfValues = idLabelTuples
           .runOperation(new TfIdfComputer(STOP_WORDS));
@@ -69,7 +69,9 @@ public class TrigramsPerVertexCreatorWithIdfOptimization
           Tuple2<Long, CharSet> result = new Tuple2<>(
               tuple.f0,
               Utils.getUnsortedTrigrams(tuple.f1));
-
+//          if (tuple.f0 == 6730L || tuple.f0 == 3408L) {
+//            LOG.info("trigram creation: " + tuple.toString());
+//          }
 //          if (result.f1.isEmpty()) {
 //            LOG.info("Result empty: " + result.f0);
 //          }

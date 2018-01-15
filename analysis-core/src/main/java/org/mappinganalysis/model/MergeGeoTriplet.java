@@ -17,6 +17,8 @@ public class MergeGeoTriplet
   }
 
   public MergeGeoTriplet(MergeGeoTuple srcTuple, MergeGeoTuple trgTuple, Double similarity) {
+    this.f0 = srcTuple.f0;
+    this.f1 = trgTuple.f0;
     this.f2 = srcTuple;
     this.f3 = trgTuple;
     this.f4 = similarity;
