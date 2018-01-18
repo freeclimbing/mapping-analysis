@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.blocking.lsh.utils;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.Maps;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -12,17 +13,18 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 /**
- * Too mcuh special cases
+ * Too much special cases
  */
 public class VertexIdfWeightsFunction
     extends RichMapFunction<Tuple2<Long, String>, Tuple2<Long, String>> {
   private static final Logger LOG = Logger.getLogger(VertexIdfWeightsFunction.class);
 
   private HashMap<String, Double> valueMap = Maps.newHashMap();
-
+  private List<String> stopWords;
   @Override
   public void open(Configuration parameters) {
     List<Tuple2<String, Double>> idfList = getRuntimeContext().getBroadcastVariable("idf");
+    stopWords = getRuntimeContext().getBroadcastVariable("stop");
 
     for (Tuple2<String, Double> listTuple : idfList) {
       valueMap.put(listTuple.f0, listTuple.f1);
@@ -30,45 +32,53 @@ public class VertexIdfWeightsFunction
   }
 
   @Override
-  public Tuple2<Long, String> map(Tuple2<Long, String> labelTuple) throws Exception {
-    String label = labelTuple.f1;
+  public Tuple2<Long, String> map(Tuple2<Long, String> idLabelTuple) throws Exception {
+    String label = idLabelTuple.f1;
+    String original = label;
     StringTokenizer st = new StringTokenizer(label);
-    StringBuilder builder = new StringBuilder();
+//    StringBuilder builder = new StringBuilder();
 
     // TODO handle non words
     while (st.hasMoreTokens()) {
       String word = st.nextToken().toLowerCase();
-      Double value = valueMap.get(word);
-      if (value != null) {
-        if (value > 2.8) { // TODO REMOVE FIXED
-          if (builder.toString().isEmpty()) {
-            builder.append(word);
-          } else {
-            builder.append(" ").append(word); // TODO ineffective, only remove word if needed!?
-          }
-        }
+//      Double value = valueMap.get(word);
+      if (stopWords.contains(word)) {
+        label = label.replace(word, "");
       }
+
+//      if (value != null) {
+//        if (value > 2.8) { // TODO REMOVE FIXED
+//          if (builder.toString().isEmpty()) {
+//            builder.append(word);
+//          } else {
+//            builder.append(" ").append(word); // TODO ineffective, only remove word if needed!?
+//          }
+//        }
+//      }
     }
 
-    if (!builder.toString().isEmpty()) {
-      if (Utils.getUnsortedTrigrams(builder.toString()).isEmpty()) {
-        labelTuple.f1 = label;
-      } else if (builder.toString().length() < 6) { // TODO remove fixed length
-        labelTuple.f1 = label;
+    label = CharMatcher.WHITESPACE
+        .trimAndCollapseFrom(label, ' ');
+
+    if (!label.isEmpty()) {
+      if (Utils.getUnsortedTrigrams(label).isEmpty()) {
+        idLabelTuple.f1 = original;
+      } else if (label.length() < 6) { // TODO remove fixed length
+        idLabelTuple.f1 = original;
       } else {
-        labelTuple.f1 = builder.toString();
+        idLabelTuple.f1 = label;
       }
     } else {
-      labelTuple.f1 = label; // TODO temp solution - if all terms are frequent, we take the original string again
+      idLabelTuple.f1 = original; // TODO temp solution - if all terms are frequent, we take the original string again
     }
 
-//    if (labelTuple.f0 == 0L||
-//        labelTuple.f0 == 4279L
-//        || labelTuple.f0 == 4316L
-//        || labelTuple.f0 == 7350L) {
-//      LOG.info("weight: " + labelTuple.f0 + " " + labelTuple.f1);
+//    if (idLabelTuple.f0 == 0L||
+//        idLabelTuple.f0 == 4279L
+//        || idLabelTuple.f0 == 4316L
+//        || idLabelTuple.f0 == 7350L) {
+//      LOG.info("weight: " + idLabelTuple.f0 + " " + idLabelTuple.f1);
 //    }
 
-    return labelTuple;
+    return idLabelTuple;
   }
 }

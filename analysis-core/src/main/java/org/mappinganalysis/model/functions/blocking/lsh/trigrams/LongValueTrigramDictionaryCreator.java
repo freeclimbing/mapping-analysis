@@ -43,7 +43,7 @@ public class LongValueTrigramDictionaryCreator
 
     return trigramsPerVertex
 //        .map(x-> {
-//          if (x.f0 == 6730L || x.f0 == 3408L) {
+//          if (x.f0 == 645L || x.f0 == 646L || x.f0 == 5158) {
 //            LOG.info("trigrams: " + x.toString() + " size: " + x.f1.size());
 //          }
 //              return x;

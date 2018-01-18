@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -25,6 +26,8 @@ import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
+import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
@@ -179,6 +182,94 @@ public class IncrementalClusteringTest {
   }
 
   @Test
+  public void lshSingleSourceVariationTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/geography").getFile();
+    final Graph<Long, ObjectMap, NullValue> baseGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class)
+            .mapVertices(new InternalTypeMapFunction());
+
+    DataSet<Vertex<Long, ObjectMap>> nytSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.NYT_NS));
+    DataSet<Vertex<Long, ObjectMap>> dbpSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.DBP_NS));
+    DataSet<Vertex<Long, ObjectMap>> fbSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.FB_NS));
+
+    IncrementalClustering nytClustering = new IncrementalClustering
+        .IncrementalClusteringBuilder()
+        .setEnvironment(env)
+        .setStrategy(IncrementalClusteringStrategy.SINGLE_SETTING)
+        .setMatchElements(nytSource)
+        .setNewSource(Constants.NYT_NS)
+        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS))
+        .setBlockingStrategy(BlockingStrategy.LSH_BLOCKING)
+        .build();
+
+    Graph<Long, ObjectMap, NullValue> workGraph = baseGraph
+        .filterOnVertices(new SourceFilterFunction(Constants.GN_NS));
+    DataSet<Vertex<Long, ObjectMap>> clusters = workGraph.run(nytClustering);
+
+    new JSONDataSink(graphPath.concat("/gn-nyt/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    // second step, merge dbp
+    workGraph = new JSONDataSource(
+        graphPath.concat("/gn-nyt/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class)
+        .mapVertices(new InternalTypeMapFunction());
+
+    IncrementalClustering dbpClustering = new IncrementalClustering
+        .IncrementalClusteringBuilder()
+        .setEnvironment(env)
+        .setStrategy(IncrementalClusteringStrategy.SINGLE_SETTING)
+        .setMatchElements(dbpSource)
+        .setNewSource(Constants.DBP_NS)
+        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
+        .setBlockingStrategy(BlockingStrategy.LSH_BLOCKING)
+        .build();
+
+    clusters = workGraph.run(dbpClustering);
+
+    new JSONDataSink(graphPath.concat("/gn-nyt-dbp/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    // third step, merge fb
+    workGraph = new JSONDataSource(
+        graphPath.concat("/gn-nyt-dbp/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class)
+        .mapVertices(new InternalTypeMapFunction());
+
+    IncrementalClustering fbClustering = new IncrementalClustering
+        .IncrementalClusteringBuilder()
+        .setEnvironment(env)
+        .setStrategy(IncrementalClusteringStrategy.SINGLE_SETTING)
+        .setMatchElements(fbSource)
+        .setNewSource(Constants.FB_NS)
+        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
+        .setBlockingStrategy(BlockingStrategy.LSH_BLOCKING)
+        .build();
+
+    clusters = workGraph.run(fbClustering);
+
+    new JSONDataSink(graphPath.concat("/gn-nyt-dbp-fb/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    clusters.print();
+    LOG.info(clusters.count());
+    assertEquals(1,2);
+//    LOG.info(graph.getVertices().count());
+//    LOG.info(graph.getEdgeIds().count());
+
+//    assertEquals(749L, baseGraph.getVertices().count());
+
+  }
+
+  @Test
   public void lshIdfOptBlockingTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class
         .getResource("/data/geography").getFile();
@@ -217,7 +308,7 @@ public class IncrementalClusteringTest {
         .equalTo(1)
         .with(new LeftMinusRightSideJoinFunction<>());
 
-    with.print();
+    with.print(); // TODO still missing vertices
 //    LOG.info("too much: " + with.count());
 //
 //    LOG.info("vertices in final Clusters: " + singleClusteredVertices.count()); // 3074
@@ -234,13 +325,22 @@ public class IncrementalClusteringTest {
 //        .print();
 
     // check that no vertex contained in the clustered vertices is duplicated
+    // TODO duplicates seem to be ok, all checked duplicates overlap and should be in one cluster
+    // TODO still need to check why they are not in one cluster
+    // TODO LSH candidates seem to be bugged!?
     DataSet<Tuple3<Long, Long, Integer>> sum = clusters
         .map(cluster -> {
-          if (cluster.getValue().getVerticesList().contains(6730L)
-              || cluster.getValue().getVerticesList().contains(2142L)
-              || cluster.getValue().getVerticesList().contains(5499L)) {
-            LOG.info(cluster.toString());
-          }
+//          if (cluster.getValue().getVerticesList().contains(6730L)
+//              || cluster.getValue().getVerticesList().contains(2142L)
+//              || cluster.getValue().getVerticesList().contains(5499L)) {
+//            LOG.info("final out: " + cluster.toString());
+//          }
+//        if (cluster.getValue().getVerticesList().contains(298L)
+//              || cluster.getValue().getVerticesList().contains(299L)
+//              || cluster.getValue().getVerticesList().contains(5013L)
+//              || cluster.getValue().getVerticesList().contains(5447L)) {
+//            LOG.info("final out: " + cluster.toString());
+//          }
           return cluster;
         })
         .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
@@ -271,7 +371,7 @@ public class IncrementalClusteringTest {
         });
 //        .sum(2);
 
-//    assertEquals(0, sum.filter(tuple -> tuple.f2 > 1).count());
+    assertEquals(0, sum.filter(tuple -> tuple.f2 > 1).count());
   }
 
   @Test

@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.blocking.lsh.trigrams;
 
 import com.google.common.base.CharMatcher;
+import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
@@ -51,38 +52,29 @@ public class TrigramsPerVertexCreatorWithIdfOptimization
         })
         .returns(new TypeHint<Tuple2<Long, String>>() {});
 
-//    idfValues.sortPartition(1, Order.ASCENDING)
-//        .setParallelism(1)
-//        .print();
-//    isIdfOptimizeEnabled = false;
     if (isIdfOptimizeEnabled) {
       DataSet<Tuple2<String, Double>> idfValues = idLabelTuples
           .runOperation(new TfIdfComputer(STOP_WORDS));
 
+      DataSet<String> stopWords = idfValues.sortPartition(1, Order.ASCENDING)
+          .setParallelism(1)
+          .first(20)
+          .map(x -> {
+//            LOG.info("exclude: " + x.toString());
+            return x.f0;
+          })
+          .returns(new TypeHint<String>() {});
+
       idLabelTuples = idLabelTuples
           .map(new VertexIdfWeightsFunction())
-          .withBroadcastSet(idfValues, "idf");
+          .withBroadcastSet(idfValues, "idf")
+          .withBroadcastSet(stopWords, "stop");
     }
 
     return idLabelTuples
-        .map(tuple -> {
-          Tuple2<Long, CharSet> result = new Tuple2<>(
-              tuple.f0,
-              Utils.getUnsortedTrigrams(tuple.f1));
-//          if (tuple.f0 == 6730L || tuple.f0 == 3408L) {
-//            LOG.info("trigram creation: " + tuple.toString());
-//          }
-//          if (result.f1.isEmpty()) {
-//            LOG.info("Result empty: " + result.f0);
-//          }
-//          if (tuple.f0 == 0L||
-//              tuple.f0 == 4279L
-//              || tuple.f0 == 4316L
-//              || tuple.f0 == 7350L) {
-//            LOG.info(tuple.f0 + " " + tuple.f1 + " trigrams: " + Utils.getUnsortedTrigrams(tuple.f1));
-//          }
-          return result;
-        } )
+        .map(tuple -> new Tuple2<>(
+            tuple.f0,
+            Utils.getUnsortedTrigrams(tuple.f1)))
         .returns(new TypeHint<Tuple2<Long, CharSet>>() {});
   }
 }

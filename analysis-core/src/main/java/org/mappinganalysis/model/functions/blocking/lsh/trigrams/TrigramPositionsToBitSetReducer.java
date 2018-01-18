@@ -32,7 +32,7 @@ public class TrigramPositionsToBitSetReducer
       result.set(vIdTriId.f1.intValue());
     }
 
-//    if (id == 6730L || id == 3408L) {
+//    if (id == 645L || id == 646L || id == 5158) {
 //      LOG.info("TrigramPositions: " + id + " " + result.toString());
 //    }
     out.collect(new LinkageTuple(id, new BloomFilter(result)));

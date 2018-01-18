@@ -22,6 +22,7 @@ public class MergeGeoTriplet
     this.f2 = srcTuple;
     this.f3 = trgTuple;
     this.f4 = similarity;
+    this.f5 = Constants.EMPTY_STRING;
   }
 
   public MergeGeoTriplet(Long srcTuple, Long trgTuple) {
@@ -30,6 +31,7 @@ public class MergeGeoTriplet
     this.f2 = new MergeGeoTuple(srcTuple);
     this.f3 = new MergeGeoTuple(trgTuple);
     this.f4 = 0d;
+    this.f5 = Constants.EMPTY_STRING;
   }
 
   /**

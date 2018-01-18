@@ -27,6 +27,7 @@ public class CandidateMergeTripletCreator
       if (!AbstractionUtils.hasOverlap(
           triplet.getSrcTuple().getIntSources(),
           triplet.getTrgTuple().getIntSources())) {
+
         out.collect(triplet);
       }
     }
