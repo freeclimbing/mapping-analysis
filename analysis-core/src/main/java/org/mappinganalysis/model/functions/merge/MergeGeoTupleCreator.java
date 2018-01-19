@@ -65,5 +65,4 @@ public class MergeGeoTupleCreator
 //    LOG.info("### CREATE: " + tuple.toString());
     return tuple;
   }
-
 }

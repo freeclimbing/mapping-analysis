@@ -12,8 +12,8 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.IncrementalClustering;
-import org.mappinganalysis.model.functions.IncrementalClusteringStrategy;
+import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
+import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.preprocessing.IncrementalPreprocessing;
 import org.mappinganalysis.util.Constants;
 

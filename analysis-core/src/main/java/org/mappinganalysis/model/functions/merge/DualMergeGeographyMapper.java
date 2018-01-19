@@ -40,8 +40,10 @@ public class DualMergeGeographyMapper
   public void flatMap(MergeGeoTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
     if (triplet.getSrcId() == triplet.getTrgId().longValue()) {
       out.collect(triplet.getSrcTuple());
+
       return;
     }
+
     MergeGeoTuple priority = triplet.getSrcTuple();
     MergeGeoTuple minor = triplet.getTrgTuple();
 
@@ -57,7 +59,11 @@ public class DualMergeGeographyMapper
     // set tuple properties
     mergedCluster.setId(priority.getId() > minor.getId() ? minor.getId() : priority.getId());
     // is there a case where minor label should be taken?
-    mergedCluster.setLabel(priority.getLabel());
+    if (priority.getLabel().length() >= minor.getLabel().length()) {
+      mergedCluster.setLabel(priority.getLabel());
+    } else {
+      mergedCluster.setLabel(minor.getLabel());
+    }
 
     // geo coordinates
     MergeGeoTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
@@ -82,15 +88,16 @@ public class DualMergeGeographyMapper
         priority.getIntTypes(),
         minor.getIntTypes()));
     mergedCluster.setBlockingLabel(priority.getBlockingLabel());
-    
+
+//        LOG.info("### new cluster: " + mergedCluster.toString());
+    out.collect(mergedCluster);
+
     if (hasFakeResults) {
       MergeGeoTuple fakeCluster = new MergeGeoTuple(
           priority.getId() > minor.getId() ? priority.getId() : minor.getId());
-//    LOG.info("### fake cluster: " + fakeCluster.toString());
 
+//    LOG.info("### fake cluster: " + fakeCluster.toString());
       out.collect(fakeCluster);
     }
-//    LOG.info("### new cluster: " + mergedCluster.toString());
-    out.collect(mergedCluster);
   }
 }

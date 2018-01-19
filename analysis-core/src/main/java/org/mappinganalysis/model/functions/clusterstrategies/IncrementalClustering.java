@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions;
+package org.mappinganalysis.model.functions.clusterstrategies;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -33,9 +33,10 @@ public class IncrementalClustering
     private IncrementalClusteringStrategy clusteringStrategy;
     private ExecutionEnvironment env = null;
     private List<String> sources;
-    private Vertex<Long, ObjectMap> existingClusters;
+    private DataSet<Vertex<Long, ObjectMap>> newElements;
     private BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
     private String part;
+    private String source;
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
@@ -57,13 +58,25 @@ public class IncrementalClustering
     }
 
     /**
-     * Specify initial set of clusters for incremental clustering
-     * @param existingClusters set of clusters
+     * Specify new set of elements for incremental clustering
+     * @param newElements set of clusters
      * @return IncrementalClusteringBuilder
      */
-    public IncrementalClusteringBuilder setExistingClusters(
-        Vertex<Long, ObjectMap> existingClusters) {
-      this.existingClusters = existingClusters;
+    public IncrementalClusteringBuilder setMatchElements(
+        DataSet<Vertex<Long, ObjectMap>> newElements) {
+      this.newElements = newElements;
+
+      return this;
+    }
+
+    /**
+     * Specify source to match.
+     * @param source string
+     * @return IncrementalClusteringBuilder
+     */
+    public IncrementalClusteringBuilder setNewSource(
+        String source) {
+      this.source = source;
 
       return this;
     }
@@ -112,6 +125,13 @@ public class IncrementalClustering
           return new BigIncrementalClustering(blockingStrategy, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
           return new SplitIncrementalClustering(blockingStrategy, part, env);
+        } else if (clusteringStrategy == IncrementalClusteringStrategy.SINGLE_SETTING) {
+          return new SingleSourceIncrementalClustering(
+              blockingStrategy,
+              newElements,
+              source,
+              sources.size(),
+              env);
         } else {
           throw new IllegalArgumentException("Unsupported clusteringStrategy: " + clusteringStrategy);
         }

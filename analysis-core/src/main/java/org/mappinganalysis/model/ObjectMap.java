@@ -95,6 +95,14 @@ public class ObjectMap
     this.mode = mode;
   }
 
+  public void setMode(DataDomain domain) {
+    if (domain.equals(DataDomain.GEOGRAPHY)) {
+      this.mode = Constants.GEO;
+    } else if (domain.equals(DataDomain.MUSIC)) {
+      this.mode = Constants.MUSIC;
+    }
+  }
+
   public String getMode() {
     return mode;
   }

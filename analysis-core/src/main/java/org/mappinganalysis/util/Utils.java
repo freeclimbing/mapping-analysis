@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -247,8 +248,17 @@ public class Utils {
     Preconditions.checkNotNull(left);
     Preconditions.checkNotNull(right);
 
+    left = CharMatcher.WHITESPACE.trimAndCollapseFrom(
+        left.toLowerCase()
+            .replaceAll("[\\p{Punct}]", " "),
+        ' ');
+    right = CharMatcher.WHITESPACE.trimAndCollapseFrom(
+        right.toLowerCase()
+            .replaceAll("[\\p{Punct}]", " "),
+        ' ');
+
     double similarity = getTrigramMetricAndSimplifyStrings()
-        .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
+        .compare(left, right);
     BigDecimal tmpResult = new BigDecimal(similarity);
 
     return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
@@ -623,10 +633,10 @@ public class Utils {
 
   public static StringMetric getTrigramMetricAndSimplifyStrings() {
     return with(new CosineSimilarity<>())
-        .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
-        .simplify(Simplifiers.removeAll("\\s"))
+//        .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
+//        .simplify(Simplifiers.removeAll("\\s"))
         //.simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
-        .simplify(Simplifiers.toLowerCase())
+//        .simplify(Simplifiers.toLowerCase())
         .tokenize(Tokenizers.qGramWithPadding(3))
         .build();
   }

@@ -2,6 +2,7 @@ package org.mappinganalysis.util;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 
 import java.util.*;
@@ -12,6 +13,8 @@ import java.util.stream.Collectors;
  * DBpedia, GeoNames, LinkedGeoData, Freebase, Nyt
  */
 public class AbstractionUtils {
+  private static final Logger LOG = Logger.getLogger(AbstractionUtils.class);
+
   private static HashMap<String, Integer> SOURCES_MAP;
 
   // todo check no type compatibility

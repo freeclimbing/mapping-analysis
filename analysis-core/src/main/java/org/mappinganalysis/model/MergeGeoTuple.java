@@ -46,6 +46,24 @@ public class MergeGeoTuple
   }
 
   @Override
+  public String toString() {
+    StringBuilder stringBuilder = new StringBuilder();
+    stringBuilder.append(getId()).append(Constants.COMMA);
+    stringBuilder.append(getLabel()).append(Constants.COMMA);
+    stringBuilder.append(getLatitude()).append(Constants.COMMA);
+    stringBuilder.append(getLongitude()).append(Constants.COMMA);
+    stringBuilder.append(getIntTypes()).append(Constants.COMMA);
+    stringBuilder.append(AbstractionUtils
+        .getSourcesStringSet(Constants.GEO, getIntSources()))
+        .append(Constants.COMMA);
+    stringBuilder.append(getClusteredElements()).append(Constants.COMMA);
+    stringBuilder.append(getBlockingLabel()).append(Constants.COMMA);
+    stringBuilder.append(isActive()).append(Constants.COMMA);
+
+    return stringBuilder.toString();
+  }
+
+  @Override
   public Long getId() {
     return f0;
   }

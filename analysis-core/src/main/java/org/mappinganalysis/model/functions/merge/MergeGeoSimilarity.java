@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.merge;
 
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
@@ -16,6 +17,8 @@ import java.io.Serializable;
 public class MergeGeoSimilarity
     extends SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet>
     implements Serializable {
+  private static final Logger LOG = Logger.getLogger(MergeGeoSimilarity.class);
+
 
   private MeanAggregationFunction aggregationFunction;
 
