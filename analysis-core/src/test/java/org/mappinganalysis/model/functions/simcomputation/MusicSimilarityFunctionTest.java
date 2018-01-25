@@ -12,8 +12,6 @@ import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,9 +70,6 @@ public class MusicSimilarityFunctionTest {
 
     run.getEdges()
         .print();
-
-
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
 
     String[] splitTitleOne = TITLE_ONE.split(" - ");
     ArrayList<String> one = Lists.newArrayList();

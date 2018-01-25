@@ -20,7 +20,7 @@ public abstract class LinkFilter
 
   private LinkFilterFunction function;
 
-  public LinkFilter(LinkFilterFunction function) {
+  LinkFilter(LinkFilterFunction function) {
     this.function = function;
   }
 

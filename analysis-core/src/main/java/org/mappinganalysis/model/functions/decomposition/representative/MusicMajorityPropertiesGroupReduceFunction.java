@@ -139,6 +139,7 @@ public class MusicMajorityPropertiesGroupReduceFunction
       Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(attrName)) {
       String value = Utils.simplify(currentVertex.getValue().get(attrName).toString());
+
       if (map.containsKey(value)) {
         int attrCount = map.get(value);
         map.put(value, attrCount + 1);

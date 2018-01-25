@@ -33,6 +33,10 @@ public class RepresentativeCreatorMultiMerge
       return vertices
           .groupBy(new HashCcIdKeySelector())
           .reduceGroup(new MusicMajorityPropertiesGroupReduceFunction());
+    } else if (domain == DataDomain.NC) {
+      return vertices
+          .groupBy(new HashCcIdKeySelector())
+          .reduceGroup(new NcMajorityPropertiesGroupReduceFunction());
     } else if (domain == DataDomain.GEOGRAPHY) {
       return vertices
           .groupBy(new HashCcIdKeySelector())

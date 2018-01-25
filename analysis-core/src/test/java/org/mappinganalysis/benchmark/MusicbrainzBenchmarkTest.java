@@ -420,7 +420,7 @@ public class MusicbrainzBenchmarkTest {
     @Override
     public Tuple2<String, Double> map(Vertex<Long, ObjectMap> vertex) throws Exception {
       String label = vertex.getValue().getLabel();
-      StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
+      StringMetric metric = Utils.getTrigramMetric();
 
       Pattern rightPattern = Pattern.compile("\"(.*?)\""); // only use for hard coded test strings
 
@@ -435,10 +435,11 @@ public class MusicbrainzBenchmarkTest {
       HashMap<String, Double> tmpMap = Maps.newHashMap();
       while (!rightSet.isEmpty() && leftSide.find()) {
         Double similarity = null;
-        String left = leftSide.group(1);
+        String left = Utils.simplify(leftSide.group(1));
         for (String right : rightSet) {
+          right = Utils.simplify(right);
           System.out.println(left + " ##### " + right);
-          double tmp = metric.compare(left.trim(), right.trim());
+          double tmp = metric.compare(left, right);
           BigDecimal tmpResult = new BigDecimal(tmp);
           tmp = tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
           System.out.println("while loop sim: " + tmp);

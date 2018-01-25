@@ -42,7 +42,7 @@ public class MergeGeoSimilarity
     MergeGeoTuple src = triplet.getSrcTuple();
     MergeGeoTuple trg = triplet.getTrgTuple();
 
-    Double labelSimilarity = Utils.getLabelSimilarity(src.getLabel(),
+    Double labelSimilarity = Utils.getTrigramSimilarityWithSimplify(src.getLabel(),
         trg.getLabel());
 
     Double geoSimilarity = Utils.getGeoSimilarity(src.getLatitude(),

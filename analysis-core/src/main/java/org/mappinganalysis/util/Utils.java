@@ -2,6 +2,7 @@ package org.mappinganalysis.util;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
@@ -178,7 +179,7 @@ public class Utils {
   }
 
   public static Double computeWithMetric(StringMetric metric, String first, String second) {
-    double similarity = metric.compare(first.trim().toLowerCase(), second.trim().toLowerCase());
+    double similarity = metric.compare(simplify(first), simplify(second));
     BigDecimal tmpResult = new BigDecimal(similarity);
 
     return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
@@ -242,26 +243,33 @@ public class Utils {
   }
 
   /**
-   * Basic trigram similarity for 2 labels.
+   * Helper method for input data from North Carolina dataset recId.
    */
-  public static Double getLabelSimilarity(String left, String right) {
+  public static long getIdFromNcId(String idString) {
+    String result = Constants.EMPTY_STRING;
+
+    for (String idPart : Splitter.on('s').split(idString)) {
+      result = idPart.concat(result);
+    }
+
+    return Long.parseLong(result);
+  }
+
+  /**
+   * Basic trigram similarity for 2 attributes.
+   */
+  public static Double getTrigramSimilarityWithSimplify(String left, String right) {
     Preconditions.checkNotNull(left);
     Preconditions.checkNotNull(right);
 
-    left = CharMatcher.WHITESPACE.trimAndCollapseFrom(
-        left.toLowerCase()
-            .replaceAll("[\\p{Punct}]", " "),
-        ' ');
-    right = CharMatcher.WHITESPACE.trimAndCollapseFrom(
-        right.toLowerCase()
-            .replaceAll("[\\p{Punct}]", " "),
-        ' ');
+    if (!Utils.isSane(left) || !Utils.isSane(right)) {
+      return null;
+    }
 
-    double similarity = getTrigramMetricAndSimplifyStrings()
-        .compare(left, right);
-    BigDecimal tmpResult = new BigDecimal(similarity);
+    double similarity = getTrigramMetric()
+        .compare(Utils.simplify(left), Utils.simplify(right));
 
-    return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
+    return getExactDoubleResult(similarity);
   }
 
   @Deprecated
@@ -562,7 +570,7 @@ public class Utils {
     }
     String label = value.getValue().getLabel();
     if (!label.equals(Constants.CSV_NO_VALUE)) {
-      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+      if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = label;
       } else {
         artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(label);
@@ -570,7 +578,7 @@ public class Utils {
     }
     String album = value.getValue().getAlbum();
     if (!album.equals(Constants.CSV_NO_VALUE)) {
-      if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+      if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = album;
       } else {
         artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(album);
@@ -582,7 +590,7 @@ public class Utils {
 //        .replaceAll("\\W", "")
         .replaceAll("\\p{Punct}", "");
 
-    if (artistTitleAlbum.equals(Constants.EMPTY_STRING)) {
+    if (artistTitleAlbum.isEmpty()) {
       System.out.println(tmp);
     }
 
@@ -626,12 +634,15 @@ public class Utils {
    * @return simplified value
    */
   public static String simplify(String value) {
-    value = Simplifiers.removeAll("[\\(|,].*").simplify(value);
-
-    return value.toLowerCase().trim();
+    return CharMatcher.WHITESPACE.trimAndCollapseFrom(
+        value.toLowerCase()
+            .replaceAll("[\\p{Punct}]", " "),
+        ' ');
   }
 
-  public static StringMetric getTrigramMetricAndSimplifyStrings() {
+  public static StringMetric getTrigramMetric() {
+//    return with(new JaroWinkler())
+//        .build();
     return with(new CosineSimilarity<>())
 //        .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
 //        .simplify(Simplifiers.removeAll("\\s"))

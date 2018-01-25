@@ -25,23 +25,27 @@ public class BasicEdgeSimilarityComputation
   private final ExecutionEnvironment env;
   private final SimilarityFunction<Triplet<Long, ObjectMap, NullValue>,
       Triplet<Long, ObjectMap, ObjectMap>> simFunction;
-  private final String matchCombination;
+  private final String mode;
 
   /**
    * Compute similarities based on the existing vertex properties,
    * save aggregated similarity as edge property
-   * @param matchCombination relevant: Utils.SIM_GEO_LABEL_STRATEGY or Utils.DEFAULT_VALUE
+   * @param mode relevant: Constants.MUSIC, Constants.NC, Constants.GEO
    * @param env env
    */
-  public BasicEdgeSimilarityComputation(String matchCombination, ExecutionEnvironment env) {
+  public BasicEdgeSimilarityComputation(String mode, ExecutionEnvironment env) {
     this.env = env;
-    this.matchCombination = matchCombination;
-    if (matchCombination.equals(Constants.MUSIC)) {
+    this.mode = mode;
+    if (mode.equals(Constants.MUSIC)) {
       this.simFunction = new MusicSimilarityFunction();
-    } else {
+    } else if (mode.equals(Constants.NC)) {
+      this.simFunction = new NcSimilarityFunction();
+    } else if (mode.equals(Constants.GEO)) {
       this.simFunction = new EdgeSimilarityFunction(
-          matchCombination,
+          mode,
           Constants.MAXIMAL_GEO_DISTANCE);
+    } else {
+      this.simFunction = null;
     }
   }
 
@@ -53,9 +57,6 @@ public class BasicEdgeSimilarityComputation
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph)
       throws Exception {
-//    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
-//        matchCombination,
-//        Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
 
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
@@ -70,12 +71,15 @@ public class BasicEdgeSimilarityComputation
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction());
 
-    if (!matchCombination.equals(Constants.MUSIC)) {
+    if (mode.equals(Constants.GEO)) {
       edges = edges.map(new AggSimValueEdgeMapFunction(true)); // old mean function
-    } else {
+    } else if (mode.equals(Constants.MUSIC)){
       edges = edges.map(new AggSimValueEdgeMapFunction(Constants.MUSIC));
+    } else if (mode.equals(Constants.NC)){
+      edges = edges.map(new AggSimValueEdgeMapFunction(Constants.NC));
     }
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }
+
 }

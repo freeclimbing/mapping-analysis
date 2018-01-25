@@ -91,14 +91,8 @@ public class IdfBlockingOperation
 //        .groupBy(0)
 //        .sum(1);
 
-    // TODO remove this helper construct
-//    new JSONDataSink(
-//            "hdfs://dbc0.informatik.intern.uni-leipzig.de:9000/user/markus/musicbrainz-benchmark/",
-//            "word-frequency-aggr-cc2mio")
-//        .writeTuples(sum);
-
     // edge values are not longer important,
-        // filter was the last step where the support was needed
+    // filter was the last step where the support was needed
     return inputData.join(idfSupportEdges)
         .where(0).equalTo(0)
         .with(new JoinIdfFirstFunction())
@@ -114,12 +108,7 @@ public class IdfBlockingOperation
             triplet.setBlockingLabel(second.getValue().toString());
             return triplet;
           }
-        })
-//        .map(x -> {
-//          LOG.info(x.toString());
-//          return x;
-//        })
-        ;
+        });
   }
 
   private DataSet<Vertex<Long, Long>> createCcBlockingKeyVertices(DataSet<Edge<Long, Integer>> idfSupportEdges) {

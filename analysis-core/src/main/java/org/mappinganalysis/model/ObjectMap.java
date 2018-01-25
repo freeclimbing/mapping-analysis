@@ -72,6 +72,8 @@ public class ObjectMap
       this.mode = Constants.GEO;
     } else if (domain.equals(DataDomain.MUSIC)) {
       this.mode = Constants.MUSIC;
+    } else if (domain.equals(DataDomain.NC)) {
+      this.mode = Constants.NC;
     }
   }
 
@@ -100,6 +102,8 @@ public class ObjectMap
       this.mode = Constants.GEO;
     } else if (domain.equals(DataDomain.MUSIC)) {
       this.mode = Constants.MUSIC;
+    } else if (domain.equals(DataDomain.NC)) {
+      this.mode = Constants.NC;
     }
   }
 
@@ -555,8 +559,8 @@ public class ObjectMap
     if (map.containsKey(Constants.DS_COUNT)) {
 
       return (long) map.get(Constants.DS_COUNT);
-
     } else {
+
       return 1L;
     }
   }
@@ -577,7 +581,7 @@ public class ObjectMap
       types = Sets.newHashSet(typeProperty.toString());
     }
 
-    return AbstractionUtils.getTypesInt(mode, types);
+    return AbstractionUtils.getTypesInt(types);
   }
 
   /**
@@ -609,8 +613,10 @@ public class ObjectMap
    */
   public Integer getYear() {
     if (map.containsKey(Constants.YEAR) && map.get(Constants.YEAR) != null) {
+
       return Ints.tryParse(map.get(Constants.YEAR).toString());
     } else {
+
       return Constants.EMPTY_INT;
     }
   }
@@ -628,8 +634,10 @@ public class ObjectMap
    */
   public String getNumber() {
     if (map.containsKey(Constants.NUMBER)) {
+
       return map.get(Constants.NUMBER).toString();
     } else {
+
       return Constants.NO_VALUE;
     }
   }
@@ -643,8 +651,10 @@ public class ObjectMap
    */
   public String getLanguage() {
     if (map.containsKey(Constants.LANGUAGE)) {
+
       return map.get(Constants.LANGUAGE).toString();
     } else {
+
       return Constants.NO_VALUE;
     }
   }
@@ -662,8 +672,10 @@ public class ObjectMap
    */
   public String getArtist() {
     if (map.containsKey(Constants.ARTIST)) {
+
       return map.get(Constants.ARTIST).toString();
     } else {
+
       return Constants.NO_VALUE;
     }
   }

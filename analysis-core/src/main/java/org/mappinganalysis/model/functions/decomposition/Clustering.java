@@ -75,6 +75,6 @@ public class Clustering {
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
-        .run(new BasicEdgeSimilarityComputation(Constants.SIM_GEO_LABEL_STRATEGY, env));
+        .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
   }
 }

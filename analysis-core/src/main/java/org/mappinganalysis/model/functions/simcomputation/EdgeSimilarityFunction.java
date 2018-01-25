@@ -20,11 +20,11 @@ public class EdgeSimilarityFunction
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(EdgeSimilarityFunction.class);
 
-  private final String usedPropertiesCombination;
+  private final String mode;
   private final double maxDistInMeter;
 
-  public EdgeSimilarityFunction(String usedPropertiesCombination, double maxDistInMeter) {
-    this.usedPropertiesCombination = usedPropertiesCombination;
+  public EdgeSimilarityFunction(String mode, double maxDistInMeter) {
+    this.mode = mode;
     this.maxDistInMeter = maxDistInMeter;
   }
 
@@ -39,7 +39,7 @@ public class EdgeSimilarityFunction
     ObjectMap trgProps = triplet.getTrgVertex().getValue();
     Triplet<Long, ObjectMap, ObjectMap> result = initResultTriplet(triplet);
 
-    Double labelSimilarity = Utils.getLabelSimilarity(srcProps.getLabel(),
+    Double labelSimilarity = Utils.getTrigramSimilarityWithSimplify(srcProps.getLabel(),
         trgProps.getLabel());
     result.getEdge().getValue().put(Constants.SIM_LABEL, labelSimilarity);
 
@@ -51,7 +51,7 @@ public class EdgeSimilarityFunction
       result.getEdge().getValue().setGeoSimilarity(geoSimilarity);
     }
 
-    if (usedPropertiesCombination.equals(Constants.GEO)) {
+    if (mode.equals(Constants.GEO)) {
       result = addTypeSimilarity(result);
     }
 //    LOG.info(result.toString());

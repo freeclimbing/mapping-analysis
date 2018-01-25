@@ -60,7 +60,7 @@
         <dep.jena.version>2.10.0</dep.jena.version>
 
         <dep.gdl.version>0.2-SNAPSHOT</dep.gdl.version>
-        <dep.gradoop.version>0.2-SNAPSHOT</dep.gradoop.version>
+        <dep.gradoop.version>0.3.0-SNAPSHOT</dep.gradoop.version>
     </properties>
 
     <repositories>

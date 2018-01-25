@@ -37,7 +37,5 @@ public class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
       return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
 
     }
-//    MergeTuple tmp = (MergeTuple) tuple;
-//    return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
   }
 }

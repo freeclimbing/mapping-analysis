@@ -5,3 +5,7 @@
 {"id":46584,"data":{"typeIntern":["Mountain"],"ccId":2642,"lon":18.28806,"hashCc":3666608231188224656,"label":"Gradina","url":"http:\/\/sws.geonames.org\/3263784\/","dataSource":"http:\/\/sws.geonames.org\/","lat":43.48944}}
 {"id":51653,"data":{"typeIntern":["Mountain"],"ccId":2642,"lon":17.61624,"hashCc":3666608231188224656,"label":"Gradina","url":"http:\/\/sws.geonames.org\/3290190\/","dataSource":"http:\/\/sws.geonames.org\/","lat":43.53422}}
 {"id":69540,"data":{"typeIntern":["Mountain"],"ccId":2642,"lon":17.8875,"hashCc":3666608231188224656,"label":"Gradina","url":"http:\/\/sws.geonames.org\/3262861\/","dataSource":"http:\/\/sws.geonames.org\/","lat":43.08611}}
+{"id":4,"data":{"typeIntern":["no_type"],"ccId":4,"ontology":"http:\/\/data.nytimes.com\/","label":"c"}}
+{"id":5,"data":{"typeIntern":["no_type"],"ccId":4,"ontology":"http:\/\/sws.geonames.org\/","label":"c"}}
+{"id":6,"data":{"typeIntern":["no_type"],"ccId":4,"ontology":"http:\/\/data.nytimes.com\/","label":"c"}}
+{"id":7,"data":{"typeIntern":["no_type"],"ccId":4,"ontology":"http:\/\/sws.geonames.org\/","label":"c"}}

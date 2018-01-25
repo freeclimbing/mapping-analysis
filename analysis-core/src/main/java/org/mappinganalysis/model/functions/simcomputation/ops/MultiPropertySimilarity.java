@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 /**
  * Multiple properties are used to compute a single similarity.
+ * TODO NOT YET USED
  */
 public class MultiPropertySimilarity implements CustomOperation<EdgeObjectMapTriplet> {
   private EdgeObjectMapTriplet triplet;
@@ -22,7 +23,7 @@ public class MultiPropertySimilarity implements CustomOperation<EdgeObjectMapTri
 
   @Override
   public EdgeObjectMapTriplet createResult() {
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
+    StringMetric metric = Utils.getTrigramMetric();
     ArrayList<String> listOne = Lists.newArrayList();
     ArrayList<String> listTwo = Lists.newArrayList();
 

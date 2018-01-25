@@ -5,8 +5,8 @@ import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
+import org.mappinganalysis.model.functions.simcomputation.SimCompUtils;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
 
@@ -28,6 +28,7 @@ public class MergeMusicSimilarity
   }
 
   // TODO add min sim check
+  // TODO really only these 2 sims?
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
 //    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
@@ -79,84 +80,24 @@ public class MergeMusicSimilarity
   private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet) {
     switch (attrName) {
       case Constants.ARTIST_TITLE_ALBUM:
-        return handleString(Constants.LABEL, triplet);
+        return SimCompUtils.handleString(Constants.LABEL, triplet);
       case Constants.LANGUAGE:
         return null;
       case Constants.LABEL:
-        return handleString(Constants.LABEL, triplet);
+        return SimCompUtils.handleString(Constants.LABEL, triplet);
       case Constants.ARTIST:
-        return handleString(Constants.ARTIST, triplet);
+        return SimCompUtils.handleString(Constants.ARTIST, triplet);
       case Constants.ALBUM:
-        return handleString(Constants.ALBUM, triplet);
+        return SimCompUtils.handleString(Constants.ALBUM, triplet);
       case Constants.YEAR:
-        return handleYear(triplet);
+        return SimCompUtils.handleYear(triplet);
       case Constants.LENGTH:
-        return handleLength(triplet);
+        return SimCompUtils.handleLength(triplet);
       case Constants.NUMBER:
-        return handleNumber(triplet);
+        return SimCompUtils.handleNumber(triplet);
       default:
         return null;
     }
   }
 
-  private Double handleNumber(MergeMusicTriplet triplet) {
-    String srcNumber = triplet.getSrcTuple().getNumber();
-    String trgNumber = triplet.getTrgTuple().getNumber();
-
-    if (srcNumber.equals(trgNumber)) {
-      return 1D;
-    } else {
-      return null;
-    }
-  }
-
-  private Double handleLength(MergeMusicTriplet triplet) {
-    Integer srcLength = triplet.getSrcTuple().getLength();
-    Integer trgLength = triplet.getTrgTuple().getLength();
-
-    if (srcLength == Constants.EMPTY_INT || trgLength == Constants.EMPTY_INT) {
-      return null;
-    }
-
-    int diff = srcLength - trgLength;
-    if (diff == 1 || diff == -1) {
-      return 0.5D;
-    } else if (diff == 0) {
-      return 1D;
-    } else {
-      return 0D;
-    }
-  }
-
-  private Double handleYear(MergeMusicTriplet triplet) {
-    Integer srcYear = triplet.getSrcTuple().getYear();
-    Integer trgYear = triplet.getTrgTuple().getYear();
-
-    if (srcYear == Constants.EMPTY_INT || trgYear == Constants.EMPTY_INT) {
-      return null;
-    }
-
-    int diff = srcYear - trgYear;
-    if (diff == 1 || diff == -1) {
-      return 0.5D;
-    } else if (diff == 0) {
-      return 1D;
-    } else {
-      return 0D;
-    }
-  }
-
-  private Double handleString(String attrName, MergeMusicTriplet triplet) {
-    String left = triplet.getSrcTuple().getString(attrName);
-    String right = triplet.getTrgTuple().getString(attrName);
-
-    if (!Utils.isSane(left) || !Utils.isSane(right)) {
-      return null;
-    }
-
-    double similarity = Utils.getTrigramMetricAndSimplifyStrings()
-        .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
-
-    return Utils.getExactDoubleResult(similarity);
-  }
 }

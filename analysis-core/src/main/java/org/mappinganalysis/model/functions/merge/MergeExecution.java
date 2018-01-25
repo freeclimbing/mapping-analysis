@@ -68,7 +68,8 @@ public class MergeExecution
           MergeGeoTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
-          .setThreshold(0.5)
+//          .setThreshold(0.5)
+          .setThreshold(0.85)
           .build();
 
       // initial working set
@@ -103,15 +104,26 @@ public class MergeExecution
     /*
       ########## MUSIC ##############
      */
-    if (domain == DataDomain.MUSIC) {
+    if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
       BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
 
       // initial solution set
       DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator(blockingStrategy));
+          .map(new MergeMusicTupleCreator(blockingStrategy, domain));
 
-      SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
-          new MergeMusicSimilarity();
+      SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction = null;
+      DataSet<MergeMusicTuple> preBlockingClusters = null;
+
+      if (domain == DataDomain.MUSIC) {
+        simFunction = new MergeMusicSimilarity();
+        // prep phase initial working set
+        preBlockingClusters = clusters
+            .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
+      } else if (domain == DataDomain.NC) {
+        simFunction = new MergeNcSimilarity();
+        preBlockingClusters = clusters
+            .filter(new SourceCountRestrictionFilter<>(DataDomain.NC, sourcesCount));
+      }
 
       SimilarityComputation<MergeMusicTriplet,
           MergeMusicTriplet> similarityComputation
@@ -123,10 +135,6 @@ public class MergeExecution
           .setThreshold(0.5)
           .build();
 
-      // prep phase initial working set
-      DataSet<MergeMusicTuple> preBlockingClusters = clusters
-          .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
-
       // initial working set
       DataSet<MergeMusicTriplet> initialWorkingSet;
 
@@ -134,12 +142,14 @@ public class MergeExecution
         Blocking (MUSIC only)
        */
       if (blockingStrategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
+        assert preBlockingClusters != null;
         initialWorkingSet = preBlockingClusters
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation)
             .rebalance();
       } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
+        assert preBlockingClusters != null;
         DataSet<MergeMusicTriplet> idfPartTriplets = preBlockingClusters
             .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
             .runOperation(similarityComputation)
@@ -196,7 +206,7 @@ public class MergeExecution
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
-          .with(new FinalMergeMusicVertexCreator());
+          .with(new FinalMergeMusicVertexCreator(domain));
     } else {
       throw new IllegalArgumentException("Unsupported domain: " + domain.toString());
     }

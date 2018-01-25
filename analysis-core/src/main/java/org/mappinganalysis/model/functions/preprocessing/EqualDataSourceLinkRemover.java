@@ -41,7 +41,7 @@ public class EqualDataSourceLinkRemover
    * Create a dataset of edge ids with the associated dataset source values
    * like "23L, 42L, http://dbpedia.org/, http://geonames.org/"
    */
-  public static DataSet<EdgeIdsSourcesTuple> getEdgeIdSourceValues(
+  private static DataSet<EdgeIdsSourcesTuple> getEdgeIdSourceValues(
       DataSet<Tuple2<Long, Long>> edgeIds,
       DataSet<Vertex<Long, ObjectMap>> vertices) {
     return edgeIds

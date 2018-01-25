@@ -3,7 +3,6 @@ package org.mappinganalysis.model.functions.preprocessing.utils;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 
 import java.util.HashMap;
@@ -11,10 +10,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * For a cluster, retrieve the different data sources.
- * A single integer value is used to represent (currently) 5 different types.
+ * For a cluster, retrieve the different data sources as int value.
  *
- * Types as well as count of different types can be retrieved.
+ * Sources as well as count of different sources can be retrieved.
  */
 public class ComponentSourceTuple
     extends Tuple2<Long, Integer> {
@@ -22,10 +20,11 @@ public class ComponentSourceTuple
   private static HashMap<String, Integer> SOURCES;
 
   /**
-   * Nyt
+   * Nyt - only used in CSVDatasSource
    */
   @Deprecated
   public ComponentSourceTuple() {
+    SOURCES = Constants.GEO_MAP;
     this.f1 = 0;
   }
 
@@ -108,7 +107,7 @@ public class ComponentSourceTuple
   }
 
   /**
-   * Not working anymore correct, only used for nyt things.
+   * Not working anymore correct, only used for nyt TEST things.
    */
   @Deprecated
   public Set<String> getSources() {

@@ -37,7 +37,7 @@ public class AggSimValueEdgeMapFunction
     Preconditions.checkArgument(!edgeValue.isEmpty(), "edge value empty: "
         + edge.getSource() + ", " + edge.getTarget());
 
-    if (combination.equals(Constants.MUSIC)) {
+    if (combination.equals(Constants.MUSIC) || combination.equals(Constants.NC)) {
       edgeValue.runOperation(new MeanAggregationFunction());
     } else { // old default
       double aggregatedSim;

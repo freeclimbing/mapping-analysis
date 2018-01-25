@@ -48,7 +48,7 @@ public class MergeInitialization
    */
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-    if (domain == DataDomain.MUSIC) {
+    if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
       return vertices;
     } else if (domain == DataDomain.GEOGRAPHY) {
       DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets = vertices
@@ -72,7 +72,7 @@ public class MergeInitialization
       DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets) {
 
     EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
-        Constants.DEFAULT_VALUE,
+        Constants.GEO,
         Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
 
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,

@@ -214,7 +214,6 @@ public class LSHTest {
     DataSet<Tuple2<Long, Long>> candidateIds = vertices
         .runOperation(new LshCandidateCreator(true));
 
-
     SimilarityComputation<MergeGeoTriplet,
         MergeGeoTriplet> similarityComputation
         = new SimilarityComputation

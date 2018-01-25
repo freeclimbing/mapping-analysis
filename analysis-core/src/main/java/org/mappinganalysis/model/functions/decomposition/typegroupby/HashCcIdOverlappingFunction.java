@@ -38,31 +38,25 @@ public class HashCcIdOverlappingFunction
     // all vertices need to be processed, hash is stored for each different type
     // NOTE: hash changes for different runs because of use of set, but result is correct
     for (Vertex<Long, ObjectMap> tmpVertex : vertexSet) {
-//      LOG.info(tmpVertex.getId() + " #######################");
       Set<String> types = tmpVertex.getValue().getTypes(Constants.COMP_TYPE);
       Long hash = null;
       for (String type : types) {
         if (typeHashDict.containsKey(type)) {
           if (hash == null) {
-//            LOG.info(tmpVertex.getId() + " type: " + type + " hash: null");
             hash = typeHashDict.get(type);
           } else {
-//            LOG.info(tmpVertex.getId() + " type: " + type + " hash: " + hash);
             typeHashDict.put(type, hash);
           }
         } else {
           if (hash == null) {
-//            LOG.info(tmpVertex.getId() + " not contains type: " + type + " hash: null");
             typeHashDict.put(type, Utils.getHash(
                 type.concat(tmpVertex.getId().toString())));
             hash = Utils.getHash(type.concat(tmpVertex.getId().toString()));
           } else {
-//            LOG.info(tmpVertex.getId() + " not contains type: " + type + " hash: " + hash);
             typeHashDict.put(type, hash);
           }
         }
       }
-//      LOG.info(tmpVertex.getId() + "###hashDict### " + typeHashDict.toString());
     }
 
     for (Vertex<Long, ObjectMap> vertex : vertexSet) {
@@ -73,7 +67,7 @@ public class HashCcIdOverlappingFunction
           .put(Constants.HASH_CC, typeHashDict.get(randomVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
       vertex.getValue().remove(Constants.CC_ID);
-      if (domain == DataDomain.MUSIC) { // music has no type at all
+      if (domain == DataDomain.MUSIC || domain == DataDomain.NC) { // music/nc has no type at all
         vertex.getValue().remove(Constants.TYPE_INTERN);
       }
 //      LOG.info("###hashOverlap###: " + vertex.toString());

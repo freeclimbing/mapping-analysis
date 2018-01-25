@@ -38,7 +38,8 @@ public class ConnectedComponentIdAdder<T>
         .map(vertex -> new Tuple2<>(vertex.getId(), vertex.getValue()))
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
-    return graph.joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
+    return graph
+        .joinWithVertices(verticesWithMinIds, new CcIdVertexJoinFunction());
   }
 
   /**

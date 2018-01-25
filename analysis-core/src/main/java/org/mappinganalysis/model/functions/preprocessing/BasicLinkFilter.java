@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Basic link filter
  */
-public class BasicLinkFilter extends LinkFilter {
+class BasicLinkFilter extends LinkFilter {
   BasicLinkFilter(List<String> sources, Boolean removeIsolatedVertices,
                   ExecutionEnvironment env) {
     super(new BasicLinkFilterFunction(sources, removeIsolatedVertices, env));

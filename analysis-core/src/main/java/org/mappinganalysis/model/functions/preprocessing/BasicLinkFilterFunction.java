@@ -9,6 +9,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.EdgeDirection;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.LinkFilterFunction;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.model.ObjectMap;
@@ -26,11 +27,13 @@ import java.util.List;
  */
 public class BasicLinkFilterFunction
     extends LinkFilterFunction {
+  private static final Logger LOG = Logger.getLogger(BasicLinkFilterFunction.class);
+
   private List<String> sources;
   private Boolean removeIsolatedVertices;
   private ExecutionEnvironment env;
 
-  public BasicLinkFilterFunction(
+  BasicLinkFilterFunction(
       List<String> sources,
       Boolean removeIsolatedVertices,
       ExecutionEnvironment env) {
@@ -49,17 +52,19 @@ public class BasicLinkFilterFunction
         .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(), EdgeDirection.OUT);
 
     DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0)
-        .sortGroup(5, Order.DESCENDING)
-        .sortGroup(1, Order.ASCENDING)
-        .sortGroup(2, Order.ASCENDING)
+        .sortGroup(5, Order.DESCENDING) // sim
+        .sortGroup(1, Order.ASCENDING) // src id
+        .sortGroup(2, Order.ASCENDING) // trg id
         .reduceGroup(new LinkSelectionWithCcIdFunction(sources));
 
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)
         .equalTo(0, 1)
-        .with((tuple, edge) -> edge)
-        .returns(new TypeHint<Edge<Long, ObjectMap>>() {
-        });
+        .with((tuple, edge) -> {
+          LOG.info("BLF newEdge: " + edge.toString());
+          return edge;
+        })
+        .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> resultVertices;
     if (removeIsolatedVertices) {
@@ -69,6 +74,7 @@ public class BasicLinkFilterFunction
       resultVertices = graph.getVertices();
     }
 
-    return Graph.fromDataSet(resultVertices, newEdges, env);
+    return Graph.fromDataSet(resultVertices, newEdges, env)
+        .run(new ConnectedComponentIdAdder<>(env));
   }
 }

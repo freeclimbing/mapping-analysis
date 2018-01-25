@@ -22,7 +22,7 @@ public class ComponentSourceTupleTest {
     tuple.addSource(Constants.NYT_NS);
 
     assertEquals(31, tuple.getSourcesInt().intValue());
-    assertEquals(5, AbstractionUtils.getSourceCount(tuple).intValue());
+    assertEquals(5, AbstractionUtils.getSourceCount(tuple));
 
     ComponentSourceTuple differentOrderTuple = new ComponentSourceTuple(2L, SOURCES);
     differentOrderTuple.addSource(Constants.NYT_NS);

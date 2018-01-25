@@ -16,7 +16,6 @@ public class NeighborEqualDataSourceFunction
     EdgeSourceSimTuple> {
   private static final Logger LOG = Logger.getLogger(NeighborEqualDataSourceFunction.class);
 
-
   @Override
   public void iterateNeighbors(
       Vertex<Long, ObjectMap> vertex,
@@ -34,7 +33,7 @@ public class NeighborEqualDataSourceFunction
           vertex.getValue().getDataSource(),
           ontology,
           edgeSim);
-//      LOG.info("Tuple6: " + resultTuple.toString());
+      LOG.info("Tuple6: " + resultTuple.toString());
       collector.collect(resultTuple);
     }
   }

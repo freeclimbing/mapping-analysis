@@ -20,7 +20,7 @@ import java.util.List;
 public class LinkSelectionWithCcIdFunction
     implements GroupReduceFunction<EdgeSourceSimTuple, Tuple2<Long, Long>> {
   private static final Logger LOG = Logger.getLogger(LinkSelectionWithCcIdFunction.class);
-  HashMap<String, Integer> sourcesMap;
+  private HashMap<String, Integer> sourcesMap;
 
   public LinkSelectionWithCcIdFunction(List<String> sources) {
     this.sourcesMap = AbstractionUtils.getSourcesMap(sources);
@@ -35,6 +35,7 @@ public class LinkSelectionWithCcIdFunction
     for (EdgeSourceSimTuple edge : values) {
       ComponentSourceTuple src = entitySourceMap.get(edge.getSrcId());
       ComponentSourceTuple trg = entitySourceMap.get(edge.getTrgId());
+      // preparation
       if (src == null) {
         src = new ComponentSourceTuple(edge.getSrcId(), sourcesMap);
       }
@@ -42,12 +43,13 @@ public class LinkSelectionWithCcIdFunction
         trg = new ComponentSourceTuple(edge.getTrgId(), sourcesMap);
       }
 
-      if (!src.contains(edge.getTrgOntology())
-          && !trg.contains(edge.getSrcOntology())) {
-        src.addSource(edge.getTrgOntology());
+      // selection
+      if (!src.contains(edge.getTrgDataSource())
+          && !trg.contains(edge.getSrcDataSource())) {
+        src.addSource(edge.getTrgDataSource());
         entitySourceMap.put(edge.getSrcId(), src);
 
-        trg.addSource(edge.getSrcOntology());
+        trg.addSource(edge.getSrcDataSource());
         entitySourceMap.put(edge.getTrgId(), trg);
 
         out.collect(new Tuple2<>(edge.getSrcId(), edge.getTrgId()));

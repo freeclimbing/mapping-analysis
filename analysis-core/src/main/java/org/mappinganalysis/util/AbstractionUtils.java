@@ -49,7 +49,7 @@ public class AbstractionUtils {
   /**
    * Return an integer representation of the used data sources for easy use in tuples.
    */
-  public static Integer getSourcesInt(String mode, Set<String> sources) {
+  public static int getSourcesInt(String mode, Set<String> sources) {
     setupMode(mode);
     int result = 0;
     for (String source : sources) {
@@ -62,15 +62,17 @@ public class AbstractionUtils {
   private static void setupMode(String mode) {
     if (mode.equals(Constants.MUSIC)) {
       SOURCES_MAP = Constants.MUSIC_MAP;
-    } else {
+    } else if (mode.equals(Constants.GEO)) {
       SOURCES_MAP = Constants.GEO_MAP;
+    } else if (mode.equals(Constants.NC)) {
+      SOURCES_MAP = Constants.NC_MAP;
     }
   }
 
   /**
    * Return an integer representation of the type property.
    */
-  public static Integer getTypesInt(String mode, Set<String> types) {
+  public static Integer getTypesInt(Set<String> types) {
     int result = 0;
     for (String type : types) {
       result += TYPES_MAP.get(type);
@@ -92,24 +94,13 @@ public class AbstractionUtils {
   private static Set<Integer> getValuesIntSet(Integer value) {
     HashSet<Integer> result = Sets.newHashSet();
 
-    if (value - 16 >= 0) {
-      value -= 16;
-      result.add(16);
-    }
-    if (value - 8 >= 0) {
-      value -= 8;
-      result.add(8);
-    }
-    if (value - 4 >= 0) {
-      value -= 4;
-      result.add(4);
-    }
-    if (value - 2 >= 0) {
-      value -= 2;
-      result.add(2);
-    }
-    if (value - 1 >= 0) {
-      result.add(1);
+    int maxSourceValue = 512;
+    while (maxSourceValue > 0) {
+      if (value - maxSourceValue >= 0) {
+        value -= maxSourceValue;
+        result.add(maxSourceValue);
+      }
+      maxSourceValue = maxSourceValue >> 1;
     }
 
     return result;
@@ -142,29 +133,17 @@ public class AbstractionUtils {
     return result;
   }
 
-  public static Integer getSourceCount(ComponentSourceTuple tuple) {
+  public static int getSourceCount(ComponentSourceTuple tuple) {
     return getSourceCount(tuple.getSourcesInt());
   }
 
   /**
    * Given the int abstraction of a property, resolve the number of contained elements.
    */
-  public static Integer getSourceCount(Integer srcInt) {
-    if (srcInt == 1 || srcInt == 2 || srcInt == 4 || srcInt == 8 || srcInt == 16) {
-      return 1;
-    } else if (srcInt == 3 || srcInt == 5 || srcInt == 9 || srcInt == 17 || srcInt == 6
-        || srcInt == 10 || srcInt == 18 || srcInt == 12 || srcInt == 20 || srcInt == 24) {
-      return 2;
-    } else if (srcInt == 7 || srcInt == 11 || srcInt == 19 || srcInt == 13 || srcInt == 21
-        || srcInt == 25) {
-      return 3;
-    } else if (srcInt == 15 || srcInt == 29 || srcInt == 27 || srcInt == 23) {
-      return 4;
-    } else if (srcInt == 31) {
-      return 5;
-    } else {
-      return 0;
-    }
+  public static int getSourceCount(Integer srcInt) {
+    Set<Integer> valuesIntSet = getValuesIntSet(srcInt);
+
+    return valuesIntSet.size();
   }
 
   /**
@@ -178,6 +157,7 @@ public class AbstractionUtils {
     Set<Integer> rightSide = getValuesIntSet(right);
     for (Integer leftValue : getValuesIntSet(left)) {
       if (rightSide.contains(leftValue)) {
+
         return true;
       }
     }
@@ -191,7 +171,6 @@ public class AbstractionUtils {
   public static boolean containsSrc(String mode, Integer sources, String checkSrc) {
     setupMode(mode);
     Set<Integer> values = getValuesIntSet(sources);
-
     Integer checkInt = SOURCES_MAP.get(checkSrc);
 
     return checkInt != null && values.contains(checkInt);

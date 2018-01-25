@@ -1,19 +1,17 @@
 package org.mappinganalysis.model.functions.simcomputation.ops;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.Sets;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.api.CustomOperation;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
-import org.simmetrics.StringMetric;
 
 import java.util.HashSet;
 
 /**
  * Compute similarity for a single property.
- *
- * TODO is this really a good idea? ;)
  */
 public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTriplet> {
   private EdgeObjectMapTriplet triplet;
@@ -21,7 +19,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
   private static final Logger LOG = Logger.getLogger(SinglePropertySimilarity.class);
 
 
-  static final HashSet<String> LANGUAGES;
+  private static final HashSet<String> LANGUAGES;
   static {
     LANGUAGES = Sets.newHashSet();
     LANGUAGES.add(Constants.GE);
@@ -76,18 +74,48 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
       default:
         return triplet;
     }
-
-
   }
 
+  /**
+   * Song number for music domain, Postcod for nc domain.
+   */
   private EdgeObjectMapTriplet handleNumber() {
     String srcNumber = triplet.getSrcVertex().getValue().getNumber();
     String trgNumber = triplet.getTrgVertex().getValue().getNumber();
 
-    if (srcNumber.equals(trgNumber)) {
-      triplet.getEdge().getValue().setLanguageSimilarity(1D);
+    if (triplet.getSrcVertex().getValue().getMode().equals(Constants.MUSIC)) {
+      if (srcNumber.equals(trgNumber)) {
+        triplet.getEdge().getValue().setNumberSimilarity(1D);
+      } else {
+        // TODO handle?
+        //LOG.info("srcPostcod: " + srcNumber + " trgPostcod: " + trgNumber);
+      }
+    } else if (triplet.getSrcVertex().getValue().getMode().equals(Constants.NC)) {
+      srcNumber = replaceChars(srcNumber);
+      trgNumber = replaceChars(trgNumber);
+
+      if (srcNumber.equals(trgNumber)) {
+        triplet.getEdge().getValue().setNumberSimilarity(1D);
+      } else {
+        // TODO handle?
+        //LOG.info("srcPostcod: " + srcNumber + " trgPostcod: " + trgNumber);
+      }
     }
     return triplet;
+  }
+
+  /**
+   * For NC domain, replace certain misspelled chars with digits.
+   */
+  private String replaceChars(String value) {
+    value = CharMatcher.is('s').replaceFrom(value, "5");
+    value = CharMatcher.anyOf("l|").replaceFrom(value, "1");
+    value = CharMatcher.is('z').replaceFrom(value, "2");
+    value = CharMatcher.is('o').replaceFrom(value, "0");
+    value = CharMatcher.is('q').replaceFrom(value, "4");
+    value = CharMatcher.is('g').replaceFrom(value, "9");
+
+    return value;
   }
 
   /**
@@ -139,39 +167,32 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
    * Temporary solution, migrate to extra classes.
    */
   private EdgeObjectMapTriplet handleAlbum() {
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
     String srcAlbum = triplet.getSrcVertex().getValue().getAlbum();
     String trgAlbum = triplet.getTrgVertex().getValue().getAlbum();
 
-    if (!srcAlbum.equals(Constants.NO_VALUE) && !trgAlbum.equals(Constants.NO_VALUE)) {
-      triplet.getEdge().getValue().put(Constants.SIM_ALBUM,
-          Utils.computeWithMetric(metric, srcAlbum, trgAlbum));
-    }
+    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcAlbum, trgAlbum);
+    triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
+
     return triplet;
   }
 
   private EdgeObjectMapTriplet handleArtist() {
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
     String srcArtist = triplet.getSrcVertex().getValue().getArtist();
     String trgArtist = triplet.getTrgVertex().getValue().getArtist();
 
-    if (!srcArtist.equals(Constants.NO_VALUE) && !trgArtist.equals(Constants.NO_VALUE)) {
-      triplet.getEdge().getValue().put(Constants.SIM_ARTIST,
-          Utils.computeWithMetric(metric, srcArtist, trgArtist));
-    }
-//    LOG.info(triplet.getEdge().getValue().toString());
+    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcArtist, trgArtist);
+    triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
+
     return triplet;
   }
 
   private EdgeObjectMapTriplet handleLabel() {
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
     String srcLabel = triplet.getSrcVertex().getValue().getLabel();
     String trgLabel = triplet.getTrgVertex().getValue().getLabel();
 
-    if (!srcLabel.equals(Constants.NO_LABEL_FOUND) && !trgLabel.equals(Constants.NO_LABEL_FOUND)) {
-      triplet.getEdge().getValue().put(Constants.SIM_LABEL,
-          Utils.computeWithMetric(metric, srcLabel, trgLabel));
-    }
+    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcLabel, trgLabel);
+    triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
+
     return triplet;
   }
 
@@ -188,25 +209,20 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
 
     if (srcLan.equals(trgLan)) {
       triplet.getEdge().getValue().setLanguageSimilarity(1D);
-      return triplet;
     } else if (LANGUAGES.contains(srcLan)
         && LANGUAGES.contains(trgLan)) {
       triplet.getEdge().getValue().setLanguageSimilarity(0D);
-    } else if (srcLan.equals(Constants.NO_OR_MINOR_LANG)
-        || srcLan.equals(Constants.MU)
-        || srcLan.equals(Constants.UN)
-        || trgLan.equals(Constants.NO_OR_MINOR_LANG)
-        || trgLan.equals(Constants.MU)
-        || trgLan.equals(Constants.UN)
-        ) {
-      // no guessing if unknown or similar values
-      return triplet;
-    } else {
-      /**
-       * {@value #Constants.NO_VALUE} no guessing if no values
-       */
-      return triplet;
     }
+//    } else if (srcLan.equals(Constants.NO_OR_MINOR_LANG)
+//        || srcLan.equals(Constants.MU)
+//        || srcLan.equals(Constants.UN)
+//        || trgLan.equals(Constants.NO_OR_MINOR_LANG)
+//        || trgLan.equals(Constants.MU)
+//        || trgLan.equals(Constants.UN)) {
+//      // no guessing if unknown or similar values
+//    } else {
+//      // {@value #Constants.NO_VALUE} no guessing if no values
+//    }
     return triplet;
   }
 }

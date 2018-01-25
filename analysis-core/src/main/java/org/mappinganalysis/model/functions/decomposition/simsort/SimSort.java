@@ -61,13 +61,18 @@ public class SimSort
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
-    String mode;
+    String mode = null;
     if (domain == DataDomain.MUSIC) {
       mode = Constants.MUSIC;
-    } else {
+    } else if (domain == DataDomain.GEOGRAPHY) {
       mode = Constants.GEO;
+    } else if (domain == DataDomain.NC) {
+      mode = Constants.NC;
     }
 
+    /**
+     * TODO THIS IS THE PROBLEM
+     */
     if (prepareEnabled) {
       DataSet<Edge<Long, NullValue>> distinctEdges = graph
           .getVertices()
@@ -78,7 +83,8 @@ public class SimSort
           .run(new BasicEdgeSimilarityComputation(mode, env));
     }
 
-    graph = graph.run(new SimSortVertexCentricIteration(minSimilarity, env));
+    graph = graph
+        .run(new SimSortVertexCentricIteration(minSimilarity, env));
 
     return Graph.fromDataSet(graph.getVertices(), graph.getEdges(), env);
   }
@@ -94,6 +100,6 @@ public class SimSort
         .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
-        .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+        .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
   }
 }

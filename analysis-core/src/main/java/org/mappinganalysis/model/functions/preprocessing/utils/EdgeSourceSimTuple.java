@@ -17,12 +17,12 @@ public class EdgeSourceSimTuple
   public EdgeSourceSimTuple() { // needed
   }
 
-  public EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcOntology, String trgOntology, Double edgeSim) {
+  public EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcDatasource, String trgDataSource, Double edgeSim) {
     this.f0 = ccId;
     this.f1 = source;
     this.f2 = target;
-    this.f3 = srcOntology;
-    this.f4 = trgOntology;
+    this.f3 = srcDatasource;
+    this.f4 = trgDataSource;
     this.f5 = edgeSim;
   }
 
@@ -38,11 +38,11 @@ public class EdgeSourceSimTuple
     return f2;
   }
 
-  public String getSrcOntology() {
+  public String getSrcDataSource() {
     return f3;
   }
 
-  public String getTrgOntology() {
+  public String getTrgDataSource() {
     return f4;
   }
 

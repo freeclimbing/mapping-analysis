@@ -23,6 +23,7 @@ public class Constants {
   public static final String DB_URL_FIELD = "url";
 
   public static final String ID = "id";
+  public static final String GRADOOP_ID = "gradoopId";
   public static final String SOURCE = "source";
   public static final String TARGET = "target";
   public static final String DATA = "data";
@@ -51,11 +52,19 @@ public class Constants {
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 1D;
 
-  /**
-   * similarity computation strategies
-   */
   public static final String SIM_GEO_LABEL_STRATEGY = "geo-label";
+  /**
+   * mode for MUSIC domain
+   */
   public static final String MUSIC = "music";
+  /**
+   * mode for NC domain
+   */
+  public static final String NC = "northCarolina";
+  /**
+   * mode for GEOGRAPHY domain
+   */
+  public static final String GEO = "geo";
   /**
    * DB attName for gn type detail information
    */
@@ -67,7 +76,6 @@ public class Constants {
   public static final String TYPE = "type";
   public static final String LAT = "lat";
   public static final String LON = "lon";
-  public static final String GEO = "geo";
   public static final String LABEL = "label";
   public static final String IDF_LABEL = "idfLabel";
 
@@ -174,7 +182,7 @@ public class Constants {
   public static final String IDF_VALUES = "idfValues";
 
   /**
-   * Language vocab
+   * Language vocabulary
    */
   public static final String NO_OR_MINOR_LANG = "no_or_minor_lang";
   public static final String UN = "unknown";
@@ -211,8 +219,21 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
+  public static final String NC_1 = "geco1";
+  public static final String NC_2 = "geco2";
+  public static final String NC_3 = "geco3";
+  public static final String NC_4 = "geco4";
+  public static final String NC_5 = "geco5";
+  public static final String NC_6 = "geco6";
+  public static final String NC_7 = "geco7";
+  public static final String NC_8 = "geco8";
+  public static final String NC_9 = "geco9";
+  public static final String NC_10 = "geco10";
+
   public static final List<String> GEO_SOURCES = Lists.newArrayList(DBP_NS, GN_NS, LGD_NS, FB_NS, NYT_NS);
   public static final List<String> MUSIC_SOURCES = Lists.newArrayList("1", "2", "3", "4", "5");
+  public static final List<String> NC_SOURCES = Lists.newArrayList(
+      NC_1, NC_2, NC_3, NC_4, NC_5, NC_6,  NC_7,  NC_8, NC_9,  NC_10);
 
   /**
    * TODO create these maps on-the-fly #124
@@ -235,6 +256,22 @@ public class Constants {
     MUSIC_MAP.put("3", 4);
     MUSIC_MAP.put("4", 8);
     MUSIC_MAP.put("5", 16);
+  }
+
+  public static final HashMap<String, Integer> NC_MAP;
+  static {
+    NC_MAP = Maps.newLinkedHashMap();
+    NC_MAP.put("geco1", 1);
+    NC_MAP.put("geco2", 2);
+    NC_MAP.put("geco3", 4);
+    NC_MAP.put("geco4", 8);
+    NC_MAP.put("geco5", 16);
+    NC_MAP.put("geco6", 32);
+    NC_MAP.put("geco7", 64);
+    NC_MAP.put("geco8", 128);
+    NC_MAP.put("geco9", 256);
+    NC_MAP.put("geco10", 512);
+
   }
 
   /**

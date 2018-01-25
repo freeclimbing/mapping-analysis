@@ -27,32 +27,33 @@ public class SimilarityMapperTest extends BasicTest {
 
   /**
    * check simmetrics metric, check for utf8 support
-   * @throws Exception
    */
   @Test
   public void easyTrigramTest() throws Exception {
-    StringMetric metric = Utils.getTrigramMetricAndSimplifyStrings();
+    StringMetric metric = Utils.getTrigramMetric();
 
     String one = "Long Island (NY)";
     String two = "long island, NY";
+    one = Utils.simplify(one);
+    two = Utils.simplify(two);
     assertEquals(1, metric.compare(one, two), 0.00001);
 
-    String specialChars = "Pułaczów";
-    String rmSpecialChars = "Puaczw"; // missing special chars
-    String normalChars = "Pulaczow";
+    String specialChars = Utils.simplify("Pułaczów");
+    String rmSpecialChars = Utils.simplify("Puaczw"); // missing special chars
+    String normalChars = Utils.simplify("Pulaczow");
     assertEquals(0.4, metric.compare(specialChars, normalChars), 0.00001);
     assertEquals(0.4472136, metric.compare(specialChars, rmSpecialChars), 0.00001);
 
-    String chinese = "安市";
-    String switchedChinese = "市安";
-    String mix = "ł市"; // replaced first char
+    String chinese = Utils.simplify("安市");
+    String switchedChinese = Utils.simplify("市安");
+    String mix = Utils.simplify("ł市"); // replaced first char
     assertEquals(0.25, metric.compare(chinese, mix), 0.00001);
     assertEquals(0, metric.compare(chinese, switchedChinese), 0.00001);
 
 
-    String arabic1 = "ﻚﻓﺭ ﺐﻬﻣ";
-    String arabic2 = "ﻚﻓﺭ ﺐﻬ"; // last char missing
-    assertEquals(0.6681531, metric.compare(arabic1, arabic2), 0.00001);
+    String arabic1 = Utils.simplify("ﻚﻓﺭ ﺐﻬﻣ");
+    String arabic2 = Utils.simplify("ﻚﻓﺭ ﺐﻬ"); // last char missing
+    assertEquals(0.7071067, metric.compare(arabic1, arabic2), 0.00001);
   }
 
   @Test

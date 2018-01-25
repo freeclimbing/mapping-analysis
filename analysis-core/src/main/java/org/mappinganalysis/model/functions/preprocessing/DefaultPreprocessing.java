@@ -30,6 +30,7 @@ public class DefaultPreprocessing
 
   /**
    * Basic preprocessing: link filter enabled
+   * At the end of preprocessing, neither ccId nor hashCcId is correct!! Do not group on these keys.
    */
   public DefaultPreprocessing(ExecutionEnvironment env) {
     this(true, env);
@@ -61,31 +62,47 @@ public class DefaultPreprocessing
         .mapVertices(new DataSourceMapFunction())
         .run(new EqualDataSourceLinkRemover(env));
 
-    Graph<Long, ObjectMap, ObjectMap> resultGraph;
-    List<String> sources;
+    Graph<Long, ObjectMap, ObjectMap> resultGraph = null;
+    List<String> sources = null;
     if (domain == DataDomain.MUSIC) {
       resultGraph = tmpGraph
           .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
       sources = Constants.MUSIC_SOURCES;
-    } else {
+    } else if (domain == DataDomain.GEOGRAPHY) {
       resultGraph = tmpGraph
           .run(new TypeMisMatchCorrection(env))
-          .run(new BasicEdgeSimilarityComputation(Constants.DEFAULT_VALUE, env));
+          .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
       sources = Constants.GEO_SOURCES;
+    } else if (domain == DataDomain.NC) {
+      resultGraph = tmpGraph
+          .run(new BasicEdgeSimilarityComputation(Constants.NC, env));
+      sources = Constants.NC_SOURCES;
     }
 
     if (linkFilterEnabled) {
-      LinkFilter linkFilter = new LinkFilter
-          .LinkFilterBuilder()
-          .setEnvironment(env)
-          .setRemoveIsolatedVertices(true)
-          .setDataSources(sources)
-          .setStrategy(LinkFilterStrategy.BASIC)
-          .build();
+      LinkFilter linkFilter;
+      if (domain == DataDomain.NC) {
+        linkFilter = new LinkFilter
+            .LinkFilterBuilder()
+            .setEnvironment(env)
+            .setRemoveIsolatedVertices(false)
+            .setDataSources(sources)
+            .setStrategy(LinkFilterStrategy.BASIC)
+            .build();
+      } else {
+        linkFilter = new LinkFilter
+            .LinkFilterBuilder()
+            .setEnvironment(env)
+            .setRemoveIsolatedVertices(true)
+            .setDataSources(sources)
+            .setStrategy(LinkFilterStrategy.BASIC)
+            .build();
+      }
 
+      assert resultGraph != null;
       return resultGraph
           .run(linkFilter)
-          .run(new TypeOverlapCcCreator(domain, env)); // each vertex has "no type" with music dataset
+          .run(new TypeOverlapCcCreator(domain, env)); // each vertex has "no type" with music/nc dataset
     } else {
       return resultGraph;
     }
