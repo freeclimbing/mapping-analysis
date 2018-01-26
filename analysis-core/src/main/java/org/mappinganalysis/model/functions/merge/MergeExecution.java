@@ -28,12 +28,14 @@ public class MergeExecution
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
   private DataDomain domain;
+  private double simThreshold;
   private int sourcesCount;
   private ExecutionEnvironment env;
   private DataSet<Vertex<Long, ObjectMap>> baseClusters;
 
-  public MergeExecution(DataDomain domain, int sourcesCount, ExecutionEnvironment env) {
+  public MergeExecution(DataDomain domain, double simThreshold, int sourcesCount, ExecutionEnvironment env) {
     this.domain = domain;
+    this.simThreshold = simThreshold;
     this.sourcesCount = sourcesCount;
     this.env = env;
   }
@@ -68,8 +70,7 @@ public class MergeExecution
           MergeGeoTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
-//          .setThreshold(0.5)
-          .setThreshold(0.85)
+          .setThreshold(simThreshold)
           .build();
 
       // initial working set
@@ -132,7 +133,7 @@ public class MergeExecution
           MergeMusicTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
-          .setThreshold(0.5)
+          .setThreshold(simThreshold)
           .build();
 
       // initial working set
@@ -155,7 +156,8 @@ public class MergeExecution
             .runOperation(similarityComputation)
             .rebalance();
 
-        DataSet<MergeMusicTuple> simpleTuples = idfPartTriplets.<Tuple2<Long, Long>>project(0, 1)
+        DataSet<MergeMusicTuple> simpleTuples = idfPartTriplets
+            .<Tuple2<Long, Long>>project(0, 1)
             .flatMap((Tuple2<Long, Long> tuple, Collector<Tuple1<Long>> out) -> {
               out.collect(new Tuple1<>(tuple.f0));
               out.collect(new Tuple1<>(tuple.f1));
@@ -175,7 +177,8 @@ public class MergeExecution
               }
             });
 
-        DataSet<MergeMusicTriplet> simpleTriplets = simpleTuples.groupBy(10) // blocking key
+        DataSet<MergeMusicTriplet> simpleTriplets = simpleTuples
+            .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation);
 

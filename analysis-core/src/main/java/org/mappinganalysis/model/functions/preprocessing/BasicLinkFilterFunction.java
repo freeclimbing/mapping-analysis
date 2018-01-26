@@ -61,7 +61,7 @@ public class BasicLinkFilterFunction
         .where(0, 1)
         .equalTo(0, 1)
         .with((tuple, edge) -> {
-          LOG.info("BLF newEdge: " + edge.toString());
+//          LOG.info("BLF newEdge: " + edge.toString());
           return edge;
         })
         .returns(new TypeHint<Edge<Long, ObjectMap>>() {});

@@ -26,7 +26,6 @@ public class MergeGeoBlockingTest {
    * 3 vertices where 2 are similar, get clustered
    * 2 vertices are dissimilar, they should be still in the result (as single vertices)
    * 2 vertices without oldHashCc
-   * @throws Exception
    */
   @Test
   public void testInit() throws Exception {
@@ -75,7 +74,7 @@ public class MergeGeoBlockingTest {
 
         new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5, env));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, 5, env));
 
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
@@ -129,7 +128,7 @@ public class MergeGeoBlockingTest {
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 5, env));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, 5, env));
 
 //    vertices.print();
     assertEquals(4, vertices.count());

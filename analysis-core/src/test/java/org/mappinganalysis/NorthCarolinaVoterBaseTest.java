@@ -1,14 +1,14 @@
 package org.mappinganalysis;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -34,7 +34,9 @@ import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -84,7 +86,12 @@ public class NorthCarolinaVoterBaseTest {
 //    errorGraph.getVertices().print();
         .run(new SimSort(DataDomain.NC, 0.85, env));
 
-errorGraph.getEdges().print();
+//errorGraph.getEdges().print();
+
+    DataSet<Vertex<Long, ObjectMap>> errorVertices = errorGraph.getVertices()
+        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+
+    errorVertices.print();
 
     //TODO not working, in THIS simgraph hashccid is not unique for every cluster
 //    simGraph.getVertices()
@@ -112,20 +119,31 @@ errorGraph.getEdges().print();
 
   @Test
   public void northCarolinaHolisticTest() throws Exception {
-    env = TestBase.setupLocalEnvironment();
-    final String graphPath = NorthCarolinaVoterBaseTest.class
-        .getResource("/data/nc/5s4/").getFile();
-    LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-    Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
 
-    Graph<Long, ObjectMap, ObjectMap> simGraph = graph
-        .run(new DefaultPreprocessing(DataDomain.NC, env));
+//    int i = 50;
+    List<String> sourceList = Lists.newArrayList("/data/nc/5s1/",
+        "/data/nc/5s2/",
+        "/data/nc/5s4/",
+        "/data/nc/5s5/");
+    for (String dataset : sourceList) {
+    for (int mergeFor = 50; mergeFor <= 95; mergeFor+=5) {
+      double mergeThreshold = (double) mergeFor / 100;
+      for (int simFor = 50; simFor <= 95; simFor += 5) {
+        double simSortThreshold = (double) simFor / 100;
+        env = TestBase.setupLocalEnvironment();
+        final String graphPath = NorthCarolinaVoterBaseTest.class
+            .getResource(dataset).getFile();
+        LogicalGraph logicalGraph = getGradoopGraph(graphPath);
+        Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
 
-    DataSet<Vertex<Long, ObjectMap>> representatives = simGraph
-        .run(new TypeGroupBy(env))
-        .run(new SimSort(DataDomain.NC, 0.85, env))
-        .getVertices()
-        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+        Graph<Long, ObjectMap, ObjectMap> simGraph = graph
+            .run(new DefaultPreprocessing(DataDomain.NC, env));
+
+        DataSet<Vertex<Long, ObjectMap>> representatives = simGraph
+            .run(new TypeGroupBy(env))
+            .run(new SimSort(DataDomain.NC, simSortThreshold, env))
+            .getVertices()
+            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
 //    representatives.map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, Integer, Set<Long>>>() {
 //      @Override
@@ -139,64 +157,59 @@ errorGraph.getEdges().print();
 
 //    representatives.first(20).print();
 
-    DataSet<Vertex<Long, ObjectMap>> merged = representatives
-        .runOperation(new MergeInitialization(DataDomain.NC))
-        .runOperation(new MergeExecution(DataDomain.NC, 5, env));
+        DataSet<Vertex<Long, ObjectMap>> merged = representatives
+            .runOperation(new MergeInitialization(DataDomain.NC))
+            .runOperation(new MergeExecution(DataDomain.NC, mergeThreshold, 5, env));
 
-    merged.map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, Integer, Set<Long>>>() {
-      @Override
-      public Tuple3<Long, Integer, Set<Long>> map(Vertex<Long, ObjectMap> value) throws Exception {
-        return new Tuple3<>(value.getId(), value.getValue().getVerticesCount(), value.getValue().getVerticesList());
-      }
-    }).sortPartition(1, Order.DESCENDING)
-        .setParallelism(1)
-        .first(50)
-        .print();
+//    merged.map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, Integer, Set<Long>>>() {
+//      @Override
+//      public Tuple3<Long, Integer, Set<Long>> map(Vertex<Long, ObjectMap> value) throws Exception {
+//        return new Tuple3<>(value.getId(), value.getValue().getVerticesCount(), value.getValue().getVerticesList());
+//      }
+//    }).sortPartition(1, Order.DESCENDING)
+//        .setParallelism(1)
+//        .first(50)
+//        .print();
+
 //    // 07677847s2 williams 207677847
 //    // 01645993s5 willis 501645993
 //    // 04737686s4 dickerson 404737686
-//
-//    //TODO quality check!
-//
-//    DataSet<Tuple2<Long, Long>> clusterEdges = merged
-//        .flatMap(new QualityEdgeCreator());
-//
-//    final String pmPath = NorthCarolinaVoterBaseTest.class
-//        .getResource("/data/nc/").getFile();
-//
-//    DataSet<Tuple2<String, String>> perfectMapping = env
-//        .readCsvFile(pmPath.concat("pm.csv"))
-//        .types(String.class, String.class);
-//
-//    LOG.info("gold links size (TP+FN): " + perfectMapping.count());
-//
-//    DataSet<Tuple2<Long, Long>> goldLinks = perfectMapping
-//        .map(new MapFunction<Tuple2<String, String>, Tuple2<Long, Long>>() {
-//          @Override
-//          public Tuple2<Long, Long> map(Tuple2<String, String> pmValue) throws Exception {
-//            long first = Utils.getIdFromNcId(pmValue.f0);
-//            long second = Utils.getIdFromNcId(pmValue.f1);
-//
-//            if (first < second) {
-//              return new Tuple2<>(first, second);
-//            } else {
-//              return new Tuple2<>(second, first);
-//            }
-//          }
-//        });
-//
-//    LOG.info("TP+FP: " + clusterEdges.count());
-////    LOG.info(clusterEdges.distinct().count());
-//
-//    DataSet<Tuple2<Long, Long>> truePositives = goldLinks.join(clusterEdges)
-//        .where(0, 1).equalTo(0, 1)
-//        .with(new JoinFunction<Tuple2<Long,Long>, Tuple2<Long,Long>, Tuple2<Long, Long>>() {
-//          @Override
-//          public Tuple2<Long, Long> join(Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
-//            return first;
-//          }
-//        });
 
+        //TODO quality check!
+
+        DataSet<Tuple2<Long, Long>> clusterEdges = merged
+            .flatMap(new QualityEdgeCreator());
+
+        final String pmPath = NorthCarolinaVoterBaseTest.class
+            .getResource("/data/nc/").getFile();
+
+        DataSet<Tuple2<String, String>> perfectMapping = env
+            .readCsvFile(pmPath.concat("pm.csv"))
+            .types(String.class, String.class);
+
+        DataSet<Tuple2<Long, Long>> goldLinks = perfectMapping
+            .map(new MapFunction<Tuple2<String, String>, Tuple2<Long, Long>>() {
+              @Override
+              public Tuple2<Long, Long> map(Tuple2<String, String> pmValue) throws Exception {
+                long first = Utils.getIdFromNcId(pmValue.f0);
+                long second = Utils.getIdFromNcId(pmValue.f1);
+
+                if (first < second) {
+                  return new Tuple2<>(first, second);
+                } else {
+                  return new Tuple2<>(second, first);
+                }
+              }
+            });
+
+        DataSet<Tuple2<Long, Long>> truePositives = goldLinks.join(clusterEdges)
+            .where(0, 1).equalTo(0, 1)
+            .with(new JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
+              @Override
+              public Tuple2<Long, Long> join(Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
+                return first;
+              }
+            });
 
 
 //       truePositives.groupBy(0,1)
@@ -213,20 +226,28 @@ errorGraph.getEdges().print();
 //            }
 //          }
 //        }).collect();
+        long goldCount = perfectMapping.count();
+        long checkCount = clusterEdges.count();
+        long tpCount = truePositives.count();
 
-//    LOG.info("TP: " + truePositives.count());
-//    LOG.info("TP distinct: " + truePositives.distinct().count());
+        double precision = (double) tpCount / checkCount;
+        double recall = (double) tpCount / goldCount;
+        LOG.info("\n############### dataset: " + dataset + " mergeThreshold: " + mergeThreshold + " simSortThreshold: " + simSortThreshold);
+//        LOG.info("Precision = tp count / check count = " + tpCount + " / " + checkCount + " = " + precision);
+//        LOG.info("###############");
+//        LOG.info("Recall = tp count / gold count = " + tpCount + " / " + goldCount + " = " + recall);
+//        LOG.info("###############");
+//        LOG.info("f1 = 2 * precision * recall / (precision + recall) = "
+//            + 2 * precision * recall / (precision + recall));
+//        LOG.info("\ngold links size (TP+FN): " + goldCount);
+        LOG.info("TP+FP: " + checkCount);
+        LOG.info("TP: " + tpCount);
 
-//    double precision = (double) tpCount / checkCount;
-//    double recall = (double) tpCount / goldCount;
-//    LOG.info("###############");
-//    LOG.info("Precision = tp count / check count = " + tpCount + " / " + checkCount + " = " + precision);
-//    LOG.info("###############");
-//    LOG.info("Recall = tp count / gold count = " + tpCount + " / " + goldCount + " = " + recall);
-//    LOG.info("###############");
-//    LOG.info("f1 = 2 * precision * recall / (precision + recall) = "
-//        + 2 * precision * recall / (precision + recall));
-//    LOG.info("###############");
+        LOG.info("######################################################");
+      }
+    }
+
+    }
 
     assertEquals(1, 1);
   }
@@ -294,9 +315,9 @@ errorGraph.getEdges().print();
       Set<Long> secondSide = Sets.newHashSet(firstSide);
       for (Long first : firstSide) {
         secondSide.remove(first);
-        if (secondSide.isEmpty()) { // TODO check: needed to have comparable results to alieh
-          out.collect(new Tuple2<>(first, first));
-        }
+//        if (secondSide.isEmpty()) { // TODO check: needed to have comparable results to alieh
+//          out.collect(new Tuple2<>(first, first));
+//        }
         for (Long second : secondSide) {
           if (first < second) {
             out.collect(new Tuple2<>(first, second));

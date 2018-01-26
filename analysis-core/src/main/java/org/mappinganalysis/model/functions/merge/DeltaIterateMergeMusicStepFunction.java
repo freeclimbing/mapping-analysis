@@ -108,7 +108,7 @@ public class DeltaIterateMergeMusicStepFunction {
 
     @Override
     public boolean filter(T vertex) throws Exception {
-      LOG.info("Superstep: " + superstep);
+//      LOG.info("Superstep: " + superstep);
       return false;
     }
   }

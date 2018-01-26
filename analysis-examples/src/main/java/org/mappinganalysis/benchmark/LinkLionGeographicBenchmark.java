@@ -77,7 +77,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         new JSONDataSource(inputPath, DECOMPOSITION, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
-            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, Constants.SOURCE_COUNT, env));
+            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, Constants.SOURCE_COUNT, env));
 
     new JSONDataSink(inputPath, MERGE)
         .writeVertices(mergedVertices);
