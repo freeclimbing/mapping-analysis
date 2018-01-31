@@ -13,7 +13,7 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class SimSortTest {
   private static final Logger LOG = Logger.getLogger(SimSortTest.class);
@@ -46,15 +46,14 @@ public class SimSortTest {
           }
         });
 
-    DataSet<Vertex<Long, ObjectMap>> representatives = vertices//graph.getVertices()
+    DataSet<Vertex<Long, ObjectMap>> representatives = vertices
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
     for (Vertex<Long, ObjectMap> vertex : representatives.collect()) {
-//      LOG.info(vertex.toString());
       if (vertex.getId() == 2757L) {
-        assertTrue(vertex.getValue().getVerticesCount().equals(1));
+        assertEquals(1, vertex.getValue().getVerticesCount());
       } else {
-        assertTrue(vertex.getValue().getVerticesCount().equals(3));
+        assertEquals(3, vertex.getValue().getVerticesCount());
       }
     }
   }

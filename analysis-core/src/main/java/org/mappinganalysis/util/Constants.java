@@ -230,8 +230,10 @@ public class Constants {
   public static final String NC_9 = "geco9";
   public static final String NC_10 = "geco10";
 
-  public static final List<String> GEO_SOURCES = Lists.newArrayList(DBP_NS, GN_NS, LGD_NS, FB_NS, NYT_NS);
-  public static final List<String> MUSIC_SOURCES = Lists.newArrayList("1", "2", "3", "4", "5");
+  public static final List<String> GEO_SOURCES = Lists
+      .newArrayList(DBP_NS, GN_NS, LGD_NS, FB_NS, NYT_NS);
+  public static final List<String> MUSIC_SOURCES = Lists
+      .newArrayList("1", "2", "3", "4", "5");
   public static final List<String> NC_SOURCES = Lists.newArrayList(
       NC_1, NC_2, NC_3, NC_4, NC_5, NC_6,  NC_7,  NC_8, NC_9,  NC_10);
 

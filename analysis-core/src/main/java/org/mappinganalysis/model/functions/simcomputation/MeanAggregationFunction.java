@@ -33,6 +33,8 @@ public class MeanAggregationFunction implements CustomOperation<ObjectMap>, Seri
       if (properties.containsKey(simKey)) {
         ++propCount;
         aggregatedSim += (double) properties.get(simKey);
+        // remove unneeded single similarity value
+        properties.remove(simKey);
       }
     }
 

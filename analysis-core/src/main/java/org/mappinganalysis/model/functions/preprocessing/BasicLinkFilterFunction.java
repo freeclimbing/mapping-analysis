@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -45,9 +46,10 @@ public class BasicLinkFilterFunction
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, ObjectMap> graph)
       throws Exception {
+    // first cc needed for neighbor grouping - needed?
     graph = graph.run(new ConnectedComponentIdAdder<>(env));
 
-    // EdgeSourceSimTuple(edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
+    // EdgeSourceSimTuple(ccid, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
         .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(), EdgeDirection.OUT);
 
@@ -60,10 +62,7 @@ public class BasicLinkFilterFunction
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)
         .equalTo(0, 1)
-        .with((tuple, edge) -> {
-//          LOG.info("BLF newEdge: " + edge.toString());
-          return edge;
-        })
+        .with((tuple, edge) -> edge)
         .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> resultVertices;
@@ -71,10 +70,19 @@ public class BasicLinkFilterFunction
       resultVertices = graph.getVertices()
           .runOperation(new IsolatedVertexRemover<>(newEdges));
     } else {
-      resultVertices = graph.getVertices();
+      resultVertices = graph.getVertices()
+      .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
+        @Override
+        public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
+          if (vertex.getId() == 704781154L)
+            LOG.info("linkFilter: " + vertex.getValue().toString());
+          return vertex;
+        }
+      });
+
     }
 
     return Graph.fromDataSet(resultVertices, newEdges, env)
-        .run(new ConnectedComponentIdAdder<>(env));
+        .run(new ConnectedComponentIdAdder<>(env)); // CC needed
   }
 }

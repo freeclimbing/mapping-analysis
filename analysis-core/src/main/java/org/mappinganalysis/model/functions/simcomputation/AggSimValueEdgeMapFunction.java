@@ -13,22 +13,22 @@ import org.mappinganalysis.util.Constants;
 public class AggSimValueEdgeMapFunction
     implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
   private final boolean isMeanSimActivated;
-  private String combination = "";
+  private String mode = "";
 
   /**
    * Aggregate all similarity values, either based on weight based metric
    * or simply by existence (missing properties are ignored).
    */
-  public AggSimValueEdgeMapFunction(boolean isMeanSimActivated) {
+  AggSimValueEdgeMapFunction(boolean isMeanSimActivated) {
     this.isMeanSimActivated = isMeanSimActivated;
   }
 
   /**
-   * New constructor - music dataset currently
+   * New constructor - music/nc dataset currently
    */
-  public AggSimValueEdgeMapFunction(String combination) {
+  AggSimValueEdgeMapFunction(String mode) {
     this.isMeanSimActivated = false;
-    this.combination = combination;
+    this.mode = mode;
   }
 
   @Override
@@ -37,7 +37,7 @@ public class AggSimValueEdgeMapFunction
     Preconditions.checkArgument(!edgeValue.isEmpty(), "edge value empty: "
         + edge.getSource() + ", " + edge.getTarget());
 
-    if (combination.equals(Constants.MUSIC) || combination.equals(Constants.NC)) {
+    if (mode.equals(Constants.MUSIC) || mode.equals(Constants.NC)) {
       edgeValue.runOperation(new MeanAggregationFunction());
     } else { // old default
       double aggregatedSim;

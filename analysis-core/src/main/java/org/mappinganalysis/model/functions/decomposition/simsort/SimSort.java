@@ -70,9 +70,6 @@ public class SimSort
       mode = Constants.NC;
     }
 
-    /**
-     * TODO THIS IS THE PROBLEM
-     */
     if (prepareEnabled) {
       DataSet<Edge<Long, NullValue>> distinctEdges = graph
           .getVertices()

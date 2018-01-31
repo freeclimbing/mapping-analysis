@@ -402,7 +402,7 @@ public class ObjectMap
     }
   }
 
-  public Integer getVerticesCount() {
+  public int getVerticesCount() {
     return getVerticesList().size();
   }
 

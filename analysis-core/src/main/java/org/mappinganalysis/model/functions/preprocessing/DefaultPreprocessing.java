@@ -116,6 +116,8 @@ public class DefaultPreprocessing
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
       vertex.getValue().getDataSource();
 
+      if (vertex.getId() == 704781154L)
+        LOG.info("dataSourceMap: " + vertex.getValue().toString());
       return vertex.getValue();
     }
   }

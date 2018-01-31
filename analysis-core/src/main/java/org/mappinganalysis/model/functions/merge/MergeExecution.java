@@ -103,7 +103,7 @@ public class MergeExecution
           .with(new FinalMergeGeoVertexCreator());
     } else
     /*
-      ########## MUSIC ##############
+      ########## MUSIC/NC ##############
      */
     if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
       BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;

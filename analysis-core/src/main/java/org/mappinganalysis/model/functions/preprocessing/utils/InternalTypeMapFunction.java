@@ -39,6 +39,8 @@ public class InternalTypeMapFunction
       properties.remove(Constants.GN_TYPE_DETAIL);
     }
 
+    if (vertex.getId() == 704781154L)
+    LOG.info("internalTypeMap: " + properties.toString());
     return properties;
   }
 

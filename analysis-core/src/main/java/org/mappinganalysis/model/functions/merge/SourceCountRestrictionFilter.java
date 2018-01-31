@@ -30,7 +30,6 @@ public class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
   public boolean filter(T tuple) throws Exception {
     if (domain == DataDomain.GEOGRAPHY) {
       MergeGeoTuple tmp = (MergeGeoTuple) tuple;
-//      LOG.info(tmp.toString());
       return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
     } else {
       MergeMusicTuple tmp = (MergeMusicTuple) tuple;
