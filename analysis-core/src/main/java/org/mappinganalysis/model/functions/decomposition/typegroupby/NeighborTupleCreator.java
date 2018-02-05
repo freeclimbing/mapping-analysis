@@ -31,9 +31,6 @@ class NeighborTupleCreator
     return vertex
         .getValue()
         .getTypes(Constants.TYPE_INTERN)
-        .stream()
-        .findFirst()
-        .get()
-        .equals(Constants.NO_TYPE);
+        .contains(Constants.NO_TYPE);
   }
 }

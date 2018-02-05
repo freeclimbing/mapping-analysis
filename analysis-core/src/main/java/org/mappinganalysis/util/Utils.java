@@ -120,6 +120,15 @@ public class Utils {
     return result;
   }
 
+  @SafeVarargs
+  public static <T> HashSet<T> merge(Collection<? extends T>... collections) {
+    HashSet<T> newSet = new HashSet<>();
+    for (Collection<? extends T> collection : collections)
+      newSet.addAll(collection);
+
+    return newSet;
+  }
+
 //  public void setBlockingKey(BlockingStrategy strategy, String mode, String label) {
 //    map.put(Constants.BLOCKING_LABEL,
 //        Utils.getBlockingKey(strategy, mode, label));

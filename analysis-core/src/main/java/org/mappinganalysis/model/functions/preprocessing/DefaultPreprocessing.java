@@ -101,8 +101,8 @@ public class DefaultPreprocessing
 
       assert resultGraph != null;
       return resultGraph
-          .run(linkFilter)
-          .run(new TypeOverlapCcCreator(domain, env)); // each vertex has "no type" with music/nc dataset
+          .run(linkFilter) // cc id
+          .run(new TypeOverlapCcCreator(domain, env)); // hash cc id, each vertex has "no type" with music/nc dataset
     } else {
       return resultGraph;
     }
@@ -116,8 +116,8 @@ public class DefaultPreprocessing
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
       vertex.getValue().getDataSource();
 
-      if (vertex.getId() == 704781154L)
-        LOG.info("dataSourceMap: " + vertex.getValue().toString());
+//      if (vertex.getId() == 704781154L)
+//        LOG.info("dataSourceMap: " + vertex.getValue().toString());
       return vertex.getValue();
     }
   }
