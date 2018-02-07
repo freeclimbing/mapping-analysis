@@ -84,10 +84,6 @@ public class MergeExecution
       DeltaIteration<MergeGeoTuple, MergeGeoTriplet> iteration = clusters
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
 
-      // log superstep
-//    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
-//        .map(x->x); // why do we need this line, not working without
-
       // start step function
       DeltaIterateGeographicMergeStepFunction stepFunction = new DeltaIterateGeographicMergeStepFunction(
           iteration.getWorkset(),

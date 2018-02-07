@@ -92,36 +92,37 @@ public class CandidateCreator
       boolean isLogEnabled = false;
       DataSet<Tuple2<Long, Long>> lshCandidates = inputVertices
 //          .map(new TempLogSourceCountPrintFunction(sourceCount)) // delete after test complete
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
-              LOG.info("pre LSH: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
+//              LOG.info("pre LSH: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
           .runOperation(new LshCandidateCreator(isIdfOptimizeEnabled));
 
       DataSet<MergeGeoTuple> geoTuples = inputVertices
           .map(new AddShadingTypeMapFunction())
           .map(new MergeGeoTupleCreator(BlockingStrategy.NO_BLOCKING))
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
-              LOG.info("MergeTupleCreator: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTuple>() {});
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
+//              LOG.info("MergeTupleCreator: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTuple>() {})
+          ;
 
       DataSet<MergeGeoTriplet> mergeGeoTriplets = lshCandidates
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
-                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
-              LOG.info("after LSH: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<Tuple2<Long, Long>>() {
-          })
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
+//                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
+//              LOG.info("after LSH: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<Tuple2<Long, Long>>() {
+//          })
           .map(candidate -> new MergeGeoTriplet(candidate.f0, candidate.f1))
           .returns(new TypeHint<MergeGeoTriplet>() {})
           .join(geoTuples)
@@ -133,23 +134,24 @@ public class CandidateCreator
           .equalTo(0)
           .with(new CandidateMergeTripletCreator(1))
           .map(new SwitchMapFunction(newSource))
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
-                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
-              LOG.info("pre sim comp: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTriplet>() {})
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
+//                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
+//              LOG.info("pre sim comp: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTriplet>() {})
           .runOperation(similarityComputation)
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
-                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
-              LOG.info("sim: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTriplet>() {});
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
+//                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
+//              LOG.info("sim: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTriplet>() {})
+          ;
 
       DataSet<Tuple1<Long>> coveredTuples = mergeGeoTriplets
           .flatMap(new FlatMapFunction<MergeGeoTriplet, Tuple1<Long>>() {
@@ -164,13 +166,14 @@ public class CandidateCreator
             }
           })
           .distinct()
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
-              LOG.info("covered Tuple: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<Tuple1<Long>>() {});
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
+//              LOG.info("covered Tuple: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<Tuple1<Long>>() {})
+          ;
 
       DataSet<Tuple2<Long, Long>> flatMappedGeoTuples = geoTuples
           .flatMap(new FlatMapFunction<MergeGeoTuple, Tuple2<Long, Long>>() {
@@ -212,15 +215,15 @@ public class CandidateCreator
           .returns(new TypeHint<MergeGeoTriplet>() {});
 
       mergeGeoTriplets = mergeGeoTriplets.union(recovered)
-          .map(x -> {
-            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
-                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)
-                && x.f0 == x.f1.longValue()) {
-              LOG.info("recovered tuple: " + x.toString());
-            }
-            return x;
-          })
-          .returns(new TypeHint<MergeGeoTriplet>() {})
+//          .map(x -> {
+//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
+//                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)
+//                && x.f0 == x.f1.longValue()) {
+//              LOG.info("recovered tuple: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<MergeGeoTriplet>() {})
       .distinct(0,1);
 
       DataSet<Edge<Long, NullValue>> edges = mergeGeoTriplets

@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.RichFilterFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -22,7 +23,7 @@ public class DeltaIterateMergeMusicStepFunction {
   private int sourcesCount;
   private DataSet<MergeMusicTuple> delta;
 
-  public DeltaIterateMergeMusicStepFunction(
+  DeltaIterateMergeMusicStepFunction(
       DataSet<MergeMusicTriplet> workset,
       SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
       int sourcesCount,
@@ -67,11 +68,16 @@ public class DeltaIterateMergeMusicStepFunction {
     ;
   }
 
-  public DataSet<MergeMusicTriplet> getWorkset() {
+  DataSet<MergeMusicTriplet> getWorkset() {
     return workset;
   }
 
-  public DataSet<MergeMusicTuple> getDelta() {
+  DataSet<MergeMusicTuple> getDelta() {
+    delta = delta.map(x -> {
+      LOG.info(x.toString());
+      return x;
+    })
+        .returns(new TypeHint<MergeMusicTuple>() {});
     return delta;
   }
 
@@ -108,7 +114,7 @@ public class DeltaIterateMergeMusicStepFunction {
 
     @Override
     public boolean filter(T vertex) throws Exception {
-//      LOG.info("Superstep: " + superstep);
+      LOG.info("Superstep: " + superstep);
       return false;
     }
   }

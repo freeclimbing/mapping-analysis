@@ -9,22 +9,13 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.gradoop.flink.io.impl.json.JSONDataSource;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
-import org.gradoop.flink.model.impl.functions.epgm.Id;
-import org.gradoop.flink.model.impl.functions.epgm.SourceId;
-import org.gradoop.flink.model.impl.functions.epgm.TargetId;
-import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.junit.Test;
-import org.mappinganalysis.graph.utils.GradoopEdgeToGellyEdgeMapper;
-import org.mappinganalysis.graph.utils.GradoopToGellyEdgeJoinFunction;
-import org.mappinganalysis.graph.utils.GradoopToObjectMapVertexMapper;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.ObjectMap;
@@ -52,8 +43,9 @@ public class NorthCarolinaVoterBaseTest {
 
     final String graphPath = NorthCarolinaVoterBaseTest.class
         .getResource("/data/nc/5s2/").getFile();
-    LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-    Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, env);
 
     assertEquals(logicalGraph.getVertices().count(), graph.getVertices().count());
     assertEquals(logicalGraph.getEdges().count(), graph.getEdges().count());
@@ -64,8 +56,9 @@ public class NorthCarolinaVoterBaseTest {
     env = TestBase.setupLocalEnvironment();
     final String graphPath = NorthCarolinaVoterBaseTest.class
         .getResource("/data/nc/5s2/").getFile();
-    LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-    Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, env);
 
     graph = graph.filterOnVertices(vertex -> vertex.getId() == 402924453L
         || vertex.getId() == 302154337L || vertex.getId() == 305140591L
@@ -122,8 +115,9 @@ public class NorthCarolinaVoterBaseTest {
           env = TestBase.setupLocalEnvironment();
           final String graphPath = NorthCarolinaVoterBaseTest.class
               .getResource(dataset).getFile();
-          LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-          Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+          LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+          Graph<Long, ObjectMap, NullValue> graph = Utils
+              .getInputGraph(logicalGraph, env);
 
 //    graph = graph.filterOnVertices(vertex -> vertex.getId() == 906445785L
 //        || vertex.getId() == 506445785L || vertex.getId() == 706445785L
@@ -244,8 +238,9 @@ public class NorthCarolinaVoterBaseTest {
     env = TestBase.setupLocalEnvironment();
     final String graphPath = NorthCarolinaVoterBaseTest.class
         .getResource("/data/nc/10s4/").getFile();
-    LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-    Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, env);
 
 //    graph = graph.filterOnVertices(vertex -> vertex.getId() == 704781154L
 //        || vertex.getId() ==  207292666L || vertex.getId() ==
@@ -297,8 +292,9 @@ public class NorthCarolinaVoterBaseTest {
     env = TestBase.setupLocalEnvironment();
     final String graphPath = NorthCarolinaVoterBaseTest.class
         .getResource("/data/nc/10s1/").getFile();
-    LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-    Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, env);
 
     graph = graph.filterOnVertices(vertex -> vertex.getId() == 704781154L
         || vertex.getId() ==  207292666L || vertex.getId() ==
@@ -330,25 +326,38 @@ public class NorthCarolinaVoterBaseTest {
   }
 
   @Test
-  public void tenSourcesForQueueTest() throws Exception {
+  public void suffixTEst() throws Exception {
+    String result;
+
+    double a = 0.7;
+    Double atmp = a*100;
+    result = String.valueOf(atmp.intValue());
+
+    assertEquals("70", result);
+  }
+
+  @Test
+  public void ncToFileTest() throws Exception {
     int sourcesCount = 10;
-    List<String> sourceList = Lists.newArrayList(//"/data/nc/10s1/"
-//        ,
-//        "/data/nc/10s2/",
+    env = TestBase.setupLocalEnvironment();
+
+    List<String> sourceList = Lists.newArrayList("/data/nc/10s1/"
+        ,
+        "/data/nc/10s2/",
         "/data/nc/10s4/"
-//        ,
-//        "/data/nc/10s5/"
+        ,
+        "/data/nc/10s5/"
     );
 
     for (String dataset : sourceList) {
-        for (int simFor = 50; simFor <= 95; simFor += 5) {
+        for (int simFor = 70; simFor <= 70; simFor += 5) {
         double simSortThreshold = (double) simFor / 100;
 
-        env = TestBase.setupLocalEnvironment();
         final String graphPath = NorthCarolinaVoterBaseTest.class
             .getResource(dataset).getFile();
-        LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-        Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+        LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+        Graph<Long, ObjectMap, NullValue> graph = Utils
+            .getInputGraph(logicalGraph, env);
 
         Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
             .run(new DefaultPreprocessing(DataDomain.NC, env));
@@ -365,8 +374,10 @@ public class NorthCarolinaVoterBaseTest {
               .writeVertices(representatives);
           env.execute();
 
-          for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
+          for (int mergeFor = 80; mergeFor <= 80; mergeFor += 5) {
             double mergeThreshold = (double) mergeFor / 100;
+
+            LOG.info("run: " + dataset);
 
             // get representative graph#
 
@@ -393,7 +404,7 @@ public class NorthCarolinaVoterBaseTest {
     }
   }
 
-
+  // read existing files and determine quality
   @Test
   public void qualityOnlyTest() throws Exception {
     int sourcesCount = 10;
@@ -402,7 +413,7 @@ public class NorthCarolinaVoterBaseTest {
     List<String> sourceList = Lists.newArrayList(//"/data/nc/10s1/"
 //        ,
 //        "/data/nc/10s2/",
-        "/data/nc/10s4/"
+        "/data/nc/10s2/"
 //        ,
 //        "/data/nc/10s5/"
     );
@@ -410,10 +421,10 @@ public class NorthCarolinaVoterBaseTest {
     for (String dataset : sourceList) {
       final String graphPath = NorthCarolinaVoterBaseTest.class
           .getResource(dataset).getFile();
-      for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
+      for (int mergeFor = 50; mergeFor <= 60; mergeFor += 5) {
         double mergeThreshold = (double) mergeFor / 100;
 
-      for (int simFor = 50; simFor <= 95; simFor += 5) {
+      for (int simFor = 95; simFor <= 95; simFor += 5) {
         double simSortThreshold = (double) simFor / 100;
 
           String reprOut = graphPath.concat("/output/m") + mergeFor
@@ -439,17 +450,19 @@ public class NorthCarolinaVoterBaseTest {
         "/data/nc/10s2/",
         "/data/nc/10s5/");
     for (String dataset : sourceList) {
-      for (int mergeFor = 65; mergeFor <= 95; mergeFor+=5) {
+      for (int mergeFor = 50; mergeFor <= 95; mergeFor+=5) {
         double mergeThreshold = (double) mergeFor / 100;
 
-        for (int simFor = 50; simFor <= 95; simFor += 5) {
+        for (int simFor = 95; simFor <= 95; simFor += 5) {
           double simSortThreshold = (double) simFor / 100;
 
           env = TestBase.setupLocalEnvironment();
           final String graphPath = NorthCarolinaVoterBaseTest.class
               .getResource(dataset).getFile();
-          LogicalGraph logicalGraph = getGradoopGraph(graphPath);
-          Graph<Long, ObjectMap, NullValue> graph = getInputGraph(logicalGraph);
+          LogicalGraph logicalGraph = Utils
+              .getGradoopGraph(graphPath, env);
+          Graph<Long, ObjectMap, NullValue> graph = Utils
+              .getInputGraph(logicalGraph, env);
 
           DataSet<Vertex<Long, ObjectMap>> representatives = graph
               .run(new DefaultPreprocessing(DataDomain.NC, env))
@@ -489,38 +502,6 @@ public class NorthCarolinaVoterBaseTest {
     }
 
     assertEquals(1, 1);
-  }
-
-  private LogicalGraph getGradoopGraph(String graphPath) {
-    final String graphHeadFile  = graphPath.concat("graphHeads.json");
-    final String vertexFile     = graphPath.concat("vertices.json");
-    final String edgeFile       = graphPath.concat("edges.json");
-//    final String outputDir      = args[3];
-
-    GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
-    JSONDataSource dataSource = new JSONDataSource(graphHeadFile, vertexFile, edgeFile, config);
-    return dataSource.getLogicalGraph();
-  }
-
-  private Graph<Long, ObjectMap, NullValue> getInputGraph(LogicalGraph logicalGraph) {
-    // get gelly vertices
-    DataSet<Vertex<Long, ObjectMap>> vertices = logicalGraph
-        .getVertices()
-        .map(new GradoopToObjectMapVertexMapper());
-
-    // get gelly edges
-    DataSet<Edge<Long, NullValue>> edges = logicalGraph.getEdges()
-        .leftOuterJoin(logicalGraph.getVertices())
-        .where(new SourceId<>())
-        .equalTo(new Id<>())
-        .with(new GradoopToGellyEdgeJoinFunction(0))
-        .leftOuterJoin(logicalGraph.getVertices())
-        .where(new TargetId<>())
-        .equalTo(new Id<>())
-        .with(new GradoopToGellyEdgeJoinFunction(1))
-        .map(new GradoopEdgeToGellyEdgeMapper());
-
-    return Graph.fromDataSet(vertices, edges, env);
   }
 
   @Test

@@ -9,5 +9,6 @@ public enum SimilarityStrategy {
    */
   MERGE,
   EDGE_SIM,
-  MUSIC
+  MUSIC,
+  NC
 }

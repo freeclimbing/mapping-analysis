@@ -125,6 +125,22 @@ public class MergeMusicTuple
   public String getArtistTitleAlbum() {
     return f12;
   }
+  
+  public String toString() {
+    return String.valueOf(getId()) + Constants.COMMA +
+        getLabel() + Constants.COMMA +
+        getAlbum() + Constants.COMMA +
+        getArtist() + Constants.COMMA +
+        getYear() + Constants.COMMA +
+        getLength() + Constants.COMMA +
+        getLang() + Constants.COMMA +
+        AbstractionUtils
+            .getSourcesStringSet(Constants.NC, getIntSources()) +
+        Constants.COMMA +
+        getClusteredElements() + Constants.COMMA +
+        getBlockingLabel() + Constants.COMMA +
+        isActive() + Constants.COMMA;
+  }
 
   @Override
   public Long getId() {

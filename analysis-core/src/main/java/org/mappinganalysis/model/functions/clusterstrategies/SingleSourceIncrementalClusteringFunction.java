@@ -19,19 +19,19 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
   private BlockingStrategy blockingStrategy;
   private String source;
   private int sourcesCount;
-  private DataSet<Vertex<Long, ObjectMap>> newElements;
+  private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements;
   private ExecutionEnvironment env;
 
   public SingleSourceIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
-      DataSet<Vertex<Long, ObjectMap>> newElements,
+      DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
       String source,
       int sourcesCount, ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
     this.source = source;
     this.sourcesCount = sourcesCount;
-    this.newElements = newElements
+    this.toBeMergedElements = toBeMergedElements
         .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY, blockingStrategy));
     this.env = env;
   }
@@ -44,7 +44,7 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
             DataDomain.GEOGRAPHY,
             blockingStrategy));
 
-    return baseClusters.union(newElements)
+    return baseClusters.union(toBeMergedElements)
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,

@@ -4,7 +4,6 @@ import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.AggregationMode;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.merge.MinThresholdFilterFunction;
@@ -18,9 +17,9 @@ public abstract class SimilarityComputation<T, O>
   private static final Logger LOG = Logger.getLogger(SimilarityComputation.class);
 
   private final Double threshold;
-  private SimilarityFunction<T, O> function;
+  private final SimilarityFunction<T, O> function;
+  private final SimilarityStrategy strategy;
   private DataSet<T> inputData;
-  private SimilarityStrategy strategy;
 
   public SimilarityComputation(SimilarityFunction<T, O> function,
                                SimilarityStrategy strategy,
@@ -67,7 +66,7 @@ public abstract class SimilarityComputation<T, O>
   public static final class SimilarityComputationBuilder<T, O> {
 
     private SimilarityFunction<T, O> function;
-    private AggregationMode<T> mode = null;
+//    private AggregationMode<T> mode = null;
     private SimilarityStrategy strategy;
     private double threshold;
 
@@ -81,11 +80,11 @@ public abstract class SimilarityComputation<T, O>
       return this;
     }
 
-    @Deprecated
-    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
-      this.mode = mode;
-      return this;
-    }
+//    @Deprecated
+//    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
+//      this.mode = mode;
+//      return this;
+//    }
 
     /**
      * Set minimum threshold for similarity

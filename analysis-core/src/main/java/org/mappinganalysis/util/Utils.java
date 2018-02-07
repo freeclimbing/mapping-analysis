@@ -14,6 +14,7 @@ import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -22,7 +23,17 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
+import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.gradoop.flink.io.impl.json.JSONDataSource;
+import org.gradoop.flink.model.api.epgm.LogicalGraph;
+import org.gradoop.flink.model.impl.functions.epgm.Id;
+import org.gradoop.flink.model.impl.functions.epgm.SourceId;
+import org.gradoop.flink.model.impl.functions.epgm.TargetId;
+import org.gradoop.flink.util.GradoopFlinkConfig;
+import org.mappinganalysis.graph.utils.GradoopEdgeToGellyEdgeMapper;
+import org.mappinganalysis.graph.utils.GradoopToGellyEdgeJoinFunction;
+import org.mappinganalysis.graph.utils.GradoopToObjectMapVertexMapper;
 import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.MergeGeoTuple;
@@ -127,6 +138,44 @@ public class Utils {
       newSet.addAll(collection);
 
     return newSet;
+  }
+
+  public static String getOutputSuffix(double threshold) {
+    Double tmp = threshold * 100;
+
+    return String.valueOf(tmp.intValue());
+  }
+
+  public static LogicalGraph getGradoopGraph(String graphPath, ExecutionEnvironment env) {
+    final String graphHeadFile  = graphPath.concat("graphHeads.json");
+    final String vertexFile     = graphPath.concat("vertices.json");
+    final String edgeFile       = graphPath.concat("edges.json");
+
+    GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
+    JSONDataSource dataSource = new JSONDataSource(graphHeadFile, vertexFile, edgeFile, config);
+    return dataSource.getLogicalGraph();
+  }
+
+  public static Graph<Long, ObjectMap, NullValue> getInputGraph(
+      LogicalGraph logicalGraph, ExecutionEnvironment env) {
+    // get gelly vertices
+    DataSet<Vertex<Long, ObjectMap>> vertices = logicalGraph
+        .getVertices()
+        .map(new GradoopToObjectMapVertexMapper());
+
+    // get gelly edges
+    DataSet<Edge<Long, NullValue>> edges = logicalGraph.getEdges()
+        .leftOuterJoin(logicalGraph.getVertices())
+        .where(new SourceId<>())
+        .equalTo(new Id<>())
+        .with(new GradoopToGellyEdgeJoinFunction(0))
+        .leftOuterJoin(logicalGraph.getVertices())
+        .where(new TargetId<>())
+        .equalTo(new Id<>())
+        .with(new GradoopToGellyEdgeJoinFunction(1))
+        .map(new GradoopEdgeToGellyEdgeMapper());
+
+    return Graph.fromDataSet(vertices, edges, env);
   }
 
 //  public void setBlockingKey(BlockingStrategy strategy, String mode, String label) {
