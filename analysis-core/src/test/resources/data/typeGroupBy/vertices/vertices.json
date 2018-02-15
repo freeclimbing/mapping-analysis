@@ -6,6 +6,6 @@
 {"id":617158,"data":{"typeIntern":["School"],"ccId":617158,"label":"Karlesspitze","lon":10.975,"lat":46.7722}}
 {"id":617159,"data":{"typeIntern":["School", "Mountain"],"ccId":617158,"label":"Karlesspitze","lon":10.9749815,"lat":46.772119800000006}}
 {"id":1022884,"data":{"typeIntern":["no_type"],"ccId":617158,"label":"Karlespitze","lon":10.3902195,"lat":47.3531321}}
-{"id":1,"data":{"typeIntern":["no_type"],"ccId":1,"label":"a"}}
-{"id":2,"data":{"typeIntern":["no_type"],"ccId":1,"label":"b"}}
 {"id":3,"data":{"typeIntern":["no_type"],"ccId":1,"label":"c"}}
+{"id":2,"data":{"typeIntern":["no_type"],"ccId":1,"label":"b"}}
+{"id":1,"data":{"typeIntern":["no_type"],"ccId":1,"label":"a"}}

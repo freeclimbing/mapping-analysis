@@ -14,7 +14,7 @@ public class TransitionMusicJoinFunction
 
   private Integer position;
 
-  public TransitionMusicJoinFunction(Integer position) {
+  TransitionMusicJoinFunction(Integer position) {
     this.position = position;
   }
 

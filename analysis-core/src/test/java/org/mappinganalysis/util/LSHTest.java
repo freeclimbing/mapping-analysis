@@ -32,7 +32,7 @@ import org.mappinganalysis.model.functions.blocking.lsh.trigrams.LongValueTrigra
 import org.mappinganalysis.model.functions.blocking.lsh.trigrams.TrigramPositionsToBitSetReducer;
 import org.mappinganalysis.model.functions.blocking.lsh.trigrams.TrigramsPerVertexCreatorWithIdfOptimization;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.BitFrequencyCounter;
-import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateMergeTripletCreator;
+import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateGeoMergeTripletCreator;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.VertexWithNewObjectMapFunction;
 import org.mappinganalysis.model.functions.blocking.tfidf.TfIdfComputer;
 import org.mappinganalysis.model.functions.merge.MergeGeoSimilarity;
@@ -212,6 +212,9 @@ public class LSHTest {
             .filter(new SourceFilterFunction(Constants.NYT_NS)));
 
     DataSet<Tuple2<Long, Long>> candidateIds = vertices
+        .map(vertex -> new Tuple2<>(vertex.getId(),
+            Utils.simplify(vertex.getValue().getLabel())))
+        .returns(new TypeHint<Tuple2<Long, String>>() {})
         .runOperation(new LshCandidateCreator(true));
 
     SimilarityComputation<MergeGeoTriplet,
@@ -236,11 +239,11 @@ public class LSHTest {
         .join(geoTuples)
         .where(0)
         .equalTo(0)
-        .with(new CandidateMergeTripletCreator(0))
+        .with(new CandidateGeoMergeTripletCreator(0))
         .join(geoTuples)
         .where(1)
         .equalTo(0)
-        .with(new CandidateMergeTripletCreator(1))
+        .with(new CandidateGeoMergeTripletCreator(1))
 //        .filter(x -> x.getTrgId() == 301L || x.getSrcId() == 301L)
 //        .returns(new TypeHint<MergeGeoTriplet>() {})
         .runOperation(similarityComputation);
@@ -304,6 +307,9 @@ public class LSHTest {
             .getVertices();
 
     DataSet<Tuple2<Long, CharSet>> trigramsPerVertex = vertices
+        .map(vertex -> new Tuple2<>(vertex.getId(),
+            Utils.simplify(vertex.getValue().getLabel())))
+        .returns(new TypeHint<Tuple2<Long, String>>() {})
         .runOperation(new TrigramsPerVertexCreatorWithIdfOptimization(true));
     testTrigramsPerVertex(trigramsPerVertex);
 

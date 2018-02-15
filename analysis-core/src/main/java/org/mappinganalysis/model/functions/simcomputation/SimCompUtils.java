@@ -14,6 +14,10 @@ public class SimCompUtils {
     String srcNumber = triplet.getSrcTuple().getNumber();
     String trgNumber = triplet.getTrgTuple().getNumber();
 
+    if (!Utils.isSane(srcNumber) || !Utils.isSane(trgNumber)) {
+      return null;
+    }
+
     if (srcNumber.equals(trgNumber)) {
       return 1D;
     } else {

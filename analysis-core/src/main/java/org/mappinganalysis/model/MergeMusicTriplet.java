@@ -11,14 +11,30 @@ public class MergeMusicTriplet
   public MergeMusicTriplet() {
   }
 
-  public MergeMusicTriplet(MergeMusicTuple srcTuple, MergeMusicTuple trgTuple, Double similarity) {
+  public MergeMusicTriplet(MergeMusicTuple srcTuple,
+                           MergeMusicTuple trgTuple,
+                           Double similarity) {
+    this.f0 = srcTuple.getId();
+    this.f1 = trgTuple.getId();
     this.f2 = srcTuple;
     this.f3 = trgTuple;
     this.f4 = similarity;
+    this.f5 = Constants.EMPTY_STRING;
   }
 
-  public MergeMusicTriplet(MergeMusicTuple left, MergeMusicTuple right) {
+  public MergeMusicTriplet(MergeMusicTuple left,
+                           MergeMusicTuple right) {
     setIdAndTuples(left, right);
+    this.f4 = 0d;
+    this.f5 = Constants.EMPTY_STRING;
+  }
+
+  public MergeMusicTriplet(Long srcTuple,
+                           Long trgTuple) {
+    this.f0 = srcTuple;
+    this.f1 = trgTuple;
+    this.f2 = new MergeMusicTuple(srcTuple);
+    this.f3 = new MergeMusicTuple(trgTuple);
     this.f4 = 0d;
     this.f5 = Constants.EMPTY_STRING;
   }
@@ -26,7 +42,8 @@ public class MergeMusicTriplet
   /**
    * Sort left tuple to be the smaller id.
    */
-  public void setIdAndTuples(MergeMusicTuple left, MergeMusicTuple right) {
+  public void setIdAndTuples(MergeMusicTuple left,
+                             MergeMusicTuple right) {
     if (left.getId() < right.getId()) {
       setSrcId(left.getId());
       setSrcTuple(left);

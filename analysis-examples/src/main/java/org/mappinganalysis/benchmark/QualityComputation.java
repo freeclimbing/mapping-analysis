@@ -19,7 +19,7 @@ import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
- * Not tested, most probably not working yet.
+ * Not tested, most probably not working anymore.
  */
 public class QualityComputation implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();

@@ -22,7 +22,7 @@ public class SimpleEdgesCreator
    * Create edges for set of vertices having cc id - optionally create only as many edges
    * to connect all vertices within cc.
    */
-  public SimpleEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
+  SimpleEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
     this.keySelector = keySelector;
   }
 
@@ -41,11 +41,11 @@ public class SimpleEdgesCreator
       implements GroupReduceFunction<Vertex<Long,ObjectMap>, Edge<Long, NullValue>> {
     @Override
     public void reduce(
-        Iterable<Vertex<Long, ObjectMap>> vertexIterable,
+        Iterable<Vertex<Long, ObjectMap>> vertices,
         Collector<Edge<Long, NullValue>> out) throws Exception {
       boolean isFirstEdge = true;
       Long firstVertexId = null;
-      for (Vertex<Long, ObjectMap> vertex : vertexIterable) {
+      for (Vertex<Long, ObjectMap> vertex : vertices) {
         if (isFirstEdge) {
           firstVertexId = vertex.getId();
 //          LOG.info("first: " + firstVertexId);

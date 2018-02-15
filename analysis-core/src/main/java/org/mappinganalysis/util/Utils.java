@@ -194,12 +194,9 @@ public class Utils {
       String label) {
     if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
       if (bMode.equals(Constants.GEO)) {
-//        LOG.info("sbs gL: " + getLabel());
-//        LOG.info("sbs map: " + getMap());
 
         return Utils.getGeoBlockingLabel(label);
-      } else if (bMode.equals(Constants.MUSIC)) {
-//        LOG.info("music put blocking label");
+      } else if (bMode.equals(Constants.MUSIC) || bMode.equals(Constants.NC)) {
 
         return Utils.getMusicBlockingLabel(label);
       } else {
@@ -214,6 +211,18 @@ public class Utils {
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
+  }
+
+  public static String getNcBlockingLabel(String name, String surname) {
+
+    while (surname.length() <= 1) {
+      surname = surname.concat(Constants.WHITE_SPACE);
+    }
+    while (name.length() <= 1) {
+      name = name.concat(Constants.WHITE_SPACE);
+    }
+
+    return name.substring(0, 2).concat(surname.substring(0, 2));
   }
 
   public static double getExactDoubleResult(double value) {
@@ -326,6 +335,9 @@ public class Utils {
 
     double similarity = getTrigramMetric()
         .compare(Utils.simplify(left), Utils.simplify(right));
+
+//    if (!left.equals("bar") && similarity > 0.5)
+//    LOG.info(left + " " + right + " " + similarity);
 
     return getExactDoubleResult(similarity);
   }

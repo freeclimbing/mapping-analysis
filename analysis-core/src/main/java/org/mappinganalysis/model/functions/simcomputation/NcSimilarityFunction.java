@@ -2,6 +2,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
+import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
@@ -13,6 +14,8 @@ import org.mappinganalysis.util.Constants;
  */
 public class NcSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(NcSimilarityFunction.class);
+
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(
       Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {

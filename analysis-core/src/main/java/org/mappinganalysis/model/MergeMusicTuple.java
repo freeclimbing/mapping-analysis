@@ -192,6 +192,7 @@ public class MergeMusicTuple
     return f11;
   }
 
+  // fake cluster are inactive
   @Override
   public void setActive(Boolean value) {
     f11 = value;

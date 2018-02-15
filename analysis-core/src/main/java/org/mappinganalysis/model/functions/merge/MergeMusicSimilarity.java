@@ -70,6 +70,8 @@ public class MergeMusicSimilarity
 //      values.put(Constants.SIM_LANG, languageSim);
 //    }
 
+    LOG.info("music: " + values.toString());
+
     triplet.setSimilarity(values
         .runOperation(aggregationFunction)
         .getEdgeSimilarity());

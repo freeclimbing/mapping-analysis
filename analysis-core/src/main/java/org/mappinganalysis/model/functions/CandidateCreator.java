@@ -23,7 +23,7 @@ import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.lsh.LshCandidateCreator;
-import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateMergeTripletCreator;
+import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateGeoMergeTripletCreator;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.SwitchMapFunction;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.VertexWithNewObjectMapFunction;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
@@ -33,6 +33,7 @@ import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.Utils;
 
 // TODO candidates based on blocking strategy
 // TODO restrict candidates to needed properties!?
@@ -99,6 +100,9 @@ public class CandidateCreator
 //            return x;
 //          })
 //          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+          .map(vertex -> new Tuple2<>(vertex.getId(),
+              Utils.simplify(vertex.getValue().getLabel())))
+          .returns(new TypeHint<Tuple2<Long, String>>() {})
           .runOperation(new LshCandidateCreator(isIdfOptimizeEnabled));
 
       DataSet<MergeGeoTuple> geoTuples = inputVertices
@@ -128,11 +132,11 @@ public class CandidateCreator
           .join(geoTuples)
           .where(0)
           .equalTo(0)
-          .with(new CandidateMergeTripletCreator(0))
+          .with(new CandidateGeoMergeTripletCreator(0))
           .join(geoTuples)
           .where(1)
           .equalTo(0)
-          .with(new CandidateMergeTripletCreator(1))
+          .with(new CandidateGeoMergeTripletCreator(1))
           .map(new SwitchMapFunction(newSource))
 //          .map(x -> {
 //            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&

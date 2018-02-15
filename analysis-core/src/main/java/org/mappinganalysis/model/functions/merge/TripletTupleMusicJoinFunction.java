@@ -14,14 +14,15 @@ public class TripletTupleMusicJoinFunction
 
   private final Integer position;
 
-  public TripletTupleMusicJoinFunction(Integer position) {
+  TripletTupleMusicJoinFunction(Integer position) {
     this.position = position;
   }
 
   @Override
   public MergeMusicTriplet join(MergeMusicTriplet triplet,
                               MergeMusicTuple newTuple) throws Exception {
-//    LOG.info("new Tuple: " + newTuple + " for triplet: " + triplet.toString());
+//    if (newTuple.f0 < 10L)
+//    LOG.info("CHANGES new Tuple: " + newTuple + " for triplet: " + triplet.toString());
     if (position == 0) {
       triplet.setSrcTuple(newTuple);
     } else if (position == 1) {
@@ -29,6 +30,9 @@ public class TripletTupleMusicJoinFunction
     } else {
       throw new IllegalArgumentException("Unsupported position: " + position);
     }
+//    if (triplet.f0 < 10L && triplet.f1 < 10L)
+//    LOG.info("TripTupMuJoFu RESULTING CHANGES " + triplet.toString());
+
     return triplet;
   }
 }

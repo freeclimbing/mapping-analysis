@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.*;
+import org.mappinganalysis.model.functions.NcLshCandidateTupleCreator;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.tfidf.IdfBlockingOperation;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
@@ -28,14 +29,31 @@ public class MergeExecution
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
   private DataDomain domain;
-  private double simThreshold;
+  private BlockingStrategy blockingStrategy;
+  private double mergeThreshold;
   private int sourcesCount;
   private ExecutionEnvironment env;
   private DataSet<Vertex<Long, ObjectMap>> baseClusters;
 
-  public MergeExecution(DataDomain domain, double simThreshold, int sourcesCount, ExecutionEnvironment env) {
+  public MergeExecution(DataDomain domain,
+                        double mergeThreshold,
+                        int sourcesCount,
+                        ExecutionEnvironment env) {
     this.domain = domain;
-    this.simThreshold = simThreshold;
+    this.mergeThreshold = mergeThreshold;
+    this.sourcesCount = sourcesCount;
+    this.env = env;
+    blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+  }
+
+  public MergeExecution(DataDomain domain,
+                        BlockingStrategy blockingStrategy,
+                        double mergeThreshold,
+                        int sourcesCount,
+                        ExecutionEnvironment env) {
+    this.domain = domain;
+    this.blockingStrategy = blockingStrategy;
+    this.mergeThreshold = mergeThreshold;
     this.sourcesCount = sourcesCount;
     this.env = env;
   }
@@ -70,21 +88,21 @@ public class MergeExecution
           MergeGeoTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
-          .setThreshold(simThreshold)
+          .setThreshold(mergeThreshold)
           .build();
 
-      // initial working set
+      // initial working set GEO
       DataSet<MergeGeoTriplet> initialWorkingSet = clusters
           .filter(new SourceCountRestrictionFilter<>(domain, sourcesCount))
           .groupBy(7) // MergeGeoTuple::getBlockingLabel not working
           .reduceGroup(new MergeGeoTripletCreator(sourcesCount))
           .runOperation(similarityComputation);
 
-      // initialize the iteration
+      // initialize the iteration GEO
       DeltaIteration<MergeGeoTuple, MergeGeoTriplet> iteration = clusters
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
 
-      // start step function
+      // start step function GEO
       DeltaIterateGeographicMergeStepFunction stepFunction = new DeltaIterateGeographicMergeStepFunction(
           iteration.getWorkset(),
           similarityComputation,
@@ -102,23 +120,27 @@ public class MergeExecution
       ########## MUSIC/NC ##############
      */
     if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
-      BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+      DataSet<MergeMusicTuple> initialSolutionSet;
+//      if (blockingStrategy == null) {
+//        blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
+        initialSolutionSet = baseClusters
+            .map(new MergeMusicTupleCreator(BlockingStrategy.STANDARD_BLOCKING, domain));
+//      } else {
+//        initialSolutionSet = baseClusters
+//            .map(new MergeMusicTupleCreator(BlockingStrategy.NO_BLOCKING, domain)); // TODO check
+//      }
 
-      // initial solution set
-      DataSet<MergeMusicTuple> clusters = baseClusters
-          .map(new MergeMusicTupleCreator(blockingStrategy, domain));
-
+      // prep phase initial working set
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction = null;
       DataSet<MergeMusicTuple> preBlockingClusters = null;
 
       if (domain == DataDomain.MUSIC) {
         simFunction = new MergeMusicSimilarity();
-        // prep phase initial working set
-        preBlockingClusters = clusters
+        preBlockingClusters = initialSolutionSet
             .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, sourcesCount));
       } else if (domain == DataDomain.NC) {
         simFunction = new MergeNcSimilarity();
-        preBlockingClusters = clusters
+        preBlockingClusters = initialSolutionSet
             .filter(new SourceCountRestrictionFilter<>(DataDomain.NC, sourcesCount));
       }
 
@@ -129,14 +151,14 @@ public class MergeExecution
           MergeMusicTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
-          .setThreshold(simThreshold)
+          .setThreshold(mergeThreshold)
           .build();
 
       // initial working set
       DataSet<MergeMusicTriplet> initialWorkingSet;
 
       /*
-        Blocking (MUSIC only)
+        Blocking (MUSIC/NC only)
        */
       if (blockingStrategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
         assert preBlockingClusters != null;
@@ -144,7 +166,18 @@ public class MergeExecution
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation)
+//            .map(x -> {
+//              if (x.getSrcId() == 43L && x.getTrgId() == 47L) {
+//                LOG.info("initWorkSet: " + x.toString());
+//              }
+//              return x;
+//            })
+//            .returns(new TypeHint<MergeMusicTriplet>() {})
             .rebalance();
+      } else if (blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
+        assert preBlockingClusters != null;
+        initialWorkingSet = preBlockingClusters.runOperation(
+            new NcLshCandidateTupleCreator(similarityComputation, env));
       } else if (blockingStrategy.equals(BlockingStrategy.IDF_BLOCKING)) {
         assert preBlockingClusters != null;
         DataSet<MergeMusicTriplet> idfPartTriplets = preBlockingClusters
@@ -158,8 +191,7 @@ public class MergeExecution
               out.collect(new Tuple1<>(tuple.f0));
               out.collect(new Tuple1<>(tuple.f1));
             })
-            .returns(new TypeHint<Tuple1<Long>>() {
-            })
+            .returns(new TypeHint<Tuple1<Long>>() {})
             .rightOuterJoin(preBlockingClusters)
             .where(0)
             .equalTo(0)
@@ -184,12 +216,8 @@ public class MergeExecution
       }
 
       // initialize the iteration
-      DeltaIteration<MergeMusicTuple, MergeMusicTriplet> iteration = clusters
+      DeltaIteration<MergeMusicTuple, MergeMusicTriplet> iteration = initialSolutionSet
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
-
-      // log superstep
-//    DataSet<MergeTriplet> workset = printSuperstep(iteration.getWorkset())
-//        .map(x->x); // why do we need this line, not working without
 
       /*
         start step function - creates changed vertices and merges clusters
@@ -200,7 +228,8 @@ public class MergeExecution
           sourcesCount,
           domain);
 
-      return iteration
+      return iteration//.parallelism() // TODO CHECK THIS OUT
+          // low iteration paralellism???? and high other one
           .closeWith(stepFunction.getDelta(), stepFunction.getWorkset())
           .leftOuterJoin(baseClusters)
           .where(0)

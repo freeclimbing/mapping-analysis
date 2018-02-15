@@ -95,6 +95,7 @@ public class Constants {
   public static final String NO_VALUE = "no_value";
   public static final String CSV_NO_VALUE = "--";
   public static final String EMPTY_STRING = "";
+  public static final String WHITE_SPACE = " ";
   public static final String COMMA = ",";
   public static final String DEVIDER = " - ";
   public static final int EMPTY_INT = 0;

@@ -6,9 +6,13 @@ import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -16,9 +20,11 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
+import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
@@ -69,14 +75,10 @@ public class NorthCarolinaVoterBaseTest {
         || vertex.getId() == 201728981L || vertex.getId() == 505140591L
         || vertex.getId() == 205140591L || vertex.getId() == 305576168L);
 
-    Graph<Long, ObjectMap, ObjectMap> simGraph = graph
-        .run(new DefaultPreprocessing(DataDomain.NC, env));
-
-    Graph<Long, ObjectMap, ObjectMap> decompGraph = simGraph
+    DataSet<Vertex<Long, ObjectMap>> vertices = graph
+        .run(new DefaultPreprocessing(DataDomain.NC, env))
         .run(new TypeGroupBy(env))
-        .run(new SimSort(DataDomain.NC, 0.85, env));
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = decompGraph
+        .run(new SimSort(DataDomain.NC, 0.85, env))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
@@ -94,99 +96,46 @@ public class NorthCarolinaVoterBaseTest {
     assertEquals(7, count);
   }
 
-  // WIP TODO
-  @Test
-  public void tenSourceNCTest() throws Exception {
-    int sourcesCount = 10;
-    List<String> sourceList = Lists.newArrayList(//"/data/nc/10s1/"
-//        ,
-//        "/data/nc/10s2/",
-//        "/data/nc/10s4/"
-//        ,
-        "/data/nc/10s5/"
-    );
-    for (String dataset : sourceList) {
-      for (int mergeFor = 80; mergeFor <= 81; mergeFor += 5) {
-        double mergeThreshold = (double) mergeFor / 100;
-
-        for (int simFor = 60; simFor <= 61; simFor += 5) {
-          double simSortThreshold = (double) simFor / 100;
-
-          env = TestBase.setupLocalEnvironment();
-          final String graphPath = NorthCarolinaVoterBaseTest.class
-              .getResource(dataset).getFile();
-          LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
-          Graph<Long, ObjectMap, NullValue> graph = Utils
-              .getInputGraph(logicalGraph, env);
-
-//    graph = graph.filterOnVertices(vertex -> vertex.getId() == 906445785L
-//        || vertex.getId() == 506445785L || vertex.getId() == 706445785L
-//        || vertex.getId() == 606445785L || vertex.getId() == 406445785L
-//        || vertex.getId() == 206445785L || vertex.getId() == 806445785L
-//        || vertex.getId() == 106445785L || vertex.getId() == 306445785L
-//        || vertex.getId() == 301865004L || vertex.getId() == 701865004L
-//        || vertex.getId() == 501865004L || vertex.getId() == 101865004L
-//        || vertex.getId() == 401865004L || vertex.getId() == 901865004L
-//        || vertex.getId() == 801865004L || vertex.getId() == 1001865004L);
-
-          // 906445785L, 506445785LL, 706445785L, 606445785L,406445785L,
-          // 206445785L, 806445785L,106445785L, 306445785L
-
-          // 301865004L, 701865004L,501865004L,101865004L,
-          // 801865004L,1001865004L,401865004L, 901865004L
-
-          DataSet<Vertex<Long, ObjectMap>> representatives = graph
-              .run(new DefaultPreprocessing(DataDomain.NC, env))
-              .run(new TypeGroupBy(env))
-              .run(new SimSort(DataDomain.NC, simSortThreshold, env))
-              .getVertices()
-              .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
-
-          DataSet<Vertex<Long, ObjectMap>> merged = representatives
-              .runOperation(new MergeInitialization(DataDomain.NC))
-              .runOperation(new MergeExecution(
-                  DataDomain.NC,
-                  mergeThreshold,
-                  sourcesCount,
-                  env));
-
-          printQuality(dataset, mergeThreshold, simSortThreshold, merged, sourcesCount);
-        }
-      }
-    }
-  }
-
   private void printQuality(
       String dataset,
       double mergeThreshold,
       double simSortThreshold,
       DataSet<Vertex<Long, ObjectMap>> merged,
+      String pmPath,
       int sourcesCount) throws Exception {
     DataSet<Tuple2<Long, Long>> clusterEdges = merged
         .flatMap(new QualityEdgeCreator());
 
     String path = "/data/nc/" + sourcesCount + "pm/";
-    String pmPath = NorthCarolinaVoterBaseTest.class
-        .getResource(path).getFile();
+    DataSet<Tuple2<Long, Long>> goldLinks;
 
-    DataSet<Tuple2<String, String>> perfectMapping = env
-        .readCsvFile(pmPath.concat("pm.csv"))
-        .types(String.class, String.class);
+    if (pmPath.equals(Constants.EMPTY_STRING)) {
+      pmPath = NorthCarolinaVoterBaseTest.class
+          .getResource(path).getFile();
 
-    DataSet<Tuple2<Long, Long>> goldLinks = perfectMapping
-        .map(new MapFunction<Tuple2<String, String>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> map(Tuple2<String, String> pmValue) throws Exception {
-            long first = Utils.getIdFromNcId(pmValue.f0);
-            long second = Utils.getIdFromNcId(pmValue.f1);
+      DataSet<Tuple2<String, String>> perfectMapping = env
+          .readCsvFile(pmPath.concat("pm.csv"))
+          .types(String.class, String.class);
 
-            if (first < second) {
-              return new Tuple2<>(first, second);
-            } else {
-              return new Tuple2<>(second, first);
+      goldLinks = perfectMapping
+          .map(new MapFunction<Tuple2<String, String>, Tuple2<Long, Long>>() {
+            @Override
+            public Tuple2<Long, Long> map(Tuple2<String, String> pmValue) throws Exception {
+              long first = Utils.getIdFromNcId(pmValue.f0);
+              long second = Utils.getIdFromNcId(pmValue.f1);
+
+              if (first < second) {
+                return new Tuple2<>(first, second);
+              } else {
+                return new Tuple2<>(second, first);
+              }
             }
-          }
-        });
+          });
+    } else {
+      goldLinks = getPmEdges(pmPath)
+          .map(edge -> new Tuple2<>(edge.f0, edge.f1))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+    }
 
     DataSet<Tuple2<Long, Long>> truePositives = goldLinks.join(clusterEdges)
         .where(0, 1).equalTo(0, 1)
@@ -213,7 +162,7 @@ public class NorthCarolinaVoterBaseTest {
 //          }
 //        }).collect();
 
-    long goldCount = perfectMapping.count();
+    long goldCount = goldLinks.count();
     long checkCount = clusterEdges.count();
     long tpCount = truePositives.count();
 
@@ -227,33 +176,23 @@ public class NorthCarolinaVoterBaseTest {
 //        LOG.info("f1 = 2 * precision * recall / (precision + recall) = "
 //            + 2 * precision * recall / (precision + recall));
 //        LOG.info("\ngold links size (TP+FN): " + goldCount);
+    LOG.info("TP+FN: " + goldCount);
     LOG.info("TP+FP: " + checkCount);
     LOG.info("TP: " + tpCount);
 
+    LOG.info("precision: " + precision + " recall: " + recall
+        + " F1: " + 2 * precision * recall / (precision + recall));
     LOG.info("######################################################");
   }
 
   @Test
-  public void tenDsFourTest() throws Exception {
+  public void maxTenSourcesTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
     final String graphPath = NorthCarolinaVoterBaseTest.class
         .getResource("/data/nc/10s4/").getFile();
     LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
     Graph<Long, ObjectMap, NullValue> graph = Utils
         .getInputGraph(logicalGraph, env);
-
-//    graph = graph.filterOnVertices(vertex -> vertex.getId() == 704781154L
-//        || vertex.getId() ==  207292666L || vertex.getId() ==
-//        1004781154L || vertex.getId() ==  407411403L || vertex.getId() ==
-//        603679966L || vertex.getId() ==  805238457L || vertex.getId() ==
-//        304781154L || vertex.getId() ==  706377526L || vertex.getId() ==
-//        302488074L || vertex.getId() ==  604781154L || vertex.getId() ==
-//        402064536L || vertex.getId() ==  1007339769L || vertex.getId() ==
-//        606486386L || vertex.getId() ==  504781154L || vertex.getId() ==
-//        804781154L || vertex.getId() ==
-//        306818652L || vertex.getId() ==  204781154L || vertex.getId() ==
-//        705230672L || vertex.getId() ==  903703303L || vertex.getId() ==
-//        104781154L || vertex.getId() ==  806252977L);
 
     Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
         .run(new DefaultPreprocessing(DataDomain.NC, env));
@@ -264,24 +203,22 @@ public class NorthCarolinaVoterBaseTest {
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
-    DataSet<Vertex<Long, ObjectMap>> merged = representatives
-        .runOperation(new MergeInitialization(DataDomain.NC))
-        .runOperation(new MergeExecution(
-            DataDomain.NC,
-            0.8,
-            10,
-            env));
-
-    merged.print();
-//    representatives.map(new MapFunction<Vertex<Long,ObjectMap>, Tuple3<Long, Integer, Set<Long>>>() {
-//      @Override
-//      public Tuple3<Long, Integer, Set<Long>> map(Vertex<Long, ObjectMap> value) throws Exception {
-//        return new Tuple3<>(value.getId(), value.getValue().getVerticesCount(), value.getValue().getVerticesList());
-//      }
-//    }).sortPartition(1, Order.DESCENDING)
-//        .setParallelism(1)
-//        .first(50)
-//        .print();
+    representatives.map(new MapFunction<Vertex<Long,ObjectMap>, Tuple2<Long, Integer>>() {
+      @Override
+      public Tuple2<Long, Integer> map(Vertex<Long, ObjectMap> value) throws Exception {
+        return new Tuple2<>(value.getId(),
+            value.getValue().getVerticesCount());
+      }
+    })
+        .sortPartition(1, Order.DESCENDING)
+        .setParallelism(1)
+        .first(1)
+        .map(cluster -> {
+          assertEquals(10, cluster.f1.intValue());
+          return cluster;
+        })
+        .returns(new TypeHint<Tuple2<Long, Integer>>() {})
+        .collect();
   }
 
   /**
@@ -337,6 +274,53 @@ public class NorthCarolinaVoterBaseTest {
   }
 
   @Test
+  public void subStringTest() throws Exception {
+    String test = "foobar";
+
+    LOG.info(test.substring(0,2));
+  }
+
+  @Test
+  public void bigFileBlockingTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/5p/2/";
+
+//    final String graphPath = NorthCarolinaVoterBaseTest.class
+//        .getResource("/data/nc/10s1/").getFile();
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, env);
+
+    graph.getVertices().map(vertex -> {
+      String artist = vertex.getValue().getArtist();
+      String label = vertex.getValue().getLabel();
+
+      if (artist.isEmpty() || label.isEmpty()) {
+        LOG.info("<1: " + vertex.toString());
+      }
+      while (artist.length() <= 1) {
+        artist = artist.concat(Constants.WHITE_SPACE);
+      }
+      while (label.length() <= 1) {
+        label = label.concat(Constants.WHITE_SPACE);
+      }
+
+      return new Tuple2<>(Utils.getBlockingKey(
+          BlockingStrategy.STANDARD_BLOCKING,
+          Constants.MUSIC,
+          label.substring(0, 2).concat(artist.substring(0, 2))
+      ), 1);
+    })
+        .returns(new TypeHint<Tuple2<String, Integer>>() {})
+        .groupBy(0)
+        .aggregate(Aggregations.SUM, 1)
+        .sortPartition(1, Order.ASCENDING)
+        .setParallelism(1)
+        .print();
+  }
+
+  @Test
   public void ncToFileTest() throws Exception {
     int sourcesCount = 10;
     env = TestBase.setupLocalEnvironment();
@@ -370,38 +354,76 @@ public class NorthCarolinaVoterBaseTest {
 
           String reprOut = graphPath.concat("/output/")
               + "s" + simFor + "/";
-          new JSONDataSink(reprOut, "test")
+          new JSONDataSink(reprOut, "repr")
               .writeVertices(representatives);
           env.execute();
 
-          for (int mergeFor = 80; mergeFor <= 80; mergeFor += 5) {
+          for (int mergeFor = 70; mergeFor <= 70; mergeFor += 5) {
             double mergeThreshold = (double) mergeFor / 100;
 
             LOG.info("run: " + dataset);
 
             // get representative graph#
 
-            DataSet<Vertex<Long, ObjectMap>> repr =
+            DataSet<Vertex<Long, ObjectMap>> diskRepresentatives =
                 new org.mappinganalysis.io.impl.json.JSONDataSource(
-                    reprOut.concat("output/test/"), true, env)
+                    reprOut.concat("output/repr/"), true, env)
                     .getVertices();
 
-            DataSet<Vertex<Long, ObjectMap>> merged = repr
+            DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
                 .runOperation(new MergeInitialization(DataDomain.NC))
                 .runOperation(new MergeExecution(
                     DataDomain.NC,
+                    BlockingStrategy.STANDARD_BLOCKING,
                     mergeThreshold,
                     sourcesCount,
                     env));
 
-            new JSONDataSink(graphPath.concat("/output/m") + mergeFor
-                + "s" + simFor + "/", "test")
+            String finalPath = graphPath.concat("output/m") + mergeFor
+                + "s" + simFor + "/";
+            new JSONDataSink(finalPath, "merge")
                 .writeVertices(merged);
             env.execute();
+
+//            String reprOut = graphPath.concat("/output/m") + mergeFor
+//                + "s" + simFor + "/";
+
+            DataSet<Vertex<Long, ObjectMap>> diskMerged =
+                new org.mappinganalysis.io.impl.json.JSONDataSource(
+                    finalPath.concat("output/merge/"), true, env)
+                    .getVertices();
+
+            printQuality(dataset, mergeThreshold, simSortThreshold,
+                diskMerged, Constants.EMPTY_STRING, sourcesCount);
 //        printQuality(dataset, mergeThreshold, simSortThreshold, merged, sourcesCount);
           }
         }
     }
+  }
+
+  @Test
+  public void bigNcQualityTest() throws Exception {
+    int sourcesCount = 10;
+    env = TestBase.setupLocalEnvironment();
+
+    String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/1/";
+    DataSet<Edge<Long, NullValue>> edges = getPmEdges(graphPath);
+
+    edges.first(10).print();
+
+  }
+
+  private DataSet<Edge<Long, NullValue>> getPmEdges(String graphPath) {
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+    DataSet<Tuple2<Long, Long>> clsIds = Utils.getInputGraph(logicalGraph, env)
+        .getVertices()
+        .map(vertex -> new Tuple2<>(vertex.getId(),
+            (long) vertex.getValue().get("clsId")))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    return clsIds
+        .groupBy(1)
+        .reduceGroup(new AllEdgesCreateGroupReducer<>());
   }
 
   // read existing files and determine quality
@@ -410,35 +432,56 @@ public class NorthCarolinaVoterBaseTest {
     int sourcesCount = 10;
     env = TestBase.setupLocalEnvironment();
 
-    List<String> sourceList = Lists.newArrayList(//"/data/nc/10s1/"
+    List<String> sourceList = Lists.newArrayList(
+        "1/", "2/", "3/"//, "5/"
+        //"/data/nc/10s1/"
 //        ,
 //        "/data/nc/10s2/",
-        "/data/nc/10s2/"
+//        "/data/nc/10s2/"
 //        ,
 //        "/data/nc/10s5/"
     );
 
+//    String graphPath =
+//        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/nc/10parties/";
+    String graphPath =
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/";
+
+
     for (String dataset : sourceList) {
-      final String graphPath = NorthCarolinaVoterBaseTest.class
-          .getResource(dataset).getFile();
-      for (int mergeFor = 50; mergeFor <= 60; mergeFor += 5) {
+//      final String graphPath = NorthCarolinaVoterBaseTest.class
+//          .getResource(dataset).getFile();
+      String pmPath = graphPath.concat(dataset);
+//      DataSet<Tuple2<Long, Long>> edges = getPmEdges(pmPath)
+//          .map(edge -> new Tuple2<>(edge.f0, edge.f1))
+//          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+      for (int mergeFor = 95; mergeFor <= 95; mergeFor += 5) {
         double mergeThreshold = (double) mergeFor / 100;
 
-      for (int simFor = 95; simFor <= 95; simFor += 5) {
-        double simSortThreshold = (double) simFor / 100;
+        for (int simFor = 70; simFor <= 70; simFor += 5) {
+          double simSortThreshold = (double) simFor / 100;
 
-          String reprOut = graphPath.concat("/output/m") + mergeFor
-              + "s" + simFor + "/";
-
+          String reprOut = pmPath.concat("/output/nc-decomposition-representatives-JW-s70/");
+          DataSet<Vertex<Long, ObjectMap>> repr =
+              new org.mappinganalysis.io.impl.json.JSONDataSource(
+                  reprOut, true, env)
+//                  reprOut.concat("output/test/"), true, env)
+                  .getVertices();
+          printQuality(dataset.concat("repr"), mergeThreshold, simSortThreshold,
+              repr, pmPath, sourcesCount);
+//          String reprOut = graphPath.concat("/output/m") + mergeFor
+//              + "s" + simFor + "/";
+          String bdcluOut = pmPath.concat("/output/nc-merged-clusters-JW-m")
+              + mergeFor + "-JW-s" + simFor + "/";
           DataSet<Vertex<Long, ObjectMap>> merged =
               new org.mappinganalysis.io.impl.json.JSONDataSource(
-                  reprOut.concat("output/test/"), true, env)
+                  bdcluOut, true, env)
+//                  reprOut.concat("output/test/"), true, env)
                   .getVertices();
           printQuality(dataset, mergeThreshold, simSortThreshold,
-              merged, sourcesCount);
-
+              merged, pmPath, sourcesCount);
         }
-
       }
     }
   }
@@ -495,7 +538,8 @@ public class NorthCarolinaVoterBaseTest {
 //    // 01645993s5 willis 501645993
 //    // 04737686s4 dickerson 404737686
 
-          printQuality(dataset, mergeThreshold, simSortThreshold, merged, sourcesCount);
+          printQuality(dataset, mergeThreshold, simSortThreshold,
+              merged, Constants.EMPTY_STRING, sourcesCount);
         }
       }
 

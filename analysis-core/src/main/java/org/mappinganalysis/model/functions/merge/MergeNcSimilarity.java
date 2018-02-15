@@ -49,9 +49,23 @@ public class MergeNcSimilarity
       values.put(Constants.SIM_NUMBER, numberSim);
     }
 
+//    boolean precheck = false;
+//    if (Double.compare(labelSimilarity, 0.793857) == 0) {
+//      LOG.info("79 " + triplet.toString());
+//      LOG.info("79.. " + values.toString());
+//      precheck = true;
+//    }
+
+//    LOG.info("single: " + values.toString());
+
     triplet.setSimilarity(values
         .runOperation(aggregationFunction)
         .getEdgeSimilarity());
+//    LOG.info("aggr: " + values.toString());
+
+//    if (precheck) {
+//      LOG.info("precheck: " + values.toString());
+//    }
 
     return triplet;
   }

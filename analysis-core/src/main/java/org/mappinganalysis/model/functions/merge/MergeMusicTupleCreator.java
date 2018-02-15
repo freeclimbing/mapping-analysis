@@ -61,10 +61,19 @@ public class MergeMusicTupleCreator
     String artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex);
 //    tuple.setBlockingLabel(
 //        Utils.getMusicBlockingLabel(artistTitleAlbum));
-    tuple.setBlockingLabel(Utils.getBlockingKey(
-        blockingStrategy,
-        Constants.GEO,
-        properties.getLabel()));
+    if (mode.equals(Constants.MUSIC)) {
+      tuple.setBlockingLabel(Utils.getBlockingKey(
+          blockingStrategy,
+          Constants.MUSIC,
+          properties.getLabel()));
+    } else {
+      String ncBlocking = Utils.getNcBlockingLabel(
+          properties.getLabel(), properties.getArtist());
+      tuple.setBlockingLabel(Utils.getBlockingKey(
+          blockingStrategy,
+          Constants.MUSIC,
+          ncBlocking));
+    }
     tuple.setArtistTitleAlbum(artistTitleAlbum);
 
 //    LOG.info("### CREATE: " + tuple.toString());

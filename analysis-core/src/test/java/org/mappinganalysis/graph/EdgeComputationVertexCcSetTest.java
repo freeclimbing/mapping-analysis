@@ -10,6 +10,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
@@ -26,50 +27,64 @@ import static org.junit.Assert.assertTrue;
 public class EdgeComputationVertexCcSetTest {
   private static final Logger LOG = Logger.getLogger(EdgeComputationVertexCcSetTest.class);
 
-  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   @Test
   public void SimpleEdgesCreatorTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
     String graphPath = EdgeComputationVertexCcSetTest
         .class.getResource("/data/typeGroupBy/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
         .getVertices();
 
-    vertices.runOperation(new EdgeComputationVertexCcSet(
-        new CcIdKeySelector(),
-        EdgeComputationStrategy.SIMPLE))
-        .print();
-    // TODO TEST
-//    vertices.print();
+    DataSet<Edge<Long, NullValue>> resultEdges = vertices
+        .runOperation(new EdgeComputationVertexCcSet(
+            new CcIdKeySelector(),
+            EdgeComputationStrategy.SIMPLE));
+
+    assertEquals(8, resultEdges.count());
   }
 
+  /**
+   * all edges (1,1), (2,2), (2,1), (1,2) not needed.
+   */
   @Test
   public void allEdgesCreatorTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
-    DataSet<Vertex<Long, ObjectMap>> inputVertices = arrangeVertices(graph);
-    DataSet<Edge<Long, NullValue>> allEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(),
-            EdgeComputationStrategy.ALL,
-            false));
+    DataSet<Vertex<Long, ObjectMap>> inputVertices = prepareVertices(graph);
 
-    assertEquals(9, allEdges.count());
+    // why this test? useless?
+//    DataSet<Edge<Long, NullValue>> allEdges = inputVertices
+//        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(),
+//            EdgeComputationStrategy.ALL,
+//            false));
+//
+//    allEdges.print();
+//    assertEquals(9, allEdges.count());
+//
+//    DataSet<Edge<Long, NullValue>> newEdges
+//        = restrictToNewEdges(graph.getEdges(), allEdges);
+//    assertEquals(1, newEdges.count());
+//    assertTrue(newEdges.collect()
+//        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
-    DataSet<Edge<Long, NullValue>> newEdges
-        = restrictToNewEdges(graph.getEdges(), allEdges);
-    assertEquals(1, newEdges.count());
-    assertTrue(newEdges.collect()
-        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
 
     final DataSet<Edge<Long, NullValue>> distinctEdges = inputVertices
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
+    distinctEdges.print();
     assertEquals(3, distinctEdges.count());
     assertTrue(distinctEdges.collect()
         .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
   }
 
-  private DataSet<Vertex<Long, ObjectMap>> arrangeVertices(
+  /**
+   * Add some meta data to vertices for test.
+   */
+  private DataSet<Vertex<Long, ObjectMap>> prepareVertices(
       Graph<Long, NullValue, NullValue> graph) {
     return graph
         .getVertices()
@@ -97,6 +112,7 @@ public class EdgeComputationVertexCcSetTest {
    *
    * Used for tests.
    */
+  @Deprecated
   private DataSet<Edge<Long, NullValue>> restrictToNewEdges(
       DataSet<Edge<Long, NullValue>> input,
       DataSet<Edge<Long, NullValue>> processEdges) {

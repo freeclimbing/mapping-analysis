@@ -16,7 +16,7 @@ public class EdgeComputationVertexCcSet
 
   private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
   private EdgeComputationStrategy strategy = EdgeComputationStrategy.NONE;
-  private Boolean isResultEdgeDistinct;
+  private Boolean isResultEdgeDistinct = true;
   private DataSet<Vertex<Long, ObjectMap>> vertices;
 
   /**
@@ -76,9 +76,11 @@ public class EdgeComputationVertexCcSet
    */
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-    if (strategy.equals(EdgeComputationStrategy.ALL)) {
+    if (strategy.equals(EdgeComputationStrategy.ALL) && isResultEdgeDistinct) {
       return vertices
-          .runOperation(new AllEdgesCreator(keySelector, isResultEdgeDistinct));
+          .runOperation(new AllEdgesCreator(keySelector));
+    } else if (strategy.equals(EdgeComputationStrategy.ALL) && !isResultEdgeDistinct) {
+      throw new IllegalArgumentException("Not currently supported non-distinct: " + strategy);
     } else if (strategy.equals(EdgeComputationStrategy.SIMPLE)) {
       return vertices
           .runOperation(new SimpleEdgesCreator(keySelector));

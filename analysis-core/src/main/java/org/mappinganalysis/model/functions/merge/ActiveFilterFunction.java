@@ -12,7 +12,7 @@ class ActiveFilterFunction<T>
     implements FilterFunction<T> {
   private DataDomain domain;
 
-  public ActiveFilterFunction(DataDomain domain) {
+  ActiveFilterFunction(DataDomain domain) {
     this.domain = domain;
   }
 

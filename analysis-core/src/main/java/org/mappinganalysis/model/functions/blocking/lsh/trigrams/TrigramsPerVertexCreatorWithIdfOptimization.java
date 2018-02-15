@@ -1,14 +1,11 @@
 package org.mappinganalysis.model.functions.blocking.lsh.trigrams;
 
-import com.google.common.base.CharMatcher;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CharSet;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.VertexIdfWeightsFunction;
 import org.mappinganalysis.model.functions.blocking.tfidf.TfIdfComputer;
@@ -22,10 +19,10 @@ import static org.apache.lucene.analysis.cn.ChineseFilter.STOP_WORDS;
  * preliminary step.
  */
 public class TrigramsPerVertexCreatorWithIdfOptimization
-    implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Tuple2<Long, CharSet>> {
+    implements CustomUnaryOperation<Tuple2<Long, String>, Tuple2<Long, CharSet>> {
   private static final Logger LOG = Logger.getLogger(TrigramsPerVertexCreatorWithIdfOptimization.class);
 
-  private DataSet<Vertex<Long, ObjectMap>> vertices;
+  private DataSet<Tuple2<Long, String>> idLabelTuples;
   private boolean isIdfOptimizeEnabled;
 
   public TrigramsPerVertexCreatorWithIdfOptimization(boolean isIdfOptimizeEnabled) {
@@ -33,25 +30,12 @@ public class TrigramsPerVertexCreatorWithIdfOptimization
   }
 
   @Override
-  public void setInput(DataSet<Vertex<Long, ObjectMap>> inputData) {
-    this.vertices = inputData;
+  public void setInput(DataSet<Tuple2<Long, String>> inputData) {
+    this.idLabelTuples = inputData;
   }
 
   @Override
   public DataSet<Tuple2<Long, CharSet>> createResult() {
-    DataSet<Tuple2<Long, String>> idLabelTuples = vertices
-        .map(vertex -> {
-          String label = CharMatcher.WHITESPACE.trimAndCollapseFrom(
-              vertex.getValue()
-                  .getLabel()
-                  .toLowerCase()
-                  .replaceAll("[\\p{Punct}]", " "),
-              ' ');
-
-          return new Tuple2<>(vertex.getId(), label);
-        })
-        .returns(new TypeHint<Tuple2<Long, String>>() {});
-
     if (isIdfOptimizeEnabled) {
       DataSet<Tuple2<String, Double>> idfValues = idLabelTuples
           .runOperation(new TfIdfComputer(STOP_WORDS));

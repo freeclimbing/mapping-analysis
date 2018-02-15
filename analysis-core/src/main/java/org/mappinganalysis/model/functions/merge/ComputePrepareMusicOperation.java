@@ -13,7 +13,7 @@ public class ComputePrepareMusicOperation
   private DataDomain domain;
   private int sourcesCount;
 
-  public ComputePrepareMusicOperation(DataDomain domain, int sourcesCount) {
+  ComputePrepareMusicOperation(DataDomain domain, int sourcesCount) {
     this.domain = domain;
     this.sourcesCount = sourcesCount;
   }

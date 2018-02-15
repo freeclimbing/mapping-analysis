@@ -1,13 +1,11 @@
 package org.mappinganalysis.graph.utils;
 
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.graph.functions.EdgeExtractCoGroupFunction;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
@@ -44,20 +42,24 @@ public class AllEdgesCreator
 
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-    DataSet<Edge<Long, NullValue>> edges = vertices.coGroup(vertices)
-        .where(keySelector)
-        .equalTo(keySelector)
-        .with(new EdgeExtractCoGroupFunction());
+//    DataSet<Edge<Long, NullValue>> edges = vertices.coGroup(vertices)
+//        .where(keySelector)
+//        .equalTo(keySelector)
+//        .with(new EdgeExtractCoGroupFunction());
+
+    return vertices.groupBy(keySelector)
+        .reduceGroup(new AllEdgesCreateGroupReducer<>());
 
     // Example: (1, 2), (2, 1), (1, 3), (1, 1) as input will result in (1, 2), (1,3)
-    if (isResultEdgeDistinct) {
-      edges = edges
-        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
-        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
-        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct();
-    }
-
-    return edges;
+//    if (isResultEdgeDistinct) {
+//      edges = edges
+//        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
+//        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
+//        .returns(new TypeHint<Edge<Long, NullValue>>() {})
+//        .distinct();
+//    }
+//
+//    return edges;
   }
+
 }

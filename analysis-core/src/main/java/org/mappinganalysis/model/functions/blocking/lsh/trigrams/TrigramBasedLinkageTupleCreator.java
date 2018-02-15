@@ -2,8 +2,7 @@ package org.mappinganalysis.model.functions.blocking.lsh.trigrams;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
-import org.apache.flink.graph.Vertex;
-import org.mappinganalysis.model.ObjectMap;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.mappinganalysis.model.functions.blocking.lsh.structure.LinkageTuple;
 
 /**
@@ -11,23 +10,24 @@ import org.mappinganalysis.model.functions.blocking.lsh.structure.LinkageTuple;
  * Dictionary used to create LinkageTuple objects containing BloomFilter
  * with the BitSets (reflecting the trigrams).
  */
-public class TrigramBasedLinkageTupleCreator implements CustomUnaryOperation<Vertex<Long, ObjectMap>, LinkageTuple> {
+public class TrigramBasedLinkageTupleCreator
+    implements CustomUnaryOperation<Tuple2<Long, String>, LinkageTuple> {
   private boolean isIdfOptimizeEnabled;
-  private DataSet<Vertex<Long, ObjectMap>> vertices;
+  private DataSet<Tuple2<Long, String>> tuples;
 
   public TrigramBasedLinkageTupleCreator(boolean isIdfOptimizeEnabled) {
     this.isIdfOptimizeEnabled = isIdfOptimizeEnabled;
   }
 
   @Override
-  public void setInput(DataSet<Vertex<Long, ObjectMap>> inputData) {
-    this.vertices = inputData;
+  public void setInput(DataSet<Tuple2<Long, String>> inputData) {
+    this.tuples = inputData;
   }
 
   @Override
   public DataSet<LinkageTuple> createResult() {
 
-    return vertices
+    return tuples
         .runOperation(new TrigramsPerVertexCreatorWithIdfOptimization(isIdfOptimizeEnabled))
         .runOperation(new LongValueTrigramDictionaryCreator())
         .groupBy(0)

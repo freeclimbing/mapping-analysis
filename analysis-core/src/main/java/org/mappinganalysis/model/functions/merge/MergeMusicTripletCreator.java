@@ -29,23 +29,19 @@ public class MergeMusicTripletCreator
     HashSet<MergeMusicTuple> rightSide = Sets.newHashSet(leftSide);
 
     for (MergeMusicTuple leftTuple : leftSide) {
-      MergeMusicTriplet triplet = new MergeMusicTriplet();
       Integer leftSources = leftTuple.getIntSources();
-
-      // MORE TODO
-      triplet.setBlockingLabel(leftTuple.getBlockingLabel());
       rightSide.remove(leftTuple);
+
       for (MergeMusicTuple rightTuple : rightSide) {
         int summedSources = AbstractionUtils.getSourceCount(leftSources)
             + AbstractionUtils.getSourceCount(rightTuple.getIntSources());
 
         if (summedSources <= sourcesCount
             && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())) {
+          MergeMusicTriplet triplet = new MergeMusicTriplet(leftTuple, rightTuple);
+          triplet.setBlockingLabel(leftTuple.getBlockingLabel());
 
-          triplet.setIdAndTuples(leftTuple, rightTuple);
-
-//          LOG.info(rightTuple.toString() + " ### " + leftTuple.toString());
-//          LOG.info(reuseTriplet.toString());
+//          LOG.info("MMTC 4: " + triplet.toString());
           out.collect(triplet);
         }
       }

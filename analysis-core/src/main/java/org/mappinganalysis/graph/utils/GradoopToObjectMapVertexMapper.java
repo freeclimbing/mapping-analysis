@@ -42,6 +42,8 @@ public class GradoopToObjectMapVertexMapper
         properties.setArtist(gradoopProperties.get(property).getString());
       } else if (property.equals("postcod")) {
         properties.setNumber(gradoopProperties.get(property).getString());
+      } else if (property.equals("clsId")) {
+        properties.put("clsId", gradoopProperties.get(property).getLong());
       }
     }
 
