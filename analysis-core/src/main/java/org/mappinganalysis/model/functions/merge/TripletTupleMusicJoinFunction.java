@@ -11,7 +11,6 @@ import org.mappinganalysis.model.MergeMusicTuple;
 public class TripletTupleMusicJoinFunction
     implements JoinFunction<MergeMusicTriplet, MergeMusicTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(TripletTupleMusicJoinFunction.class);
-
   private final Integer position;
 
   TripletTupleMusicJoinFunction(Integer position) {
@@ -21,8 +20,6 @@ public class TripletTupleMusicJoinFunction
   @Override
   public MergeMusicTriplet join(MergeMusicTriplet triplet,
                               MergeMusicTuple newTuple) throws Exception {
-//    if (newTuple.f0 < 10L)
-//    LOG.info("CHANGES new Tuple: " + newTuple + " for triplet: " + triplet.toString());
     if (position == 0) {
       triplet.setSrcTuple(newTuple);
     } else if (position == 1) {

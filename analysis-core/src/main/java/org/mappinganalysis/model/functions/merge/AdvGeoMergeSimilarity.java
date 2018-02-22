@@ -39,7 +39,7 @@ public class AdvGeoMergeSimilarity
 //    triplet.getSrcTuple()
 
     double similarity = 0D;
-//    Utils.getTrigramMetric()
+//    Utils.getCosineTrigramMetric()
 //        .compare(left.toLowerCase().trim(), right.toLowerCase().trim());
     BigDecimal tmpResult = new BigDecimal(similarity);
 

@@ -8,7 +8,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
  */
 public class FrequencyMapByFunction implements MapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>> {
   private final int field;
-  Tuple2<Long, Long> reuseTuple;
+  private Tuple2<Long, Long> reuseTuple;
 
   public FrequencyMapByFunction(int field) {
     this.field = field;

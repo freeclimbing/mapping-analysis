@@ -17,7 +17,8 @@ public class MusicSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>>
     implements Serializable {
 
-  public MusicSimilarityFunction() {
+  MusicSimilarityFunction(String metric) {
+    this.metric = metric;
   }
 
   @Override
@@ -25,12 +26,12 @@ public class MusicSimilarityFunction
       throws Exception {
 
     EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
-    result.runOperation(new SinglePropertySimilarity(Constants.LANGUAGE))
-        .runOperation(new SinglePropertySimilarity(Constants.LABEL))
-        .runOperation(new SinglePropertySimilarity(Constants.ARTIST))
-        .runOperation(new SinglePropertySimilarity(Constants.ALBUM))
-        .runOperation(new SinglePropertySimilarity(Constants.YEAR))
-        .runOperation(new SinglePropertySimilarity(Constants.LENGTH));
+    result.runOperation(new SinglePropertySimilarity(Constants.LANGUAGE, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.LABEL, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.ARTIST, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.ALBUM, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.YEAR, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.LENGTH, metric));
 
 //    System.out.println("muSiFu: " + result.getEdge().getValue().toString());
     return result;

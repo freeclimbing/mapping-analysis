@@ -16,9 +16,26 @@ public class LshCandidateCreator
 
   private DataSet<Tuple2<Long, String>> tuples;
   private boolean isIdfOptimizeEnabled;
+  private int valueRangeLsh;
+  private int numberOfFamilies;
+  private int numberOfHashesPerFamily;
 
   public LshCandidateCreator(boolean isIdfOptimizeEnabled) {
     this.isIdfOptimizeEnabled = isIdfOptimizeEnabled;
+    // good in tests: 3200 55 75
+    valueRangeLsh = 3200;
+    numberOfFamilies = 15;
+    numberOfHashesPerFamily = 15;
+  }
+
+  public LshCandidateCreator(boolean isIdfOptimizeEnabled,
+                             int valueRangeLsh,
+                             int numberOfFamilies,
+                             int numberOfHashesPerFamily) {
+    this.isIdfOptimizeEnabled = isIdfOptimizeEnabled;
+    this.valueRangeLsh = valueRangeLsh;
+    this.numberOfFamilies = numberOfFamilies;
+    this.numberOfHashesPerFamily = numberOfHashesPerFamily;
   }
 
   @Override
@@ -31,8 +48,8 @@ public class LshCandidateCreator
     return tuples
         .runOperation(new TrigramBasedLinkageTupleCreator(isIdfOptimizeEnabled))
         .runOperation(new LshComputation(
-            3200,
-            15, // 55
-            15)); // 75
+            valueRangeLsh,
+            numberOfFamilies, // 55
+            numberOfHashesPerFamily)); // 75
   }
 }

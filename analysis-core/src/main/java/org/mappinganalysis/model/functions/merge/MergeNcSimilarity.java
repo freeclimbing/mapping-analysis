@@ -18,21 +18,23 @@ public class MergeNcSimilarity
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeMusicSimilarity.class);
   private MeanAggregationFunction aggregationFunction;
+  private String metric;
 
-  public MergeNcSimilarity() {
-    this(new MeanAggregationFunction());
+  public MergeNcSimilarity(String metric, MeanAggregationFunction aggregationFunction) {
+    this.metric = metric;
+    this.aggregationFunction = aggregationFunction;
   }
 
-  public MergeNcSimilarity(MeanAggregationFunction aggregationFunction) {
-    this.aggregationFunction = aggregationFunction;
+  public MergeNcSimilarity(String metric) {
+    this(metric, new MeanAggregationFunction());
   }
 
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
-    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
-    Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet);
-    Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet);
-    Double numberSim = getAttributeSimilarity(Constants.NUMBER, triplet);
+    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet, metric);
+    Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet, metric);
+    Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet, metric);
+    Double numberSim = getAttributeSimilarity(Constants.NUMBER, triplet, metric);
 
     ObjectMap values = new ObjectMap(Constants.NC);
 
@@ -70,14 +72,14 @@ public class MergeNcSimilarity
     return triplet;
   }
 
-  private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet) {
+  private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet, String metric) {
     switch (attrName) {
       case Constants.LABEL:
-        return SimCompUtils.handleString(Constants.LABEL, triplet);
+        return SimCompUtils.handleString(Constants.LABEL, triplet, metric);
       case Constants.ARTIST:
-        return SimCompUtils.handleString(Constants.ARTIST, triplet);
+        return SimCompUtils.handleString(Constants.ARTIST, triplet, metric);
       case Constants.ALBUM:
-        return SimCompUtils.handleString(Constants.ALBUM, triplet);
+        return SimCompUtils.handleString(Constants.ALBUM, triplet, metric);
       case Constants.NUMBER:
         return SimCompUtils.handleNumber(triplet);
       default:

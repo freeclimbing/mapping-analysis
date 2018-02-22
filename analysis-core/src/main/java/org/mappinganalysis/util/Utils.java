@@ -10,15 +10,9 @@ import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.TextOutputFormat;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -34,17 +28,13 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.mappinganalysis.graph.utils.GradoopEdgeToGellyEdgeMapper;
 import org.mappinganalysis.graph.utils.GradoopToGellyEdgeJoinFunction;
 import org.mappinganalysis.graph.utils.GradoopToObjectMapVertexMapper;
-import org.mappinganalysis.io.output.ExampleOutput;
-import org.mappinganalysis.model.EdgeComponentTuple3;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.VertexComponentTuple2;
 import org.mappinganalysis.model.functions.CharSet;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.simmetrics.StringMetric;
-import org.simmetrics.metrics.CosineSimilarity;
+import org.simmetrics.metrics.JaroWinkler;
 import org.simmetrics.simplifiers.Simplifiers;
-import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -245,13 +235,6 @@ public class Utils {
     }
   }
 
-  public static Double computeWithMetric(StringMetric metric, String first, String second) {
-    double similarity = metric.compare(simplify(first), simplify(second));
-    BigDecimal tmpResult = new BigDecimal(similarity);
-
-    return tmpResult.setScale(6, BigDecimal.ROUND_HALF_UP).doubleValue();
-  }
-
   public static MergeGeoTuple isOnlyOneValidGeoObject(MergeGeoTuple left, MergeGeoTuple right) {
     if (isValidGeoObject(left) && !isValidGeoObject(right)) {
       return left;
@@ -323,71 +306,20 @@ public class Utils {
   }
 
   /**
-   * Basic trigram similarity for 2 attributes.
+   * get similarity for given strings based on metric
    */
-  public static Double getTrigramSimilarityWithSimplify(String left, String right) {
+  public static Double getSimilarityAndSimplifyForMetric(String left, String right, String metric) {
     Preconditions.checkNotNull(left);
     Preconditions.checkNotNull(right);
 
-    if (!Utils.isSane(left) || !Utils.isSane(right)) {
+    if (!isSane(left) || !isSane(right)) {
       return null;
     }
 
-    double similarity = getTrigramMetric()
-        .compare(Utils.simplify(left), Utils.simplify(right));
-
-//    if (!left.equals("bar") && similarity > 0.5)
-//    LOG.info(left + " " + right + " " + similarity);
+    double similarity = getMetric(metric)
+        .compare(simplify(left), simplify(right));
 
     return getExactDoubleResult(similarity);
-  }
-
-  @Deprecated
-  public static void writeRemovedEdgesToHDFS(
-      Graph<Long, ObjectMap, ObjectMap> graph,
-      DataSet<VertexComponentTuple2> oneToManyVertexComponentIds,
-      String componentIdName, ExampleOutput out) {
-    if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
-      DataSet<VertexComponentTuple2> vertexComponentIds = graph.getVertices()
-          .map(new VertexComponentIdMapFunction(componentIdName));
-
-      DataSet<EdgeComponentTuple3> edgeWithComps = graph.getEdgeIds()
-          .leftOuterJoin(vertexComponentIds)
-          .where(0)
-          .equalTo(0)
-          .with(new EdgeComponentIdJoinFunction());
-
-      DataSet<Tuple3<Long, Integer, Integer>> tmpResult = edgeWithComps
-          .leftOuterJoin(oneToManyVertexComponentIds)
-          .where(2)
-          .equalTo(1)
-          .with(new AggregateBaseDeletedEdgesJoinFunction())
-          .groupBy(0)
-          .sum(1).and(Aggregations.SUM, 2)
-          .filter(tuple -> tuple.f1 != 0)
-          .returns(new TypeHint<Tuple3<Long, Integer, Integer>>() {});
-
-
-      Utils.writeToFile(tmpResult, "rmEdgesPerCompAndEdgeCount");
-
-      DataSet<Tuple3<Integer, Integer, Integer>> result = getAggCount(tmpResult);
-      Utils.writeToFile(result, "rmEdgesCountAggregated");
-
-      out.addTuples("removed edges, edges in component, count", result);
-    }
-  }
-
-  public static DataSet<Tuple3<Integer, Integer, Integer>> getAggCount(
-      DataSet<Tuple3<Long, Integer, Integer>> tmpResult) {
-    return tmpResult
-        .map(new MapFunction<Tuple3<Long, Integer, Integer>, Tuple3<Integer, Integer, Integer>>() {
-          @Override
-          public Tuple3<Integer, Integer, Integer> map(Tuple3<Long, Integer, Integer> tuple) throws Exception {
-            return new Tuple3<>(tuple.f1, tuple.f2, 1);
-          }
-        })
-        .groupBy(0, 1)
-        .sum(2);
   }
 
   /**
@@ -710,29 +642,28 @@ public class Utils {
         ' ');
   }
 
-  public static StringMetric getTrigramMetric() {
-//    return with(new JaroWinkler())
-//        .build();
-    return with(new CosineSimilarity<>())
-//        .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
-//        .simplify(Simplifiers.removeAll("\\s"))
-        //.simplify(Simplifiers.replaceNonWord()) // TODO removeNonWord ??
-//        .simplify(Simplifiers.toLowerCase())
-        .tokenize(Tokenizers.qGramWithPadding(3))
+  public static StringMetric getMetric(String metric) {
+    switch (metric) {
+      case Constants.JARO_WINKLER:
+        return getJaroWinklerMetric();
+      case Constants.COSINE_TRIGRAM:
+        return getCosineTrigramMetric();
+      default:
+        throw new IllegalArgumentException("getMetric(" + metric + "): Unsupported metric: ");
+    }
+  }
+
+  private static StringMetric getJaroWinklerMetric() {
+    return with(new JaroWinkler())
         .build();
   }
 
-  /**
-   * Split a string to each of the contained long elements and return as a list.
-   * @param input string
-   * @return long list
-   */
-  public static List<Long> convertWsSparatedString(String[] input) {
-    List<Long> result = Lists.newArrayList();
-    for (String value : input) {
-      result.add(Long.valueOf(value));
-    }
-    return result;
+  private static StringMetric getCosineTrigramMetric() {
+    return with(new JaroWinkler())
+        .build();
+    // old:
+    // .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
+    // .simplify(Simplifiers.replaceNonWord())
   }
 
   /**
@@ -756,63 +687,5 @@ public class Utils {
 
   public static Long getHash(String input) {
     return HF.hashBytes(input.getBytes()).asLong();
-  }
-
-  public static String toLog(Vertex<Long, ObjectMap> vertex) {
-    ObjectMap values = vertex.getValue();
-    values.remove(Constants.TYPE);
-    values.remove(Constants.DB_URL_FIELD);
-    values.remove(Constants.COMP_TYPE);
-    values.remove(Constants.TMP_TYPE);
-    values.remove(Constants.VERTEX_OPTIONS);
-
-    return vertex.toString();
-  }
-
-  public static String toLog(Edge<Long, ObjectMap> edge) {
-    return edge.getSource().toString()
-        .concat("<->").concat(edge.getTarget().toString())
-        .concat(": ").concat(edge.getValue().getEdgeSimilarity().toString());
-  }
-
-
-  private static class VertexComponentIdMapFunction implements MapFunction<Vertex<Long,ObjectMap>,
-      VertexComponentTuple2> {
-    private final String component;
-
-    public VertexComponentIdMapFunction(String component) {
-      this.component = component;
-    }
-
-    @Override
-    public VertexComponentTuple2 map(Vertex<Long, ObjectMap> vertex) throws Exception {
-      return new VertexComponentTuple2(vertex.getId(), (long) vertex.getValue().get(component));
-    }
-  }
-
-  private static class EdgeComponentIdJoinFunction implements JoinFunction<Tuple2<Long,Long>,
-      VertexComponentTuple2, EdgeComponentTuple3> {
-    @Override
-    public EdgeComponentTuple3 join(Tuple2<Long, Long> left, VertexComponentTuple2 right) throws Exception {
-      return new EdgeComponentTuple3(left.f0, left.f1, right.getComponentId());
-    }
-  }
-
-  private static class AggregateBaseDeletedEdgesJoinFunction
-      implements JoinFunction<EdgeComponentTuple3, VertexComponentTuple2, Tuple3<Long, Integer, Integer>> {
-    @Override
-    public Tuple3<Long, Integer, Integer> join(EdgeComponentTuple3 left,
-                                               VertexComponentTuple2 right) throws Exception {
-      if (right == null) {
-        return new Tuple3<>(left.getComponentId(), 0, 1);
-      } else {
-        if ((long) left.getSourceId() == right.getVertexId()
-            || (long) left.getTargetId() == right.getVertexId()) {
-          return new Tuple3<>(left.getComponentId(), 1, 1);
-        } else {
-          return new Tuple3<>(left.getComponentId(), 0, 1);
-        }
-      }
-    }
   }
 }

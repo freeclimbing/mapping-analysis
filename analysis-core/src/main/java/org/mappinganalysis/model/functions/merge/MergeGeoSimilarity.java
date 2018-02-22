@@ -33,7 +33,7 @@ public class MergeGeoSimilarity
    * Constructor for custom aggregation function
    * @param aggregationFunction custom
    */
-  public MergeGeoSimilarity(MeanAggregationFunction aggregationFunction) {
+  private MergeGeoSimilarity(MeanAggregationFunction aggregationFunction) {
     this.aggregationFunction = aggregationFunction;
   }
 
@@ -42,8 +42,8 @@ public class MergeGeoSimilarity
     MergeGeoTuple src = triplet.getSrcTuple();
     MergeGeoTuple trg = triplet.getTrgTuple();
 
-    Double labelSimilarity = Utils.getTrigramSimilarityWithSimplify(src.getLabel(),
-        trg.getLabel());
+    Double labelSimilarity = Utils.getSimilarityAndSimplifyForMetric(src.getLabel(),
+        trg.getLabel(), Constants.COSINE_TRIGRAM);
 
     Double geoSimilarity = Utils.getGeoSimilarity(src.getLatitude(),
         src.getLongitude(),
@@ -51,7 +51,9 @@ public class MergeGeoSimilarity
         trg.getLongitude());
 
     ObjectMap values = new ObjectMap(Constants.GEO);
-    values.setLabelSimilarity(labelSimilarity);
+    if (labelSimilarity != null) {
+      values.setLabelSimilarity(labelSimilarity);
+    }
     if (geoSimilarity != null) {
       values.setGeoSimilarity(geoSimilarity);
     }

@@ -1,12 +1,8 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -18,11 +14,8 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
 
 import static org.junit.Assert.*;
-
 
 public class MergeGeoBlockingTest {
   private static ExecutionEnvironment env;
@@ -45,8 +38,6 @@ public class MergeGeoBlockingTest {
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY));
 
-//    vertices.print();
-
     int count = 0;
     for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
 //      LOG.info(vertex.toString());
@@ -63,88 +54,6 @@ public class MergeGeoBlockingTest {
     assertEquals(6, count);
   }
 
-  @Test
-  public void asimTest() throws Exception {
-//    max value: (31,37,
-// 31,foo33331,no_value,bar,0,0,no_value,[geco2],31,foba,true,,
-// 37,foo33337,no_value,bar,0,0,no_value,[geco8],37,foba,true,,
-// 0.8969285,foba)
-// max value: (43,47,
-// 43,foo44443,no_value,bar,0,0,no_value,[geco4],43,foba,true,,
-// 47,foo44447,no_value,bar,0,0,no_value,[geco8],47,foba,true,,
-// 0.8969285,foba)
-    String foo = "foo11111";
-    String bar = "foo11116";
-
-
-    LOG.info(Utils.simplify(foo));
-    LOG.info(Utils.simplify(bar));
-
-    Double sim = Utils.getTrigramSimilarityWithSimplify(foo, bar);
-
-    LOG.info(sim);
-
-    LOG.info((sim+1d)/2);
-
-    LOG.info("\n");
-    foo = "foo33331";
-    bar = "foo33337";
-        LOG.info(Utils.simplify(foo));
-    LOG.info(Utils.simplify(bar));
-
-    sim = Utils.getTrigramSimilarityWithSimplify(foo, bar);
-
-    LOG.info(sim);
-
-    LOG.info((sim+1d)/2);
-  }
-
-  @Test
-  public void simTest() throws Exception {
-    env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
-
-    List<Long> entryList = Lists.newArrayList();
-    for (int i = 0; i < 1000; ++i) {
-      entryList.add((long) i);
-    }
-    DataSource<Long> longDataSource = env.fromCollection(entryList);
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = longDataSource.map(input -> {
-      ObjectMap map = new ObjectMap(Constants.NC);
-      long lastDigit = (input % 10);
-      long tenDigit = (input / 10) % 10;
-      String dataSource = "geco" + String.valueOf(lastDigit + 1);
-      map.setClusterDataSources(Sets.newHashSet(dataSource));
-      if (tenDigit != 0) {
-        map.setLabel("foo" + tenDigit + tenDigit + tenDigit + input);
-      } else {
-        map.setLabel("foo" + tenDigit + tenDigit + tenDigit + tenDigit + input);
-      }
-      map.setClusterVertices(Sets.newHashSet(input));
-      map.setAlbum(Constants.NO_VALUE);
-      map.setArtist("bar");
-
-
-      return new Vertex<>(input, map);
-    })
-        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {
-        });
-
-    DataSet<Vertex<Long, ObjectMap>> results = vertices
-        .runOperation(new MergeExecution(DataDomain.NC, 0.5, 10, env));
-
-    Set<Long> checkSet = Sets.newHashSet();
-    for (Vertex<Long, ObjectMap> longObjectMapVertex : results.collect()) {
-      for (Long aLong : longObjectMapVertex.getValue().getVerticesList()) {
-        if (!checkSet.add(aLong)) {
-          LOG.info("duplicate element: " + longObjectMapVertex.toString());
-        }
-      }
-      LOG.info(longObjectMapVertex.toString());
-    }
-
-  }
   /**
    * Long Island, real data mixed with fake data.
    *
@@ -162,33 +71,31 @@ public class MergeGeoBlockingTest {
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, 5, env));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
+            0.5,
+            5,
+            env));
 
-    vertices.print();
     // at some time, we had no(t always) reproducible results, here,
     // we check if the result is the same for 10 runs
-    // todo remove outer for loop later
     for (int i = 0; i < 4; i++) {
-      LOG.info("Run: " + i);
+//      LOG.info("Run: " + i);
       for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-        LOG.info(vertex.toString());
-
-        // add shading test
-
-        if (vertex.getId() == 60191L) {
-          assertTrue(vertex.getValue().getVerticesList().contains(60191L));
+        if (vertex.getId() == 23L ) {
+          assertTrue(vertex.getValue().getVerticesList().contains(23L)
+              || vertex.getValue().getVerticesList().contains(42L));
         } else if (vertex.getId() == 395207L) {
           assertTrue(vertex.getValue().getVerticesList().contains(513732L)
               || vertex.getValue().getVerticesList().contains(395207L)
               || vertex.getValue().getVerticesList().contains(1010272L));
         } else if (vertex.getId() == 1L) {
-          assertTrue(vertex.getValue().getVerticesList().contains(1L));
-        } else if (vertex.getId() == 2L) {
-          assertTrue(vertex.getValue().getVerticesList().contains(2L)
+          assertTrue(vertex.getValue().getVerticesList().contains(1L)
               || vertex.getValue().getVerticesList().contains(3L));
-        } else if (vertex.getId() == 23L){
-          assertTrue(vertex.getValue().getVerticesList().contains(23L)
-              || vertex.getValue().getVerticesList().contains(42L)
+        } else if (vertex.getId() == 2L) {
+          assertTrue(vertex.getValue().getVerticesList().contains(2L));
+        } else if (vertex.getId() == 60190L){
+          assertTrue(vertex.getValue().getVerticesList().contains(60191L)
               || vertex.getValue().getVerticesList().contains(252016L)
               || vertex.getValue().getVerticesList().contains(1268005L)
               || vertex.getValue().getVerticesList().contains(60190L));
@@ -217,7 +124,11 @@ public class MergeGeoBlockingTest {
         .getResource("/data/representative/mergeExec2/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices = new JSONDataSource(graphPath, true, env)
         .getVertices()
-        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, 5, env));
+        .runOperation(new MergeExecution(DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
+            0.5,
+            5,
+            env));
 
 //    vertices.print();
     assertEquals(4, vertices.count());

@@ -23,14 +23,12 @@ public class EdgeSimilarityFunction
   private final String mode;
   private final double maxDistInMeter;
 
-  public EdgeSimilarityFunction(String mode, double maxDistInMeter) {
+  public EdgeSimilarityFunction(String metric, String mode, double maxDistInMeter) {
+    this.metric = metric;
     this.mode = mode;
     this.maxDistInMeter = maxDistInMeter;
   }
 
-  // options
-  // Constants.SIM_GEO_LABEL_STRATEGY
-  // Constants.DEFAULT_VALUE
 
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
@@ -39,8 +37,10 @@ public class EdgeSimilarityFunction
     ObjectMap trgProps = triplet.getTrgVertex().getValue();
     Triplet<Long, ObjectMap, ObjectMap> result = initResultTriplet(triplet);
 
-    Double labelSimilarity = Utils.getTrigramSimilarityWithSimplify(srcProps.getLabel(),
-        trgProps.getLabel());
+    Double labelSimilarity = Utils.getSimilarityAndSimplifyForMetric(
+        srcProps.getLabel(),
+        trgProps.getLabel(),
+        metric);
     result.getEdge().getValue().put(Constants.SIM_LABEL, labelSimilarity);
 
     Double geoSimilarity = Utils.getGeoSimilarity(srcProps.getLatitude(),
@@ -54,8 +54,6 @@ public class EdgeSimilarityFunction
     if (mode.equals(Constants.GEO)) {
       result = addTypeSimilarity(result);
     }
-//    LOG.info(result.toString());
-//    LOG.info("EDGE: " + result.getEdge().toString());
 
     return result;
   }

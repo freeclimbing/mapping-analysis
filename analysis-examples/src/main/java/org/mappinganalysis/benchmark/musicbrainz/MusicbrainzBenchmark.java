@@ -42,38 +42,36 @@ public class MusicbrainzBenchmark implements ProgramDescription {
   private static final String DEC_JOB = "Musicbrainz Decomposition + Representatives";
   private static final String MER_JOB = "Musicbrainz Merge";
 
-  private static String INPUT_PATH;
-  private static String VERTEX_FILE_NAME;
-  private static String MODE;
-
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 4,
+    Preconditions.checkArgument(args.length == 5,
         "args[0]: input dir, " +
             "args[1]: file name, " +
             "args[2]: all/merge mode selection, " +
-            "args[3]: inputOnly");
-    INPUT_PATH = args[0];
-    VERTEX_FILE_NAME = args[1];
-    boolean runInputOnly = args[3].equals("inputOnly");
-    MODE = args[2];
+            "args[3]: inputOnly" +
+            "args[4]: metric");
+    final String inputPath = args[0];
+    final String vertexFileName = args[1];
+    final boolean runInputOnly = args[3].equals("inputOnly");
+    final String mode = args[2];
+    final String metric = args[4];
 
     Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.MUSIC;
     JobExecutionResult result;
 
-    if (!MODE.equals("merge")) {
+    if (!mode.equals("merge")) {
       /*
         process input csv data, create basic clean graph
        */
       if (runInputOnly) {
         DataSet<Vertex<Long, ObjectMap>> inputVertices =
-            new CSVDataSource(INPUT_PATH, VERTEX_FILE_NAME, env)
+            new CSVDataSource(inputPath, vertexFileName, env)
                 .getVertices();
         DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
             .runOperation(new EdgeComputationVertexCcSet(
                 new CcIdKeySelector(), EdgeComputationStrategy.SIMPLE));
 
-        new JSONDataSink(INPUT_PATH, INPUT_STEP)
+        new JSONDataSink(inputPath, INPUT_STEP)
             .writeGraph(Graph.fromDataSet(inputVertices, inputEdges, env));
         result = env.execute(INP_JOB);
         System.out.println(INP_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
@@ -85,11 +83,11 @@ public class MusicbrainzBenchmark implements ProgramDescription {
       preprocessing
      */
       Graph<Long, ObjectMap, NullValue> graph =
-          new JSONDataSource(INPUT_PATH, INPUT_STEP, env)
+          new JSONDataSource(inputPath, INPUT_STEP, env)
               .getGraph(ObjectMap.class, NullValue.class);
 
-      new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
-          .writeGraph(graph.run(new DefaultPreprocessing(domain, env)));
+      new JSONDataSink(inputPath, PREPROCESSING_STEP)
+          .writeGraph(graph.run(new DefaultPreprocessing(metric, domain, env)));
       result = env.execute(PRE_JOB);
       System.out.println(PRE_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
@@ -97,14 +95,17 @@ public class MusicbrainzBenchmark implements ProgramDescription {
       decomposition with representative creation
      */
       DataSet<Vertex<Long, ObjectMap>> vertices =
-          new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
+          new JSONDataSource(inputPath, PREPROCESSING_STEP, env)
               .getGraph()
               .run(new TypeGroupBy(env))
-              .run(new SimSort(domain, 0.5, env))
+              .run(new SimSort(domain,
+                  metric,
+                  0.5,
+                  env))
               .getVertices()
               .runOperation(new RepresentativeCreatorMultiMerge(domain));
 
-      new JSONDataSink(INPUT_PATH, DECOMPOSITION_STEP)
+      new JSONDataSink(inputPath, DECOMPOSITION_STEP)
           .writeVertices(vertices);
       result = env.execute(DEC_JOB);
       System.out.println(DEC_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
@@ -114,12 +115,16 @@ public class MusicbrainzBenchmark implements ProgramDescription {
       merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(INPUT_PATH, DECOMPOSITION_STEP, env)
+        new JSONDataSource(inputPath, DECOMPOSITION_STEP, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC, 0.5, Constants.SOURCE_COUNT, env));
+            .runOperation(new MergeExecution(DataDomain.MUSIC,
+                metric,
+                0.5,
+                Constants.SOURCE_COUNT,
+                env));
 
-    new JSONDataSink(INPUT_PATH, MERGE_STEP)
+    new JSONDataSink(inputPath, MERGE_STEP)
         .writeVertices(mergedVertices);
     result = env.execute(MER_JOB);
     System.out.println(MER_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");

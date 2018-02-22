@@ -42,6 +42,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
     Double minSimilarity = Doubles.tryParse(args[1]);
     final String inputPath = args[0];
     Constants.SOURCE_COUNT = 5;
+    final String metric = Constants.COSINE_TRIGRAM;
 
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
         // TODO check path
@@ -49,7 +50,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
         env)
         .getGraph(ObjectMap.class, NullValue.class)
-        .run(new DefaultPreprocessing(true, env));
+        .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env));
 
     new JSONDataSink(inputPath, PREPROCESSING)
         .writeGraph(graph);
@@ -62,7 +63,10 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         new JSONDataSource(inputPath, PREPROCESSING, env)
             .getGraph()
             .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env))
+            .run(new SimSort(DataDomain.GEOGRAPHY,
+                metric,
+                minSimilarity,
+                env))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
@@ -77,7 +81,11 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         new JSONDataSource(inputPath, DECOMPOSITION, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
-            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY, 0.5, Constants.SOURCE_COUNT, env));
+            .runOperation(new MergeExecution(DataDomain.GEOGRAPHY,
+                metric,
+                0.5,
+                Constants.SOURCE_COUNT,
+                env));
 
     new JSONDataSink(inputPath, MERGE)
         .writeVertices(mergedVertices);

@@ -12,6 +12,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
+import org.mappinganalysis.util.Constants;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,7 +34,7 @@ public class SimSortTest {
     Graph<Long, ObjectMap, ObjectMap> graph =
         new JSONDataSource(graphPath, true, env)
             .getGraph()
-            .run(new SimSort(DataDomain.GEOGRAPHY, minSimilarity, env));
+            .run(new SimSort(DataDomain.GEOGRAPHY, Constants.COSINE_TRIGRAM, minSimilarity, env));
 
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {

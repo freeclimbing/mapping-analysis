@@ -2,6 +2,7 @@ package org.mappinganalysis.benchmark.nc;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -18,11 +19,12 @@ import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy
 import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 import java.util.List;
 
-public class NCBenchmark {
+public class NCBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
   private static final String DECOMPOSITION = "nc-decomposition-representatives";
   private static final String MERGE = "nc-merged-clusters";
@@ -30,7 +32,7 @@ public class NCBenchmark {
   private static final String MER_JOB = "NC Merge";
 
   /**
-   * Main class for Settlement benchmark
+   * Main class for NC benchmark
    */
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 1,
@@ -38,10 +40,14 @@ public class NCBenchmark {
     final int sourcesCount = 10;
     final String INPUT_PATH = args[0];
     final double simSortThreshold = 0.7;
+    final String metric = Constants.COSINE_TRIGRAM;
+    final int parallelism = 96;
 
     List<String> sourceList = Lists.newArrayList(
-        "1/", "2/", "3/"//, "5/"
+        "1/"
+//        "2/", "3/"//, "5/"
     );
+
     for (String dataset : sourceList) {
       final String roundInputPath = INPUT_PATH.concat(dataset);
       final String datasetNumber = dataset.substring(0,1);
@@ -51,16 +57,16 @@ public class NCBenchmark {
       Graph<Long, ObjectMap, NullValue> graph = Utils
           .getInputGraph(logicalGraph, env);
       Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
-          .run(new DefaultPreprocessing(DataDomain.NC, env));
+          .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
 
       // Decomposition + Representative
       DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
           .run(new TypeGroupBy(env))
-          .run(new SimSort(DataDomain.NC, simSortThreshold, env))
+          .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
           .getVertices()
           .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
-      String decompositionSuffix = "-JW-s" + Utils.getOutputSuffix(simSortThreshold);
+      String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold);
       String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
       new JSONDataSink(roundInputPath, decompositionStep)
           .writeVertices(representatives);
@@ -71,25 +77,64 @@ public class NCBenchmark {
           roundInputPath, decompositionStep, env)
           .getVertices();
 
-      for (int mergeFor = 95; mergeFor >= 70; mergeFor -= 5) {
+      for (int mergeFor = 95; mergeFor >= 90; mergeFor -= 5) {
         double mergeThreshold = (double) mergeFor / 100;
+            DataSet<Vertex<Long, ObjectMap>> merged = representatives
+                .runOperation(new MergeInitialization(DataDomain.NC))
+                .runOperation(new MergeExecution(
+                    DataDomain.NC,
+                    metric,
+                    BlockingStrategy.BLOCK_SPLIT,
+                    mergeThreshold,
+                    sourcesCount,
+                    parallelism,
+                    env));
 
-        DataSet<Vertex<Long, ObjectMap>> merged = representatives
-            .runOperation(new MergeInitialization(DataDomain.NC))
-            .runOperation(new MergeExecution(
-                DataDomain.NC,
-                BlockingStrategy.STANDARD_BLOCKING,
-                mergeThreshold,
-                sourcesCount,
-                env));
+            String mergeSuffix = "-96-m" + Utils.getOutputSuffix(mergeThreshold)
+                .concat(decompositionSuffix);
 
-        String mergeSuffix = "-JW-m" + Utils.getOutputSuffix(mergeThreshold)
-            .concat(decompositionSuffix);
-
-        new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
-            .writeVertices(merged);
-        env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
-      }
+            new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
+                .writeVertices(merged);
+            env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
+          }
     }
   }
+
+  @Override
+  public String getDescription() {
+    return null;
+  }
 }
+
+/* Inner for loop lsh blocking, not working efficient */
+//  int valueRangeLsh = 3200;
+//// numbersOfFamilies 55
+//// numbersOfHashesPerFamily 75
+//        for (int pre = 3; pre <= 11; pre++) {
+//            int numbersOfFamilies = pre * 5;
+//
+//            for (int numbersOfHashesPerFamily = numbersOfFamilies + 5;
+//            numbersOfHashesPerFamily <= numbersOfFamilies + 15; numbersOfHashesPerFamily += 5) {
+//
+//            DataSet<Vertex<Long, ObjectMap>> merged = representatives
+//    .runOperation(new MergeInitialization(DataDomain.NC))
+//    .runOperation(new MergeExecution(
+//    DataDomain.NC,
+//    BlockingStrategy.LSH_BLOCKING,
+//    mergeThreshold,
+//    sourcesCount,
+//    valueRangeLsh,
+//    numbersOfFamilies,
+//    numbersOfHashesPerFamily,
+//    env));
+//
+//    String mergeSuffix = "-96-JW-LSH-" + valueRangeLsh + "" +
+//    "-" + numbersOfFamilies + "-" + numbersOfHashesPerFamily +
+//    "-m" + Utils.getOutputSuffix(mergeThreshold)
+//    .concat(decompositionSuffix);
+//
+//    new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
+//    .writeVertices(merged);
+//    env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
+//    }
+//    }

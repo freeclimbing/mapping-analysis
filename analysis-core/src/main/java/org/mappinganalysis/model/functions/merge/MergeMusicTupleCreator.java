@@ -28,7 +28,7 @@ public class MergeMusicTupleCreator
     this.mode = Constants.MUSIC;
   }
 
-  MergeMusicTupleCreator(BlockingStrategy blockingStrategy, DataDomain domain) {
+  public MergeMusicTupleCreator(BlockingStrategy blockingStrategy, DataDomain domain) {
     this.blockingStrategy = blockingStrategy;
     if (domain == DataDomain.MUSIC) {
       this.mode = Constants.MUSIC;

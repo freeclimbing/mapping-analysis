@@ -43,10 +43,12 @@ public class SettlementBenchmark implements ProgramDescription {
    * Main class for Settlement benchmark
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 2, "args[0]: input dir, args[1]: isCorrupted");
+    Preconditions.checkArgument(args.length == 3,
+        "args[0]: input dir, args[1]: isCorrupted, args[2]: metric");
     Constants.SOURCE_COUNT = 4;
     boolean isCorrupted = args[1].equals("isCorrupted");
     INPUT_PATH = args[0];
+    String metric = args[2];
     Double minSimSortSim = 0.7;
 
     /*
@@ -72,7 +74,7 @@ public class SettlementBenchmark implements ProgramDescription {
 
     new JSONDataSink(INPUT_PATH, PREPROCESSING)
         .writeGraph(preprocGraph
-            .run(new DefaultPreprocessing(true, env)));
+            .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env)));
     env.execute(PRE_JOB);
 
     /*
@@ -82,7 +84,7 @@ public class SettlementBenchmark implements ProgramDescription {
         new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
         .getGraph()
 //        .run(new TypeGroupBy(env)) // not needed? TODO
-        .run(new SimSort(DataDomain.GEOGRAPHY, minSimSortSim, env))
+        .run(new SimSort(DataDomain.GEOGRAPHY, metric, minSimSortSim, env))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
@@ -98,7 +100,11 @@ public class SettlementBenchmark implements ProgramDescription {
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
             .runOperation(new MergeExecution(
-                DataDomain.GEOGRAPHY, 0.5, Constants.SOURCE_COUNT, env));
+                DataDomain.GEOGRAPHY,
+                metric,
+                0.5,
+                Constants.SOURCE_COUNT,
+                env));
 
     new JSONDataSink(INPUT_PATH, MERGE)
         .writeVertices(mergedVertices);

@@ -66,7 +66,6 @@ public class DeltaIterateMergeMusicStepFunction {
         .where(0,1)
         .equalTo(0,1)
         .with(new LeftMinusRightSideJoinFunction<>());
-
     // HOLD EXCLUDE 1 potentially useless
 
     DataSet<Tuple2<Long, Long>> transitions = maxTriplets

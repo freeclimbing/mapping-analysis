@@ -66,7 +66,7 @@ public class MusicSimilarityFunctionTest {
     Graph<Long, ObjectMap, NullValue> graph = Graph.fromCollection(vertexInput, edgeInput, env);
 
     Graph<Long, ObjectMap, ObjectMap> run = graph
-        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
+        .run(new BasicEdgeSimilarityComputation(Constants.COSINE_TRIGRAM, Constants.MUSIC, env));
 
     run.getEdges()
         .print();

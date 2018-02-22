@@ -7,5 +7,6 @@ public enum BlockingStrategy {
   STANDARD_BLOCKING,
   IDF_BLOCKING,
   NO_BLOCKING,
-  LSH_BLOCKING
+  LSH_BLOCKING,
+  BLOCK_SPLIT
 }

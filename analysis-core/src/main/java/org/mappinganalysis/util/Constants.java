@@ -15,7 +15,6 @@ public class Constants {
   /**
    * Database property names.
    */
-  public static final String DEFAULT_VALUE = "default";
   public static final String DEBUG = "debug";
   public static final String INFO = "info";
   public static final String GEO_FULL_NAME = "dbURLfull";
@@ -35,16 +34,18 @@ public class Constants {
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String BASE_VERTEX_COUNT_ACCUMULATOR = "vertex-count";
-  public static final String PREPROC_LINK_FILTER_ACCUMULATOR = "links-filtered-counter";
-  public static final String FILTERED_LINKS_ACCUMULATOR = "links-filtered";
-  public static final String RESTRICT_EDGE_COUNT_ACCUMULATOR = "restrict-count";
-  public static final String SIMSORT_EXCLUDE_FROM_COMPONENT_ACCUMULATOR = "exclude-from-component-counter";
-  public static final String EDGE_EXCLUDE_ACCUMULATOR = "edge-exclude-counter";
-  public static final String EXCLUDE_VERTEX_ACCUMULATOR = "exclude-vertex-counter";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
-  public static final String VERTEX_OPTIONS = "vertex-options";
-  public static final String AGG_PREFIX = "aggregated-";
 
+  /*
+    Incremental strategies
+   */
+  public static final String FIXED = "fixed";
+  public static final String BIG = "big";
+  public static final String SINGLE_SETTING = "single-setting";
+  public static final String SPLIT_SETTING = "split-setting";
+
+  public static final String JARO_WINKLER = "jw";
+  public static final String COSINE_TRIGRAM = "ct";
   /**
    * similarity default values.
    * 150000m default distance
@@ -84,7 +85,6 @@ public class Constants {
    * DB column name for GeoNames second type value field.
    */
   public static final String TYPE_INTERN = "typeIntern";
-  public static final String TMP_TYPE = "tmpType" ;
   public static final String COMP_TYPE = "compType";
 
   /**

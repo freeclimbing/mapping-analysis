@@ -67,12 +67,13 @@ public class MergeInitialization
    * Here we try to rejoin vertices which have been in one cluster previously to reduce the
    * complexity for the following merge step.
    */
+  @Deprecated
   private static DataSet<Vertex<Long, ObjectMap>> rejoinSingleVertexClustersFromSimSort(
       DataSet<Vertex<Long, ObjectMap>> representativeVertices,
       DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets) {
 
     EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
-        Constants.GEO,
+        Constants.COSINE_TRIGRAM, Constants.GEO,
         Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
 
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,

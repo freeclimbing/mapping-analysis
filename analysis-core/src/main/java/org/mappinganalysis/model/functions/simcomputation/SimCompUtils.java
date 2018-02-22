@@ -25,11 +25,11 @@ public class SimCompUtils {
     }
   }
 
-  public static Double handleString(String attrName, MergeMusicTriplet triplet) {
+  public static Double handleString(String attrName, MergeMusicTriplet triplet, String metric) {
     String left = triplet.getSrcTuple().getString(attrName);
     String right = triplet.getTrgTuple().getString(attrName);
 
-    return Utils.getTrigramSimilarityWithSimplify(left, right);
+    return Utils.getSimilarityAndSimplifyForMetric(left, right, metric);
   }
 
 

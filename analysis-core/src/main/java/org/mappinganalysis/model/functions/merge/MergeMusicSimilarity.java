@@ -18,13 +18,15 @@ public class MergeMusicSimilarity
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeMusicSimilarity.class);
   private MeanAggregationFunction aggregationFunction;
+  private String metric;
 
-  public MergeMusicSimilarity() {
-    this(new MeanAggregationFunction());
+  public MergeMusicSimilarity(String metric, MeanAggregationFunction aggregationFunction) {
+    this.metric = metric;
+    this.aggregationFunction = aggregationFunction;
   }
 
-  public MergeMusicSimilarity(MeanAggregationFunction aggregationFunction) {
-    this.aggregationFunction = aggregationFunction;
+  public MergeMusicSimilarity(String metric) {
+    this(metric, new MeanAggregationFunction());
   }
 
   // TODO add min sim check
@@ -82,15 +84,15 @@ public class MergeMusicSimilarity
   private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet) {
     switch (attrName) {
       case Constants.ARTIST_TITLE_ALBUM:
-        return SimCompUtils.handleString(Constants.LABEL, triplet);
+        return SimCompUtils.handleString(Constants.LABEL, triplet, metric);
       case Constants.LANGUAGE:
         return null;
       case Constants.LABEL:
-        return SimCompUtils.handleString(Constants.LABEL, triplet);
+        return SimCompUtils.handleString(Constants.LABEL, triplet, metric);
       case Constants.ARTIST:
-        return SimCompUtils.handleString(Constants.ARTIST, triplet);
+        return SimCompUtils.handleString(Constants.ARTIST, triplet, metric);
       case Constants.ALBUM:
-        return SimCompUtils.handleString(Constants.ALBUM, triplet);
+        return SimCompUtils.handleString(Constants.ALBUM, triplet, metric);
       case Constants.YEAR:
         return SimCompUtils.handleYear(triplet);
       case Constants.LENGTH:

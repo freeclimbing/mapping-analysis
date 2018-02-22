@@ -22,7 +22,7 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements;
   private ExecutionEnvironment env;
 
-  public SingleSourceIncrementalClusteringFunction(
+  SingleSourceIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
       DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
       String source,

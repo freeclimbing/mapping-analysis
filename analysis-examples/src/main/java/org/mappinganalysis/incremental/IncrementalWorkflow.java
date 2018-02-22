@@ -31,15 +31,26 @@ public class IncrementalWorkflow implements ProgramDescription {
     Preconditions.checkArgument(args.length == 3,
         "args[0]: input dir, " +
             "args[1]: file name, " +
-            "args[2]: Incremental Strategy (fixed, big)");
+            "args[2]: Incremental Strategy (fixed, big, split-setting, single-setting)");
     String INPUT_PATH = args[0];
     String VERTEX_FILE_NAME = args[1];
     String STRATEGY = args[2];
     IncrementalClusteringStrategy strategy = null;
-    if (STRATEGY.equals("fixed")) {
-      strategy = IncrementalClusteringStrategy.FIXED_SEQUENCE;
-    } else if (STRATEGY.equals("big")) {
-      strategy = IncrementalClusteringStrategy.BIG;
+    switch (STRATEGY) {
+      case Constants.FIXED:
+        strategy = IncrementalClusteringStrategy.FIXED_SEQUENCE;
+        break;
+      case Constants.BIG:
+        strategy = IncrementalClusteringStrategy.BIG;
+        break;
+      case Constants.SINGLE_SETTING:
+        strategy = IncrementalClusteringStrategy.SINGLE_SETTING;
+        break;
+      case Constants.SPLIT_SETTING:
+        strategy = IncrementalClusteringStrategy.SPLIT_SETTING;
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported incremental strategy: " + STRATEGY);
     }
 
     Constants.SOURCE_COUNT = 5;

@@ -16,15 +16,19 @@ public class NcSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(NcSimilarityFunction.class);
 
+  NcSimilarityFunction(String metric) {
+    this.metric = metric;
+  }
+
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(
       Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
 
     EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
-    result.runOperation(new SinglePropertySimilarity(Constants.LABEL))
-        .runOperation(new SinglePropertySimilarity(Constants.ARTIST))
-        .runOperation(new SinglePropertySimilarity(Constants.ALBUM))
-        .runOperation(new SinglePropertySimilarity(Constants.NUMBER));
+    result.runOperation(new SinglePropertySimilarity(Constants.LABEL, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.ARTIST, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.ALBUM, metric))
+        .runOperation(new SinglePropertySimilarity(Constants.NUMBER, metric));
 
     return result;
   }

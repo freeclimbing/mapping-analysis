@@ -26,12 +26,14 @@ public class DefaultPreprocessing
 
   private final ExecutionEnvironment env;
   private final boolean linkFilterEnabled;
+  private String metric;
   private final DataDomain domain;
 
   /**
    * Basic preprocessing: link filter enabled
    * At the end of preprocessing, neither ccId nor hashCcId is correct!! Do not group on these keys.
    */
+  @Deprecated
   public DefaultPreprocessing(ExecutionEnvironment env) {
     this(true, env);
   }
@@ -39,6 +41,7 @@ public class DefaultPreprocessing
   /**
    * Preprocessing with optional link filter.
    */
+  @Deprecated
   public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
     this.linkFilterEnabled = isBasicLinkFilterEnabled;
     this.env = env;
@@ -50,8 +53,16 @@ public class DefaultPreprocessing
    */
   public DefaultPreprocessing(DataDomain domain, ExecutionEnvironment env) {
     this.domain = domain;
-    this.linkFilterEnabled = true;
     this.env = env;
+    this.linkFilterEnabled = true;
+    this.metric = Constants.COSINE_TRIGRAM;
+  }
+
+  public DefaultPreprocessing(String metric, DataDomain domain, ExecutionEnvironment env) {
+    this.metric = metric;
+    this.domain = domain;
+    this.env = env;
+    this.linkFilterEnabled = true;
   }
 
   @Override
@@ -66,16 +77,16 @@ public class DefaultPreprocessing
     List<String> sources = null;
     if (domain == DataDomain.MUSIC) {
       resultGraph = tmpGraph
-          .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env));
+          .run(new BasicEdgeSimilarityComputation(metric, Constants.MUSIC, env));
       sources = Constants.MUSIC_SOURCES;
     } else if (domain == DataDomain.GEOGRAPHY) {
       resultGraph = tmpGraph
           .run(new TypeMisMatchCorrection(env))
-          .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
+          .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
       sources = Constants.GEO_SOURCES;
     } else if (domain == DataDomain.NC) {
       resultGraph = tmpGraph
-          .run(new BasicEdgeSimilarityComputation(Constants.NC, env));
+          .run(new BasicEdgeSimilarityComputation(metric, Constants.NC, env));
       sources = Constants.NC_SOURCES;
     }
 
@@ -116,8 +127,6 @@ public class DefaultPreprocessing
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
       vertex.getValue().getDataSource();
 
-//      if (vertex.getId() == 704781154L)
-//        LOG.info("dataSourceMap: " + vertex.getValue().toString());
       return vertex.getValue();
     }
   }

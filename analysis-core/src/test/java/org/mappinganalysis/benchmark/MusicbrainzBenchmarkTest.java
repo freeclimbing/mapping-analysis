@@ -420,7 +420,7 @@ public class MusicbrainzBenchmarkTest {
     @Override
     public Tuple2<String, Double> map(Vertex<Long, ObjectMap> vertex) throws Exception {
       String label = vertex.getValue().getLabel();
-      StringMetric metric = Utils.getTrigramMetric();
+      StringMetric metric = Utils.getMetric(Constants.COSINE_TRIGRAM);
 
       Pattern rightPattern = Pattern.compile("\"(.*?)\""); // only use for hard coded test strings
 

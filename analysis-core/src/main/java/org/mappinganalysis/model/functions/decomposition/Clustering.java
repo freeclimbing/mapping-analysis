@@ -8,7 +8,6 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
-import org.mappinganalysis.io.output.ExampleOutput;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
@@ -31,7 +30,6 @@ public class Clustering {
   public static Graph<Long, ObjectMap, ObjectMap> createInitialClustering(
       Graph<Long, ObjectMap, ObjectMap> graph,
       String verbosity,
-      ExampleOutput out,
       ExecutionEnvironment env) throws Exception {
 
     LinkFilter linkFilter = new LinkFilter
@@ -41,14 +39,9 @@ public class Clustering {
         .setStrategy(LinkFilterStrategy.CLUSTERING)
         .build();
 
-    graph = Clustering.computeTransitiveClosureEdgeSimilarities(graph, env)
-              .run(linkFilter);
-
-    if (verbosity.equals(Constants.DEBUG)) {
-      out.addPreClusterSizes("2 intial cluster sizes", graph.getVertices(), Constants.CC_ID);
-    }
-
-    return graph;
+    return Clustering
+        .computeTransitiveClosureEdgeSimilarities(graph, env)
+        .run(linkFilter);
   }
 
   /**
@@ -75,6 +68,6 @@ public class Clustering {
         .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
-        .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
+        .run(new BasicEdgeSimilarityComputation(Constants.COSINE_TRIGRAM, Constants.GEO, env));
   }
 }

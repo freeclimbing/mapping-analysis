@@ -30,22 +30,29 @@ public class BasicEdgeSimilarityComputation
   /**
    * Compute similarities based on the existing vertex properties,
    * save aggregated similarity as edge property
+   * @param metric metric for similarity computation
    * @param mode relevant: Constants.MUSIC, Constants.NC, Constants.GEO
    * @param env env
    */
-  public BasicEdgeSimilarityComputation(String mode, ExecutionEnvironment env) {
+  public BasicEdgeSimilarityComputation(String metric, String mode, ExecutionEnvironment env) {
     this.env = env;
     this.mode = mode;
-    if (mode.equals(Constants.MUSIC)) {
-      this.simFunction = new MusicSimilarityFunction();
-    } else if (mode.equals(Constants.NC)) {
-      this.simFunction = new NcSimilarityFunction();
-    } else if (mode.equals(Constants.GEO)) {
-      this.simFunction = new EdgeSimilarityFunction(
-          mode,
-          Constants.MAXIMAL_GEO_DISTANCE);
-    } else {
-      this.simFunction = null;
+    switch (mode) {
+      case Constants.MUSIC:
+        this.simFunction = new MusicSimilarityFunction(metric);
+        break;
+      case Constants.NC:
+        this.simFunction = new NcSimilarityFunction(metric);
+        break;
+      case Constants.GEO:
+        this.simFunction = new EdgeSimilarityFunction(
+            metric,
+            mode,
+            Constants.MAXIMAL_GEO_DISTANCE);
+        break;
+      default:
+        this.simFunction = null;
+        break;
     }
   }
 

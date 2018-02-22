@@ -9,6 +9,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
 import org.mappinganalysis.util.Constants;
@@ -18,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class EvalTest {
-  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(EvalTest.class);
 
   /**
@@ -29,6 +30,7 @@ public class EvalTest {
    */
   @Test
   public void linksWithIdenticalSourceOrDuplicateTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
 
     String graphPath = EvalTest.class.getResource("/data/eval/").getFile();
     Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(graphPath, true, env)
@@ -42,10 +44,11 @@ public class EvalTest {
 
   /**
    * Check printEdgeSourceCounts
-   * @throws Exception
    */
   @Test
   public void printEdgeSourceCountsTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
     String graphPath = EvalTest.class
         .getResource("/data/preprocessing/general/").getFile();
     Graph<Long, ObjectMap, NullValue> graph =
@@ -70,6 +73,7 @@ public class EvalTest {
 
   @Test
   public void testMissingProps() throws Exception {
+    env = TestBase.setupLocalEnvironment();
 
     String graphPath = EvalTest.class.getResource("/data/eval/").getFile();
 

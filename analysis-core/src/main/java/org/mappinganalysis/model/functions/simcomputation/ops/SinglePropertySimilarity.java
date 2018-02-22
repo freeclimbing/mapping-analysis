@@ -16,8 +16,8 @@ import java.util.HashSet;
 public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTriplet> {
   private EdgeObjectMapTriplet triplet;
   private String property;
+  private String metric;
   private static final Logger LOG = Logger.getLogger(SinglePropertySimilarity.class);
-
 
   private static final HashSet<String> LANGUAGES;
   static {
@@ -45,8 +45,9 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     LANGUAGES.add(Constants.DA);
   }
 
-  public SinglePropertySimilarity(String property) {
+  public SinglePropertySimilarity(String property, String metric) {
     this.property = property;
+    this.metric = metric;
   }
 
   @Override
@@ -170,7 +171,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     String srcAlbum = triplet.getSrcVertex().getValue().getAlbum();
     String trgAlbum = triplet.getTrgVertex().getValue().getAlbum();
 
-    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcAlbum, trgAlbum);
+    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcAlbum, trgAlbum, metric);
     triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
 
     return triplet;
@@ -180,7 +181,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     String srcArtist = triplet.getSrcVertex().getValue().getArtist();
     String trgArtist = triplet.getTrgVertex().getValue().getArtist();
 
-    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcArtist, trgArtist);
+    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcArtist, trgArtist, metric);
     triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
 
     return triplet;
@@ -190,7 +191,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     String srcLabel = triplet.getSrcVertex().getValue().getLabel();
     String trgLabel = triplet.getTrgVertex().getValue().getLabel();
 
-    Double similarity = Utils.getTrigramSimilarityWithSimplify(srcLabel, trgLabel);
+    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcLabel, trgLabel, metric);
     triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
 
     return triplet;

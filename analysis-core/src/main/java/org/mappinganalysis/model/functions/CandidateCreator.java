@@ -39,6 +39,7 @@ import org.mappinganalysis.util.Utils;
 // TODO restrict candidates to needed properties!?
 
 /**
+ * INCREMENTAL
  * Candidate Creator prepares MergeTuples for a domain (currently: geographic), distinguishes
  * elements into blocks according to blocking strategy and computes similarity according to
  * similarity strategy for all candidates which are named MergeTriplets. Finally, with
@@ -85,7 +86,7 @@ public class CandidateCreator
         MergeGeoTriplet>()
         .setSimilarityFunction(new MergeGeoSimilarity()) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.4) // TODO check
+        .setThreshold(0.7) // TODO check
         .build();
 
     if (blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
@@ -270,6 +271,9 @@ public class CandidateCreator
           .groupBy(5)
           .reduceGroup(new HungarianAlgorithmReduceFunction());
     } else {
+      /*
+        STANDARD BLOCKING / BLOCK SPLIT
+       */
 
       return inputVertices
           .map(new AddShadingTypeMapFunction())

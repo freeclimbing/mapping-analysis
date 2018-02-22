@@ -261,7 +261,6 @@ public class LSHTest {
 //        .reduceGroup(new HungarianAlgorithmReduceFunction())
 
     graph.getVertices()
-//        .filter(value1 -> value1.getValue().getCcId() == 682L )//|| value1.getValue().getCcId() == 1115L)
         .join(vertices)
         .where(0)
         .equalTo(0)

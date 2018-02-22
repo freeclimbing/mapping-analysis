@@ -30,6 +30,7 @@ import org.mappinganalysis.model.functions.merge.*;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
@@ -144,7 +145,7 @@ public class MusicBrainzTest {
      */
     DataSet<Vertex<Long, ObjectMap>> representatives = graph
         .run(new TypeGroupBy(env))
-        .run(new SimSort(DataDomain.MUSIC, 0.7, env))
+        .run(new SimSort(DataDomain.MUSIC, Constants.COSINE_TRIGRAM,0.7, env))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
@@ -162,7 +163,12 @@ public class MusicBrainzTest {
 //    // merge
     DataSet<Vertex<Long, ObjectMap>> merged = representatives
         .runOperation(new MergeInitialization(DataDomain.MUSIC))
-        .runOperation(new MergeExecution(DataDomain.MUSIC, 0.5, 5, env));
+        .runOperation(new MergeExecution(
+            DataDomain.MUSIC,
+            Constants.COSINE_TRIGRAM,
+            0.5,
+            5,
+            env));
 //
     printQuality(inputVertices, merged
         .runOperation(new EdgeComputationVertexCcSet())
@@ -249,7 +255,7 @@ public class MusicBrainzTest {
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph
         .run(new TypeGroupBy(env))
-        .run(new SimSort(DataDomain.MUSIC, 0.7, env))
+        .run(new SimSort(DataDomain.MUSIC, Constants.COSINE_TRIGRAM,0.7, env))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
@@ -276,7 +282,12 @@ public class MusicBrainzTest {
             })
             .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC, 0.5, 5, env));
+            .runOperation(new MergeExecution(
+                DataDomain.MUSIC,
+                Constants.COSINE_TRIGRAM,
+                0.5,
+                5,
+                env));
 
     mergedVertices.print();
   }
@@ -300,7 +311,7 @@ public class MusicBrainzTest {
         .map(new MergeMusicTupleCreator());
 
     SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
-        new MergeMusicSimilarity();
+        new MergeMusicSimilarity(Constants.COSINE_TRIGRAM);
 
     SimilarityComputation<MergeMusicTriplet,
         MergeMusicTriplet> similarityComputation

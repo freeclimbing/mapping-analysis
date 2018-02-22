@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import org.mappinganalysis.model.EdgeObjectMapTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.api.CustomOperation;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 
@@ -23,7 +24,7 @@ public class MultiPropertySimilarity implements CustomOperation<EdgeObjectMapTri
 
   @Override
   public EdgeObjectMapTriplet createResult() {
-    StringMetric metric = Utils.getTrigramMetric();
+    StringMetric metric = Utils.getMetric(Constants.COSINE_TRIGRAM); // TODO use jw or c
     ArrayList<String> listOne = Lists.newArrayList();
     ArrayList<String> listTwo = Lists.newArrayList();
 

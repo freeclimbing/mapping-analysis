@@ -21,21 +21,28 @@ public class SimSort
   private final ExecutionEnvironment env;
   private final Boolean prepareEnabled;
   private final Double minSimilarity;
+  private final String metric;
   private DataDomain domain;
 
   /**
    * check constructors TODO null is never good here
    */
+  @Deprecated
   public SimSort(Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
-    this(null, prepareEnabled, minSimilarity, env);
+    this(null, prepareEnabled, Constants.COSINE_TRIGRAM, minSimilarity, env);
   }
 
   /**
    * Basic Constructor
    */
-  private SimSort(DataDomain domain, Boolean prepareEnabled, Double minSimilarity, ExecutionEnvironment env) {
+  private SimSort(DataDomain domain,
+                  Boolean prepareEnabled,
+                  String metric,
+                  Double minSimilarity,
+                  ExecutionEnvironment env) {
     this.domain = domain;
     this.prepareEnabled = prepareEnabled;
+    this.metric = metric;
     this.minSimilarity = minSimilarity;
     this.env = env;
   }
@@ -43,6 +50,7 @@ public class SimSort
   /**
    * Constructor - prepareEnabled true
    */
+  @Deprecated
   public SimSort(Double minSimilarity, ExecutionEnvironment env) {
     this(true, minSimilarity, env);
   }
@@ -50,8 +58,11 @@ public class SimSort
   /**
    * Constructor - provide a DataDomain (geo or music) and min similarity, prepareEnabled true
    */
-  public SimSort(DataDomain domain, Double minSimilarity, ExecutionEnvironment env) {
-    this(domain, true, minSimilarity, env);
+  public SimSort(DataDomain domain,
+                 String metric,
+                 Double minSimilarity,
+                 ExecutionEnvironment env) {
+    this(domain, true, metric, minSimilarity, env);
   }
 
   /**
@@ -77,7 +88,7 @@ public class SimSort
 
       graph = Graph
           .fromDataSet(graph.getVertices(), distinctEdges, env)
-          .run(new BasicEdgeSimilarityComputation(mode, env));
+          .run(new BasicEdgeSimilarityComputation(metric, mode, env));
     }
 
     graph = graph
@@ -97,6 +108,6 @@ public class SimSort
         .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
-        .run(new BasicEdgeSimilarityComputation(Constants.GEO, env));
+        .run(new BasicEdgeSimilarityComputation(Constants.COSINE_TRIGRAM, Constants.GEO, env));
   }
 }

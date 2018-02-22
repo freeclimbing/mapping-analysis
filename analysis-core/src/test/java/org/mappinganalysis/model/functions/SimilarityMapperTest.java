@@ -9,6 +9,7 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.CosineSimilarity;
@@ -30,7 +31,7 @@ public class SimilarityMapperTest extends BasicTest {
    */
   @Test
   public void easyTrigramTest() throws Exception {
-    StringMetric metric = Utils.getTrigramMetric();
+    StringMetric metric = Utils.getMetric(Constants.COSINE_TRIGRAM);
 
     String one = "Long Island (NY)";
     String two = "long island, NY";

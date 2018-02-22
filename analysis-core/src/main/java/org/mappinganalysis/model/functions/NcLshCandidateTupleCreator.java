@@ -29,27 +29,35 @@ import org.mappinganalysis.util.Utils;
 
 public class NcLshCandidateTupleCreator
     implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
-  private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
-//  private BlockingStrategy blockingStrategy;
+  private static final Logger LOG = Logger.getLogger(NcLshCandidateTupleCreator.class);
   private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
-//  private DataDomain domain;
-//  private int sourceCount;
   private ExecutionEnvironment env;
   private DataSet<MergeMusicTuple> inputTuples;
+  private int valueRangeLsh;
+  private int numberOfFamilies;
+  private int numberOfHashesPerFamily;
 
   /**
-   * Constructor for incremental clustering, ids are not
+   * Constructor for incremental clustering, ids are not (???)
    */
   public NcLshCandidateTupleCreator(
-//      BlockingStrategy blockingStrategy,
       SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
-//      DataDomain domain,
-//      int sourceCount,
       ExecutionEnvironment env) {
-//    this.blockingStrategy = blockingStrategy;
     this.similarityComputation = similarityComputation;
 //    this.domain = domain; // TODO USE domain
-//    this.sourceCount = sourceCount;
+    this.env = env;
+  }
+
+  public NcLshCandidateTupleCreator(
+      SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+      int valueRangeLsh,
+      int numberOfFamilies,
+      int numberOfHashesPerFamily,
+      ExecutionEnvironment env) {
+    this.similarityComputation = similarityComputation;
+    this.valueRangeLsh = valueRangeLsh;
+    this.numberOfFamilies = numberOfFamilies;
+    this.numberOfHashesPerFamily = numberOfHashesPerFamily;
     this.env = env;
   }
 
@@ -61,7 +69,9 @@ public class NcLshCandidateTupleCreator
   @Override
   public DataSet<MergeMusicTriplet> createResult() {
     boolean isIdfOptimizeEnabled = true;
-    boolean isLogEnabled = true;
+    /* LOG */
+    boolean isLogEnabled = false;
+
     DataSet<Tuple2<Long, Long>> lshCandidates = inputTuples
 //          .map(x -> {
 //            if (isLogEnabled) {// && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L)) {
@@ -78,7 +88,11 @@ public class NcLshCandidateTupleCreator
           return new Tuple2<>(tuple.getId(), Utils.simplify(lshString));
         })
         .returns(new TypeHint<Tuple2<Long, String>>() {})
-        .runOperation(new LshCandidateCreator(isIdfOptimizeEnabled));
+        .runOperation(new LshCandidateCreator(
+            isIdfOptimizeEnabled,
+            valueRangeLsh,
+            numberOfFamilies,
+            numberOfHashesPerFamily));
 
     DataSet<MergeMusicTriplet> mergeMusicTriplets = lshCandidates
 //          .map(x -> {
