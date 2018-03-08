@@ -14,7 +14,6 @@ import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.preprocessing.IncrementalPreprocessing;
 import org.mappinganalysis.util.Constants;
 
 import java.util.concurrent.TimeUnit;
@@ -35,7 +34,8 @@ public class IncrementalWorkflow implements ProgramDescription {
     String INPUT_PATH = args[0];
     String VERTEX_FILE_NAME = args[1];
     String STRATEGY = args[2];
-    IncrementalClusteringStrategy strategy = null;
+    IncrementalClusteringStrategy strategy;
+
     switch (STRATEGY) {
       case Constants.FIXED:
         strategy = IncrementalClusteringStrategy.FIXED_SEQUENCE;
@@ -53,7 +53,6 @@ public class IncrementalWorkflow implements ProgramDescription {
         throw new IllegalArgumentException("Unsupported incremental strategy: " + STRATEGY);
     }
 
-    Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.GEOGRAPHY;
     JobExecutionResult result;
     Constants.LL_MODE = "all";
@@ -65,9 +64,9 @@ public class IncrementalWorkflow implements ProgramDescription {
         INPUT_PATH,
         Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
         env)
-        .getGraph(ObjectMap.class, NullValue.class)
+        .getGraph(ObjectMap.class, NullValue.class);
         // todo adapt preprocessing
-        .run(new IncrementalPreprocessing(env));
+//        .run(new IncrementalPreprocessing(env));
 
     new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
         .writeGraph(graph);

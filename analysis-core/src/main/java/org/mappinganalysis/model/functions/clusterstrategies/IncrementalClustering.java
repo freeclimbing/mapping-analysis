@@ -37,6 +37,7 @@ public class IncrementalClustering
     private BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
     private String part;
     private String source;
+    private String metric;
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
@@ -94,6 +95,13 @@ public class IncrementalClustering
     }
 
     // used for split incremental
+    public IncrementalClusteringBuilder setMetric(String metric) {
+      this.metric = metric;
+
+      return this;
+    }
+
+    // used for split incremental
     public IncrementalClusteringBuilder setPart(String part) {
       this.part = part;
 
@@ -118,17 +126,18 @@ public class IncrementalClustering
     public IncrementalClustering build() {
       if (env != null) {
         if (clusteringStrategy == IncrementalClusteringStrategy.MINSIZE) {
-          return new MinSizeIncClustering(sources, env);
+          return new MinSizeIncClustering(sources, metric, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
-          return new FixedIncrementalClustering(blockingStrategy, env); // basic test clusteringStrategy
+          return new FixedIncrementalClustering(blockingStrategy, metric, env); // basic test clusteringStrategy
         } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {
-          return new BigIncrementalClustering(blockingStrategy, env);
+          return new BigIncrementalClustering(blockingStrategy, metric, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
-          return new SplitIncrementalClustering(blockingStrategy, part, env);
+          return new SplitIncrementalClustering(blockingStrategy, metric, part, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SINGLE_SETTING) {
           return new SingleSourceIncrementalClustering(
               blockingStrategy,
               newElements,
+              metric,
               source,
               sources.size(),
               env);

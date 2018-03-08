@@ -19,11 +19,6 @@ public class BlockSplitTupleCreator
     implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(BlockSplitTupleCreator.class);
   private DataSet<MergeMusicTuple> inputTuples;
-  private int parallelism;
-
-  public BlockSplitTupleCreator(int parallelism) {
-    this.parallelism = parallelism;
-  }
 
   @Override
   public void setInput(DataSet<MergeMusicTuple> inputData) {
@@ -121,7 +116,7 @@ public class BlockSplitTupleCreator
     /* Load Balancing */
     DataSet<Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> tupleBkeyVindexIsLastReducerId
         = tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
-        .flatMap(new ReplicateAndAssignReducerId(parallelism))
+        .flatMap(new ReplicateAndAssignReducerId())
         .partitionCustom(new PartitionVertices(), 4)
         .map(x -> {
 //          LOG.info("PartitionVertices: " + x.toString());

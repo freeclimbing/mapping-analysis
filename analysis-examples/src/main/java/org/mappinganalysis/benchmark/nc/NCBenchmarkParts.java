@@ -49,10 +49,9 @@ public class NCBenchmarkParts implements ProgramDescription {
     final int sourcesCount = 10;
     final String INPUT_PATH = args[0];
     final double simSortThreshold = 0.7;
-    final int parallelism = 96;
 
     List<String> sourceList = Lists.newArrayList(
-        "1/", "3/"
+        "1/"//, "3/"
     );
 
     for (String dataset : sourceList) {
@@ -62,7 +61,7 @@ public class NCBenchmarkParts implements ProgramDescription {
       LogicalGraph logicalGraph = Utils
           .getGradoopGraph(roundInputPath, env);
       Graph<Long, ObjectMap, NullValue> graph = Utils
-          .getInputGraph(logicalGraph, env);
+          .getInputGraph(logicalGraph, Constants.NC, env);
 
       /*
         metrics
@@ -92,10 +91,11 @@ public class NCBenchmarkParts implements ProgramDescription {
         blocking
        */
         ArrayList<BlockingStrategy> blockingStrategies = Lists.newArrayList(
-            BlockingStrategy.STANDARD_BLOCKING, BlockingStrategy.BLOCK_SPLIT
+//            BlockingStrategy.STANDARD_BLOCKING,
+            BlockingStrategy.BLOCK_SPLIT
         );
         for (BlockingStrategy blockingStrategy : blockingStrategies) {
-          for (int run = 0; run < 3; run++) {
+          for (int run = 0; run < 1; run++) {
             // Read graph from disk and merge
             representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
                 roundInputPath, decompositionStep, env)
@@ -129,25 +129,20 @@ public class NCBenchmarkParts implements ProgramDescription {
                     .runOperation(similarityComputation);
               } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
                 initialWorkingSet = preBlockingClusters.runOperation(
-                    new BlockSplitTupleCreator(parallelism))
+                    new BlockSplitTupleCreator())
                     .runOperation(similarityComputation);
               }
 
-              String mergeSuffix = "-" + parallelism + "-run" + run + blockingStrategy.toString()
+              String mergeSuffix = "-96-run" + run + blockingStrategy.toString()
                   + "-m" + Utils.getOutputSuffix(mergeThreshold)
                   .concat(decompositionSuffix);
 
               new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
                   .writeTuples(initialWorkingSet);
               env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
-//              assert initialWorkingSet != null;
-//              LOG.info("run: " + run + " " + blockingStrategy.toString()
-//                  + " mergeThreshold: " + mergeThreshold
-//                  + " count: " + initialWorkingSet.count());
             }
           }
         }
-
       }
     }
   }

@@ -7,16 +7,14 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -59,7 +57,7 @@ public class MusicbrainzBenchmarkTest {
    */
   @Test
   public void testSongLength() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     final String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -92,7 +90,7 @@ public class MusicbrainzBenchmarkTest {
 
   @Test
   public void labelSpecialTestOutput() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     final String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -134,7 +132,7 @@ public class MusicbrainzBenchmarkTest {
    */
   @Test
   public void testSim() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -182,7 +180,7 @@ public class MusicbrainzBenchmarkTest {
 
   @Test
   public void lengthTest() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -211,7 +209,7 @@ public class MusicbrainzBenchmarkTest {
 
   @Test
   public void languageTest() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -252,7 +250,7 @@ public class MusicbrainzBenchmarkTest {
    */
   @Test
   public void blockingLabelTest() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -349,7 +347,7 @@ public class MusicbrainzBenchmarkTest {
 
   @Test
   public void yearTest() throws Exception {
-    env = setupLocalEnvironment();
+    env = TestBase.setupLocalEnvironment();
 
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
@@ -399,16 +397,6 @@ public class MusicbrainzBenchmarkTest {
     }
 
 
-  }
-
-  private static ExecutionEnvironment setupLocalEnvironment() {
-    Configuration conf = new Configuration();
-    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 16384);
-    env = new LocalEnvironment(conf);
-    env.setParallelism(Runtime.getRuntime().availableProcessors());
-    env.getConfig().disableSysoutLogging();
-
-    return env;
   }
 
   /**

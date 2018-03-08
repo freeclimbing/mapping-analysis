@@ -153,6 +153,7 @@ public class IncrementalClusteringTest {
         .runOperation(new CandidateCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
             Constants.NYT_NS,
             2,
             env));
@@ -583,6 +584,7 @@ public class IncrementalClusteringTest {
         .runOperation(new CandidateCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
             Constants.NYT_NS,
             2, env))
         .flatMap(new DualMergeGeographyMapper(false))
@@ -602,6 +604,7 @@ public class IncrementalClusteringTest {
         .runOperation(new CandidateCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
             Constants.DBP_NS,
             3, env))
         .flatMap(new DualMergeGeographyMapper(false))
@@ -634,8 +637,10 @@ public class IncrementalClusteringTest {
         .runOperation(new CandidateCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.GEOGRAPHY,
+            Constants.COSINE_TRIGRAM,
             Constants.FB_NS,
-            4, env));
+            4,
+            env));
 
     DataSet<MergeGeoTriplet> singleEntities = tupleResult.join(tupleResult)
         .where(0)
@@ -691,7 +696,7 @@ public class IncrementalClusteringTest {
   private static class VertexFilterFunction extends RichFilterFunction<Vertex<Long, ObjectMap>> {
     private Set<Long> containSet;
 
-    public VertexFilterFunction(Set<Long> containSet) {
+    VertexFilterFunction(Set<Long> containSet) {
       this.containSet = containSet;
     }
 
@@ -700,81 +705,6 @@ public class IncrementalClusteringTest {
       return containSet.contains(value.getId());
     }
   }
-
-//  @Test
-//  @Deprecated
-//  public void depr() throws Exception {
-//    DataSet<MergeGeoTriplet> triplets = null;
-//
-//    // why zip here??? TODO check minimize ids for STABLE MARRIAGE
-//    DataSet<Tuple2<Long, Tuple1<Long>>> uniqueLeftMatrixIds = DataSetUtils
-//        .zipWithUniqueId(triplets
-//            .<Tuple1<Long>>project(0) // TODO tuple1 -> long??
-//            .distinct());
-//
-////    LOG.info("second");
-//    DataSet<Tuple2<Long, Tuple1<Long>>> uniqueRightMatrixIds = DataSetUtils
-//        .zipWithUniqueId(triplets
-//            .<Tuple1<Long>>project(1)
-//            .distinct());
-//    // stats missing elements
-////    intermediate.leftOuterJoin(result)
-////        .where(0)
-////        .equalTo(0)
-////        .with((FlatJoinFunction<MergeGeoTuple, MergeGeoTriplet, MergeGeoTuple>) (left, right, out) -> {
-////          if (right == null) {
-////            out.collect(left);
-////          }
-////        })
-////        .returns(new TypeHint<MergeGeoTuple>() {})
-////        .leftOuterJoin(result)
-////        .where(0)
-////        .equalTo(1)
-////        .with((FlatJoinFunction<MergeGeoTuple, MergeGeoTriplet, MergeGeoTuple>) (left, right, out) -> {
-////          if (right == null) {
-////            LOG.info("missing elements in result: " + left.toString());
-////            out.collect(left);
-////          }
-////        })
-////        .returns(new TypeHint<MergeGeoTuple>() {})
-////        .collect();
-//  }
-
-//  /**
-//   * TODO faulty test, fix Representative and ReprMap
-//   * TODO more likely, fix ObjectMap implementing Map not properly!?
-//   */
-//  @Test
-//  public void customReprTest() throws Exception {
-//        String graphPath = IncrementalClusteringTest.class
-//        .getResource("/data/geography").getFile();
-//
-//    Graph<Long, ObjectMap, ObjectMap> graph =
-//        new JSONDataSource(graphPath, true, env)
-//          .getGraph();
-//
-//    DataSet<Representative> output = graph.getVertices()
-//        .first(1)
-//        .map(new MapFunction<Vertex<Long, ObjectMap>, Representative>() {
-//          @Override
-//          public Representative map(Vertex<Long, ObjectMap> value) throws Exception {
-//            LOG.info("####");
-//            Representative representative = new Representative(value, DataDomain.GEOGRAPHY);
-//            LOG.info("rep: " + representative.toString());
-//
-//            RepresentativeMap props = representative.getValue();
-//            LOG.info(props.size());
-////            props.setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
-////            LOG.info(props.size());
-//            LOG.info("props: " + props);
-//
-//            return representative;
-//          }
-//        });
-//
-//        output.print();
-//
-//  }
 
 //  @Test
 //  public void splitCreation() throws Exception {

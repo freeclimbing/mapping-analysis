@@ -31,7 +31,6 @@ public class MergeExecution
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
   private final String metric;
-  private final int parallelism;
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
   private double mergeThreshold;
@@ -54,7 +53,6 @@ public class MergeExecution
         BlockingStrategy.STANDARD_BLOCKING,
         mergeThreshold,
         sourcesCount,
-        0, // not needed with SB
         env);
   }
 
@@ -63,14 +61,12 @@ public class MergeExecution
                         BlockingStrategy blockingStrategy,
                         double mergeThreshold,
                         int sourcesCount,
-                        int parallelism,
                         ExecutionEnvironment env) {
     this.domain = domain;
     this.metric = metric;
     this.blockingStrategy = blockingStrategy;
     this.mergeThreshold = mergeThreshold;
     this.sourcesCount = sourcesCount;
-    this.parallelism = parallelism;
     this.env = env;
   }
 
@@ -91,7 +87,6 @@ public class MergeExecution
     this.valueRangeLsh = valueRangeLsh;
     this.numberOfFamilies = numberOfFamilies;
     this.numberOfHashesPerFamily = numberOfHashesPerFamily;
-    this.parallelism = 0;
     this.env = env;
   }
 
@@ -116,7 +111,7 @@ public class MergeExecution
           .map(new MergeGeoTupleCreator()); // TODO add custom blocking strategy option
 
       SimilarityFunction<MergeGeoTriplet, MergeGeoTriplet> simFunction =
-          new MergeGeoSimilarity();
+          new MergeGeoSimilarity(metric);
 
       SimilarityComputation<MergeGeoTriplet,
           MergeGeoTriplet> similarityComputation
@@ -197,21 +192,10 @@ public class MergeExecution
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation);
-//        initialWorkingSet = initialWorkingSet.distinct(0, 1);
-        try {
-          LOG.info("SB IWS: " + initialWorkingSet.count());
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
       } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
         initialWorkingSet = preBlockingClusters.runOperation(
-            new BlockSplitTupleCreator(parallelism))
+            new BlockSplitTupleCreator())
             .runOperation(similarityComputation);
-        try {
-          LOG.info("BS IWS: " + initialWorkingSet.count());
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
       } else if (blockingStrategy == BlockingStrategy.LSH_BLOCKING) {
         initialWorkingSet = preBlockingClusters.runOperation(
             new NcLshCandidateTupleCreator(

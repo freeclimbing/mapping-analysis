@@ -143,15 +143,16 @@ public class Utils {
 
     GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
     JSONDataSource dataSource = new JSONDataSource(graphHeadFile, vertexFile, edgeFile, config);
+
     return dataSource.getLogicalGraph();
   }
 
   public static Graph<Long, ObjectMap, NullValue> getInputGraph(
-      LogicalGraph logicalGraph, ExecutionEnvironment env) {
+      LogicalGraph logicalGraph, String domain, ExecutionEnvironment env) {
     // get gelly vertices
     DataSet<Vertex<Long, ObjectMap>> vertices = logicalGraph
         .getVertices()
-        .map(new GradoopToObjectMapVertexMapper());
+        .map(new GradoopToObjectMapVertexMapper(domain));
 
     // get gelly edges
     DataSet<Edge<Long, NullValue>> edges = logicalGraph.getEdges()
@@ -227,6 +228,21 @@ public class Utils {
         .doubleValue();
   }
 
+  /**
+   * Get blocking short name for logging.
+   */
+  public static String getShortBlockingStrategy(BlockingStrategy strategy) {
+    if (strategy == BlockingStrategy.STANDARD_BLOCKING) {
+      return Constants.SB;
+    } else if (strategy == BlockingStrategy.BLOCK_SPLIT) {
+      return Constants.BS;
+    } else if (strategy == BlockingStrategy.LSH_BLOCKING) {
+      return Constants.LSHB;
+    } else {
+      throw new IllegalArgumentException("Unsupported blocking strategy: " + strategy);
+    }
+  }
+
   public static class DataSetTextFormatter<V>
       implements TextOutputFormat.TextFormatter<V> {
     @Override
@@ -235,6 +251,9 @@ public class Utils {
     }
   }
 
+  /**
+   * When exact one geo property set for two tuples is valid, take it.
+   */
   public static MergeGeoTuple isOnlyOneValidGeoObject(MergeGeoTuple left, MergeGeoTuple right) {
     if (isValidGeoObject(left) && !isValidGeoObject(right)) {
       return left;
@@ -245,6 +264,9 @@ public class Utils {
     }
   }
 
+  /**
+   * Geo domain only check if Triplet has valid geo lat lon attributes.
+   */
   public static boolean isValidGeoObject(MergeGeoTuple triplet) {
     if (triplet.getLatitude() == null || triplet.getLongitude() == null) {
       return Boolean.FALSE;
@@ -313,6 +335,7 @@ public class Utils {
     Preconditions.checkNotNull(right);
 
     if (!isSane(left) || !isSane(right)) {
+//      LOG.info(left + " --- " + right);
       return null;
     }
 
@@ -331,6 +354,7 @@ public class Utils {
     return toString(vertex, null);
   }
 
+  @Deprecated // cikm
   public static ArrayList<Long> getVertexList(String dataset) {
 //    ArrayList<Long> clusterList = Lists.newArrayList(1458L);//, 2913L);//, 4966L, 5678L);
 

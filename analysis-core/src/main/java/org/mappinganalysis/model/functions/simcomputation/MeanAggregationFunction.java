@@ -30,6 +30,7 @@ public class MeanAggregationFunction implements CustomOperation<ObjectMap>, Seri
 //    LOG.info("properties: " + properties.toString());
 
     for (String simKey : Constants.SIM_VALUES) {
+//      LOG.info("single key: " + simKey);
       if (properties.containsKey(simKey)) {
         ++propCount;
         aggregatedSim += (double) properties.get(simKey);

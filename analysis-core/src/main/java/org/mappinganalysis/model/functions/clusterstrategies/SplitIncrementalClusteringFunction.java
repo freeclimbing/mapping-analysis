@@ -26,12 +26,17 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
   private static final Logger LOG = Logger.getLogger(SplitIncrementalClusteringFunction.class);
 
   private BlockingStrategy blockingStrategy;
+  private String metric;
   private String part;
   private ExecutionEnvironment env;
 
-  SplitIncrementalClusteringFunction(BlockingStrategy blockingStrategy, String part, ExecutionEnvironment env) {
+  SplitIncrementalClusteringFunction(BlockingStrategy blockingStrategy,
+                                     String metric,
+                                     String part,
+                                     ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
+    this.metric = metric;
     this.part = part;
     this.env = env;
   }
@@ -77,7 +82,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.NYT_NS,
+              metric, Constants.NYT_NS,
               2,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -93,7 +98,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.DBP_NS, 3,
+              metric, Constants.DBP_NS, 3,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
@@ -110,7 +115,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.GN_NS,
+              metric, Constants.GN_NS,
               3,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -126,7 +131,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.NYT_NS,
+              metric, Constants.NYT_NS,
               3,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -142,7 +147,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.DBP_NS,
+              metric, Constants.DBP_NS,
               3,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -160,7 +165,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.FB_NS,
+              metric, Constants.FB_NS,
               4,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -176,7 +181,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.GN_NS,
+              metric, Constants.GN_NS,
               4,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -192,7 +197,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.NYT_NS,
+              metric, Constants.NYT_NS,
               4,
               env))
           .flatMap(new DualMergeGeographyMapper(false))
@@ -208,7 +213,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new CandidateCreator(
               blockingStrategy,
               DataDomain.GEOGRAPHY,
-              Constants.DBP_NS,
+              metric, Constants.DBP_NS,
               4,
               env))
           .flatMap(new DualMergeGeographyMapper(false))

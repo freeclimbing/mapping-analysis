@@ -1,5 +1,6 @@
 package org.mappinganalysis;
 
+import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -11,6 +12,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
 import org.mappinganalysis.corruption.EdgeCreateCorruptionFunction;
 import org.mappinganalysis.corruption.EdgeRemoveCorruptionFunction;
@@ -31,8 +33,10 @@ import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -86,7 +90,8 @@ public class MusicBrainzTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
-    System.out.println(inputEdges.count());
+    assertEquals(9375, inputEdges.count());
+//    System.out.println(inputEdges.count());
 
     DataSet<Edge<Long, NullValue>> newEdges = inputVertices
         .map(new MapFunction<Vertex<Long, ObjectMap>, Long>() {
@@ -96,83 +101,82 @@ public class MusicBrainzTest {
           }
         })
         .mapPartition(new EdgeCreateCorruptionFunction(10));
-
     assertEquals(1758, newEdges.count());
 //    System.out.println(newEdges.count());
 
     DataSet<Edge<Long, NullValue>> unionEdges = inputEdges
         .union(newEdges)
         .distinct();
-
     assertEquals(11133, unionEdges.count());
 //    System.out.println(unionEdges.count());
-
-//    DataSet<Edge<Long, NullValue>> edges =
-//    System.out.println(edges.count());
-    // 8526
   }
 
   @Test
-  public void changeParamTest() throws Exception {
+  public void csimqTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
-    String path = MusicBrainzTest.class
-        .getResource("/data/musicbrainz/")
-        .getFile();
-    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
-
-    DataSet<Vertex<Long, ObjectMap>> inputVertices =
-        new CSVDataSource(path, vertexFileName, env)
-            .getVertices()//;
-            .filter(vertex -> vertex.getValue().getCcId() < 50L)
-            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
-
-    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
-            new CcIdKeySelector(),
-            EdgeComputationStrategy.SIMPLE));
-
-    Graph<Long, ObjectMap, ObjectMap> graph = Graph
-        .fromDataSet(inputVertices, inputEdges, env)
-        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
-
-    graph.getVertices().print();
-    // too low sims because of bad sim metric
-//    graph.getEdges().print();
+    String graphPath =
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/csimq/";
+    List<String> sourceList = Lists.newArrayList(
+        "1/"
+//        "2/", "3/"
+    );
+    for (String dataset : sourceList) {
+      String pmPath = graphPath.concat(dataset);
+      LogicalGraph logicalGraph = Utils
+          .getGradoopGraph(pmPath, env);
+      Graph<Long, ObjectMap, ObjectMap> graph = Utils
+          .getInputGraph(logicalGraph, Constants.MUSIC, env)
+          .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
     /*
        representative creation
      */
-    DataSet<Vertex<Long, ObjectMap>> representatives = graph
-        .run(new TypeGroupBy(env))
-        .run(new SimSort(DataDomain.MUSIC, Constants.COSINE_TRIGRAM,0.7, env))
-        .getVertices()
-        .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
+      DataSet<Vertex<Long, ObjectMap>> representatives = graph
+          .run(new TypeGroupBy(env))
+          .run(new SimSort(DataDomain.MUSIC, Constants.COSINE_TRIGRAM, 0.7, env))
+          .getVertices()
+          .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
-//    representatives.print();
 
-    // compute edges within representatives
-//    DataSet<Edge<Long, NullValue>> edgeResultSet = representatives
-//        .runOperation(new EdgeComputationVertexCcSet());
-//        .map(new SmallEdgeIdFirstMapFunction()); // include in edge comp
-
-//    edgeResultSet.print();
-
-//    printQuality(inputVertices, edgeResultSet);
-
-//    // merge
-    DataSet<Vertex<Long, ObjectMap>> merged = representatives
-        .runOperation(new MergeInitialization(DataDomain.MUSIC))
-        .runOperation(new MergeExecution(
-            DataDomain.MUSIC,
-            Constants.COSINE_TRIGRAM,
-            0.5,
-            5,
-            env));
+      representatives.print();
+//      String reprOut = pmPath.concat("/output/");
+//      String outPath = MusicBrainzTest.class
+//          .getResource("/data/musicbrainz/execMerge/").getFile()
+//          .concat("/output/");
+//      new JSONDataSink(outPath, "repr")
+//          .writeVertices(representatives);
+//      env.execute();
 //
-    printQuality(inputVertices, merged
-        .runOperation(new EdgeComputationVertexCcSet())
-        .map(new SmallEdgeIdFirstMapFunction()));
+//      // compute edges within representatives
+////    DataSet<Edge<Long, NullValue>> edgeResultSet = representatives
+////        .runOperation(new EdgeComputationVertexCcSet());
+////        .map(new SmallEdgeIdFirstMapFunction()); // include in edge comp
+//
+////    edgeResultSet.print();
+//
+////    printQuality(inputVertices, edgeResultSet);
+//
+////    // merge
+//
+//      DataSet<Vertex<Long, ObjectMap>> diskRepresentatives =
+//          new org.mappinganalysis.io.impl.json.JSONDataSource(
+//              reprOut.concat("output/repr/"), true, env)
+//              .getVertices();
+//
+//      DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
+//          .runOperation(new MergeInitialization(DataDomain.MUSIC))
+//          .runOperation(new MergeExecution(
+//              DataDomain.MUSIC,
+//              Constants.COSINE_TRIGRAM,
+//              0.8,
+//              5,
+//              env));
+////
+//      printQuality(inputVertices, merged
+//          .runOperation(new EdgeComputationVertexCcSet())
+//          .map(new SmallEdgeIdFirstMapFunction()));
+    }
   }
 
   private void printQuality(DataSet<Vertex<Long, ObjectMap>> inputVertices,
@@ -266,7 +270,7 @@ public class MusicBrainzTest {
 
   /**
    * test music merge on simple playground example data
-   */
+   */ // todo CHECK NOT WORKING
   @Test
   public void testMusicMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();

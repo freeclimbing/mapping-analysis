@@ -15,26 +15,26 @@ import org.mappinganalysis.model.ObjectMap;
 /**
  * Remove links where source and target dataset name are equal, remove duplicate links
  */
-public class EqualDataSourceLinkRemover
+public class IntraSourceLinkRemover
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, NullValue>> {
   private final ExecutionEnvironment env;
 
   /**
    * Remove links where source and target dataset name are equal, remove duplicate links
    */
-  public EqualDataSourceLinkRemover(ExecutionEnvironment env) {
+  public IntraSourceLinkRemover(ExecutionEnvironment env) {
     this.env = env;
   }
 
   @Override
   public Graph<Long, ObjectMap, NullValue> run(Graph<Long, ObjectMap, NullValue> input) throws Exception {
-    DataSet<Edge<Long, NullValue>> edges = getEdgeIdSourceValues(input.getEdgeIds(), input.getVertices())
+    DataSet<Edge<Long, NullValue>> newEdges = getEdgeIdSourceValues(input.getEdgeIds(), input.getVertices())
         .filter(edge -> !edge.getSrcSource().equals(edge.getTrgSource()))
         .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .distinct();
 
-    return Graph.fromDataSet(input.getVertices(), edges, env);
+    return Graph.fromDataSet(input.getVertices(), newEdges, env);
   }
 
   /**

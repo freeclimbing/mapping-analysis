@@ -19,22 +19,22 @@ public class MergeGeoSimilarity
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeGeoSimilarity.class);
 
-
   private MeanAggregationFunction aggregationFunction;
-
-  /**
-   * Default constructor
-   */
-  public MergeGeoSimilarity() {
-    this(new MeanAggregationFunction());
-  }
 
   /**
    * Constructor for custom aggregation function
    * @param aggregationFunction custom
    */
-  private MergeGeoSimilarity(MeanAggregationFunction aggregationFunction) {
+  private MergeGeoSimilarity(String metric, MeanAggregationFunction aggregationFunction) {
+    this.metric = metric;
     this.aggregationFunction = aggregationFunction;
+  }
+
+  /**
+   * Default constructor
+   */
+  public MergeGeoSimilarity(String metric) {
+    this(metric, new MeanAggregationFunction());
   }
 
   @Override

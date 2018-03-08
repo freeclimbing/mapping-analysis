@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.functions.preprocessing.EqualDataSourceLinkRemover;
+import org.mappinganalysis.model.functions.preprocessing.IntraSourceLinkRemover;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Stats;
 
@@ -35,7 +35,7 @@ public class EvalTest {
     String graphPath = EvalTest.class.getResource("/data/eval/").getFile();
     Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(graphPath, true, env)
         .getGraph(ObjectMap.class, NullValue.class)
-        .run(new EqualDataSourceLinkRemover(env));
+        .run(new IntraSourceLinkRemover(env));
 
     for (Tuple2<Long, Long> tuple2 : graph.getEdgeIds().collect()) {
       assertTrue(tuple2.f0 == 12L && tuple2.f1 == 116L || tuple2.f0 == 53L && tuple2.f1 == 52L);

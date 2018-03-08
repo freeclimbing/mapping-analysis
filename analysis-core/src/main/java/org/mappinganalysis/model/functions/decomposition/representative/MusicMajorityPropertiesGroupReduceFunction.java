@@ -49,7 +49,6 @@ public class MusicMajorityPropertiesGroupReduceFunction
       addIntAttributeToMap(Constants.LENGTH, lengthMap, vertex);
       addIntAttributeToMap(Constants.YEAR, yearMap, vertex);
 
-
 //      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
@@ -120,9 +119,9 @@ public class MusicMajorityPropertiesGroupReduceFunction
       Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(attrName)) {
       if (currentVertex.getValue().get(attrName) == null) {
-        LOG.info(currentVertex.getId() + " vertex is null - should not happen");
+        LOG.info(currentVertex.getId() + " vertex attr " + attrName + " is null - should not happen");
       }
-//      LOG.info(currentVertex.getValue().get(attrName).toString());
+//      LOG.info(currentVertex.toString());
       int length = (int) currentVertex.getValue().get(attrName);
       if (lengthMap.containsKey(length)) {
         int lengthCount = lengthMap.get(length);

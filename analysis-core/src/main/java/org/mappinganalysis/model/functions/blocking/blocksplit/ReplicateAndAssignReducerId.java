@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.blocking.blocksplit;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.MergeMusicTuple;
 
@@ -14,39 +15,40 @@ public class ReplicateAndAssignReducerId
     Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> {
   private int parallelism;
 
-  ReplicateAndAssignReducerId(int parallelism) {
-    this.parallelism = parallelism;
+  @Override
+  public void open(final Configuration parameters) throws Exception {
+    super.open(parameters);
+    this.parallelism = getRuntimeContext().getNumberOfParallelSubtasks();
   }
 
   public void flatMap(Tuple6<MergeMusicTuple, String, Long, Long, Long, Long> input,
                       Collector<Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> out) {
-//        getRuntimeContext().getNumberOfParallelSubtasks();
     //p (x,y) = x/2 (2 * blkSize -x-3) + y-1 + prvBlkSize
-    long xmin, ymin, xmax, ymax;
-    xmin = 0;
+    long xMin, yMin, xMax, yMax;
+    xMin = 0;
     if (input.f2 == 0) {
-      xmax=0;
-      ymin=1;
-      ymax=input.f3 - 1;
+      xMax = 0;
+      yMin = 1;
+      yMax = input.f3 - 1;
     } else if (input.f2 == input.f3 - 1) {
-      xmax=input.f2 - 1;
-      ymin=input.f3 - 1;
-      ymax=input.f3 - 1;
+      xMax = input.f2 - 1;
+      yMin = input.f3 - 1;
+      yMax = input.f3 - 1;
     } else {
-      xmax=input.f2;
-      ymin=input.f2;
-      ymax=input.f3 - 1;
+      xMax = input.f2;
+      yMin = input.f2;
+      yMax = input.f3 - 1;
     }
     Long pMin, pMax;
-    if (xmin % 2 == 0) {
-      pMin = ((xmin / 2) * (2 * input.f3 - xmin - 3)) + ymin - 1 + input.f4;
+    if (xMin % 2 == 0) {
+      pMin = ((xMin / 2) * (2 * input.f3 - xMin - 3)) + yMin - 1 + input.f4;
     } else {
-      pMin = ((xmin) * ((2 * input.f3 - xmin - 3) / 2)) + ymin - 1 + input.f4;
+      pMin = ((xMin) * ((2 * input.f3 - xMin - 3) / 2)) + yMin - 1 + input.f4;
     }
-    if (xmax % 2 == 0) {
-      pMax = ((xmax / 2) * (2 * input.f3 - xmax - 3)) + ymax - 1 + input.f4;
+    if (xMax % 2 == 0) {
+      pMax = ((xMax / 2) * (2 * input.f3 - xMax - 3)) + yMax - 1 + input.f4;
     } else {
-      pMax = ((xmax) * ((2 * input.f3 - xmax - 3) / 2)) + ymax - 1 + input.f4;
+      pMax = ((xMax) * ((2 * input.f3 - xMax - 3) / 2)) + yMax - 1 + input.f4;
     }
 
     int minReducerId = Math.toIntExact(parallelism * pMin / input.f5);

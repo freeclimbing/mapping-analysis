@@ -16,7 +16,6 @@ public class Constants {
    * Database property names.
    */
   public static final String DEBUG = "debug";
-  public static final String INFO = "info";
   public static final String GEO_FULL_NAME = "dbURLfull";
   public static final String DB_PROPERY_FILE_NAME = "db";
   public static final String DB_URL_FIELD = "url";
@@ -53,7 +52,13 @@ public class Constants {
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 1D;
 
-  public static final String SIM_GEO_LABEL_STRATEGY = "geo-label";
+  /**
+   * blocking strategies
+   */
+  public static final String SB = "SB";
+  public static final String BS = "BS";
+  public static final String LSHB = "LSHB";
+
   /**
    * mode for MUSIC domain
    */
@@ -169,9 +174,13 @@ public class Constants {
   public static final String DATA_SOURCES = "dataSources";
   public static final String DS_COUNT = "ds-count";
 
+  public static final String REC_ID = "recId";
+  public static final String CLS_ID = "clsId";
+
   /**
    * Music vocabulary
    */
+  public static final String TITLE = "title";
   public static final String LANGUAGE = "language";
   public static final String LENGTH = "length";
   public static final String YEAR = "year";
@@ -181,6 +190,14 @@ public class Constants {
   public static final String BLOCKING_LABEL = "blockingLabel";
   public static final String ARTIST_TITLE_ALBUM = "artistTitleAlbum";
   public static final String IDF_VALUES = "idfValues";
+
+  /**
+   * NC vocabulary
+   */
+  public static final String SUBURB = "suburb";
+  public static final String NAME = "name";
+  public static final String SURNAME = "surname";
+  public static final String POSTCOD = "postcod";
 
   /**
    * Language vocabulary

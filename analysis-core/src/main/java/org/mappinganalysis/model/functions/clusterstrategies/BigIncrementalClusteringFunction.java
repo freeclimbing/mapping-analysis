@@ -22,13 +22,16 @@ public class BigIncrementalClusteringFunction
   private static final Logger LOG = Logger.getLogger(BigIncrementalClusteringFunction.class);
 
   private BlockingStrategy blockingStrategy;
+  private String metric;
   private ExecutionEnvironment env;
 
   public BigIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
+      String metric,
       ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
+    this.metric = metric;
     this.env = env;
   }
 
@@ -62,7 +65,7 @@ public class BigIncrementalClusteringFunction
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
-            Constants.DBP_NS,
+            metric, Constants.DBP_NS,
             2, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)

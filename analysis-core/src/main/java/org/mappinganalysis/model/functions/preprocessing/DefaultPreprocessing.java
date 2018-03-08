@@ -69,9 +69,9 @@ public class DefaultPreprocessing
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     Graph<Long, ObjectMap, NullValue> tmpGraph = graph
-        .mapVertices(new InternalTypeMapFunction())
+        .mapVertices(new InternalTypeMapFunction()) // only needed for geography
         .mapVertices(new DataSourceMapFunction())
-        .run(new EqualDataSourceLinkRemover(env));
+        .run(new IntraSourceLinkRemover(env));
 
     Graph<Long, ObjectMap, ObjectMap> resultGraph = null;
     List<String> sources = null;

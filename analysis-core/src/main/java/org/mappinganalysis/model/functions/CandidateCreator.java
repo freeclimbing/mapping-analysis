@@ -50,6 +50,7 @@ public class CandidateCreator
   private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
   private BlockingStrategy blockingStrategy;
   private DataDomain domain;
+  private String metric;
   private String newSource;
   private int sourceCount;
   private ExecutionEnvironment env;
@@ -61,11 +62,12 @@ public class CandidateCreator
   public CandidateCreator(
       BlockingStrategy blockingStrategy,
       DataDomain domain,
-      String newSource,
+      String metric, String newSource,
       int sourceCount,
       ExecutionEnvironment env) {
     this.blockingStrategy = blockingStrategy;
     this.domain = domain; // TODO USE domain
+    this.metric = metric;
     this.newSource = newSource;
     this.sourceCount = sourceCount;
     this.env = env;
@@ -84,7 +86,7 @@ public class CandidateCreator
         = new SimilarityComputation
         .SimilarityComputationBuilder<MergeGeoTriplet,
         MergeGeoTriplet>()
-        .setSimilarityFunction(new MergeGeoSimilarity()) // TODO check sim function
+        .setSimilarityFunction(new MergeGeoSimilarity(metric)) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
         .setThreshold(0.7) // TODO check
         .build();

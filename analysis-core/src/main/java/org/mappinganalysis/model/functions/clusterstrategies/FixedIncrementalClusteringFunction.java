@@ -22,13 +22,16 @@ public class FixedIncrementalClusteringFunction
   private static final Logger LOG = Logger.getLogger(FixedIncrementalClusteringFunction.class);
 
   private BlockingStrategy blockingStrategy;
+  private String metric;
   private ExecutionEnvironment env;
 
   FixedIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
+      String metric,
       ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
+    this.metric = metric;
     this.env = env;
   }
 
@@ -62,7 +65,7 @@ public class FixedIncrementalClusteringFunction
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
-            Constants.NYT_NS,
+            metric, Constants.NYT_NS,
             2, env))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
@@ -88,7 +91,7 @@ public class FixedIncrementalClusteringFunction
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
-            Constants.DBP_NS,
+            metric, Constants.DBP_NS,
             3,
             env))
         .flatMap(new DualMergeGeographyMapper(false))
@@ -105,7 +108,7 @@ public class FixedIncrementalClusteringFunction
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
-            Constants.FB_NS,
+            metric, Constants.FB_NS,
             4,
             env))
         .flatMap(new DualMergeGeographyMapper(false))

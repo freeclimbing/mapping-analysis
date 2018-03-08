@@ -14,6 +14,12 @@ import org.mappinganalysis.model.NeighborTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
+/**
+ * ATTENTION: TypeGroupBy works on HashCcIds, dont confuse with CcIds.
+ *
+ * Actually different semantic types are needed in dataset,
+ * so currently only supported for geographic domain.
+ */
 public class TypeGroupBy
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(TypeGroupBy.class);
@@ -24,6 +30,7 @@ public class TypeGroupBy
   }
 
   /**
+   * TODO rewrite
    * For a given graph, assign all vertices with no type to the component where the best similarity can be found.
    * @param graph input graph
    * @return graph where non-type vertices are assigned to best matching component

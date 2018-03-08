@@ -61,11 +61,9 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
       case Constants.LANGUAGE:
         return handleLanguage();
       case Constants.LABEL:
-        return handleLabel();
       case Constants.ARTIST:
-        return handleArtist();
       case Constants.ALBUM:
-        return handleAlbum();
+        return handleString(property);
       case Constants.YEAR:
         return handleYear();
       case Constants.LENGTH:
@@ -84,14 +82,14 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
     String srcNumber = triplet.getSrcVertex().getValue().getNumber();
     String trgNumber = triplet.getTrgVertex().getValue().getNumber();
 
-    if (triplet.getSrcVertex().getValue().getMode().equals(Constants.MUSIC)) {
+    if (triplet.getEdge().getValue().getMode().equals(Constants.MUSIC)) {
       if (srcNumber.equals(trgNumber)) {
         triplet.getEdge().getValue().setNumberSimilarity(1D);
       } else {
         // TODO handle?
         //LOG.info("srcPostcod: " + srcNumber + " trgPostcod: " + trgNumber);
       }
-    } else if (triplet.getSrcVertex().getValue().getMode().equals(Constants.NC)) {
+    } else if (triplet.getEdge().getValue().getMode().equals(Constants.NC)) {
       srcNumber = replaceChars(srcNumber);
       trgNumber = replaceChars(trgNumber);
 
@@ -164,38 +162,53 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
 
   }
 
+
+  private EdgeObjectMapTriplet handleString(String property) {
+    String srcProperty = triplet.getSrcVertex().getValue().get(property).toString();
+    String trgProperty = triplet.getTrgVertex().getValue().get(property).toString();
+
+    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcProperty, trgProperty, metric);
+    if (similarity != null) {
+      triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
+    }
+
+    return triplet;
+  }
+
   /**
    * Temporary solution, migrate to extra classes.
    */
-  private EdgeObjectMapTriplet handleAlbum() {
-    String srcAlbum = triplet.getSrcVertex().getValue().getAlbum();
-    String trgAlbum = triplet.getTrgVertex().getValue().getAlbum();
-
-    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcAlbum, trgAlbum, metric);
-    triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
-
-    return triplet;
-  }
-
-  private EdgeObjectMapTriplet handleArtist() {
-    String srcArtist = triplet.getSrcVertex().getValue().getArtist();
-    String trgArtist = triplet.getTrgVertex().getValue().getArtist();
-
-    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcArtist, trgArtist, metric);
-    triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
-
-    return triplet;
-  }
-
-  private EdgeObjectMapTriplet handleLabel() {
-    String srcLabel = triplet.getSrcVertex().getValue().getLabel();
-    String trgLabel = triplet.getTrgVertex().getValue().getLabel();
-
-    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcLabel, trgLabel, metric);
-    triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
-
-    return triplet;
-  }
+//  private EdgeObjectMapTriplet handleAlbum() {
+//    String srcAlbum = triplet.getSrcVertex().getValue().getAlbum();
+//    String trgAlbum = triplet.getTrgVertex().getValue().getAlbum();
+//
+//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcAlbum, trgAlbum, metric);
+//    triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
+//
+//    return triplet;
+//  }
+//
+//  private EdgeObjectMapTriplet handleArtist() {
+//    String srcArtist = triplet.getSrcVertex().getValue().getArtist();
+//    String trgArtist = triplet.getTrgVertex().getValue().getArtist();
+//
+//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcArtist, trgArtist, metric);
+//    if (similarity != null) {
+//      triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
+//    }
+//
+//    return triplet;
+//  }
+//
+//  private EdgeObjectMapTriplet handleLabel() {
+//    String srcLabel = triplet.getSrcVertex().getValue().getLabel();
+//    String trgLabel = triplet.getTrgVertex().getValue().getLabel();
+//
+//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcLabel, trgLabel, metric);
+//    triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
+//
+//    return triplet;
+//  }
 
 
   /**

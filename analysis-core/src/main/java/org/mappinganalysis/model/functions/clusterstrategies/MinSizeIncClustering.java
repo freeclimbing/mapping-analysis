@@ -5,7 +5,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import java.util.List;
 
 class MinSizeIncClustering extends IncrementalClustering {
-  MinSizeIncClustering(List<String> sources, ExecutionEnvironment env) {
-    super(new MinSizeIncClusteringFunction(sources, env));
+  MinSizeIncClustering(List<String> sources, String metric, ExecutionEnvironment env) {
+    super(new MinSizeIncClusteringFunction(sources, metric, env));
   }
 }

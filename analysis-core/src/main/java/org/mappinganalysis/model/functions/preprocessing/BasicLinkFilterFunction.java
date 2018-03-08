@@ -52,7 +52,7 @@ public class BasicLinkFilterFunction
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
         .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(), EdgeDirection.OUT);
 
-    DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0)
+    DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0) // cc id
         .sortGroup(5, Order.DESCENDING) // sim
         .sortGroup(1, Order.ASCENDING) // src id
         .sortGroup(2, Order.ASCENDING) // trg id

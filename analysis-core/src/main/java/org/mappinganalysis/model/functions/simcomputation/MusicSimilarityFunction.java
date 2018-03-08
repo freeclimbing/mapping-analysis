@@ -25,7 +25,7 @@ public class MusicSimilarityFunction
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
 
-    EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
+    EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet, Constants.MUSIC);
     result.runOperation(new SinglePropertySimilarity(Constants.LANGUAGE, metric))
         .runOperation(new SinglePropertySimilarity(Constants.LABEL, metric))
         .runOperation(new SinglePropertySimilarity(Constants.ARTIST, metric))

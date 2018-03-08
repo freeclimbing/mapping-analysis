@@ -17,6 +17,8 @@ import java.util.List;
  * Add links to result set, check if datasource is already contained in current cluster.
  * If contained, remove link.
  *
+ * We also detect and handle indirect 1:n like a -> b -> c -> a
+ *
  * TODO To reduce complexity to ccid groups, ccid is still used.
  * todo Test version with sort partition.
  */
@@ -36,22 +38,20 @@ public class LinkSelectionWithCcIdFunction
     HashMap<Integer, HashSet<HashSet<Long>>> sourcesContainedEntitiesMap = Maps.newHashMap();
     HashMap<Long, Integer> entitySourceMap = Maps.newHashMap();
 
-//    for (Map.Entry<String, Integer> stringIntegerEntry : sourcesMap.entrySet()) {
-//      LOG.info(stringIntegerEntry.toString());
-//    }
-
     for (EdgeSourceSimTuple edge : values) {
+//      LOG.info(edge.toString());
       // get accumulated (and updated) src/trg dataset values
+
       int srcDataSetInt;
       if (entitySourceMap.containsKey(edge.getSrcId())) {
         srcDataSetInt = entitySourceMap.get(edge.getSrcId());
-//        LOG.info("edge source " + AbstractionUtils.getSourcesStringSet(Constants.NC, srcDataSetInt) + " in entSourceMap: " + edge.toString());
+//        LOG.info("edge source if " + AbstractionUtils.getSourcesStringSet(Constants.NC, srcDataSetInt) + " in entSourceMap: " + edge.toString());
       } else {
         srcDataSetInt = sourcesMap.get(edge.getSrcDataSource());
         entitySourceMap.put(edge.getSrcId(), srcDataSetInt);
-//        LOG.info("edge source " + AbstractionUtils.getSourcesStringSet(Constants.NC, srcDataSetInt) + " NOT in entSourceMap: " + edge.toString());
-
+//        LOG.info("edge source else " + AbstractionUtils.getSourcesStringSet(Constants.NC, srcDataSetInt) + " NOT in entSourceMap: " + edge.toString());
       }
+
       int trgDataSetInt;
       if (entitySourceMap.containsKey(edge.getTrgId())) {
         trgDataSetInt = entitySourceMap.get(edge.getTrgId());

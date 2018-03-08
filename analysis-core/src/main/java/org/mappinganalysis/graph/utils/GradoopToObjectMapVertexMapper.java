@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import org.gradoop.common.model.impl.properties.Properties;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.MusicUtils;
 import org.mappinganalysis.util.Utils;
 
 /**
@@ -16,9 +17,11 @@ public class GradoopToObjectMapVertexMapper
   private static final Logger LOG = Logger.getLogger(GradoopToObjectMapVertexMapper.class);
 
   private final Vertex<Long, ObjectMap> reuseVertex;
+  private String domain;
 
-  public GradoopToObjectMapVertexMapper() {
-    reuseVertex = new Vertex<>();
+  public GradoopToObjectMapVertexMapper(String domain) {
+    this.domain = domain;
+    this.reuseVertex = new Vertex<>();
   }
 
   @Override
@@ -28,22 +31,54 @@ public class GradoopToObjectMapVertexMapper
 
     assert gradoopProperties != null;
     for (String property : gradoopProperties.getKeys()) {
-      if (property.equals("recId")) {
-        String idString = gradoopProperties.get(property).getString();
+      switch (property) {
+        case Constants.REC_ID:
+          String idString = gradoopProperties.get(property).getString();
 
-        reuseVertex.setId(Utils.getIdFromNcId(idString));
-      } else if (property.equals("name")) {
-        properties.setLabel(gradoopProperties.get(property).getString());
-      } else if (property.equals("suburb")) {
-        properties.setAlbum(gradoopProperties.get(property).getString());
-      } else if (property.equals("type")) {
-        properties.setDataSource(gradoopProperties.get(property).getString());
-      } else if (property.equals("surname")) {
-        properties.setArtist(gradoopProperties.get(property).getString());
-      } else if (property.equals("postcod")) {
-        properties.setNumber(gradoopProperties.get(property).getString());
-      } else if (property.equals("clsId")) {
-        properties.put("clsId", gradoopProperties.get(property).getLong());
+          if (domain.equals(Constants.NC)) {
+            reuseVertex.setId(Utils.getIdFromNcId(idString));
+          } else if (domain.equals(Constants.MUSIC)) {
+            reuseVertex.setId(Long.valueOf(idString));
+          }
+          break;
+        case Constants.NAME:
+        case Constants.TITLE:
+          properties.setLabel(gradoopProperties.get(property).getString());
+          break;
+        case Constants.SUBURB:
+        case Constants.ALBUM:
+          properties.setAlbum(gradoopProperties.get(property).getString());
+          break;
+        case Constants.TYPE:
+          properties.setDataSource(gradoopProperties.get(property).getString());
+          break;
+        case Constants.SURNAME:
+        case Constants.ARTIST:
+          properties.setArtist(gradoopProperties.get(property).getString());
+          break;
+        case Constants.POSTCOD:
+        case Constants.NUMBER:
+          properties.setNumber(gradoopProperties.get(property).getString());
+          break;
+        case Constants.CLS_ID:
+          properties.put(Constants.CLS_ID, gradoopProperties.get(property).getLong());
+          break;
+        case Constants.LANGUAGE:
+          properties.setLanguage(MusicUtils.fixLanguage(
+              gradoopProperties.get(property).getString()));
+          break;
+        case Constants.YEAR:
+          Integer year = MusicUtils.fixYear(gradoopProperties.get(property).getString());
+          if (year != null) {
+            properties.setYear(year);
+          }
+          break;
+        case Constants.LENGTH:
+          Integer length = MusicUtils.fixSongLength(gradoopProperties.get(property).getString());
+          if (length != null) {
+            properties.setLength(length);
+          }
+          break;
       }
     }
 

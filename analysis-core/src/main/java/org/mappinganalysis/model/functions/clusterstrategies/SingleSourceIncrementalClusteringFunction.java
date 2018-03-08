@@ -13,6 +13,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
+import org.mappinganalysis.util.Constants;
 
 public class SingleSourceIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(SingleSourceIncrementalClusteringFunction.class);
@@ -21,14 +22,17 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
   private int sourcesCount;
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements;
   private ExecutionEnvironment env;
+  private String metric = Constants.COSINE_TRIGRAM;
 
   SingleSourceIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
       DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
+      String metric,
       String source,
       int sourcesCount, ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
+    this.metric = metric;
     this.source = source;
     this.sourcesCount = sourcesCount;
     this.toBeMergedElements = toBeMergedElements
@@ -48,6 +52,7 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
         .runOperation(new CandidateCreator(
             blockingStrategy,
             DataDomain.GEOGRAPHY,
+            metric,
             source,
             sourcesCount,
             env))

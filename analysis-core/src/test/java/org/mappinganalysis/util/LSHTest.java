@@ -222,7 +222,7 @@ public class LSHTest {
         = new SimilarityComputation
         .SimilarityComputationBuilder<MergeGeoTriplet,
         MergeGeoTriplet>()
-        .setSimilarityFunction(new MergeGeoSimilarity()) // TODO check sim function
+        .setSimilarityFunction(new MergeGeoSimilarity(Constants.COSINE_TRIGRAM)) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
         .setThreshold(0.3)
         .build();

@@ -12,6 +12,7 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
  * type overlap - this is not in typeGroupBy because of some testing issues
+ * only relevant for geographic domain (or other semantic type data sets)
  */
 public class TypeOverlapCcCreator
     implements GraphAlgorithm<Long, ObjectMap, ObjectMap, Graph<Long, ObjectMap, ObjectMap>> {

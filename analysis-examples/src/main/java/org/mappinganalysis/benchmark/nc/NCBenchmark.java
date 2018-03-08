@@ -22,6 +22,7 @@ import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NCBenchmark implements ProgramDescription {
@@ -35,68 +36,92 @@ public class NCBenchmark implements ProgramDescription {
    * Main class for NC benchmark
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 1,
-        "args[0]: input dir");
-    final int sourcesCount = 10;
+    Preconditions.checkArgument(args.length == 2,
+        "args[0]: input dir, args[1]: sources count");
+    final int sourcesCount = Integer.parseInt(args[1]);
     final String INPUT_PATH = args[0];
     final double simSortThreshold = 0.7;
-    final String metric = Constants.COSINE_TRIGRAM;
-    final int parallelism = 96;
 
-    List<String> sourceList = Lists.newArrayList(
-        "1/"
-//        "2/", "3/"//, "5/"
+    /*
+      METRICS
+     */
+    ArrayList<String> metrics = Lists.newArrayList(
+        Constants.JARO_WINKLER, Constants.COSINE_TRIGRAM
     );
+    for (String metric : metrics) {
 
-    for (String dataset : sourceList) {
-      final String roundInputPath = INPUT_PATH.concat(dataset);
-      final String datasetNumber = dataset.substring(0,1);
-      // Read input graph
-      LogicalGraph logicalGraph = Utils
-          .getGradoopGraph(roundInputPath, env);
-      Graph<Long, ObjectMap, NullValue> graph = Utils
-          .getInputGraph(logicalGraph, env);
-      Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
-          .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
+      /*
+        DATA SET SOURCES LIST
+       */
+      List<String> sourceList = Lists.newArrayList(
+//          "1/"//,
+          "2/", "3/"//, "5/"
+      );
+      for (String dataset : sourceList) {
+        final String roundInputPath = INPUT_PATH.concat(dataset);
+        final String datasetNumber = dataset.substring(0, 1);
+        // Read input graph
+        LogicalGraph logicalGraph = Utils
+            .getGradoopGraph(roundInputPath, env);
+        Graph<Long, ObjectMap, NullValue> graph = Utils
+            .getInputGraph(logicalGraph, Constants.NC, env);
+        Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
+            .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
 
-      // Decomposition + Representative
-      DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
-          .run(new TypeGroupBy(env))
-          .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
-          .getVertices()
-          .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+        // Decomposition + Representative
+        DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
+            .run(new TypeGroupBy(env))
+            .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
+            .getVertices()
+            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
-      String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold);
-      String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
-      new JSONDataSink(roundInputPath, decompositionStep)
-          .writeVertices(representatives);
-      env.execute(datasetNumber.concat(DEC_JOB.concat(decompositionSuffix)));
+        String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold)
+            + "-" + metric;
+        String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
+        new JSONDataSink(roundInputPath, decompositionStep)
+            .writeVertices(representatives);
+        env.execute(datasetNumber.concat(DEC_JOB.concat(decompositionSuffix)));
 
-      // Read graph from disk and merge
-      representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
-          roundInputPath, decompositionStep, env)
-          .getVertices();
+        /*
+          BLOCKING STRATEGIES
+         */
+        ArrayList<BlockingStrategy> blockingStrategies = Lists.newArrayList(
+            BlockingStrategy.STANDARD_BLOCKING
+//            ,
+//            BlockingStrategy.BLOCK_SPLIT
+        );
+        for (BlockingStrategy blockingStrategy : blockingStrategies) {
 
-      for (int mergeFor = 95; mergeFor >= 90; mergeFor -= 5) {
-        double mergeThreshold = (double) mergeFor / 100;
+          // Read graph from disk and merge
+          representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
+              roundInputPath, decompositionStep, env)
+              .getVertices();
+
+          /*
+            MERGE FOR QUEUE
+           */
+          for (int mergeFor = 95; mergeFor >= 90; mergeFor -= 5) {
+            double mergeThreshold = (double) mergeFor / 100;
             DataSet<Vertex<Long, ObjectMap>> merged = representatives
                 .runOperation(new MergeInitialization(DataDomain.NC))
                 .runOperation(new MergeExecution(
                     DataDomain.NC,
                     metric,
-                    BlockingStrategy.BLOCK_SPLIT,
+                    blockingStrategy,
                     mergeThreshold,
                     sourcesCount,
-                    parallelism,
                     env));
 
-            String mergeSuffix = "-96-m" + Utils.getOutputSuffix(mergeThreshold)
+            String mergeSuffix = "-m" + Utils.getOutputSuffix(mergeThreshold)
+                + "-" + Utils.getShortBlockingStrategy(blockingStrategy)
                 .concat(decompositionSuffix);
 
             new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
                 .writeVertices(merged);
             env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
           }
+        }
+      }
     }
   }
 
@@ -128,7 +153,7 @@ public class NCBenchmark implements ProgramDescription {
 //    numbersOfHashesPerFamily,
 //    env));
 //
-//    String mergeSuffix = "-96-JW-LSH-" + valueRangeLsh + "" +
+//    String mergeSuffix = "-96-JW-LSHB-" + valueRangeLsh + "" +
 //    "-" + numbersOfFamilies + "-" + numbersOfHashesPerFamily +
 //    "-m" + Utils.getOutputSuffix(mergeThreshold)
 //    .concat(decompositionSuffix);

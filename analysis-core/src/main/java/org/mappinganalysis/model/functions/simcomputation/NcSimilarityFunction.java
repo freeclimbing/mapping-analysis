@@ -24,7 +24,7 @@ public class NcSimilarityFunction
   public Triplet<Long, ObjectMap, ObjectMap> map(
       Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
 
-    EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet);
+    EdgeObjectMapTriplet result = new EdgeObjectMapTriplet(triplet, Constants.NC);
     result.runOperation(new SinglePropertySimilarity(Constants.LABEL, metric))
         .runOperation(new SinglePropertySimilarity(Constants.ARTIST, metric))
         .runOperation(new SinglePropertySimilarity(Constants.ALBUM, metric))

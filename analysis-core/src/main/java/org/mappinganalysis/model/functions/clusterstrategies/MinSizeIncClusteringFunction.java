@@ -20,13 +20,14 @@ import java.util.List;
  */
 public class MinSizeIncClusteringFunction extends IncrementalClusteringFunction {
   private List<String> sources;
+  private String metric;
   private ExecutionEnvironment env;
   private static final Logger LOG = Logger.getLogger(MinSizeIncClusteringFunction.class);
 
-
-  public MinSizeIncClusteringFunction(List<String> sources, ExecutionEnvironment env) {
+  MinSizeIncClusteringFunction(List<String> sources, String metric, ExecutionEnvironment env) {
     super();
     this.sources = sources;
+    this.metric = metric;
     this.env = env;
   }
 

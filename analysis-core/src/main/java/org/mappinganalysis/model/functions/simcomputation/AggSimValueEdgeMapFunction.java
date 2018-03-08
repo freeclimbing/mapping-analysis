@@ -13,7 +13,7 @@ import org.mappinganalysis.util.Constants;
 public class AggSimValueEdgeMapFunction
     implements MapFunction<Edge<Long, ObjectMap>, Edge<Long, ObjectMap>> {
   private final boolean isMeanSimActivated;
-  private String mode = "";
+  private String mode = Constants.EMPTY_STRING;
 
   /**
    * Aggregate all similarity values, either based on weight based metric
