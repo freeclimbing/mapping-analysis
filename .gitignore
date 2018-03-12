@@ -1,15 +1,3 @@
 .idea
 target/
-db.properties
-*.aux
-*.bbl
-*.blg
-paper/*.log
-paper/*.out
-*.cb
-*.cb2
-draft/*.log
-draft/*.out
-*.latexmain
-*.bak
-*.swp
+*.iml
