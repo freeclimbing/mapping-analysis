@@ -40,13 +40,14 @@ public class NCBenchmark implements ProgramDescription {
         "args[0]: input dir, args[1]: sources count");
     final int sourcesCount = Integer.parseInt(args[1]);
     final String INPUT_PATH = args[0];
-    final double simSortThreshold = 0.7;
+    double simSortThreshold = 0.7;
 
     /*
       METRICS
      */
     ArrayList<String> metrics = Lists.newArrayList(
-        Constants.JARO_WINKLER, Constants.COSINE_TRIGRAM
+//        Constants.COSINE_TRIGRAM//,
+        Constants.JARO_WINKLER
     );
     for (String metric : metrics) {
 
@@ -54,8 +55,9 @@ public class NCBenchmark implements ProgramDescription {
         DATA SET SOURCES LIST
        */
       List<String> sourceList = Lists.newArrayList(
-//          "1/"//,
-          "2/", "3/"//, "5/"
+          "1/"//,
+//          "2/",
+//          "3/"//, "5/"
       );
       for (String dataset : sourceList) {
         final String roundInputPath = INPUT_PATH.concat(dataset);
@@ -68,61 +70,155 @@ public class NCBenchmark implements ProgramDescription {
         Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
             .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
 
-        // Decomposition + Representative
-        DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
-            .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
-            .getVertices()
-            .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+        for (int simFor = 90; simFor <= 90; simFor += 10) {
+          simSortThreshold = (double) simFor / 100;
 
-        String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold)
-            + "-" + metric;
-        String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
-        new JSONDataSink(roundInputPath, decompositionStep)
-            .writeVertices(representatives);
-        env.execute(datasetNumber.concat(DEC_JOB.concat(decompositionSuffix)));
+          // Decomposition + Representative
+          DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
+              .run(new TypeGroupBy(env))
+              .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
+              .getVertices()
+              .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+
+          String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold)
+              + "-" + metric;
+          String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
+          new JSONDataSink(roundInputPath, decompositionStep)
+              .writeVertices(representatives);
+          env.execute(datasetNumber.concat(DEC_JOB.concat(decompositionSuffix)));
 
         /*
           BLOCKING STRATEGIES
          */
-        ArrayList<BlockingStrategy> blockingStrategies = Lists.newArrayList(
-            BlockingStrategy.STANDARD_BLOCKING
+          ArrayList<BlockingStrategy> blockingStrategies = Lists.newArrayList(
+              BlockingStrategy.STANDARD_BLOCKING
 //            ,
 //            BlockingStrategy.BLOCK_SPLIT
-        );
-        for (BlockingStrategy blockingStrategy : blockingStrategies) {
+          );
+          for (BlockingStrategy blockingStrategy : blockingStrategies) {
 
-          // Read graph from disk and merge
-          representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
-              roundInputPath, decompositionStep, env)
-              .getVertices();
+            // Read graph from disk and merge
+            representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
+                roundInputPath, decompositionStep, env)
+                .getVertices();
 
           /*
             MERGE FOR QUEUE
            */
-          for (int mergeFor = 95; mergeFor >= 90; mergeFor -= 5) {
-            double mergeThreshold = (double) mergeFor / 100;
-            DataSet<Vertex<Long, ObjectMap>> merged = representatives
-                .runOperation(new MergeInitialization(DataDomain.NC))
-                .runOperation(new MergeExecution(
-                    DataDomain.NC,
-                    metric,
-                    blockingStrategy,
-                    mergeThreshold,
-                    sourcesCount,
-                    env));
+            for (int mergeFor = 95; mergeFor >= 95; mergeFor -= 5) {
+              double mergeThreshold = (double) mergeFor / 100;
+              DataSet<Vertex<Long, ObjectMap>> merged = representatives
+                  .runOperation(new MergeInitialization(DataDomain.NC))
+                  .runOperation(new MergeExecution(
+                      DataDomain.NC,
+                      metric,
+                      blockingStrategy,
+                      mergeThreshold,
+                      sourcesCount,
+                      env));
 
-            String mergeSuffix = "-m" + Utils.getOutputSuffix(mergeThreshold)
-                + "-" + Utils.getShortBlockingStrategy(blockingStrategy)
-                .concat(decompositionSuffix);
+              String mergeSuffix = "-m" + Utils.getOutputSuffix(mergeThreshold)
+                  + "-" + Utils.getShortBlockingStrategy(blockingStrategy)
+                  .concat(decompositionSuffix);
 
-            new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
-                .writeVertices(merged);
-            env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
+              new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
+                  .writeVertices(merged);
+              env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
+            }
           }
         }
       }
+
     }
+
+//     /*
+//      METRICS
+//     */
+//    ArrayList<String> metrics = Lists.newArrayList(
+//        Constants.COSINE_TRIGRAM//,
+////        Constants.JARO_WINKLER
+//    );
+//    for (String metric : metrics) {
+//
+//      /*
+//        DATA SET SOURCES LIST
+//       */
+//      List<String> sourceList = Lists.newArrayList(
+//          "1/",
+//          "2/",
+//          "3/"//, "5/"
+//      );
+//      for (String dataset : sourceList) {
+//        final String roundInputPath = INPUT_PATH.concat(dataset);
+//        final String datasetNumber = dataset.substring(0, 1);
+//        // Read input graph
+//        LogicalGraph logicalGraph = Utils
+//            .getGradoopGraph(roundInputPath, env);
+//        Graph<Long, ObjectMap, NullValue> graph = Utils
+//            .getInputGraph(logicalGraph, Constants.NC, env);
+//        Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
+//            .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
+//
+//        for (int simFor = 65; simFor <= 65; simFor += 10) {
+//          simSortThreshold = (double) simFor / 100;
+//
+//          // Decomposition + Representative
+//          DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
+//              .run(new TypeGroupBy(env))
+//              .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
+//              .getVertices()
+//              .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
+//
+//          String decompositionSuffix = "-96-s" + Utils.getOutputSuffix(simSortThreshold)
+//              + "-" + metric;
+//          String decompositionStep = DECOMPOSITION.concat(decompositionSuffix);
+//          new JSONDataSink(roundInputPath, decompositionStep)
+//              .writeVertices(representatives);
+//          env.execute(datasetNumber.concat(DEC_JOB.concat(decompositionSuffix)));
+//
+//        /*
+//          BLOCKING STRATEGIES
+//         */
+//          ArrayList<BlockingStrategy> blockingStrategies = Lists.newArrayList(
+//              BlockingStrategy.STANDARD_BLOCKING
+////            ,
+////            BlockingStrategy.BLOCK_SPLIT
+//          );
+//          for (BlockingStrategy blockingStrategy : blockingStrategies) {
+//
+//            // Read graph from disk and merge
+//            representatives = new org.mappinganalysis.io.impl.json.JSONDataSource(
+//                roundInputPath, decompositionStep, env)
+//                .getVertices();
+//
+//          /*
+//            MERGE FOR QUEUE
+//           */
+//            for (int mergeFor = 85; mergeFor >= 70; mergeFor -= 5) {
+//              double mergeThreshold = (double) mergeFor / 100;
+//              DataSet<Vertex<Long, ObjectMap>> merged = representatives
+//                  .runOperation(new MergeInitialization(DataDomain.NC))
+//                  .runOperation(new MergeExecution(
+//                      DataDomain.NC,
+//                      metric,
+//                      blockingStrategy,
+//                      mergeThreshold,
+//                      sourcesCount,
+//                      env));
+//
+//              String mergeSuffix = "-m" + Utils.getOutputSuffix(mergeThreshold)
+//                  + "-" + Utils.getShortBlockingStrategy(blockingStrategy)
+//                  .concat(decompositionSuffix);
+//
+//              new JSONDataSink(roundInputPath, MERGE.concat(mergeSuffix))
+//                  .writeVertices(merged);
+//              env.execute(datasetNumber.concat(MER_JOB.concat(mergeSuffix)));
+//            }
+//          }
+//        }
+//      }
+//
+//    }
   }
 
   @Override

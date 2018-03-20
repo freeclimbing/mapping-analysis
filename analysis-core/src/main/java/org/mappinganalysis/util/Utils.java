@@ -33,8 +33,10 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CharSet;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.simmetrics.StringMetric;
+import org.simmetrics.metrics.CosineSimilarity;
 import org.simmetrics.metrics.JaroWinkler;
 import org.simmetrics.simplifiers.Simplifiers;
+import org.simmetrics.tokenizers.Tokenizers;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -275,9 +277,6 @@ public class Utils {
   }
 
   public static boolean isValidGeoObject(Double latitude, Double longitude) {
-    if (latitude == null || longitude == null) {
-      return Boolean.FALSE;
-    }
     return isValidLatitude(latitude) && isValidLongitude(longitude);
   }
 
@@ -683,7 +682,8 @@ public class Utils {
   }
 
   private static StringMetric getCosineTrigramMetric() {
-    return with(new JaroWinkler())
+    return with(new CosineSimilarity<>())
+        .tokenize(Tokenizers.qGramWithPadding(3))
         .build();
     // old:
     // .simplify(Simplifiers.removeAll("[\\\\(|,].*"))

@@ -37,27 +37,26 @@ public class SettlementBenchmark implements ProgramDescription {
   private static final String DEC_JOB = "Settlement Decomposition + Representatives";
   private static final String MER_JOB = "Settlement Merge";
 
-  private static String INPUT_PATH;
-
   /**
    * Main class for Settlement benchmark
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 3,
-        "args[0]: input dir, args[1]: isCorrupted, args[2]: metric");
-    Constants.SOURCE_COUNT = 4;
+    Preconditions.checkArgument(args.length == 4,
+        "args[0]: input dir, args[1]: isCorrupted/not, args[2]: metric, args[3]: csimq/normal");
+    int sourceCount = 4;
     boolean isCorrupted = args[1].equals("isCorrupted");
-    INPUT_PATH = args[0];
+    String inputPath = args[0];
     String metric = args[2];
     Double minSimSortSim = 0.7;
+    String usecase = args[3];
 
     /*
       preprocessing
      */
     Graph<Long, ObjectMap, NullValue> preprocGraph =
-        new JSONDataSource(INPUT_PATH, env)
-            .getGraph(ObjectMap.class, NullValue.class)
-            .run(new DataCorruption(env));
+        new JSONDataSource(inputPath, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+//            .run(new DataCorruption(env));
 
     if (isCorrupted) {
       // additional corrupt
@@ -68,11 +67,11 @@ public class SettlementBenchmark implements ProgramDescription {
           .getVertices()
           .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
 
-      new JSONDataSink(INPUT_PATH, CORRUPTED)
+      new JSONDataSink(inputPath, CORRUPTED)
           .writeGraph(Graph.fromDataSet(tmpGraph.getVertices(), distinctEdges, env));
     }
 
-    new JSONDataSink(INPUT_PATH, PREPROCESSING)
+    new JSONDataSink(inputPath, PREPROCESSING)
         .writeGraph(preprocGraph
             .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env)));
     env.execute(PRE_JOB);
@@ -81,14 +80,14 @@ public class SettlementBenchmark implements ProgramDescription {
       decomposition with representative creation
      */
     DataSet<Vertex<Long, ObjectMap>> vertices =
-        new JSONDataSource(INPUT_PATH, PREPROCESSING, env)
+        new JSONDataSource(inputPath, PREPROCESSING, env)
         .getGraph()
 //        .run(new TypeGroupBy(env)) // not needed? TODO
         .run(new SimSort(DataDomain.GEOGRAPHY, metric, minSimSortSim, env))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
-    new JSONDataSink(INPUT_PATH, DECOMPOSITION)
+    new JSONDataSink(inputPath, DECOMPOSITION)
         .writeVertices(vertices);
     env.execute(DEC_JOB);
 
@@ -96,17 +95,17 @@ public class SettlementBenchmark implements ProgramDescription {
       merge
      */
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(INPUT_PATH, DECOMPOSITION, env)
+        new JSONDataSource(inputPath, DECOMPOSITION, env)
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
             .runOperation(new MergeExecution(
                 DataDomain.GEOGRAPHY,
                 metric,
                 0.5,
-                Constants.SOURCE_COUNT,
+                sourceCount,
                 env));
 
-    new JSONDataSink(INPUT_PATH, MERGE)
+    new JSONDataSink(inputPath, MERGE)
         .writeVertices(mergedVertices);
     env.execute(MER_JOB);
   }

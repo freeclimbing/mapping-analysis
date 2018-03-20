@@ -65,7 +65,8 @@ public class MergeMusicTupleCreator
       tuple.setBlockingLabel(Utils.getBlockingKey(
           blockingStrategy,
           Constants.MUSIC,
-          properties.getLabel()));
+          artistTitleAlbum));
+//          properties.getLabel()));
     } else {
       String ncBlocking = Utils.getNcBlockingLabel(
           properties.getLabel(), properties.getArtist());

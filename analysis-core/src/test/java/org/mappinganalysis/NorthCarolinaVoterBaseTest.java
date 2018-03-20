@@ -3,7 +3,6 @@ package org.mappinganalysis;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.operators.Order;
@@ -17,7 +16,6 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
@@ -35,9 +33,9 @@ import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.functions.QualityEdgeCreator;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -348,6 +346,7 @@ public class NorthCarolinaVoterBaseTest {
 
         final String graphPath = NorthCarolinaVoterBaseTest.class
             .getResource(dataset).getFile();
+        LOG.info(graphPath);
         LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
         Graph<Long, ObjectMap, NullValue> graph = Utils
             .getInputGraph(logicalGraph, Constants.NC, env);
@@ -413,18 +412,37 @@ public class NorthCarolinaVoterBaseTest {
 
   @Test
   public void bigNcQualityTest() throws Exception {
-    int sourcesCount = 10;
     env = TestBase.setupLocalEnvironment();
 
-    String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/1/";
-    DataSet<Edge<Long, NullValue>> edges = getPmEdges(graphPath);
+    List<String> sourceList = Lists.newArrayList(
+        "1/",
+        "2/",
+        "3/"//, "5/"
+    );
 
-    edges.first(10).print();
+    String graphPath =
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/";
+
+    for (String dataset : sourceList) {
+      graphPath = graphPath.concat(dataset); // Fix TODO
+
+      LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+
+      LOG.info("edges: " + dataset + " " + logicalGraph.getEdges().count());
+      LOG.info("vertices: " + dataset + " " + logicalGraph.getVertices().count());
+    }
+//    DataSet<Edge<Long, NullValue>> edges = getPmEdges(graphPath);
+
+//    edges.first(10).print();
 
   }
 
-  private DataSet<Edge<Long, NullValue>> getPmEdges(String graphPath) {
+  /**
+   * Get component ids for big nc graph from hdfs path of dataset 1, 2 or 3 for eval.
+   */
+  private DataSet<Edge<Long, NullValue>> getPmEdges(String graphPath) throws Exception {
     LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+
     DataSet<Tuple2<Long, Long>> clsIds = Utils.getInputGraph(logicalGraph, Constants.NC, env)
         .getVertices()
         .map(vertex -> new Tuple2<>(vertex.getId(),
@@ -439,21 +457,22 @@ public class NorthCarolinaVoterBaseTest {
   // read existing files and determine quality
   @Test
   public void qualityOnlyTest() throws Exception {
-    int sourcesCount = 5;
+    int sourcesCount = 10;
     env = TestBase.setupLocalEnvironment();
 
     List<String> sourceList = Lists.newArrayList(
-//        "1/"//,
- "2/", "3/"//, "5/"
+        "1/",
+      "2/",
+        "3/"//, "5/"
     );
 
 //    String graphPath =
 //        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/nc/10parties/";
     String graphPath =
-        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/5p/";
-
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/";
 
     for (String dataset : sourceList) {
+
 //      final String graphPath = NorthCarolinaVoterBaseTest.class
 //          .getResource(dataset).getFile();
       String pmPath = graphPath.concat(dataset);
@@ -461,10 +480,10 @@ public class NorthCarolinaVoterBaseTest {
 //          .map(edge -> new Tuple2<>(edge.f0, edge.f1))
 //          .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
-      for (int mergeFor = 95; mergeFor <= 95; mergeFor += 5) {
+      for (int mergeFor = 90; mergeFor <= 90; mergeFor += 5) {
         double mergeThreshold = (double) mergeFor / 100;
 
-        for (int simFor = 70; simFor <= 70; simFor += 5) {
+        for (int simFor = 65; simFor <= 65; simFor += 10) {
           double simSortThreshold = (double) simFor / 100;
 
 //          String reprOut = pmPath.concat("/output/nc-decomposition-representatives-JW-s70/");
@@ -479,18 +498,26 @@ public class NorthCarolinaVoterBaseTest {
           /* for changing simsort sim */
 //          String reprOut = graphPath.concat("/output/m") + mergeFor
 //              + "s" + simFor + "/";
-          /* for fixed simsort sim */
-//          String bdcluOut = pmPath.concat("/output/nc-merged-clusters-m"
-//              + mergeFor + "-SB-96-s70-jw/");
+
           /* for representatives only */
           String bdcluOut = pmPath
-              .concat("/output/nc-decomposition-representatives-96-s70-ct/");
+              .concat("/output/nc-decomposition-representatives-96-s") + simFor + "-ct/";
           DataSet<Vertex<Long, ObjectMap>> merged =
               new org.mappinganalysis.io.impl.json.JSONDataSource(
                   bdcluOut, true, env)
                   .getVertices();
-          printQuality(dataset, mergeThreshold, simSortThreshold,
+          printQuality(dataset, 0.0, simSortThreshold,
               merged, pmPath, sourcesCount);
+
+          /* for fixed simsort sim */
+//          bdcluOut = pmPath.concat("/output/nc-merged-clusters-m"
+//              + mergeFor + "-SB-96-s" + simFor + "-ct/");
+//          merged =
+//              new org.mappinganalysis.io.impl.json.JSONDataSource(
+//                  bdcluOut, true, env)
+//                  .getVertices();
+//          printQuality(dataset, mergeThreshold, simSortThreshold,
+//              merged, pmPath, sourcesCount);
         }
       }
     }
@@ -657,24 +684,5 @@ public class NorthCarolinaVoterBaseTest {
     }
 
     assertEquals(1005802084L, Long.parseLong(result));
-  }
-
-  private static class QualityEdgeCreator
-      implements FlatMapFunction<Vertex<Long, ObjectMap>, Tuple2<Long, Long>> {
-    @Override
-    public void flatMap(Vertex<Long, ObjectMap> cluster, Collector<Tuple2<Long, Long>> out) throws Exception {
-      Set<Long> firstSide = cluster.getValue().getVerticesList();
-      Set<Long> secondSide = Sets.newHashSet(firstSide);
-      for (Long first : firstSide) {
-        secondSide.remove(first);
-        for (Long second : secondSide) {
-          if (first < second) {
-            out.collect(new Tuple2<>(first, second));
-          } else {
-            out.collect(new Tuple2<>(second, first));
-          }
-        }
-      }
-    }
   }
 }

@@ -28,21 +28,23 @@ public class GradoopToObjectMapVertexMapper
   public Vertex<Long, ObjectMap> map(org.gradoop.common.model.impl.pojo.Vertex gradoopVertex) throws Exception {
     Properties gradoopProperties = gradoopVertex.getProperties();
     ObjectMap properties = new ObjectMap(Constants.NC);
+    double lat = 200;
+    double lon = 200;
 
     assert gradoopProperties != null;
     for (String property : gradoopProperties.getKeys()) {
       switch (property) {
         case Constants.REC_ID:
           String idString = gradoopProperties.get(property).getString();
-
           if (domain.equals(Constants.NC)) {
             reuseVertex.setId(Utils.getIdFromNcId(idString));
-          } else if (domain.equals(Constants.MUSIC)) {
+          } else if (domain.equals(Constants.MUSIC) || domain.equals(Constants.GEO)) {
             reuseVertex.setId(Long.valueOf(idString));
           }
           break;
         case Constants.NAME:
         case Constants.TITLE:
+        case Constants.LABEL:
           properties.setLabel(gradoopProperties.get(property).getString());
           break;
         case Constants.SUBURB:
@@ -79,7 +81,15 @@ public class GradoopToObjectMapVertexMapper
             properties.setLength(length);
           }
           break;
+        case Constants.LAT:
+          lat = Double.parseDouble(gradoopProperties.get(property).getString());
+          break;
+        case Constants.LON:
+          lon = Double.parseDouble(gradoopProperties.get(property).getString());
+          break;
       }
+
+      properties.setGeoProperties(lat, lon);
     }
 
     reuseVertex.setValue(properties);

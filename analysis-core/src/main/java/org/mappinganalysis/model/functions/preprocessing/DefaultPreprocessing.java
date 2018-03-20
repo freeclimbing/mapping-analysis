@@ -81,7 +81,7 @@ public class DefaultPreprocessing
       sources = Constants.MUSIC_SOURCES;
     } else if (domain == DataDomain.GEOGRAPHY) {
       resultGraph = tmpGraph
-          .run(new TypeMisMatchCorrection(env))
+//          .run(new TypeMisMatchCorrection(env)) // commented for SettlementBenchmark
           .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
       sources = Constants.GEO_SOURCES;
     } else if (domain == DataDomain.NC) {

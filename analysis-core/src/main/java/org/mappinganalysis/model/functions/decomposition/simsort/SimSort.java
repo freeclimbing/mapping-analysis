@@ -93,7 +93,6 @@ public class SimSort
 
     graph = graph
         .run(new SimSortVertexCentricIteration(minSimilarity, env));
-
     return Graph.fromDataSet(graph.getVertices(), graph.getEdges(), env);
   }
 
