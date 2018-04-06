@@ -14,6 +14,7 @@ import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 public class SingleSourceIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(SingleSourceIncrementalClusteringFunction.class);
@@ -23,13 +24,15 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements;
   private ExecutionEnvironment env;
   private String metric = Constants.COSINE_TRIGRAM;
+  private IncrementalConfig config;
 
   SingleSourceIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
       DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
       String metric,
       String source,
-      int sourcesCount, ExecutionEnvironment env) {
+      int sourcesCount,
+      ExecutionEnvironment env) {
     super();
     this.blockingStrategy = blockingStrategy;
     this.metric = metric;
@@ -40,26 +43,28 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
     this.env = env;
   }
 
+  SingleSourceIncrementalClusteringFunction(
+      DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
+      IncrementalConfig config) {
+    super();
+    this.config = config;
+    this.source = config.getNewSource();
+    this.toBeMergedElements = toBeMergedElements
+        .runOperation(new RepresentativeCreator(config));
+  }
+
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
+
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
     return baseClusters.union(toBeMergedElements)
-        .runOperation(new CandidateCreator(
-            blockingStrategy,
-            DataDomain.GEOGRAPHY,
-            metric,
-            source,
-            sourcesCount,
-            env))
+        .runOperation(new CandidateCreator(config, source, sourcesCount))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
-        .where(0)
-        .equalTo(0)
+        .where(0).equalTo(0)
         .with(new FinalMergeGeoVertexCreator()) // TODO really needed?
 //        .map(x -> {
 //          if (x.getValue().getVerticesList().contains(298L)
@@ -72,8 +77,6 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
 //          return x;
 //        })
 //        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
   }
 }

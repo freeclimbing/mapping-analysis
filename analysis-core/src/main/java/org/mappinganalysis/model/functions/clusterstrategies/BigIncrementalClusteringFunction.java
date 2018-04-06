@@ -15,6 +15,7 @@ import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class BigIncrementalClusteringFunction
@@ -25,7 +26,7 @@ public class BigIncrementalClusteringFunction
   private String metric;
   private ExecutionEnvironment env;
 
-  public BigIncrementalClusteringFunction(
+  BigIncrementalClusteringFunction(
       BlockingStrategy blockingStrategy,
       String metric,
       ExecutionEnvironment env) {
@@ -35,20 +36,20 @@ public class BigIncrementalClusteringFunction
     this.env = env;
   }
 
-  // todo source select TreeSet?
   // TODO provenance
   // TODO sources count is fixed atm, how to have variable source count
   // TODO optimize: remove transition between vertices and tuples between merge steps
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
+    Config config = new Config(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(blockingStrategy);
+    config.setMetric(metric);
 
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
     DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
@@ -62,55 +63,40 @@ public class BigIncrementalClusteringFunction
         .filter(new SourceFilterFunction(Constants.LGD_NS));
 
     DataSet<Vertex<Long, ObjectMap>> result = gn.union(dbp)
-        .runOperation(new CandidateCreator(
-            blockingStrategy,
-            DataDomain.GEOGRAPHY,
-            metric, Constants.DBP_NS,
-            2, env))
+        .runOperation(new CandidateCreator(config, Constants.DBP_NS, 2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
 //    result = result.union(dbp)
-//        .runOperation(new CandidateCreator(
-//            blockingStrategy, DataDomain.GEOGRAPHY, Constants.DBP_NS, 3))
+//        .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
 //        .flatMap(new DualMergeGeographyMapper(false))
 //        .leftOuterJoin(baseClusters)
 //        .where(0)
 //        .equalTo(0)
 //        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(
-//            DataDomain.GEOGRAPHY,
-//            blockingStrategy));
+//        .runOperation(new RepresentativeCreator(config);
 //
 //    result = result.union(fb)
-//        .runOperation(new CandidateCreator(
-//            blockingStrategy, DataDomain.GEOGRAPHY, Constants.FB_NS, 4))
+//        .runOperation(new CandidateCreator(config, Constants.FB_NS, 4))
 //        .flatMap(new DualMergeGeographyMapper(false))
 //        .leftOuterJoin(baseClusters)
 //        .where(0)
 //        .equalTo(0)
 //        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(
-//            DataDomain.GEOGRAPHY,
-//            blockingStrategy));
+//        .runOperation(new RepresentativeCreator(config);
 //
 //    DataSet<Vertex<Long, ObjectMap>> finalResult = result.union(lgd)
-//        .runOperation(new CandidateCreator(
-//            blockingStrategy, DataDomain.GEOGRAPHY, Constants.LGD_NS, 5))
+//        .runOperation(new CandidateCreator(config, Constants.LGD_NS, 5))
 //        .flatMap(new DualMergeGeographyMapper(false))
 //        .leftOuterJoin(baseClusters)
 //        .where(0)
 //        .equalTo(0)
 //        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(
-//            DataDomain.GEOGRAPHY,
-//            blockingStrategy));
+//        .runOperation(new RepresentativeCreator(config);
 
     return result;
   }

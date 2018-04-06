@@ -512,10 +512,10 @@ public class ObjectMap
 //    }
 
     if (dataSources instanceof Set) {
-
       return (Set<String>) dataSources;
+    } else if (dataSources == null) {
+      return Sets.newHashSet();
     } else {
-
       return Sets.newHashSet(dataSources.toString());
     }
   }

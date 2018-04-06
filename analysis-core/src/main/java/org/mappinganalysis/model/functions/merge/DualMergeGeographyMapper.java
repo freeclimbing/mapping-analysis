@@ -24,7 +24,7 @@ public class DualMergeGeographyMapper
   /**
    * Default constructor for delta iteration
    */
-  public DualMergeGeographyMapper() {
+  DualMergeGeographyMapper() {
     this.hasFakeResults = true;
   }
 

@@ -6,8 +6,10 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.List;
 
@@ -15,9 +17,15 @@ public class IncrementalClustering
     implements GraphAlgorithm<Long, ObjectMap, NullValue, DataSet<Vertex<Long, ObjectMap>>> {
 
   private IncrementalClusteringFunction function;
+  private IncrementalConfig config;
 
-  public IncrementalClustering(IncrementalClusteringFunction function) {
+  IncrementalClustering(IncrementalClusteringFunction function) {
     this.function = function;
+  }
+
+  IncrementalClustering(IncrementalClusteringFunction function, IncrementalConfig config) {
+    this.function = function;
+    this.config = config;
   }
 
   @Override
@@ -30,7 +38,7 @@ public class IncrementalClustering
    * Used for building a IncrementalClustering instance.
    */
   public static final class IncrementalClusteringBuilder {
-    private IncrementalClusteringStrategy clusteringStrategy;
+    private IncrementalClusteringStrategy clusteringStrategy = null;
     private ExecutionEnvironment env = null;
     private List<String> sources;
     private DataSet<Vertex<Long, ObjectMap>> newElements;
@@ -38,6 +46,29 @@ public class IncrementalClustering
     private String part;
     private String source;
     private String metric;
+    private IncrementalConfig config = null;
+
+    /**
+     * Default constructor
+     */
+    public IncrementalClusteringBuilder() {
+    }
+
+    public IncrementalClusteringBuilder(DataDomain domain,  ExecutionEnvironment env) {
+      this.config.setDomain(domain);
+      this.config.setExecutionEnvironment(env);
+    }
+
+    public IncrementalClusteringBuilder(IncrementalConfig config) {
+      this.config = config;
+    }
+
+    public IncrementalClusteringBuilder setConfig(
+        IncrementalConfig config) {
+      this.config = config;
+
+      return this;
+    }
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
@@ -54,6 +85,8 @@ public class IncrementalClustering
     public IncrementalClusteringBuilder setDataSources(
         List<String> sources) {
       this.sources = sources;
+      // TODO check
+      this.config.setExistingSourcesCount(sources.size());
 
       return this;
     }
@@ -78,6 +111,7 @@ public class IncrementalClustering
     public IncrementalClusteringBuilder setNewSource(
         String source) {
       this.source = source;
+      this.config.setNewSource(source);
 
       return this;
     }
@@ -94,7 +128,11 @@ public class IncrementalClustering
       return this;
     }
 
-    // used for split incremental
+    /**
+     * Provide metric to use for similarity comparison.
+     * @param metric similarity metric
+     * @return IncrementalClusteringBuilder
+     */
     public IncrementalClusteringBuilder setMetric(String metric) {
       this.metric = metric;
 
@@ -124,7 +162,10 @@ public class IncrementalClustering
      * @return instance of incremental clustering
      */
     public IncrementalClustering build() {
-      if (env != null) {
+      if (clusteringStrategy == null) {
+        clusteringStrategy = config.getStrategy();
+      }
+      if (config.getExecutionEnvironment() != null || env != null) {
         if (clusteringStrategy == IncrementalClusteringStrategy.MINSIZE) {
           return new MinSizeIncClustering(sources, metric, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
@@ -134,13 +175,14 @@ public class IncrementalClustering
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
           return new SplitIncrementalClustering(blockingStrategy, metric, part, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SINGLE_SETTING) {
-          return new SingleSourceIncrementalClustering(
-              blockingStrategy,
-              newElements,
-              metric,
-              source,
-              sources.size(),
-              env);
+          return new SingleSourceIncrementalClustering(newElements, config);
+//          return new SingleSourceIncrementalClustering(
+//              blockingStrategy,//
+//              newElements,
+//              metric,//
+//              source,
+//              sources.size(),
+//              env);//
         } else {
           throw new IllegalArgumentException("Unsupported clusteringStrategy: " + clusteringStrategy);
         }

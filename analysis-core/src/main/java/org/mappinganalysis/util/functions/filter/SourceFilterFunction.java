@@ -13,15 +13,10 @@ public class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectM
 
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-    // TODO unclear if this should be done here issue #143
-//    if (vertex.getValue().getDataSourcesList() != null) {
-//      return AbstractionUtils.containsSrc(
-//          Constants.GEO,
-//          vertex.getValue().getIntDataSources(),
-//          source);
-//    } else
     if (vertex.getValue().getDataSource() != null) {
       return vertex.getValue().getDataSource().equals(source);
+    } else if (vertex.getValue().getDataSourcesList() != null) {
+      return vertex.getValue().getDataSourcesList().contains(source);
     } else {
       return false;
     }

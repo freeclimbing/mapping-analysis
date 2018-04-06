@@ -51,13 +51,8 @@ public class MergeGeoTriplet
   public void checkSourceSwitch(MergeGeoTuple left, MergeGeoTuple right, String newSource) {
     int newSourceInt = AbstractionUtils.getSourcesInt(Constants.GEO, Sets.newHashSet(newSource));
 
-    if (left.getId() == 2935L && right.getId() == 237L || left.getId() == 237L && right.getId() == 2935L)
-      LOG.info("left: " + left.toString() + " right: " + right.toString() + " source: " + newSource);
     if (AbstractionUtils.hasOverlap(left.getIntSources(), newSourceInt)) {
-//        || AbstractionUtils.hasOverlap(right.getIntSources(), newSourceInt)) {//left.getIntSources() == newSourceInt) {
-      if (left.getId() == 2935L && right.getId() == 237L || left.getId() == 237L && right.getId() == 2935L)
-        LOG.info("swap true");
-        MergeGeoTuple tmp = left;
+      MergeGeoTuple tmp = left;
       left = right;
       right = tmp;
     }

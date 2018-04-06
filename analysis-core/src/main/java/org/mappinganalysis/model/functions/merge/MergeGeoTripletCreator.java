@@ -34,7 +34,7 @@ public class MergeGeoTripletCreator
   private boolean enableSourceBasedIdSwitch;
 
   // (old) default behavior, switch ids and tuple if target id is bigger
-  public MergeGeoTripletCreator(int sourcesCount) {
+  MergeGeoTripletCreator(int sourcesCount) {
     this(sourcesCount, Constants.EMPTY_STRING, false);
   }
 
@@ -60,8 +60,6 @@ public class MergeGeoTripletCreator
     HashSet<MergeGeoTuple> checkSet = Sets.newHashSetWithExpectedSize(leftSide.size());
 
     for (MergeGeoTuple leftTuple : leftSide) {
-//      if (leftTuple.getId() == 237L)
-//        LOG.info("leftTuple: " + leftTuple.toString());
       MergeGeoTriplet triplet = new MergeGeoTriplet();
       Integer leftSources = leftTuple.getIntSources();
       Integer leftTypes = leftTuple.getIntTypes();
@@ -84,8 +82,7 @@ public class MergeGeoTripletCreator
           }
           checkSet.add(triplet.getSrcTuple());
           checkSet.add(triplet.getTrgTuple());
-//          if (triplet.getTrgId() == 237L || triplet.getSrcId() == 237L)
-//          LOG.info("MGT one: " + triplet.toString());
+
           out.collect(triplet);
         }
       }
@@ -96,8 +93,6 @@ public class MergeGeoTripletCreator
        */
       if (rightSide.isEmpty() && leftSide.size() == 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
-//        if (triplet.getTrgId() == 237L && triplet.getSrcId() == 237L)
-//        LOG.info("MGT two: " + triplet.toString());
 
         checkSet.add(triplet.getSrcTuple());
         checkSet.add(triplet.getTrgTuple());
@@ -112,11 +107,7 @@ public class MergeGeoTripletCreator
       in incremental clustering, we want triplets for each element.
       */
       if (!checkSet.contains(leftTuple)) {
-        // && hasNeverSrcOverlap) { // && leftSide.size() != 1) {
         triplet.setIdAndTuples(leftTuple, leftTuple);
-//        if (triplet.getTrgId() == 237L && triplet.getSrcId() == 237L)
-//        LOG.info("MGT 3: " + triplet.toString());
-
         out.collect(triplet);
       }
     }

@@ -7,7 +7,11 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.util.config.Config;
 
+/**
+ * Create representatives for vertices within incremental setting.
+ */
 public class RepresentativeCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(RepresentativeCreator.class);
@@ -21,6 +25,11 @@ public class RepresentativeCreator
     this.blockingStrategy = blockingStrategy;
   }
 
+  public RepresentativeCreator(Config config) {
+    this.domain = config.getDataDomain();
+    this.blockingStrategy = config.getBlockingStrategy();
+  }
+
   @Override
   public void setInput(DataSet<Vertex<Long, ObjectMap>> inputData) {
     this.initialVertices = inputData;
@@ -29,7 +38,7 @@ public class RepresentativeCreator
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
     return initialVertices
-        .map(new IntermedVertexReprMapFunction(domain, blockingStrategy));
+        .map(new IntermediateVertexReprMapFunction(domain, blockingStrategy));
   }
 
 }

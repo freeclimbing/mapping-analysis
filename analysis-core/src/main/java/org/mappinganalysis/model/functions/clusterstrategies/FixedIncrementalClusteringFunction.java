@@ -15,6 +15,7 @@ import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class FixedIncrementalClusteringFunction
@@ -42,13 +43,14 @@ public class FixedIncrementalClusteringFunction
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
+    Config config = new Config(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(blockingStrategy);
+    config.setMetric(metric);
 
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
     DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
@@ -62,11 +64,7 @@ public class FixedIncrementalClusteringFunction
         .filter(new SourceFilterFunction(Constants.LGD_NS));
 
     DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
-        .runOperation(new CandidateCreator(
-            blockingStrategy,
-            DataDomain.GEOGRAPHY,
-            metric, Constants.NYT_NS,
-            2, env))
+        .runOperation(new CandidateCreator(config, Constants.NYT_NS, 2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
@@ -83,42 +81,25 @@ public class FixedIncrementalClusteringFunction
 //          return x;
 //        })
 //        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
     result = result.union(dbp)
-        .runOperation(new CandidateCreator(
-            blockingStrategy,
-            DataDomain.GEOGRAPHY,
-            metric, Constants.DBP_NS,
-            3,
-            env))
+        .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy))
-    .rebalance();
+        .runOperation(new RepresentativeCreator(config));
 
     result = result.union(fb)
-        .runOperation(new CandidateCreator(
-            blockingStrategy,
-            DataDomain.GEOGRAPHY,
-            metric, Constants.FB_NS,
-            4,
-            env))
+        .runOperation(new CandidateCreator(config, Constants.FB_NS, 4))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
 //    DataSet<Vertex<Long, ObjectMap>> finalResult = result.union(lgd)
 //        .runOperation(new CandidateCreator(
@@ -133,18 +114,5 @@ public class FixedIncrementalClusteringFunction
 //            blockingStrategy));
 
     return result;
-//    return result.leftOuterJoin(finalResult)
-//        .where(0)
-//        .equalTo(0)
-//        .with((FlatJoinFunction<Vertex<Long, ObjectMap>,
-//            Vertex<Long, ObjectMap>,
-//            Vertex<Long, ObjectMap>>)
-//            (first, second, out) -> {
-//          if (second == null) {
-//            LOG.info(first.toString());
-//            out.collect(first);
-//          }
-//        })
-//        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
   }
 }

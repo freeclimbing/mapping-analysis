@@ -176,42 +176,6 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
   }
 
   /**
-   * Temporary solution, migrate to extra classes.
-   */
-//  private EdgeObjectMapTriplet handleAlbum() {
-//    String srcAlbum = triplet.getSrcVertex().getValue().getAlbum();
-//    String trgAlbum = triplet.getTrgVertex().getValue().getAlbum();
-//
-//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcAlbum, trgAlbum, metric);
-//    triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
-//
-//    return triplet;
-//  }
-//
-//  private EdgeObjectMapTriplet handleArtist() {
-//    String srcArtist = triplet.getSrcVertex().getValue().getArtist();
-//    String trgArtist = triplet.getTrgVertex().getValue().getArtist();
-//
-//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcArtist, trgArtist, metric);
-//    if (similarity != null) {
-//      triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
-//    }
-//
-//    return triplet;
-//  }
-//
-//  private EdgeObjectMapTriplet handleLabel() {
-//    String srcLabel = triplet.getSrcVertex().getValue().getLabel();
-//    String trgLabel = triplet.getTrgVertex().getValue().getLabel();
-//
-//    Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcLabel, trgLabel, metric);
-//    triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
-//
-//    return triplet;
-//  }
-
-
-  /**
    * DE - RU --> 0
    * EN - EN --> 1
    * EN - UNknown --> no sim

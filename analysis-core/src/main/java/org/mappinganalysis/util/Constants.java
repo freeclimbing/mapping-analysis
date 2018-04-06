@@ -52,6 +52,19 @@ public class Constants {
   public static final Double MAXIMAL_GEO_DISTANCE = 150000D;
   public static final Double SHADING_TYPE_SIM = 1D;
 
+  public static final String DATASET = "dataset";
+  public static final String PM_PATH = "pmPath";
+  public static final String MERGE_THRESHOLD = "mergeThreshold";
+  public static final String SIMSORT_THRESHOLD = "simsortThreshold";
+  public static final String SOURCE_COUNT_LABEL = "sourceCountLabel";
+  public static final String DATA_SOURCES_LABEL = "dataSourcesLabel";
+  public static final String BLOCKING_STRATEGY = "blockingStrategy";
+  public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
+  public static final String DATA_DOMAIN = "dataDomain";
+  public static final String NEW_SOURCE = "newSource";
+  public static final String METRIC = "metric";
+  public static final String ENV = "env";
+
   /**
    * blocking strategies
    */

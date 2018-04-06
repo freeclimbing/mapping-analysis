@@ -15,6 +15,7 @@ import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -44,12 +45,14 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
+    Config config = new Config(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(blockingStrategy);
+    config.setMetric(metric);
+
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            blockingStrategy));
+        .runOperation(new RepresentativeCreator(config));
 
     DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
@@ -60,170 +63,105 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
       DataSet<Vertex<Long, ObjectMap>> fb = baseClusters
           .filter(new SourceFilterFunction(Constants.FB_NS));
 
-    DataSet<Vertex<Long, ObjectMap>> reducedBaseClusters = baseClusters.leftOuterJoin(gn)
-        .where(0)
-        .equalTo(0)
+    DataSet<Vertex<Long, ObjectMap>> reducedBaseClusters = baseClusters
+        .leftOuterJoin(gn)
+        .where(0).equalTo(0)
         .with(new LeftMinusRightSideJoinFunction<>())
         .leftOuterJoin(nyt)
-        .where(0)
-        .equalTo(0)
+        .where(0).equalTo(0)
         .with(new LeftMinusRightSideJoinFunction<>())
         .leftOuterJoin(dbp)
-        .where(0)
-        .equalTo(0)
+        .where(0).equalTo(0)
         .with(new LeftMinusRightSideJoinFunction<>())
         .leftOuterJoin(fb)
-        .where(0)
-        .equalTo(0)
+        .where(0).equalTo(0)
         .with(new LeftMinusRightSideJoinFunction<>());
 
     if (part.equals("eighty")) {
       DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.NYT_NS,
-              2,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.NYT_NS,2))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       result = result.union(dbp)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.DBP_NS, 3,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       return result;
     } else if (part.equals("plusTen")) {
       reducedBaseClusters = reducedBaseClusters.union(gn)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.GN_NS,
-              3,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.GN_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       reducedBaseClusters = reducedBaseClusters.union(nyt)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.NYT_NS,
-              3,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.NYT_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       reducedBaseClusters = reducedBaseClusters.union(dbp)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.DBP_NS,
-              3,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       return reducedBaseClusters;
     } else if (part.equals("fb")) {
       return baseClusters
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.FB_NS,
-              4,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.FB_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(baseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
     } else if (part.equals("final")) {
       reducedBaseClusters = reducedBaseClusters.union(gn)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.GN_NS,
-              4,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.GN_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       reducedBaseClusters = reducedBaseClusters.union(nyt)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.NYT_NS,
-              4,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.NYT_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       reducedBaseClusters = reducedBaseClusters.union(dbp)
-          .runOperation(new CandidateCreator(
-              blockingStrategy,
-              DataDomain.GEOGRAPHY,
-              metric, Constants.DBP_NS,
-              4,
-              env))
+          .runOperation(new CandidateCreator(config, Constants.DBP_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
           .leftOuterJoin(reducedBaseClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
-          .runOperation(new RepresentativeCreator(
-              DataDomain.GEOGRAPHY,
-              blockingStrategy));
+          .runOperation(new RepresentativeCreator(config));
 
       return reducedBaseClusters;
     }
