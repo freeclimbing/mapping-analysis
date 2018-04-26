@@ -3,6 +3,7 @@ package org.mappinganalysis.benchmark;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -33,6 +34,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by markus on 3/31/17.
@@ -140,17 +142,17 @@ public class MusicbrainzBenchmarkTest {
 //    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
-    DataSet<Vertex<Long, ObjectMap>> inputVertivces =
+    DataSet<Vertex<Long, ObjectMap>> inputVertices =
         new CSVDataSource(path, vertexFileName, env)
         .getVertices();
 
-    DataSet<Edge<Long, NullValue>> inputEdges = inputVertivces
+    DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
         .runOperation(new EdgeComputationVertexCcSet(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
     Graph<Long, ObjectMap, ObjectMap> graph = Graph
-        .fromDataSet(inputVertivces, inputEdges, env)
+        .fromDataSet(inputVertices, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
         .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
 
@@ -242,7 +244,8 @@ public class MusicbrainzBenchmarkTest {
     String test = "003-Symphony 1 in C minor,  some  op. 11: III. Menuetto & Trio";
     String musicBlockingLabel = Utils.getMusicBlockingLabel(test);
 
-    System.out.println(musicBlockingLabel);
+    assertTrue(musicBlockingLabel.equals("hony"));
+//    System.out.println(musicBlockingLabel);
   }
 
   /**
@@ -266,17 +269,22 @@ public class MusicbrainzBenchmarkTest {
         .collect()
         .stream()
         .collect(Collectors
-            .groupingBy(v -> Utils.getMusicBlockingLabel(
+            .groupingBy(v ->
+                    Utils.getMusicBlockingLabel(
                 v.getValue().get(Constants.LABEL).toString()),
-//                Utils.createArtistTitleAlbum(v)),
+//                Utils.createArtistTitleAlbum(v.getValue().getArtistTitleAlbum())),
                 Collectors.counting()))
         .entrySet()
         .stream()
         .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
-    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
-      System.out.println(stringLongEntry.toString());
+    for (Map.Entry<String, Long> resultEntry : result.entrySet()) {
+//      System.out.println(resultEntry.toString());
+      if (resultEntry.getValue() == 58L) {
+        assertTrue(resultEntry.getKey().equals("rock"));
+      }
+      assertTrue(58L >= resultEntry.getValue());
     }
   }
 
@@ -345,6 +353,7 @@ public class MusicbrainzBenchmarkTest {
 //    }
 //  }
 
+  // TODO if 107=1 is found, what is the vertex?
   @Test
   public void yearTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
@@ -354,20 +363,10 @@ public class MusicbrainzBenchmarkTest {
         .getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
-    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
-        .getVertices()
-//        .filter(new FilterFunction<Vertex<Long, ObjectMap>>() {
-//          @Override
-//          public boolean filter(Vertex<Long, ObjectMap> value) throws Exception {
-//            return value.getValue().containsKey("year")
-//                && value.getValue().get("year") != null;
-////                && value.getValue().get("year") == null;
-//          }
-//        })
-        ;
-
     Map<String, Long> result = new LinkedHashMap<>();
-    vertices.collect()
+    new CSVDataSource(path, vertexFileName, env)
+        .getVertices()
+        .collect()
         .stream()
         .collect(Collectors
             .groupingBy(v -> v.getValue().getYear().toString(), Collectors.counting()))
@@ -376,8 +375,17 @@ public class MusicbrainzBenchmarkTest {
         .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
-    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
-      System.out.println(stringLongEntry.toString());
+    for (Map.Entry<String, Long> resultLine : result.entrySet()) {
+      Integer year = Ints.tryParse(resultLine.getKey());
+//      System.out.println(year);
+//      if (year == null) {
+//        System.out.println(resultLine.getKey());
+//      }
+//      assertTrue((year <= 2006 && year >= 107) || year == 0);
+      if (year == 2006) {
+        assertEquals(725L, resultLine.getValue().longValue());
+      }
+//      System.out.println(resultLine.toString());
     }
   }
 

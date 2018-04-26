@@ -16,6 +16,7 @@ import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -31,15 +32,12 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
   private String part;
   private ExecutionEnvironment env;
 
-  SplitIncrementalClusteringFunction(BlockingStrategy blockingStrategy,
-                                     String metric,
-                                     String part,
-                                     ExecutionEnvironment env) {
+  SplitIncrementalClusteringFunction(IncrementalConfig config, String part) {
     super();
-    this.blockingStrategy = blockingStrategy;
-    this.metric = metric;
+    this.blockingStrategy = config.getBlockingStrategy();
+    this.metric = config.getMetric();
     this.part = part;
-    this.env = env;
+    this.env = config.getExecutionEnvironment();
   }
 
   @Override

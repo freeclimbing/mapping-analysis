@@ -57,24 +57,6 @@ public class CandidateCreator
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
 
   /**
-   * (old) Constructor for incremental clustering
-   */
-  @Deprecated
-  public CandidateCreator(
-      BlockingStrategy blockingStrategy,
-      DataDomain domain,
-      String metric, String newSource,
-      int sourceCount,
-      ExecutionEnvironment env) {
-    this.blockingStrategy = blockingStrategy;
-    this.domain = domain;
-    this.metric = metric;
-    this.newSource = newSource;
-    this.sourceCount = sourceCount;
-    this.env = env;
-  }
-
-  /**
    * Constructor for incremental clustering
    */
   public CandidateCreator(Config config, String newSource, int sourceCount) {
@@ -199,17 +181,9 @@ public class CandidateCreator
           })
           .returns(new TypeHint<MergeGeoTriplet>() {});
 
-      mergeGeoTriplets = mergeGeoTriplets.union(recovered)
-//          .map(x -> {
-//            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
-//                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)
-//                && x.f0 == x.f1.longValue()) {
-//              LOG.info("recovered tuple: " + x.toString());
-//            }
-//            return x;
-//          })
-//          .returns(new TypeHint<MergeGeoTriplet>() {})
-      .distinct(0,1);
+      mergeGeoTriplets = mergeGeoTriplets
+          .union(recovered)
+        .distinct(0,1);
 
       DataSet<Edge<Long, NullValue>> edges = mergeGeoTriplets
           .map(x -> {

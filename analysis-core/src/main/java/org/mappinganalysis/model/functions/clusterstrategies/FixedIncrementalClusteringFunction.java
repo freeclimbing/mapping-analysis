@@ -1,39 +1,29 @@
 package org.mappinganalysis.model.functions.clusterstrategies;
 
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CandidateCreator;
-import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class FixedIncrementalClusteringFunction
     extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(FixedIncrementalClusteringFunction.class);
 
-  private BlockingStrategy blockingStrategy;
-  private String metric;
-  private ExecutionEnvironment env;
+  private IncrementalConfig config;
 
-  FixedIncrementalClusteringFunction(
-      BlockingStrategy blockingStrategy,
-      String metric,
-      ExecutionEnvironment env) {
+  FixedIncrementalClusteringFunction(IncrementalConfig config) {
     super();
-    this.blockingStrategy = blockingStrategy;
-    this.metric = metric;
-    this.env = env;
+    this.config = config;
   }
 
   // todo source select TreeSet?
@@ -43,10 +33,6 @@ public class FixedIncrementalClusteringFunction
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
-    Config config = new Config(DataDomain.GEOGRAPHY, env);
-    config.setBlockingStrategy(blockingStrategy);
-    config.setMetric(metric);
-
     DataSet<Vertex<Long, ObjectMap>> baseClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()

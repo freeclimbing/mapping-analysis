@@ -16,6 +16,7 @@ import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class BigIncrementalClusteringFunction
@@ -26,14 +27,11 @@ public class BigIncrementalClusteringFunction
   private String metric;
   private ExecutionEnvironment env;
 
-  BigIncrementalClusteringFunction(
-      BlockingStrategy blockingStrategy,
-      String metric,
-      ExecutionEnvironment env) {
+  BigIncrementalClusteringFunction(IncrementalConfig config) {
     super();
-    this.blockingStrategy = blockingStrategy;
-    this.metric = metric;
-    this.env = env;
+    this.blockingStrategy = config.getBlockingStrategy();
+    this.metric = config.getMetric();
+    this.env = config.getExecutionEnvironment();
   }
 
   // TODO provenance

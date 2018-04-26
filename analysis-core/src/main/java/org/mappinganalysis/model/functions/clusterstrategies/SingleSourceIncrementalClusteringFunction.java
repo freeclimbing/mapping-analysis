@@ -1,47 +1,23 @@
 package org.mappinganalysis.model.functions.clusterstrategies;
 
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CandidateCreator;
-import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
 
 public class SingleSourceIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(SingleSourceIncrementalClusteringFunction.class);
-  private BlockingStrategy blockingStrategy;
   private String source;
   private int sourcesCount;
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements;
-  private ExecutionEnvironment env;
-  private String metric = Constants.COSINE_TRIGRAM;
   private IncrementalConfig config;
-
-  SingleSourceIncrementalClusteringFunction(
-      BlockingStrategy blockingStrategy,
-      DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
-      String metric,
-      String source,
-      int sourcesCount,
-      ExecutionEnvironment env) {
-    super();
-    this.blockingStrategy = blockingStrategy;
-    this.metric = metric;
-    this.source = source;
-    this.sourcesCount = sourcesCount;
-    this.toBeMergedElements = toBeMergedElements
-        .runOperation(new RepresentativeCreator(DataDomain.GEOGRAPHY, blockingStrategy));
-    this.env = env;
-  }
 
   SingleSourceIncrementalClusteringFunction(
       DataSet<Vertex<Long, ObjectMap>> toBeMergedElements,
@@ -49,6 +25,7 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
     super();
     this.config = config;
     this.source = config.getNewSource();
+    this.sourcesCount = config.getExistingSourcesCount();
     this.toBeMergedElements = toBeMergedElements
         .runOperation(new RepresentativeCreator(config));
   }

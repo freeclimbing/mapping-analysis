@@ -72,7 +72,8 @@ public class IncrementalClustering
 
     public IncrementalClusteringBuilder setStrategy(
         IncrementalClusteringStrategy strategy) {
-      this.clusteringStrategy = strategy;
+      this.config.setStrategy(strategy);
+      this.clusteringStrategy = strategy; // remove
 
       return this;
     }
@@ -85,7 +86,7 @@ public class IncrementalClustering
     public IncrementalClusteringBuilder setDataSources(
         List<String> sources) {
       this.sources = sources;
-      // TODO check
+      // TODO check, perhaps only size is needed in general?
       this.config.setExistingSourcesCount(sources.size());
 
       return this;
@@ -110,7 +111,7 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setNewSource(
         String source) {
-      this.source = source;
+      this.source = source;  // REMOVE if no longer needed
       this.config.setNewSource(source);
 
       return this;
@@ -118,12 +119,13 @@ public class IncrementalClustering
 
     /**
      * Set blocking strategy for incremental clustering. if not set: Standard blocking
-     * @param strategy blocking strategy
+     * @param blockingStrategy blocking strategy
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setBlockingStrategy(
-        BlockingStrategy strategy) {
-      this.blockingStrategy = strategy;
+        BlockingStrategy blockingStrategy) {
+      this.blockingStrategy = blockingStrategy;  // REMOVE if no longer needed
+      this.config.setBlockingStrategy(blockingStrategy);
 
       return this;
     }
@@ -134,7 +136,8 @@ public class IncrementalClustering
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setMetric(String metric) {
-      this.metric = metric;
+      this.metric = metric;  // REMOVE if no longer needed
+      this.config.setMetric(metric);
 
       return this;
     }
@@ -152,7 +155,8 @@ public class IncrementalClustering
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setEnvironment(ExecutionEnvironment env) {
-      this.env = env;
+      this.env = env; // REMOVE if no longer needed
+      this.config.setExecutionEnvironment(env);
 
       return this;
     }
@@ -169,20 +173,13 @@ public class IncrementalClustering
         if (clusteringStrategy == IncrementalClusteringStrategy.MINSIZE) {
           return new MinSizeIncClustering(sources, metric, env);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
-          return new FixedIncrementalClustering(blockingStrategy, metric, env); // basic test clusteringStrategy
+          return new FixedIncrementalClustering(config); // basic test clusteringStrategy
         } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {
-          return new BigIncrementalClustering(blockingStrategy, metric, env);
+          return new BigIncrementalClustering(config);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
-          return new SplitIncrementalClustering(blockingStrategy, metric, part, env);
+          return new SplitIncrementalClustering(config, part);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SINGLE_SETTING) {
           return new SingleSourceIncrementalClustering(newElements, config);
-//          return new SingleSourceIncrementalClustering(
-//              blockingStrategy,//
-//              newElements,
-//              metric,//
-//              source,
-//              sources.size(),
-//              env);//
         } else {
           throw new IllegalArgumentException("Unsupported clusteringStrategy: " + clusteringStrategy);
         }

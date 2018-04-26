@@ -35,7 +35,7 @@ public class QualityUtils {
         ? 0d : (double) properties.get(Constants.MERGE_THRESHOLD);
     double simSortThreshold = properties.get(Constants.SIMSORT_THRESHOLD) == null
         ? 0d : (double) properties.get(Constants.SIMSORT_THRESHOLD);
-    String dataset = properties.getProperty(Constants.DATASET);
+    String dataset = properties.getProperty(Constants.DATASET, Constants.EMPTY_STRING);
     ExecutionEnvironment env = (ExecutionEnvironment) properties.get(Constants.ENV);
 
     /*

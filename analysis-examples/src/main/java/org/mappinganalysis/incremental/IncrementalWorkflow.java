@@ -32,7 +32,7 @@ public class IncrementalWorkflow implements ProgramDescription {
             "args[1]: file name, " +
             "args[2]: Incremental Strategy (fixed, big, split-setting, single-setting)");
     String INPUT_PATH = args[0];
-    String VERTEX_FILE_NAME = args[1];
+//    String VERTEX_FILE_NAME = args[1];
     String STRATEGY = args[2];
     IncrementalClusteringStrategy strategy;
 
@@ -82,8 +82,7 @@ public class IncrementalWorkflow implements ProgramDescription {
       take more care of decisions/provenance information
      */
     IncrementalClustering clustering = new IncrementalClustering
-        .IncrementalClusteringBuilder()
-        .setEnvironment(env)
+        .IncrementalClusteringBuilder(DataDomain.GEOGRAPHY, env)
         .setStrategy(strategy)
         .build();
 
