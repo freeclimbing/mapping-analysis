@@ -15,24 +15,13 @@ public class AllEdgesCreator
       implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
     private DataSet<Vertex<Long, ObjectMap>> vertices;
     private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
-  private Boolean isResultEdgeDistinct;
-
-  /**
-   * Within a set of vertices having connected component ids,
-   * compute all edges within each component - optionally return also duplicate edges.
-   */
-  public AllEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector, Boolean isResultEdgeDistinct) {
-    this.keySelector = keySelector;
-    this.isResultEdgeDistinct = isResultEdgeDistinct;
-  }
 
   /**
    * Within a set of vertices having connected component ids,
    * compute all edges within each component - only return distinct edges.
    */
-  public AllEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
+  AllEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
     this.keySelector = keySelector;
-    this.isResultEdgeDistinct = true;
   }
 
   @Override
@@ -42,24 +31,7 @@ public class AllEdgesCreator
 
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-//    DataSet<Edge<Long, NullValue>> edges = vertices.coGroup(vertices)
-//        .where(keySelector)
-//        .equalTo(keySelector)
-//        .with(new EdgeExtractCoGroupFunction());
-
     return vertices.groupBy(keySelector)
         .reduceGroup(new AllEdgesCreateGroupReducer<>());
-
-    // Example: (1, 2), (2, 1), (1, 3), (1, 1) as input will result in (1, 2), (1,3)
-//    if (isResultEdgeDistinct) {
-//      edges = edges
-//        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
-//        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
-//        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-//        .distinct();
-//    }
-//
-//    return edges;
   }
-
 }

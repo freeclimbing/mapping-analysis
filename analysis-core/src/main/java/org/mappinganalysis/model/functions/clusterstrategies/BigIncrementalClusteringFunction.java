@@ -69,33 +69,6 @@ public class BigIncrementalClusteringFunction
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(config));
 
-//    result = result.union(dbp)
-//        .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
-//        .flatMap(new DualMergeGeographyMapper(false))
-//        .leftOuterJoin(baseClusters)
-//        .where(0)
-//        .equalTo(0)
-//        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(config);
-//
-//    result = result.union(fb)
-//        .runOperation(new CandidateCreator(config, Constants.FB_NS, 4))
-//        .flatMap(new DualMergeGeographyMapper(false))
-//        .leftOuterJoin(baseClusters)
-//        .where(0)
-//        .equalTo(0)
-//        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(config);
-//
-//    DataSet<Vertex<Long, ObjectMap>> finalResult = result.union(lgd)
-//        .runOperation(new CandidateCreator(config, Constants.LGD_NS, 5))
-//        .flatMap(new DualMergeGeographyMapper(false))
-//        .leftOuterJoin(baseClusters)
-//        .where(0)
-//        .equalTo(0)
-//        .with(new FinalMergeGeoVertexCreator())
-//        .runOperation(new RepresentativeCreator(config);
-
     return result;
   }
 }

@@ -22,64 +22,61 @@ import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 
 /**
- * hardcoded only, not nice, but working for test.
+ * not good anymore
  */
 public class SplitIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(SplitIncrementalClusteringFunction.class);
 
-  private BlockingStrategy blockingStrategy;
-  private String metric;
+  private final IncrementalConfig config;
   private String part;
-  private ExecutionEnvironment env;
 
   SplitIncrementalClusteringFunction(IncrementalConfig config, String part) {
     super();
-    this.blockingStrategy = config.getBlockingStrategy();
-    this.metric = config.getMetric();
+    this.config = config;
     this.part = part;
-    this.env = config.getExecutionEnvironment();
   }
 
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
-    Config config = new Config(DataDomain.GEOGRAPHY, env);
-    config.setBlockingStrategy(blockingStrategy);
-    config.setMetric(metric);
-
-    DataSet<Vertex<Long, ObjectMap>> baseClusters = input
+    DataSet<Vertex<Long, ObjectMap>> inputClusters = input
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
         .runOperation(new RepresentativeCreator(config));
 
-    DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
+    LOG.info("inputClusters: " + inputClusters.count());
+
+    DataSet<Vertex<Long, ObjectMap>> gn = inputClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> nyt = baseClusters
+    DataSet<Vertex<Long, ObjectMap>> nyt = inputClusters
         .filter(new SourceFilterFunction(Constants.NYT_NS));
-    DataSet<Vertex<Long, ObjectMap>> dbp = baseClusters
+    DataSet<Vertex<Long, ObjectMap>> dbp = inputClusters
         .filter(new SourceFilterFunction(Constants.DBP_NS));
-      DataSet<Vertex<Long, ObjectMap>> fb = baseClusters
+      DataSet<Vertex<Long, ObjectMap>> fb = inputClusters
           .filter(new SourceFilterFunction(Constants.FB_NS));
 
-    DataSet<Vertex<Long, ObjectMap>> reducedBaseClusters = baseClusters
-        .leftOuterJoin(gn)
-        .where(0).equalTo(0)
-        .with(new LeftMinusRightSideJoinFunction<>())
-        .leftOuterJoin(nyt)
-        .where(0).equalTo(0)
-        .with(new LeftMinusRightSideJoinFunction<>())
-        .leftOuterJoin(dbp)
-        .where(0).equalTo(0)
-        .with(new LeftMinusRightSideJoinFunction<>())
-        .leftOuterJoin(fb)
-        .where(0).equalTo(0)
-        .with(new LeftMinusRightSideJoinFunction<>());
+      // TODO ??? why reduced - remove soon
+//    DataSet<Vertex<Long, ObjectMap>> reducedBaseClusters = inputClusters
+//        .leftOuterJoin(gn)
+//        .where(0).equalTo(0)
+//        .with(new LeftMinusRightSideJoinFunction<>())
+//        .leftOuterJoin(nyt)
+//        .where(0).equalTo(0)
+//        .with(new LeftMinusRightSideJoinFunction<>())
+//        .leftOuterJoin(dbp)
+//        .where(0).equalTo(0)
+//        .with(new LeftMinusRightSideJoinFunction<>())
+//        .leftOuterJoin(fb)
+//        .where(0).equalTo(0)
+//        .with(new LeftMinusRightSideJoinFunction<>());
+//
+//    LOG.info("reducedBaseClusters: " + reducedBaseClusters.count());
 
     if (part.equals("eighty")) {
       DataSet<Vertex<Long, ObjectMap>> result = gn.union(nyt)
           .runOperation(new CandidateCreator(config, Constants.NYT_NS,2))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(baseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
@@ -88,7 +85,7 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
       result = result.union(dbp)
           .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(baseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
@@ -96,72 +93,72 @@ public class SplitIncrementalClusteringFunction extends IncrementalClusteringFun
 
       return result;
     } else if (part.equals("plusTen")) {
-      reducedBaseClusters = reducedBaseClusters.union(gn)
+      inputClusters = inputClusters.union(gn)
           .runOperation(new CandidateCreator(config, Constants.GN_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      reducedBaseClusters = reducedBaseClusters.union(nyt)
+      inputClusters = inputClusters.union(nyt)
           .runOperation(new CandidateCreator(config, Constants.NYT_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      reducedBaseClusters = reducedBaseClusters.union(dbp)
+      inputClusters = inputClusters.union(dbp)
           .runOperation(new CandidateCreator(config, Constants.DBP_NS, 3))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      return reducedBaseClusters;
+      return inputClusters;
     } else if (part.equals("fb")) {
-      return baseClusters
+      return inputClusters
           .runOperation(new CandidateCreator(config, Constants.FB_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(baseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
     } else if (part.equals("final")) {
-      reducedBaseClusters = reducedBaseClusters.union(gn)
+      inputClusters = inputClusters.union(gn)
           .runOperation(new CandidateCreator(config, Constants.GN_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      reducedBaseClusters = reducedBaseClusters.union(nyt)
+      inputClusters = inputClusters.union(nyt)
           .runOperation(new CandidateCreator(config, Constants.NYT_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      reducedBaseClusters = reducedBaseClusters.union(dbp)
+      inputClusters = inputClusters.union(dbp)
           .runOperation(new CandidateCreator(config, Constants.DBP_NS, 4))
           .flatMap(new DualMergeGeographyMapper(false))
-          .leftOuterJoin(reducedBaseClusters)
+          .leftOuterJoin(inputClusters)
           .where(0)
           .equalTo(0)
           .with(new FinalMergeGeoVertexCreator())
           .runOperation(new RepresentativeCreator(config));
 
-      return reducedBaseClusters;
+      return inputClusters;
     }
 
     return null;

@@ -39,13 +39,8 @@ public class IncrementalClustering
    */
   public static final class IncrementalClusteringBuilder {
     private IncrementalClusteringStrategy clusteringStrategy = null;
-    private ExecutionEnvironment env = null;
-    private List<String> sources;
     private DataSet<Vertex<Long, ObjectMap>> newElements;
-    private BlockingStrategy blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
     private String part;
-    private String source;
-    private String metric;
     private IncrementalConfig config = null;
 
     /**
@@ -85,7 +80,6 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setDataSources(
         List<String> sources) {
-      this.sources = sources;
       // TODO check, perhaps only size is needed in general?
       this.config.setExistingSourcesCount(sources.size());
 
@@ -111,7 +105,6 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setNewSource(
         String source) {
-      this.source = source;  // REMOVE if no longer needed
       this.config.setNewSource(source);
 
       return this;
@@ -124,7 +117,6 @@ public class IncrementalClustering
      */
     public IncrementalClusteringBuilder setBlockingStrategy(
         BlockingStrategy blockingStrategy) {
-      this.blockingStrategy = blockingStrategy;  // REMOVE if no longer needed
       this.config.setBlockingStrategy(blockingStrategy);
 
       return this;
@@ -136,7 +128,6 @@ public class IncrementalClustering
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setMetric(String metric) {
-      this.metric = metric;  // REMOVE if no longer needed
       this.config.setMetric(metric);
 
       return this;
@@ -155,7 +146,6 @@ public class IncrementalClustering
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setEnvironment(ExecutionEnvironment env) {
-      this.env = env; // REMOVE if no longer needed
       this.config.setExecutionEnvironment(env);
 
       return this;
@@ -169,9 +159,9 @@ public class IncrementalClustering
       if (clusteringStrategy == null) {
         clusteringStrategy = config.getStrategy();
       }
-      if (config.getExecutionEnvironment() != null || env != null) {
-        if (clusteringStrategy == IncrementalClusteringStrategy.MINSIZE) {
-          return new MinSizeIncClustering(sources, metric, env);
+      if (config.getExecutionEnvironment() != null) {
+        if (clusteringStrategy == IncrementalClusteringStrategy.MULTI) {
+          return new MultiIncrementalClustering(config);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
           return new FixedIncrementalClustering(config); // basic test clusteringStrategy
         } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {

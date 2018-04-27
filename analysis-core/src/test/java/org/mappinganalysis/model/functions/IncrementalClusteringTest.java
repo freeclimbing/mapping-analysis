@@ -2,22 +2,19 @@ package org.mappinganalysis.model.functions;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
@@ -26,6 +23,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
+import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
@@ -190,7 +188,6 @@ public class IncrementalClusteringTest {
         new JSONDataSource(graphPath, true, env)
             .getGraph(ObjectMap.class, NullValue.class);
 
-
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
     config.setBlockingStrategy(BlockingStrategy.NO_BLOCKING);
     config.setStrategy(IncrementalClusteringStrategy.FIXED_SEQUENCE);
@@ -208,6 +205,120 @@ public class IncrementalClusteringTest {
 
     QualityUtils.printGeoQuality(resultVertices, config);
     resultVertices.print();
+    // TODO TEST
+  }
+
+  @Test
+  public void incrementalStepByStepTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/geography").getFile();
+    final Graph<Long, ObjectMap, NullValue> baseGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class)
+            .mapVertices(new InternalTypeMapFunction());
+
+    /*
+      preparation
+     */
+    DataSet<Vertex<Long, ObjectMap>> nytSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.NYT_NS));
+    DataSet<Vertex<Long, ObjectMap>> dbpSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.DBP_NS));
+    DataSet<Vertex<Long, ObjectMap>> gnSource = baseGraph.getVertices()
+        .filter(new SourceFilterFunction(Constants.GN_NS));
+    GN_EIGHTY.addAll(NYT_EIGHTY);
+    GN_EIGHTY.addAll(DBP_EIGHTY);
+    DataSet<Vertex<Long, ObjectMap>> vertices = nytSource.union(dbpSource)
+        .union(gnSource)
+        .filter(new VertexFilterFunction(GN_EIGHTY));
+    int firstStepDataSize = GN_EIGHTY.size();
+
+    /*
+    clustering config
+     */
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+
+    IncrementalClustering.IncrementalClusteringBuilder baseBuilder =
+        new IncrementalClustering
+            .IncrementalClusteringBuilder(config);
+
+    /*
+      start clustering
+     */
+    // TODO quick'n'dirty - we dont need edges
+    Graph<Long, ObjectMap, NullValue> inputGraph = Graph
+        .fromDataSet(vertices, baseGraph.getEdges(), config.getExecutionEnvironment());
+
+//    IncrementalClustering builder = baseBuilder
+//        .setMatchElements(nytSource) // TODO get this away
+//        .build();
+
+    DataSet<Vertex<Long, ObjectMap>> clusters = inputGraph.run(baseBuilder.build());
+
+    new JSONDataSink(graphPath.concat("/eighty/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+
+
+    DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
+        .runOperation(new RepresentativeCreator(config));
+
+    DataSet<Edge<Long, NullValue>> edges = baseClusters
+        .groupBy(new BlockingKeySelector())
+        .reduceGroup(new AllEdgesCreateGroupReducer<>());
+    // TODO check blocking key and result of grouping --> links
+
+
+    // do holistic clustering and check result
+
+
+
+    // TEST
+
+
+    // second step, merge dbp
+    workGraph = new JSONDataSource(
+        graphPath.concat("/gn-nyt/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class)
+        .mapVertices(new InternalTypeMapFunction());
+
+    IncrementalClustering dbpClustering = baseBuilder
+        .setMatchElements(dbpSource)
+        .setNewSource(Constants.DBP_NS)
+        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
+        .build();
+
+    clusters = workGraph.run(dbpClustering);
+
+    new JSONDataSink(graphPath.concat("/gn-nyt-dbp/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    // third step, merge fb
+    workGraph = new JSONDataSource(
+        graphPath.concat("/gn-nyt-dbp/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class)
+        .mapVertices(new InternalTypeMapFunction());
+
+    IncrementalClustering fbClustering = baseBuilder
+        .setMatchElements(fbSource)
+        .setNewSource(Constants.FB_NS)
+        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
+        .build();
+
+    clusters = workGraph.run(fbClustering);
+
+    new JSONDataSink(graphPath.concat("/gn-nyt-dbp-fb/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    QualityUtils.printGeoQuality(clusters, config);
+//    clusters.print();
+//    assertEquals(2387L,clusters.count());
   }
 
   @Test
@@ -218,39 +329,61 @@ public class IncrementalClusteringTest {
         new JSONDataSource(graphPath, true, env)
             .getGraph(ObjectMap.class, NullValue.class);
 
-    IncrementalClustering.IncrementalClusteringBuilder baseBuilder =
-        new IncrementalClustering
-        .IncrementalClusteringBuilder()
-        .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.SPLIT_SETTING);
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.SPLIT_SETTING);
+    config.setMetric(Constants.COSINE_TRIGRAM);
 
-    // 80% of NYT, DBP, GN
+    IncrementalClustering.IncrementalClusteringBuilder baseBuilder =
+        new IncrementalClustering.IncrementalClusteringBuilder(config);
+
+
+    /*
+     80% of NYT, DBP, GN
+     */
     IncrementalClustering eightyClustering = baseBuilder
         .setPart("eighty")
         .build();
 
-    GN_EIGHTY.addAll(NYT_EIGHTY);
-    GN_EIGHTY.addAll(DBP_EIGHTY);
+//    GN_EIGHTY.addAll(NYT_EIGHTY);
+//    GN_EIGHTY.addAll(DBP_EIGHTY);
+    GN_PLUS_TEN.addAll(NYT_PLUS_TEN);
+    GN_PLUS_TEN.addAll(DBP_PLUS_TEN);
 
-    DataSet<Vertex<Long, ObjectMap>> eightyResult = graph
-        .filterOnVertices(new VertexFilterFunction(GN_EIGHTY))
-        .run(eightyClustering)
-//        .map(x-> {
-//          LOG.info(x.toString());
-//          return x;
-//        })
-//        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-        ;
+//    int first = GN_EIGHTY.size();
+    int first = GN_EIGHTY.size();
 
-    LOG.info("eightyResult: " + eightyResult.count());
 
-    // add 10% of NYT, DBP, GN
+    Graph<Long, ObjectMap, NullValue> preClusterGraph = graph
+//        .filterOnVertices(new VertexFilterFunction(GN_EIGHTY));
+        .filterOnVertices(new VertexFilterFunction(GN_PLUS_TEN));
+
+    assertEquals(first, preClusterGraph.getVertices().count());
+    DataSet<Vertex<Long, ObjectMap>> eightyResult = preClusterGraph
+        .run(eightyClustering);
+
+    int firstClusterElements = 0;
+    for (Vertex<Long, ObjectMap> cluster : eightyResult.collect()) {
+      firstClusterElements += cluster.getValue().getVerticesCount();
+    }
+
+    eightyResult.print();
+    assertEquals(first, firstClusterElements);
+//    LOG.info("eightyResult: " + eightyResult.count());
+
+    QualityUtils.printGeoQuality(eightyResult, config);
+
+
+    /*
+     add 10% of NYT, DBP, GN
+     */
     IncrementalClustering plusTenClustering = baseBuilder
         .setPart("plusTen")
         .build();
 
     GN_PLUS_TEN.addAll(NYT_PLUS_TEN);
     GN_PLUS_TEN.addAll(DBP_PLUS_TEN);
+    int second = first + GN_PLUS_TEN.size();
 
     DataSet<Vertex<Long, ObjectMap>> plusTenCompleteInputVertices = graph
         .filterOnVertices(new VertexFilterFunction(GN_PLUS_TEN))
@@ -263,16 +396,27 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> plusTenResult = plusTenInputGraph
         .run(plusTenClustering);
 
-    LOG.info("plusTenResult: " + plusTenResult.count());
+    int secondClusterElements = 0;
+    for (Vertex<Long, ObjectMap> cluster : plusTenResult.collect()) {
+      secondClusterElements += cluster.getValue().getVerticesCount();
+    }
+    assertEquals(second, secondClusterElements);
 
+//    LOG.info("plusTenResult: " + plusTenResult.count());
+    QualityUtils.printGeoQuality(plusTenResult, config);
 //    plusTenResult.print();
-    // add FB complete
+
+    /*
+      add FB complete
+     */
     IncrementalClustering fbClustering = baseBuilder
         .setPart("fb")
         .build();
 
-    DataSet<Vertex<Long, ObjectMap>> fbInputVertices = graph.getVertices()
-        .filter(new SourceFilterFunction(Constants.FB_NS))
+    DataSet<Vertex<Long, ObjectMap>> fbVertices = graph
+        .getVertices()
+        .filter(new SourceFilterFunction(Constants.FB_NS));
+    DataSet<Vertex<Long, ObjectMap>> fbInputVertices = fbVertices
         .union(plusTenResult);
 
     Graph<Long, ObjectMap, NullValue> fbInputGraph = Graph
@@ -281,9 +425,11 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> fbResult = fbInputGraph
         .run(fbClustering);
 
-    LOG.info("fbResult: " + fbResult.count());
+//    LOG.info("fbResult: " + fbResult.count());
 
-    // add missing 10% NYT, DBP, GN
+    /*
+      add missing 10% NYT, DBP, GN
+     */
     IncrementalClustering finalClustering = baseBuilder
         .setPart("final")
         .build();
@@ -305,6 +451,9 @@ public class IncrementalClusteringTest {
     new JSONDataSink(graphPath.concat("/output-split/"), "test")
         .writeVertices(finalResult);
     LOG.info("finalResult: " + finalResult.count());
+    QualityUtils.printGeoQuality(finalResult, config);
+
+    finalResult.print();
 
 //    List<Vertex<Long, ObjectMap>> clusters = resultVertices
 //        .collect();
@@ -425,7 +574,7 @@ public class IncrementalClusteringTest {
     IncrementalClustering clustering = new IncrementalClustering
         .IncrementalClusteringBuilder()
         .setEnvironment(env)
-        .setStrategy(IncrementalClusteringStrategy.MINSIZE)
+        .setStrategy(IncrementalClusteringStrategy.MULTI)
         .build();
 
     String graphPath = IncrementalClusteringTest.class

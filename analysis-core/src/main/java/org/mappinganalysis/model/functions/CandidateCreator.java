@@ -87,6 +87,9 @@ public class CandidateCreator
         .setThreshold(0.7)
         .build();
 
+    /*
+    TODO LSH MUCH CODE refactor
+     */
     if (blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
       boolean isIdfOptimizeEnabled = true;
       boolean isLogEnabled = false;
