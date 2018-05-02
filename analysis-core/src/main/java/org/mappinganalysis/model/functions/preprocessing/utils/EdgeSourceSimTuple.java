@@ -13,11 +13,10 @@ import org.apache.flink.api.java.tuple.Tuple6;
  */
 public class EdgeSourceSimTuple
     extends Tuple6<Long, Long, Long, String, String, Double> {
-
   public EdgeSourceSimTuple() { // needed
   }
 
-  public EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcDatasource, String trgDataSource, Double edgeSim) {
+  EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcDatasource, String trgDataSource, Double edgeSim) {
     this.f0 = ccId;
     this.f1 = source;
     this.f2 = target;
@@ -38,11 +37,11 @@ public class EdgeSourceSimTuple
     return f2;
   }
 
-  public String getSrcDataSource() {
+  String getSrcDataSource() {
     return f3;
   }
 
-  public String getTrgDataSource() {
+  String getTrgDataSource() {
     return f4;
   }
 

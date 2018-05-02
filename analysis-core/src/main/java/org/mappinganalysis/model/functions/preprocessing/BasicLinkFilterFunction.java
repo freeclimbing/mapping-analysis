@@ -61,10 +61,7 @@ public class BasicLinkFilterFunction
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)
         .equalTo(0, 1)
-        .with((tuple, edge) ->  {
-//          LOG.info("BLF newEdge: " + edge.toString());
-          return edge;
-        })
+        .with((tuple, edge) -> edge)
         .returns(new TypeHint<Edge<Long, ObjectMap>>() {});
 
     DataSet<Vertex<Long, ObjectMap>> resultVertices;

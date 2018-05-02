@@ -10,7 +10,7 @@ import org.mappinganalysis.util.Constants;
  */
 public class IncrementalConfig extends Config {
   public IncrementalConfig(DataDomain domain, ExecutionEnvironment env) {
-    super(domain, env);
+    super(domain, env, true);
   }
 
   public void setStrategy(IncrementalClusteringStrategy strategy) {

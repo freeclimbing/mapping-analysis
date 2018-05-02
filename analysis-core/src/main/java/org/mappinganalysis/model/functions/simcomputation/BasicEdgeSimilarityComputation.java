@@ -9,10 +9,14 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.Config;
 
 /**
  * Compute similarities based on the existing vertex properties,

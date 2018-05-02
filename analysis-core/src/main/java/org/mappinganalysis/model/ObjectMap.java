@@ -725,7 +725,6 @@ public class ObjectMap
    * @param strategy BlockingStrategy {@see BlockingStrategy}
    */
   public void setBlockingKey(BlockingStrategy strategy) {
-//    LOG.info("set blocking key for " + getLabel());
     map.put(Constants.BLOCKING_LABEL,
         Utils.getBlockingKey(strategy, mode, getLabel()));
   }

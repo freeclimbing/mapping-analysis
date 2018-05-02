@@ -32,7 +32,6 @@ class IntermediateVertexReprMapFunction
     reuseVertex.setId(vertex.getId());
     ObjectMap properties = vertex.getValue();
     properties.setMode(domain);
-    properties.setMode(DataDomain.GEOGRAPHY);
     properties.setBlockingKey(blockingStrategy);
 
     if (!properties.hasClusterDataSources()) {

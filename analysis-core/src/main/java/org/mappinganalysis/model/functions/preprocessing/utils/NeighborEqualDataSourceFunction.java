@@ -22,6 +22,7 @@ public class NeighborEqualDataSourceFunction
       Iterable<Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>>> neighbors,
       Collector<EdgeSourceSimTuple> collector) throws Exception {
     for (Tuple2<Edge<Long, ObjectMap>, Vertex<Long, ObjectMap>> neighbor : neighbors) {
+//      LOG.info("neighbor: " + neighbor.toString());
       Edge<Long, ObjectMap> edge = neighbor.f0;
       String neighborDataSource = neighbor.f1.getValue().getDataSource();
       Double edgeSim = edge.getValue().getEdgeSimilarity();

@@ -19,7 +19,7 @@ public class SimSortVertexCentricIteration
   private final ExecutionEnvironment env;
   private final Double minSimilarity;
 
-  public SimSortVertexCentricIteration(Double minSimilarity, ExecutionEnvironment env) {
+  SimSortVertexCentricIteration(Double minSimilarity, ExecutionEnvironment env) {
     this.minSimilarity = minSimilarity;
     this.env = env;
   }

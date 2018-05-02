@@ -242,7 +242,6 @@ public class PreprocessingTest {
 
   /**
    * EqualDataSourceLinkRemover not tested, but tested separately
-   * @throws Exception
    */
   @Test
   public void defaultPreprocessingTest() throws Exception {
@@ -268,7 +267,6 @@ public class PreprocessingTest {
 
   /**
    * Link to vertex 1 is deleted
-   * @throws Exception
    */
   @Test
   public void typeMisMatchCorrectionTest() throws Exception {

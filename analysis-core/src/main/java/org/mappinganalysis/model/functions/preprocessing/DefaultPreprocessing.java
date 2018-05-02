@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.preprocessing;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -13,6 +14,7 @@ import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFu
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.Config;
 
 import java.util.List;
 
@@ -26,6 +28,7 @@ public class DefaultPreprocessing
 
   private final ExecutionEnvironment env;
   private final boolean linkFilterEnabled;
+  private Config config = null;
   private String metric;
   private final DataDomain domain;
 
@@ -65,31 +68,49 @@ public class DefaultPreprocessing
     this.linkFilterEnabled = true;
   }
 
+  public DefaultPreprocessing(Config config) {
+    this.config = config;
+    this.metric = config.getMetric();
+    this.domain = config.getDataDomain();
+    this.env = config.getExecutionEnvironment();
+    this.linkFilterEnabled = true;
+  }
+
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
-    Graph<Long, ObjectMap, NullValue> tmpGraph = graph
+    /*
+      preparation
+     */
+    graph = graph
         .mapVertices(new InternalTypeMapFunction()) // only needed for geography
         .mapVertices(new DataSourceMapFunction())
         .run(new IntraSourceLinkRemover(env));
 
+    if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
+      graph = graph.mapVertices(new AddSettlementTypeMapFunction());
+    }
+
     Graph<Long, ObjectMap, ObjectMap> resultGraph = null;
     List<String> sources = null;
     if (domain == DataDomain.MUSIC) {
-      resultGraph = tmpGraph
+      resultGraph = graph
           .run(new BasicEdgeSimilarityComputation(metric, Constants.MUSIC, env));
       sources = Constants.MUSIC_SOURCES;
     } else if (domain == DataDomain.GEOGRAPHY) {
-      resultGraph = tmpGraph
+      resultGraph = graph
 //          .run(new TypeMisMatchCorrection(env)) // commented for SettlementBenchmark
           .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
       sources = Constants.GEO_SOURCES;
     } else if (domain == DataDomain.NC) {
-      resultGraph = tmpGraph
+      resultGraph = graph
           .run(new BasicEdgeSimilarityComputation(metric, Constants.NC, env));
       sources = Constants.NC_SOURCES;
     }
 
+    /*
+      link filter definition
+     */
     if (linkFilterEnabled) {
       LinkFilter linkFilter;
       if (domain == DataDomain.NC) {
@@ -104,16 +125,19 @@ public class DefaultPreprocessing
         linkFilter = new LinkFilter
             .LinkFilterBuilder()
             .setEnvironment(env)
-            .setRemoveIsolatedVertices(true)
+            .setRemoveIsolatedVertices(false)
             .setDataSources(sources)
             .setStrategy(LinkFilterStrategy.BASIC)
             .build();
       }
 
+      /*
+        actual execution link filter + type overlap
+       */
       assert resultGraph != null;
       return resultGraph
           .run(linkFilter) // cc id
-          .run(new TypeOverlapCcCreator(domain, env)); // hash cc id, each vertex has "no type" with music/nc dataset
+          .run(new TypeOverlapCcCreator(config)); // hash cc id, each vertex has "no type" with music/nc dataset
     } else {
       return resultGraph;
     }
@@ -127,6 +151,20 @@ public class DefaultPreprocessing
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
       vertex.getValue().getDataSource();
 
+      return vertex.getValue();
+    }
+  }
+
+  /**
+   * only for incremental geography. if type is missing, correct cc's are not
+   * found. therefore, "settlement" is added, if needed.
+   */
+  private static class AddSettlementTypeMapFunction implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
+    @Override
+    public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
+      if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
+        vertex.getValue().setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
+      }
       return vertex.getValue();
     }
   }

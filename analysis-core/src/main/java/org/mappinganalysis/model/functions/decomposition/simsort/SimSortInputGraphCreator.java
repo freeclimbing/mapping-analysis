@@ -18,7 +18,7 @@ public class SimSortInputGraphCreator
   /**
    * Converts input graph to SimSort input format using TupleX instead of complex ObjectMap.
    */
-  public SimSortInputGraphCreator(ExecutionEnvironment env) {
+  SimSortInputGraphCreator(ExecutionEnvironment env) {
     this.env = env;
   }
 

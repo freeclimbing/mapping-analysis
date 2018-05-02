@@ -63,8 +63,7 @@ public class HashCcIdOverlappingFunction
       String randomVertexType = vertex.getValue()
           .getTypes(Constants.COMP_TYPE).iterator().next();
 
-      vertex.getValue()
-          .put(Constants.HASH_CC, typeHashDict.get(randomVertexType));
+      vertex.getValue().setHashCcId(typeHashDict.get(randomVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
       vertex.getValue().remove(Constants.CC_ID);
       if (domain == DataDomain.MUSIC || domain == DataDomain.NC) { // music/nc has no type at all

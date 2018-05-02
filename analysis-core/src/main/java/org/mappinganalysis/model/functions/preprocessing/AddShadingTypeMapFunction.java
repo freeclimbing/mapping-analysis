@@ -15,6 +15,7 @@ public class AddShadingTypeMapFunction
   public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
     Set<String> types = vertex.getValue().getTypes(Constants.TYPE_INTERN);
     vertex.getValue().put(Constants.COMP_TYPE, Utils.getShadingTypes(types));
+
     return vertex;
   }
 }

@@ -5,10 +5,12 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.TestBase;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.TypeOverlapCcCreator;
+import org.mappinganalysis.util.config.Config;
 
 import static org.junit.Assert.assertEquals;
 
@@ -17,7 +19,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TypeGroupByTest {
   private static final Logger LOG = Logger.getLogger(TypeGroupByTest.class);
-  private static final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+  private static ExecutionEnvironment env = TestBase.setupLocalEnvironment();
 
   @Test
   public void newTgbTest() throws Exception {
@@ -34,10 +36,12 @@ public class TypeGroupByTest {
     long resultLake2 = 0;
     long resultFake = 0; // all no_type -> same hash
 
+    Config config = new Config(DataDomain.GEOGRAPHY, env);
+
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
         .getGraph()
-        .run(new TypeOverlapCcCreator(DataDomain.GEOGRAPHY, env))
+        .run(new TypeOverlapCcCreator(config))
 //        .getVertices().print();
         .run(new TypeGroupBy(env))
         .getVertices();

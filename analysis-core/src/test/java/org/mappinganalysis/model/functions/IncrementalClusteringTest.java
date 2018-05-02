@@ -1,20 +1,21 @@
 package org.mappinganalysis.model.functions;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
-import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
@@ -23,7 +24,6 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
@@ -218,7 +218,7 @@ public class IncrementalClusteringTest {
             .mapVertices(new InternalTypeMapFunction());
 
     /*
-      preparation
+      preparation test graph/vertices
      */
     DataSet<Vertex<Long, ObjectMap>> nytSource = baseGraph.getVertices()
         .filter(new SourceFilterFunction(Constants.NYT_NS));
@@ -231,6 +231,26 @@ public class IncrementalClusteringTest {
     DataSet<Vertex<Long, ObjectMap>> vertices = nytSource.union(dbpSource)
         .union(gnSource)
         .filter(new VertexFilterFunction(GN_EIGHTY));
+
+    GroupReduceOperator<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> fakeEdges = vertices
+        .reduceGroup(new GroupReduceFunction<Vertex<Long, ObjectMap>, Edge<Long, NullValue>>() {
+      @Override
+      public void reduce(Iterable<Vertex<Long, ObjectMap>> values, Collector<Edge<Long, NullValue>> out) throws Exception {
+        boolean isFirst = true;
+        for (Vertex<Long, ObjectMap> value : values) {
+          Long first = null;
+          while (isFirst) {
+            first = value.getId();
+            isFirst = false;
+          }
+
+          if (first != null) {
+            out.collect(new Edge<>(first, value.getId(), NullValue.getInstance()));
+          }
+        }
+      }
+    });
+
     int firstStepDataSize = GN_EIGHTY.size();
 
     /*
@@ -240,87 +260,93 @@ public class IncrementalClusteringTest {
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(0.7);
 
     IncrementalClustering.IncrementalClusteringBuilder baseBuilder =
         new IncrementalClustering
             .IncrementalClusteringBuilder(config);
 
     /*
+      preparation test graph/vertices
+     */
+    Graph<Long, ObjectMap, NullValue> inputGraph = Graph
+        .fromDataSet(
+            vertices,
+            fakeEdges, // TODO quick'n'dirty - we dont need (these) edges atm
+            config.getExecutionEnvironment());
+
+    /*
       start clustering
      */
-    // TODO quick'n'dirty - we dont need edges
-    Graph<Long, ObjectMap, NullValue> inputGraph = Graph
-        .fromDataSet(vertices, baseGraph.getEdges(), config.getExecutionEnvironment());
-
-//    IncrementalClustering builder = baseBuilder
-//        .setMatchElements(nytSource) // TODO get this away
-//        .build();
-
-    DataSet<Vertex<Long, ObjectMap>> clusters = inputGraph.run(baseBuilder.build());
-
-    new JSONDataSink(graphPath.concat("/eighty/"), "test")
-        .writeVertices(clusters);
-    env.execute();
+//    DataSet<Vertex<Long, ObjectMap>> clusters = inputGraph.run(baseBuilder.build());
+    DataSet<Vertex<Long, ObjectMap>> clusters = baseGraph.run(baseBuilder.build());
 
 
+//    clusters.print();
+    QualityUtils.printGeoQuality(clusters, config);
 
-    DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
-        .runOperation(new RepresentativeCreator(config));
-
-    DataSet<Edge<Long, NullValue>> edges = baseClusters
-        .groupBy(new BlockingKeySelector())
-        .reduceGroup(new AllEdgesCreateGroupReducer<>());
-    // TODO check blocking key and result of grouping --> links
-
-
-    // do holistic clustering and check result
-
+//    new JSONDataSink(graphPath.concat("/eighty/"), "test")
+//        .writeVertices(clusters);
+//    env.execute();
+//
+//
+//
+//    DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
+//        .runOperation(new RepresentativeCreator(config));
+//
+//    DataSet<Edge<Long, NullValue>> baseClusterEdges = baseClusters
+//        .groupBy(new BlockingKeySelector())
+//        .reduceGroup(new AllEdgesCreateGroupReducer<>());
+//    // TODO check blocking key and result of grouping --> links
 
 
     // TEST
 
 
     // second step, merge dbp
-    workGraph = new JSONDataSource(
-        graphPath.concat("/gn-nyt/output/test/"), "test", true, env)
-        .getGraph(ObjectMap.class, NullValue.class)
-        .mapVertices(new InternalTypeMapFunction());
+//    workGraph = new JSONDataSource(
+//        graphPath.concat("/gn-nyt/output/test/"), "test", true, env)
+//        .getGraph(ObjectMap.class, NullValue.class)
+//        .mapVertices(new InternalTypeMapFunction());
+//
+//    IncrementalClustering dbpClustering = baseBuilder
+//        .setMatchElements(dbpSource)
+//        .setNewSource(Constants.DBP_NS)
+//        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
+//        .build();
+//
+//    clusters = workGraph.run(dbpClustering);
+//
+//    new JSONDataSink(graphPath.concat("/gn-nyt-dbp/"), "test")
+//        .writeVertices(clusters);
+//    env.execute();
+//
+//    // third step, merge fb
+//    workGraph = new JSONDataSource(
+//        graphPath.concat("/gn-nyt-dbp/output/test/"), "test", true, env)
+//        .getGraph(ObjectMap.class, NullValue.class)
+//        .mapVertices(new InternalTypeMapFunction());
+//
+//    IncrementalClustering fbClustering = baseBuilder
+//        .setMatchElements(fbSource)
+//        .setNewSource(Constants.FB_NS)
+//        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
+//        .build();
+//
+//    clusters = workGraph.run(fbClustering);
+//
+//    new JSONDataSink(graphPath.concat("/gn-nyt-dbp-fb/"), "test")
+//        .writeVertices(clusters);
+//    env.execute();
+//
+//    QualityUtils.printGeoQuality(clusters, config);
 
-    IncrementalClustering dbpClustering = baseBuilder
-        .setMatchElements(dbpSource)
-        .setNewSource(Constants.DBP_NS)
-        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
-        .build();
 
-    clusters = workGraph.run(dbpClustering);
-
-    new JSONDataSink(graphPath.concat("/gn-nyt-dbp/"), "test")
-        .writeVertices(clusters);
-    env.execute();
-
-    // third step, merge fb
-    workGraph = new JSONDataSource(
-        graphPath.concat("/gn-nyt-dbp/output/test/"), "test", true, env)
-        .getGraph(ObjectMap.class, NullValue.class)
-        .mapVertices(new InternalTypeMapFunction());
-
-    IncrementalClustering fbClustering = baseBuilder
-        .setMatchElements(fbSource)
-        .setNewSource(Constants.FB_NS)
-        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
-        .build();
-
-    clusters = workGraph.run(fbClustering);
-
-    new JSONDataSink(graphPath.concat("/gn-nyt-dbp-fb/"), "test")
-        .writeVertices(clusters);
-    env.execute();
-
-    QualityUtils.printGeoQuality(clusters, config);
 //    clusters.print();
 //    assertEquals(2387L,clusters.count());
   }
 
+  /** old one-by-one split clustering **/
   @Test
   public void splitSettingIncrementalClusteringTest() throws Exception {
     String graphPath = IncrementalClusteringTest.class

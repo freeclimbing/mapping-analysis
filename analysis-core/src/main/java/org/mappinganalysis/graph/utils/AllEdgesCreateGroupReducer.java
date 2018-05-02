@@ -11,6 +11,7 @@ import java.util.HashSet;
 
 public class AllEdgesCreateGroupReducer<T extends Tuple>
     implements GroupReduceFunction<T, Edge<Long, NullValue>> {
+
   @Override
   public void reduce(Iterable<T> values, Collector<Edge<Long, NullValue>> out) throws Exception {
     HashSet<T> rightVertices = Sets.newHashSet(values);
@@ -19,15 +20,15 @@ public class AllEdgesCreateGroupReducer<T extends Tuple>
     for (T leftVertex : leftVertices) {
       rightVertices.remove(leftVertex);
       for (T rightVertex : rightVertices) {
-          if ((long) leftVertex.getField(0) < (long) rightVertex.getField(0)) {
-            out.collect(new Edge<>(leftVertex.getField(0),
-                rightVertex.getField(0),
-                NullValue.getInstance()));
-          } else {
-            out.collect(new Edge<>(rightVertex.getField(0),
-                leftVertex.getField(0),
-                NullValue.getInstance()));
-          }
+        if ((long) leftVertex.getField(0) < (long) rightVertex.getField(0)) {
+          out.collect(new Edge<>(leftVertex.getField(0),
+              rightVertex.getField(0),
+              NullValue.getInstance()));
+        } else {
+          out.collect(new Edge<>(rightVertex.getField(0),
+              leftVertex.getField(0),
+              NullValue.getInstance()));
+        }
       }
     }
   }
