@@ -34,7 +34,7 @@ public class MergeGeoTripletCreator
   private boolean enableSourceBasedIdSwitch;
 
   // (old) default behavior, switch ids and tuple if target id is bigger
-  MergeGeoTripletCreator(int sourcesCount) {
+  public MergeGeoTripletCreator(int sourcesCount) {
     this(sourcesCount, Constants.EMPTY_STRING, false);
   }
 

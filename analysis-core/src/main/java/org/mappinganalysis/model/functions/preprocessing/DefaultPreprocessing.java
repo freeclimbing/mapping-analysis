@@ -10,11 +10,13 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class DefaultPreprocessing
 
   private final ExecutionEnvironment env;
   private final boolean linkFilterEnabled;
-  private Config config = null;
+  private IncrementalConfig config = null;
   private String metric;
   private final DataDomain domain;
 
@@ -68,7 +70,7 @@ public class DefaultPreprocessing
     this.linkFilterEnabled = true;
   }
 
-  public DefaultPreprocessing(Config config) {
+  public DefaultPreprocessing(IncrementalConfig config) {
     this.config = config;
     this.metric = config.getMetric();
     this.domain = config.getDataDomain();
@@ -84,9 +86,18 @@ public class DefaultPreprocessing
      */
     graph = graph
         .mapVertices(new InternalTypeMapFunction()) // only needed for geography
-        .mapVertices(new DataSourceMapFunction())
-        .run(new IntraSourceLinkRemover(env));
+        .mapVertices(new DataSourceMapFunction());
 
+    /*
+      input links are not (yet) given for incremental setting
+      we don't create intra source links
+     */
+    if (!config.isIncremental()) {
+          graph = graph.run(new IntraSourceLinkRemover(env));
+    }
+    /*
+      add type settlement for entities without type
+     */
     if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
       graph = graph.mapVertices(new AddSettlementTypeMapFunction());
     }
@@ -98,9 +109,14 @@ public class DefaultPreprocessing
           .run(new BasicEdgeSimilarityComputation(metric, Constants.MUSIC, env));
       sources = Constants.MUSIC_SOURCES;
     } else if (domain == DataDomain.GEOGRAPHY) {
-      resultGraph = graph
+      if (config.getStep() == ClusteringStep.CLUSTER_ADDITION) {
+        resultGraph = graph
+            .run(new BasicEdgeSimilarityComputation(config));
+      } else {
+        resultGraph = graph
 //          .run(new TypeMisMatchCorrection(env)) // commented for SettlementBenchmark
-          .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
+            .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
+      }
       sources = Constants.GEO_SOURCES;
     } else if (domain == DataDomain.NC) {
       resultGraph = graph

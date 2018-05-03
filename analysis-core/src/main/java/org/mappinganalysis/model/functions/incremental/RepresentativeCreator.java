@@ -11,6 +11,7 @@ import org.mappinganalysis.util.config.Config;
 
 /**
  * Create representatives for vertices within incremental setting.
+ * Adds blocking label, clustered vertices and cluster sources to representative.
  */
 public class RepresentativeCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
@@ -25,6 +26,10 @@ public class RepresentativeCreator
     this.blockingStrategy = blockingStrategy;
   }
 
+  /**
+   * Create representatives for vertices within incremental setting.
+   * Adds blocking label, clustered vertices and cluster sources to representative.
+   */
   public RepresentativeCreator(Config config) {
     this.domain = config.getDataDomain();
     this.blockingStrategy = config.getBlockingStrategy();

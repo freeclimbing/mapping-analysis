@@ -133,7 +133,7 @@ public class IncrementalClustering
       return this;
     }
 
-    // used for split incremental
+    // used for split incremental & multi
     public IncrementalClusteringBuilder setPart(String part) {
       this.part = part;
 
@@ -161,7 +161,11 @@ public class IncrementalClustering
       }
       if (config.getExecutionEnvironment() != null) {
         if (clusteringStrategy == IncrementalClusteringStrategy.MULTI) {
-          return new MultiIncrementalClustering(config);
+          if (config.getStep() == ClusteringStep.INITIAL_CLUSTERING) {
+            return new MultiIncrementalClustering(config);
+          } else {
+            return new MultiIncrementalClustering(newElements, config);
+          }
         } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
           return new FixedIncrementalClustering(config); // basic test clusteringStrategy
         } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {

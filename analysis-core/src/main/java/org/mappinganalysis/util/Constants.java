@@ -61,6 +61,7 @@ public class Constants {
   public static final String BLOCKING_STRATEGY = "blockingStrategy";
   public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
   public static final String DATA_DOMAIN = "dataDomain";
+  public static final String STEP = "step";
   @Deprecated
   public static final String MODE = "mode";
   public static final String NEW_SOURCE = "newSource";

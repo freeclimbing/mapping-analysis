@@ -11,40 +11,37 @@ import org.mappinganalysis.util.Utils;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * Add links to result set, check if datasource is already contained in current cluster.
  * If contained, remove link.
  *
  * We also detect and handle indirect 1:n like a -> b -> c -> a
- *
- * TODO To reduce complexity to ccid groups, ccid is still used.
- * todo Test version with sort partition.
  */
 public class LinkSelectionWithCcIdFunction
     implements GroupReduceFunction<EdgeSourceSimTuple, Tuple2<Long, Long>> {
   private static final Logger LOG = Logger.getLogger(LinkSelectionWithCcIdFunction.class);
-  private HashMap<String, Integer> sourcesMap;
-
-  public LinkSelectionWithCcIdFunction(List<String> sources) {
-    this.sourcesMap = AbstractionUtils.getSourcesMap(sources);
-  }
 
   @Override
   public void reduce(Iterable<EdgeSourceSimTuple> values,
                      Collector<Tuple2<Long, Long>> out) throws Exception {
-
     HashMap<Integer, HashSet<HashSet<Long>>> sourcesContainedEntitiesMap = Maps.newHashMap();
+    /*
+    For each entity, we save all sources which occurred in the current component
+     */
     HashMap<Long, Integer> entitySourceMap = Maps.newHashMap();
 
     for (EdgeSourceSimTuple edge : values) {
+      /*
+      preparation
+       */
+
       // get accumulated (and updated) src/trg dataset values
       int srcDataSetInt;
       if (entitySourceMap.containsKey(edge.getSrcId())) {
         srcDataSetInt = entitySourceMap.get(edge.getSrcId());
       } else {
-        srcDataSetInt = sourcesMap.get(edge.getSrcDataSource());
+        srcDataSetInt = edge.getSrcDataSource();
         entitySourceMap.put(edge.getSrcId(), srcDataSetInt);
       }
 
@@ -52,7 +49,7 @@ public class LinkSelectionWithCcIdFunction
       if (entitySourceMap.containsKey(edge.getTrgId())) {
         trgDataSetInt = entitySourceMap.get(edge.getTrgId());
       } else {
-        trgDataSetInt = sourcesMap.get(edge.getTrgDataSource());
+        trgDataSetInt = edge.getTrgDataSource();
         entitySourceMap.put(edge.getTrgId(), trgDataSetInt);
       }
 
@@ -91,6 +88,9 @@ public class LinkSelectionWithCcIdFunction
         }
       }
 
+      /*
+      link selection start
+       */
       if (AbstractionUtils.hasOverlap(srcDataSetInt, trgDataSetInt)) {
         // no merge
         if (srcDataSetInt == trgDataSetInt) {

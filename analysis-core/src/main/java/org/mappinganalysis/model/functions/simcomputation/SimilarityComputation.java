@@ -66,7 +66,6 @@ public abstract class SimilarityComputation<T, O>
   public static final class SimilarityComputationBuilder<T, O> {
 
     private SimilarityFunction<T, O> function;
-//    private AggregationMode<T> mode = null;
     private SimilarityStrategy strategy;
     private double threshold;
 

@@ -7,16 +7,16 @@ import org.apache.flink.api.java.tuple.Tuple6;
  *  - cc id
  *  - source vertex id
  *  - target vertex id
- *  - starting vertex data source
- *  - neighbor vertex data source
+ *  - starting vertex data source(s) (int)
+ *  - neighbor vertex data source(s) (int)
  *  - edge similarity
  */
 public class EdgeSourceSimTuple
-    extends Tuple6<Long, Long, Long, String, String, Double> {
+    extends Tuple6<Long, Long, Long, Integer, Integer, Double> {
   public EdgeSourceSimTuple() { // needed
   }
 
-  EdgeSourceSimTuple(Long ccId, Long source, Long target, String srcDatasource, String trgDataSource, Double edgeSim) {
+  EdgeSourceSimTuple(Long ccId, Long source, Long target, int srcDatasource, int trgDataSource, Double edgeSim) {
     this.f0 = ccId;
     this.f1 = source;
     this.f2 = target;
@@ -25,27 +25,27 @@ public class EdgeSourceSimTuple
     this.f5 = edgeSim;
   }
 
-  public Long getCcId() {
+  public long getCcId() {
     return f0;
   }
 
-  public Long getSrcId() {
+  public long getSrcId() {
     return f1;
   }
 
-  public Long getTrgId() {
+  public long getTrgId() {
     return f2;
   }
 
-  String getSrcDataSource() {
+  int getSrcDataSource() {
     return f3;
   }
 
-  String getTrgDataSource() {
+  int getTrgDataSource() {
     return f4;
   }
 
-  public Double getLinkSim() {
+  public double getLinkSim() {
     return f5;
   }
 }

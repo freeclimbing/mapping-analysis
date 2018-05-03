@@ -2,7 +2,7 @@ package org.mappinganalysis.model.functions.clusterstrategies;
 
 public enum IncrementalClusteringStrategy {
   ATTRIB, // not implemented
-  MULTI, // not implemented
+  MULTI, // based on holistic clustering, start incremental clustering
   MAXSIZE, // not implemented
   LINKS, // not implemented
   BIG, // big geo dataset

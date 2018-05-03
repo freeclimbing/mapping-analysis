@@ -2,6 +2,7 @@ package org.mappinganalysis.util.config;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.util.Constants;
 
@@ -35,5 +36,13 @@ public class IncrementalConfig extends Config {
 
   public int getExistingSourcesCount() {
     return (int) this.get(Constants.DATA_SOURCES_LABEL);
+  }
+
+  public void setStep(ClusteringStep step) {
+    this.put(Constants.STEP, step);
+  }
+
+  public ClusteringStep getStep() {
+    return (ClusteringStep) this.get(Constants.STEP);
   }
 }

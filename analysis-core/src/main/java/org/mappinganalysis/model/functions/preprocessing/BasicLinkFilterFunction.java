@@ -16,6 +16,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.utils.EdgeSourceSimTuple;
 import org.mappinganalysis.model.functions.preprocessing.utils.LinkSelectionWithCcIdFunction;
 import org.mappinganalysis.model.functions.preprocessing.utils.NeighborEqualDataSourceFunction;
+import org.mappinganalysis.util.Constants;
 
 import java.util.List;
 
@@ -47,16 +48,17 @@ public class BasicLinkFilterFunction
       throws Exception {
     // first cc needed for neighbor grouping - needed for bigger data sets
     graph = graph.run(new ConnectedComponentIdAdder<>(env));
+    String mode = getModeFromSources(sources);
 
     // EdgeSourceSimTuple(ccid, edge src, edge trg, vertex ont, neighbor ont, EdgeSim)
     DataSet<EdgeSourceSimTuple> neighborTuples = graph
-        .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(), EdgeDirection.OUT);
+        .groupReduceOnNeighbors(new NeighborEqualDataSourceFunction(mode), EdgeDirection.OUT);
 
     DataSet<Tuple2<Long, Long>> edgeTuples = neighborTuples.groupBy(0) // cc id
         .sortGroup(5, Order.DESCENDING) // sim
         .sortGroup(1, Order.ASCENDING) // src id
         .sortGroup(2, Order.ASCENDING) // trg id
-        .reduceGroup(new LinkSelectionWithCcIdFunction(sources));
+        .reduceGroup(new LinkSelectionWithCcIdFunction());
 
     DataSet<Edge<Long, ObjectMap>> newEdges = edgeTuples.join(graph.getEdges())
         .where(0, 1)
@@ -70,17 +72,19 @@ public class BasicLinkFilterFunction
           .runOperation(new IsolatedVertexRemover<>(newEdges));
     } else {
       resultVertices = graph.getVertices();
-//      .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
-//        @Override
-//        public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
-//            LOG.info("linkFilter: " + vertex.getValue().toString());
-//          return vertex;
-//        }
-//      });
-
     }
 
     return Graph.fromDataSet(resultVertices, newEdges, env)
         .run(new ConnectedComponentIdAdder<>(env)); // CC needed
+  }
+
+  private String getModeFromSources(List<String> sources) {
+    if (sources.iterator().next().startsWith("geco")) {
+      return Constants.NC;
+    } else if (sources.iterator().next().startsWith("http")) {
+      return Constants.GEO;
+    } else {
+      return Constants.MUSIC;
+    }
   }
 }

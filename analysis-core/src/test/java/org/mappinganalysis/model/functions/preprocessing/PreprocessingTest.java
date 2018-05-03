@@ -148,80 +148,54 @@ public class PreprocessingTest {
    *
    * 7 vertices, delete 5
    * vertex lat/lon data is irrelevant, similarities are already computed in edges
-   * TODO too much collect
    */
   @Test
-  public void oneToManyTest() throws Exception {
+  public void linkFilterVertexDeleteTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/oneToMany/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> inputGraph = new JSONDataSource(graphPath, true, env).getGraph();
+    Graph<Long, ObjectMap, ObjectMap> inputGraph
+        = new JSONDataSource(graphPath, true, env)
+        .getGraph();
+
+    assertEquals(9, inputGraph.getEdges().count());
+    assertEquals(11, inputGraph.getVertices().count());
 
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()
         .setEnvironment(env)
-        .setRemoveIsolatedVertices(true)
+        .setRemoveIsolatedVertices(true) // <<---
         .setDataSources(Constants.GEO_SOURCES)
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 
-    Graph<Long, ObjectMap, ObjectMap> resultDeleteVerticesGraph = inputGraph.run(linkFilter);
+    Graph<Long, ObjectMap, ObjectMap> resultDeleteVerticesGraph = inputGraph
+        .run(linkFilter);
 
-    // test - one edge, two vertices
-//    resultDeleteVerticesGraph.getEdges().print();
+    // 5 vertices removed
+    assertEquals(6, resultDeleteVerticesGraph.getVertices().count());
+
     for (Tuple2<Long, Long> edge : resultDeleteVerticesGraph.getEdgeIds().collect()) {
-      if (edge.f0 == 4L || edge.f0 == 6L) { // 4-5 and 6-7 should be single link
-        continue;
+      if (edge.f0 == 4L) {
+        assertEquals(5L, edge.f1.longValue());
+      } else if (edge.f0 == 6L) {
+        assertEquals(7L, edge.f1.longValue());
+      } else if (edge.f0 == 2642L) {
+        assertEquals(46584L, edge.f1.longValue());
+      } else {
+        assertFalse(true); // 6 edges removed
       }
-      assertEquals(2642L, edge.f0.longValue());
-      assertEquals(46584L, edge.f1.longValue());
     }
-//    for (Long vertex : resultDeleteVerticesGraph.getVertexIds().collect()) {
-//      assertTrue(vertex == 2642L || vertex == 46584L);
-//    }
-
-    // use: less collect
-//    Graph<Long, ObjectMap, ObjectMap> graph =
-//        new JSONDataSource(graphPath, true, env).getGraph()
-//            .run(linkFilter)
-//            .filterOnEdges(edge -> {
-//              if (edge.getSource() == 617158L) {
-//                // 3 edges to lgd get reduced to the best option
-//                assertEquals(617159L, edge.getTarget().longValue());
-//                return true;
-//              } else if (edge.getSource() == 1022884L) {
-//                // 2 edges to geonames to best option
-//                assertEquals(1375705L, edge.getTarget().longValue());
-//                return true;
-//              } else {
-//                return false;
-//              }
-//            });
-
-//    linkFilter = new LinkFilter
-//        .LinkFilterBuilder()
-//        .setEnvironment(env)
-//        .setRemoveIsolatedVertices(false)
-//        .setDataSources(Constants.GEO_SOURCES)
-//        .setStrategy(LinkFilterStrategy.BASIC)
-//        .build();
-//
-//    Graph<Long, ObjectMap, ObjectMap> resultNoDeleteVerticesGraph = inputGraph.run(linkFilter);
-//
-//    // test - same edge, but all vertices still in graph
-//    for (Tuple2<Long, Long> edge : resultNoDeleteVerticesGraph.getEdgeIds().collect()) {
-//      assertEquals(2642L, edge.f0.longValue());
-//      assertEquals(46584L, edge.f1.longValue());
-//    }
-//    assertEquals(7, resultNoDeleteVerticesGraph.getVertices().count());
   }
 
   @Test
-  public void newOneToManyTest() throws Exception {
+  public void linkFilterNoVertexDeleteTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
         .getResource("/data/preprocessing/oneToMany/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> inputGraph = new JSONDataSource(graphPath, true, env).getGraph();
+    Graph<Long, ObjectMap, ObjectMap> inputGraph
+        = new JSONDataSource(graphPath, true, env)
+        .getGraph();
 
     LinkFilter linkFilter = new LinkFilter
         .LinkFilterBuilder()
@@ -231,12 +205,41 @@ public class PreprocessingTest {
         .setStrategy(LinkFilterStrategy.BASIC)
         .build();
 
-    Graph<Long, ObjectMap, ObjectMap> resultDeleteVerticesGraph = inputGraph.run(linkFilter);
+    Graph<Long, ObjectMap, ObjectMap> resultNoDeleteGraph = inputGraph
+        .run(linkFilter);
 
-    // test - one edge, two vertices
-    for (Tuple2<Long, Long> edge : resultDeleteVerticesGraph.getEdgeIds().collect()) {
-      assertEquals(2642L, edge.f0.longValue());
-      assertEquals(46584L, edge.f1.longValue());
+    assertEquals(11, resultNoDeleteGraph.getVertices().count());
+    assertEquals(3, resultNoDeleteGraph.getEdges().count());
+  }
+
+  @Test
+  public void multiSourceLinkFilterTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+    String graphPath = PreprocessingTest.class
+        .getResource("/data/preprocessing/multiSource/").getFile();
+    Graph<Long, ObjectMap, ObjectMap> inputGraph
+        = new JSONDataSource(graphPath, true, env)
+        .getGraph();
+
+    assertEquals(3, inputGraph.getEdges().count());
+
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setRemoveIsolatedVertices(false)
+        .setDataSources(Constants.GEO_SOURCES)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
+
+    Graph<Long, ObjectMap, ObjectMap> resultGraph = inputGraph
+        .run(linkFilter);
+
+    for (Tuple2<Long, Long> edge : resultGraph.getEdgeIds().collect()) {
+      if (edge.f0 == 4L) {
+        assertEquals(10L, edge.f1.longValue());
+      } else {
+        assertFalse(true);
+      }
     }
   }
 
@@ -297,12 +300,15 @@ public class PreprocessingTest {
   public void deleteVerticesWithoutEdgesTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
     String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/deleteVerticesWithoutEdges/").getFile();
-    Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(graphPath, true, env).getGraph();
+        .getResource("/data/representative/mergeExec").getFile();
+    Graph<Long, ObjectMap, ObjectMap> graph
+        = new JSONDataSource(graphPath, true, env).getGraph();
 
-    DataSet<Vertex<Long, ObjectMap>> result = graph.getVertices()
+    assertEquals(11, graph.getVertices().count());
+
+    DataSet<Vertex<Long, ObjectMap>> resultVertices = graph.getVertices()
         .runOperation(new IsolatedVertexRemover<>(graph.getEdges()));
 
-    assertEquals(4, result.count());
+    assertEquals(2, resultVertices.count());
   }
 }

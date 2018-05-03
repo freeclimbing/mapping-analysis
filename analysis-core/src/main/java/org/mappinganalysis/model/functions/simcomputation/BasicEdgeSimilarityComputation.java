@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Edge;
@@ -11,12 +12,16 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
+
+import java.util.Set;
 
 /**
  * Compute similarities based on the existing vertex properties,
@@ -30,6 +35,7 @@ public class BasicEdgeSimilarityComputation
   private final SimilarityFunction<Triplet<Long, ObjectMap, NullValue>,
       Triplet<Long, ObjectMap, ObjectMap>> simFunction;
   private final String mode;
+  private IncrementalConfig config = null;
 
   /**
    * Compute similarities based on the existing vertex properties,
@@ -60,6 +66,16 @@ public class BasicEdgeSimilarityComputation
     }
   }
 
+  public BasicEdgeSimilarityComputation(IncrementalConfig config) {
+    this.config = config;
+    this.env = config.getExecutionEnvironment();
+    this.mode = config.getMode();
+    this.simFunction = new EdgeSimilarityFunction(
+            config.getMetric(),
+            mode,
+            Constants.MAXIMAL_GEO_DISTANCE);
+  }
+
   /**
    * Run basic edge similarity computation.
    * @param graph input graph
@@ -78,7 +94,33 @@ public class BasicEdgeSimilarityComputation
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
 
-    DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
+    DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = graph.getTriplets();
+
+    /*
+      data source overlap check for incremental clustering
+     */
+    if (config != null && config.getStep() == ClusteringStep.CLUSTER_ADDITION) {
+      triplets = triplets
+          .filter(new FilterFunction<Triplet<Long, ObjectMap, NullValue>>() {
+            @Override
+            public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
+              Set<String> srcDataSources = triplet.getSrcVertex().getValue().getDataSourcesList();
+              Set<String> trgDataSources = triplet.getTrgVertex().getValue().getDataSourcesList();
+
+              int srcSize = srcDataSources.size();
+              int trgSize = trgDataSources.size();
+
+              srcDataSources.addAll(trgDataSources);
+              int resultSize = srcDataSources.size();
+              boolean hasOverlap = resultSize <= srcSize + trgSize;
+
+              return (srcSize + trgSize >= 3) && !hasOverlap; // TODO no static size
+            }
+          });
+    }
+
+    DataSet<Edge<Long, ObjectMap>> edges = triplets
+        // do things
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction());
 
