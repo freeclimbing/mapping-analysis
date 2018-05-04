@@ -112,6 +112,9 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
                 edges,
                 config.getExecutionEnvironment());
 
+        preprocGraph.getVertices().print();
+        preprocGraph.getEdges().print();
+
         return preprocGraph
             .run(new DefaultPreprocessing(config))
 //          .run(new SimSort(config))

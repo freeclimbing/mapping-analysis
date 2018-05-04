@@ -252,7 +252,7 @@ public class IncrementalClusteringTest {
             .mapVertices(new InternalTypeMapFunction());
 
     String newVerticesPath = IncrementalClusteringTest.class
-        .getResource("/data/incremental/clusters").getFile();
+        .getResource("/data/incremental/newVertices").getFile();
     final DataSet<Vertex<Long, ObjectMap>> newVertices =
         new JSONDataSource(newVerticesPath, true, env)
             .getGraph(ObjectMap.class, NullValue.class)
@@ -266,13 +266,11 @@ public class IncrementalClusteringTest {
     config.setStep(ClusteringStep.VERTEX_ADDITION);
     config.setSimSortSimilarity(0.7);
 
-
     IncrementalClustering vertexAddClustering =
         new IncrementalClustering
             .IncrementalClusteringBuilder(config)
             .setMatchElements(newVertices)
             .build();
-
 
     DataSet<Vertex<Long, ObjectMap>> result = baseClusterGraph.run(vertexAddClustering);
 
