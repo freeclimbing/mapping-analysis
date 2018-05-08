@@ -7,9 +7,11 @@ import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
+import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
@@ -17,6 +19,7 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
@@ -26,13 +29,23 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
+import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
+import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
 import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
+import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
+import org.mappinganalysis.model.functions.preprocessing.TypeOverlapCcCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
+import org.mappinganalysis.model.functions.simcomputation.AggSimValueEdgeMapFunction;
+import org.mappinganalysis.model.functions.simcomputation.EdgeSimilarityFunction;
+import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.impl.LinkFilterStrategy;
+import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.config.Config;
@@ -40,12 +53,12 @@ import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class IncrementalClusteringTest {
   private static final Logger LOG = Logger.getLogger(IncrementalClusteringTest.class);
@@ -243,20 +256,178 @@ public class IncrementalClusteringTest {
   }
 
   @Test
-  public void smallCluTest() throws Exception {
+  public void getTriplet2Test() throws Exception {
     String graphPath = IncrementalClusteringTest.class
         .getResource("/data/incremental/clusters").getFile();
-    final Graph<Long, ObjectMap, NullValue> baseClusterGraph =
+    /*
+    input graph without edges
+     */
+    Graph<Long, ObjectMap, NullValue> baseClusterGraph =
         new JSONDataSource(graphPath, true, env)
-            .getGraph(ObjectMap.class, NullValue.class)
-            .mapVertices(new InternalTypeMapFunction());
+            .getGraph(ObjectMap.class, NullValue.class);
 
     String newVerticesPath = IncrementalClusteringTest.class
         .getResource("/data/incremental/newVertices").getFile();
-    final DataSet<Vertex<Long, ObjectMap>> newVertices =
+    DataSet<Vertex<Long, ObjectMap>> newVertices =
         new JSONDataSource(newVerticesPath, true, env)
             .getGraph(ObjectMap.class, NullValue.class)
-            .mapVertices(new InternalTypeMapFunction())
+            .getVertices();
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.VERTEX_ADDITION);
+    config.setSimSortSimilarity(0.7);
+
+    newVertices = newVertices
+        .runOperation(new RepresentativeCreator(config));
+
+    DataSet<Vertex<Long, ObjectMap>> clusterWorkset = baseClusterGraph
+        .getVertices()
+        .union(newVertices);
+
+    DataSet<Edge<Long, NullValue>> edges = clusterWorkset
+        .groupBy(new BlockingKeySelector())
+        .reduceGroup(new AllEdgesCreateGroupReducer<>());
+
+    Graph<Long, ObjectMap, NullValue> preprocGraph = Graph
+        .fromDataSet(clusterWorkset,
+            edges,
+            env);
+
+
+    Collection<Edge<Long, NullValue>> resultEdges = Lists.newArrayList();
+    Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+
+    preprocGraph.getEdges()
+        .output(new LocalCollectionOutputFormat<>(resultEdges));
+    preprocGraph.getVertices()
+        .output(new LocalCollectionOutputFormat<>(representatives));
+
+    env.execute();
+
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      LOG.info("vertex2: " + representative.toString());
+    }
+    for (Edge<Long, NullValue> edge : resultEdges) {
+      LOG.info("edge2: " + edge.toString());
+    }
+  }
+
+  @Test
+  public void longVersionIncrementalVertexAdditionTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/incremental/clusters").getFile();
+    /*
+    input graph without edges
+     */
+    Graph<Long, ObjectMap, NullValue> baseClusterGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    String newVerticesPath = IncrementalClusteringTest.class
+        .getResource("/data/incremental/newVertices").getFile();
+    DataSet<Vertex<Long, ObjectMap>> newVertices =
+        new JSONDataSource(newVerticesPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class)
+            .getVertices();
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.VERTEX_ADDITION);
+    config.setSimSortSimilarity(0.7);
+
+    newVertices = newVertices
+        .runOperation(new RepresentativeCreator(config));
+
+    DataSet<Vertex<Long, ObjectMap>> clusterWorkset = baseClusterGraph
+        .getVertices()
+        .union(newVertices);
+
+    DataSet<Edge<Long, NullValue>> edges = clusterWorkset
+        .groupBy(new BlockingKeySelector())
+        .reduceGroup(new AllEdgesCreateGroupReducer<>());
+
+    Graph<Long, ObjectMap, NullValue> preprocGraph = Graph
+        .fromDataSet(clusterWorkset,
+            edges,
+            env);
+
+    SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
+        = new SimilarityComputation
+        .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
+        Triplet<Long, ObjectMap, ObjectMap>>()
+        .setSimilarityFunction(new EdgeSimilarityFunction(
+            Constants.COSINE_TRIGRAM,
+            Constants.GEO,
+            Constants.MAXIMAL_GEO_DISTANCE))
+        .setStrategy(SimilarityStrategy.EDGE_SIM)
+        .build();
+
+    DataSet<Edge<Long, ObjectMap>> nextEdges = preprocGraph
+        .getTriplets()
+        .runOperation(similarityComputation)
+        .map(new TripletToEdgeMapFunction())
+        .map(new AggSimValueEdgeMapFunction(config.getDataDomain()));
+
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(env)
+        .setRemoveIsolatedVertices(false)
+        .setDataSources(Constants.GEO_SOURCES)
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
+
+    Graph<Long, ObjectMap, ObjectMap> graph = Graph
+        .fromDataSet(preprocGraph.getVertices(), nextEdges, env).run(linkFilter)
+        .run(new TypeOverlapCcCreator(config));
+
+    Collection<Edge<Long, ObjectMap>> resultEdges = Lists.newArrayList();
+    Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+
+    graph.getEdges()
+        .output(new LocalCollectionOutputFormat<>(resultEdges));
+    graph.getVertices()
+        .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()))
+        .output(new LocalCollectionOutputFormat<>(representatives));
+
+    env.execute();
+
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      Set<Long> verticesList = representative.getValue().getVerticesList();
+      assertTrue(verticesList.contains(4800L));
+      assertTrue(verticesList.contains(2484L));
+      assertTrue(verticesList.contains(2485L));
+      assertTrue(verticesList.contains(6748L));
+//      LOG.info("vertex2: " + representative.toString());
+    }
+    for (Edge<Long, ObjectMap> edge : resultEdges) {
+            assertTrue(edge.toString().equals("(2484,4800,({aggSimValue=0.8399943333}))")
+          || edge.toString().equals("(2485,4800,({aggSimValue=0.9982016667}))"));
+//      LOG.info("edge2: " + edge.toString());
+    }
+  }
+
+  @Test
+  public void smallCluTest() throws Exception {
+    String graphPath = IncrementalClusteringTest.class
+        .getResource("/data/incremental/clusters").getFile();
+    /*
+    input graph without edges
+     */
+    Graph<Long, ObjectMap, NullValue> baseClusterGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    String newVerticesPath = IncrementalClusteringTest.class
+        .getResource("/data/incremental/newVertices").getFile();
+    DataSet<Vertex<Long, ObjectMap>> newVertices =
+        new JSONDataSource(newVerticesPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class)
             .getVertices();
 
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
@@ -274,8 +445,18 @@ public class IncrementalClusteringTest {
 
     DataSet<Vertex<Long, ObjectMap>> result = baseClusterGraph.run(vertexAddClustering);
 
-    result.print();
+    Collection<Vertex<Long, ObjectMap>> vertexResult2 = Lists.newArrayList();
 
+    result
+        .output(new LocalCollectionOutputFormat<>(vertexResult2));
+
+    env.execute();
+
+    // check TODO test
+
+    for (Vertex<Long, ObjectMap> vertex : vertexResult2) {
+      LOG.info("vertex2: " + vertex.toString());
+    }
   }
 
   @Test

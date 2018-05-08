@@ -1,2 +1,3 @@
 {"id":4800,"data":{"typeIntern":["Settlement","AdministrativeRegion"],"lon":35.5,"lat":33.8833,"dataSources":["http://rdf.freebase.com/"],"clusteredVertices":[4800],"label":"beirut"}}
 {"id":2484,"data":{"typeIntern":["Settlement"],"lon":35.5097,"lat":33.8719,"dataSources":["http://data.nytimes.com/"],"clusteredVertices":[2484],"label":"beirut lebanon"}}
+{"id":25,"data":{"typeIntern":["Settlement"],"lon":35.5097,"lat":33.8719,"dataSources":["http://data.nytimes.com/"],"clusteredVertices":[25],"label":"beirut lebanon"}}

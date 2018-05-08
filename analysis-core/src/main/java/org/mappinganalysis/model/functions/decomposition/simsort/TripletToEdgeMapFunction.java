@@ -10,7 +10,7 @@ public class TripletToEdgeMapFunction
     implements MapFunction<Triplet<Long, ObjectMap, ObjectMap>, Edge<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(TripletToEdgeMapFunction.class);
 
-  Edge<Long, ObjectMap> reuseEdge;
+  private Edge<Long, ObjectMap> reuseEdge;
   public TripletToEdgeMapFunction() {
     reuseEdge = new Edge<>();
   }

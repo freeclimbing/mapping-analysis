@@ -82,7 +82,8 @@ public class EvalTest {
     // 1x geo lon missing
     // 1x type 'bla'
     // 1x type lgd:Place
-    DataSet<Tuple2<Integer, Integer>> result = Stats.countMissingGeoAndTypeProperties(graphPath, true, env);
+    DataSet<Tuple2<Integer, Integer>> result = Stats
+        .countMissingGeoAndTypeProperties(graphPath, true, env);
 
     result.map(value -> {
           assertEquals(12, value.f0.intValue()); // geo count

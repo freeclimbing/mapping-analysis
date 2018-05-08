@@ -485,15 +485,6 @@ public class ObjectMap
    * Get source dataset name for vertex. Maps old "ontology" data source values to new ones.
    */
   public String getDataSource() {
-    // needed for deprecated "ontology" value
-    if (!map.containsKey(Constants.DATA_SOURCE)) {
-      if (map.get(Constants.ONTOLOGY) == null) {
-        return null;
-      }
-      setDataSource(map.get(Constants.ONTOLOGY).toString());
-      map.remove(Constants.ONTOLOGY);
-    }
-
     return map.get(Constants.DATA_SOURCE).toString();
   }
 

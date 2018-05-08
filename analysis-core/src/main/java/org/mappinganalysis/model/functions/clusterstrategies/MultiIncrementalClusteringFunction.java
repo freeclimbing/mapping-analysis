@@ -25,7 +25,6 @@ import org.mappinganalysis.util.config.IncrementalConfig;
  */
 public class MultiIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(MultiIncrementalClusteringFunction.class);
-  private String source;
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements = null;
   private IncrementalConfig config;
 
@@ -34,7 +33,6 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
       IncrementalConfig config) {
     super();
     this.config = config;
-    this.source = config.getNewSource();
     this.toBeMergedElements = toBeMergedElements
         .runOperation(new RepresentativeCreator(config));
   }
@@ -42,7 +40,6 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
   MultiIncrementalClusteringFunction(IncrementalConfig config) {
     super();
     this.config = config;
-    this.source = config.getNewSource();
   }
 
   @Override
@@ -80,7 +77,7 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
       VERTEX ADDITION
        */
       if (config.getStep() == ClusteringStep.VERTEX_ADDITION) {
-//        LOG.info(ClusteringStep.VERTEX_ADDITION.toString());
+        LOG.info(ClusteringStep.VERTEX_ADDITION.toString());
 
         /*
           add type settlement for entities without type
@@ -112,65 +109,15 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
                 edges,
                 config.getExecutionEnvironment());
 
-        preprocGraph.getVertices().print();
-        preprocGraph.getEdges().print();
+        Graph<Long, ObjectMap, ObjectMap> preprocStep = preprocGraph
+            .run(new DefaultPreprocessing(config));
 
-        return preprocGraph
-            .run(new DefaultPreprocessing(config))
-//          .run(new SimSort(config))
+        return preprocStep
+            .run(new SimSort(config))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
-
-
-//      DataSet<MergeGeoTriplet> triplets = clusterWorkset
-//          .map(new AddShadingTypeMapFunction())
-//          .map(new MergeGeoTupleCreator(config.getBlockingStrategy()))
-//          .groupBy(7)
-//          .reduceGroup(new MergeGeoTripletCreator(3)) // get methods from here for additional blocking
-//          .distinct(0, 1)
-//          .runOperation(similarityComputation);
+      } else {
+        return null;
       }
-    return null; // TODO FIX
-//    input.getVertices()
-//        .map(new AddShadingTypeMapFunction())
-//        .map(new MergeGeoTupleCreator(config.getBlockingStrategy()))
-//        .groupBy(7)
-//        .reduceGroup(new MergeGeoTripletCreator(
-//            config.getExistingSourcesCount(),
-//            config.getNewSource(),
-//            true))
-//        .distinct(0, 1)
-//        .runOperation(similarityComputation)
-//        .groupBy(5)
-//        .reduceGroup(new HungarianAlgorithmReduceFunction());
-//
-//
-//
-//    DataSet<Vertex<Long, ObjectMap>> baseClusters = input.getVertices()
-//        .runOperation(new RepresentativeCreator(config));
-//
-//    return baseClusters.union(toBeMergedElements)
-//        .runOperation(new CandidateCreator(config, source, sourcesCount))
-//        .flatMap(new DualMergeGeographyMapper(false))
-//        .leftOuterJoin(baseClusters)
-//        .where(0).equalTo(0)
-//        .with(new FinalMergeGeoVertexCreator())
-
-
-//        .map(x -> {
-//          if (x.getValue().getVerticesList().contains(298L)
-//              || x.getValue().getVerticesList().contains(299L)
-//              || x.getValue().getVerticesList().contains(5013L)
-//              || x.getValue().getVerticesList().contains(5447L)) {
-//            LOG.info("FinalMergeGeoVertex: " + x.toString());
-//          }
-//
-//          return x;
-//        })
-//        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
-
-
-//        .runOperation(new RepresentativeCreator(config));
   }
-
 }

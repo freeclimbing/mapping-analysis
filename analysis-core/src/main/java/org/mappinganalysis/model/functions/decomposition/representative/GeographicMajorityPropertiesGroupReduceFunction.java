@@ -10,6 +10,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -34,7 +35,7 @@ public class GeographicMajorityPropertiesGroupReduceFunction
   public void reduce(
       Iterable<Vertex<Long, ObjectMap>> vertices,
       Collector<Vertex<Long, ObjectMap>> collector) throws Exception {
-    Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here
+    Vertex<Long, ObjectMap> resultVertex = new Vertex<>(); // don't use reuseVertex here, not every property is rewritten
     ObjectMap resultProps = new ObjectMap(Constants.GEO);
     Set<Long> clusterVertices = Sets.newHashSet();
     Set<String> clusterDataSources = Sets.newHashSet();
@@ -58,6 +59,7 @@ public class GeographicMajorityPropertiesGroupReduceFunction
 
     resultProps.setGeoProperties(geoMap);
     resultProps.setLabel(Utils.getFinalValue(labelMap));
+    resultProps.setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
 
     resultProps.setClusterDataSources(clusterDataSources);
     resultProps.setClusterVertices(clusterVertices);

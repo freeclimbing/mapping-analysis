@@ -11,6 +11,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.model.EdgeIdsSourcesTuple;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  * Remove links where source and target dataset name are equal, remove duplicate links
@@ -18,23 +19,41 @@ import org.mappinganalysis.model.ObjectMap;
 public class IntraSourceLinkRemover
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, NullValue>> {
   private final ExecutionEnvironment env;
+  private IncrementalConfig config = null;
 
   /**
    * Remove links where source and target dataset name are equal, remove duplicate links
    */
+  @Deprecated
   public IntraSourceLinkRemover(ExecutionEnvironment env) {
     this.env = env;
   }
 
+  /**
+   * Remove links where source and target dataset name are equal, remove duplicate links
+   *
+   * input links are not (yet) given for incremental setting we don't create intra source links
+   */
+  public IntraSourceLinkRemover(IncrementalConfig config) {
+    this.env = config.getExecutionEnvironment();
+    this.config = config;
+  }
+
   @Override
   public Graph<Long, ObjectMap, NullValue> run(Graph<Long, ObjectMap, NullValue> input) throws Exception {
-    DataSet<Edge<Long, NullValue>> newEdges = getEdgeIdSourceValues(input.getEdgeIds(), input.getVertices())
-        .filter(edge -> !edge.getSrcSource().equals(edge.getTrgSource()))
-        .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
-        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct();
+    if (config == null || !config.isIncremental()) {
+//      LOG.info("config not incremental");
+      DataSet<Edge<Long, NullValue>> newEdges = getEdgeIdSourceValues(input.getEdgeIds(), input.getVertices())
+          .filter(edge -> !edge.getSrcSource().equals(edge.getTrgSource()))
+          .map(value -> new Edge<>(value.f0, value.f1, NullValue.getInstance()))
+          .returns(new TypeHint<Edge<Long, NullValue>>() {
+          })
+          .distinct();
 
-    return Graph.fromDataSet(input.getVertices(), newEdges, env);
+      return Graph.fromDataSet(input.getVertices(), newEdges, env);
+    } else {
+      return input;
+    }
   }
 
   /**

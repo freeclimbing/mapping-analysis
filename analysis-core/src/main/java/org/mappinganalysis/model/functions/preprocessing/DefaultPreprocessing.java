@@ -10,15 +10,10 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
-import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.config.IncrementalConfig;
-
-import java.util.List;
 
 /**
  * Default (geographic) preprocessing: remove duplicate links, add cc ids,
@@ -50,7 +45,7 @@ public class DefaultPreprocessing
   public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
     this.linkFilterEnabled = isBasicLinkFilterEnabled;
     this.env = env;
-    this.domain = DataDomain.GEOGRAPHY; // CHECK THIS TODO
+    this.domain = DataDomain.GEOGRAPHY;
   }
 
   /**
@@ -82,93 +77,24 @@ public class DefaultPreprocessing
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, NullValue> graph) throws Exception {
     /*
-      preparation
+    link filter enabled by default
      */
-    graph = graph
-        .mapVertices(new InternalTypeMapFunction()) // only needed for geography
-        .mapVertices(new DataSourceMapFunction());
+    LinkFilter linkFilter = new LinkFilter
+        .LinkFilterBuilder()
+        .setEnvironment(config.getExecutionEnvironment())
+        .setRemoveIsolatedVertices(false)
+        .setDataSources(config.getSourcesList())
+        .setStrategy(LinkFilterStrategy.BASIC)
+        .build();
 
-    /*
-      input links are not (yet) given for incremental setting
-      we don't create intra source links
-     */
-    if (!config.isIncremental()) {
-          graph = graph.run(new IntraSourceLinkRemover(env));
-    }
-    /*
-      add type settlement for entities without type
-     */
-    if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
-      graph = graph.mapVertices(new AddSettlementTypeMapFunction());
-    }
-
-    Graph<Long, ObjectMap, ObjectMap> resultGraph = null;
-    List<String> sources = null;
-    if (domain == DataDomain.MUSIC) {
-      resultGraph = graph
-          .run(new BasicEdgeSimilarityComputation(metric, Constants.MUSIC, env));
-      sources = Constants.MUSIC_SOURCES;
-    } else if (domain == DataDomain.GEOGRAPHY) {
-      if (config.getStep() == ClusteringStep.CLUSTER_ADDITION) {
-        resultGraph = graph
-            .run(new BasicEdgeSimilarityComputation(config));
-      } else {
-        resultGraph = graph
-//          .run(new TypeMisMatchCorrection(env)) // commented for SettlementBenchmark
-            .run(new BasicEdgeSimilarityComputation(metric, Constants.GEO, env));
-      }
-      sources = Constants.GEO_SOURCES;
-    } else if (domain == DataDomain.NC) {
-      resultGraph = graph
-          .run(new BasicEdgeSimilarityComputation(metric, Constants.NC, env));
-      sources = Constants.NC_SOURCES;
-    }
-
-    /*
-      link filter definition
-     */
-    if (linkFilterEnabled) {
-      LinkFilter linkFilter;
-      if (domain == DataDomain.NC) {
-        linkFilter = new LinkFilter
-            .LinkFilterBuilder()
-            .setEnvironment(env)
-            .setRemoveIsolatedVertices(false)
-            .setDataSources(sources)
-            .setStrategy(LinkFilterStrategy.BASIC)
-            .build();
-      } else {
-        linkFilter = new LinkFilter
-            .LinkFilterBuilder()
-            .setEnvironment(env)
-            .setRemoveIsolatedVertices(false)
-            .setDataSources(sources)
-            .setStrategy(LinkFilterStrategy.BASIC)
-            .build();
-      }
-
-      /*
-        actual execution link filter + type overlap
-       */
-      assert resultGraph != null;
-      return resultGraph
-          .run(linkFilter) // cc id
-          .run(new TypeOverlapCcCreator(config)); // hash cc id, each vertex has "no type" with music/nc dataset
-    } else {
-      return resultGraph;
-    }
-  }
-
-  /**
-   * Temporary map function for compatibility with old 'ontology' values.
-   */
-  private static class DataSourceMapFunction implements MapFunction<Vertex<Long,ObjectMap>, ObjectMap> {
-    @Override
-    public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
-      vertex.getValue().getDataSource();
-
-      return vertex.getValue();
-    }
+    return graph
+//        .mapVertices(new InternalTypeMapFunction() // TODO fix only needed for big geography
+        .run(new IntraSourceLinkRemover(config)) // optional
+//        .mapVertices(new AddSettlementTypeMapFunction(config.getDataDomain())) // TODO FIX add type settlement for entities without type
+//        .run(new TypeMisMatchCorrection(env)) // old, commented for SettlementBenchmark
+        .run(new BasicEdgeSimilarityComputation(config))
+        .run(linkFilter)
+        .run(new TypeOverlapCcCreator(config)); // hash cc id, each vertex has "no type" with music/nc dataset
   }
 
   /**
@@ -176,10 +102,18 @@ public class DefaultPreprocessing
    * found. therefore, "settlement" is added, if needed.
    */
   private static class AddSettlementTypeMapFunction implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
+    private IncrementalConfig config;
+
+//    public AddSettlementTypeMapFunction(DataDomain config) {
+//      this.config = config;
+//    }
+
     @Override
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
-      if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
-        vertex.getValue().setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
+      if (config != null && config.getDataDomain() == DataDomain.GEOGRAPHY) {
+        if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
+          vertex.getValue().setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
+        }
       }
       return vertex.getValue();
     }

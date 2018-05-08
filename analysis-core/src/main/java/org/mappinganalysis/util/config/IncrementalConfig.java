@@ -6,6 +6,8 @@ import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.util.Constants;
 
+import java.util.List;
+
 /**
  * Config class for incremental clustering.
  */
@@ -44,5 +46,17 @@ public class IncrementalConfig extends Config {
 
   public ClusteringStep getStep() {
     return (ClusteringStep) this.get(Constants.STEP);
+  }
+
+  public List<String> getSourcesList() {
+    if (this.getDataDomain() == DataDomain.MUSIC) {
+      return Constants.MUSIC_SOURCES;
+    } else if (this.getDataDomain() == DataDomain.GEOGRAPHY) {
+      return Constants.GEO_SOURCES;
+    } else if (this.getDataDomain() == DataDomain.NC) {
+      return Constants.NC_SOURCES;
+    } else {
+      return null;
+    }
   }
 }

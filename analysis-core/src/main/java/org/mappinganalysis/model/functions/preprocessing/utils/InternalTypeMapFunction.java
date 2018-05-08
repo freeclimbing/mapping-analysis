@@ -12,7 +12,10 @@ import java.util.Set;
 
 /**
  * Map types of imported resources to an internal dictionary of harmonized type values.
+ *
+ * Only needed for big geography dataset which is no longer used.
  */
+@Deprecated
 public class InternalTypeMapFunction
     implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
   private static final Logger LOG = Logger.getLogger(InternalTypeMapFunction.class);
@@ -39,8 +42,6 @@ public class InternalTypeMapFunction
       properties.remove(Constants.GN_TYPE_DETAIL);
     }
 
-//    if (vertex.getId() == 704781154L)
-//    LOG.info("internalTypeMap: " + properties.toString());
     return properties;
   }
 
