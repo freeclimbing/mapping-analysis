@@ -66,9 +66,9 @@ public class HashCcIdOverlappingFunction
       vertex.getValue().setHashCcId(typeHashDict.get(randomVertexType));
       vertex.getValue().remove(Constants.COMP_TYPE);
       vertex.getValue().remove(Constants.CC_ID);
-      if (domain == DataDomain.MUSIC || domain == DataDomain.NC) { // music/nc has no type at all
+//      if (domain == DataDomain.MUSIC || domain == DataDomain.NC) { // music/nc has no type at all
         vertex.getValue().remove(Constants.TYPE_INTERN);
-      }
+//      }
 //      LOG.info("###hashOverlap###: " + vertex.toString());
       out.collect(vertex);
     }

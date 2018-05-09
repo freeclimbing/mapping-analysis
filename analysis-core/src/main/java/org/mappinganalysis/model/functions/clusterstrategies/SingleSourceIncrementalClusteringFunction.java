@@ -25,7 +25,7 @@ public class SingleSourceIncrementalClusteringFunction extends IncrementalCluste
     super();
     this.config = config;
     this.source = config.getNewSource();
-    this.sourcesCount = config.getExistingSourcesCount();
+    this.sourcesCount = config.getSourcesCount();
     this.toBeMergedElements = toBeMergedElements
         .runOperation(new RepresentativeCreator(config));
   }

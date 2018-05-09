@@ -24,19 +24,23 @@ public class IncrementalConfig extends Config {
     return (IncrementalClusteringStrategy) this.get(Constants.INCREMENTAL_STRATEGY);
   }
 
+  @Deprecated
   public void setNewSource(String newSource) {
     this.setProperty(Constants.NEW_SOURCE, newSource);
   }
 
+  @Deprecated
   public String getNewSource() {
     return this.getProperty(Constants.NEW_SOURCE);
   }
 
+  @Deprecated
   public void setExistingSourcesCount(int sourcesCount) {
     this.put(Constants.DATA_SOURCES_LABEL, sourcesCount);
   }
 
-  public int getExistingSourcesCount() {
+  @Deprecated
+  public int getSourcesCount() {
     return (int) this.get(Constants.DATA_SOURCES_LABEL);
   }
 

@@ -18,15 +18,6 @@ import java.util.Properties;
 public class QualityUtils {
   private static final Logger LOG = Logger.getLogger(QualityUtils.class);
 
-//  public static void printQuality(
-//      String dataset,
-//      double mergeThreshold,
-//      double simSortThreshold,
-//      DataSet<Vertex<Long, ObjectMap>> merged,
-//      String pmPath,
-//      int sourcesCount) throws Exception {
-//  }
-
   public static void printGeoQuality(
       DataSet<Vertex<Long, ObjectMap>> merged,
       Properties properties)

@@ -1,6 +1,7 @@
 package org.mappinganalysis.model.functions.blocking.lsh;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -65,7 +66,7 @@ public class LSHBlockingTest {
     IncrementalClustering nytClustering = baseBuilder
         .setMatchElements(nytSource)
         .setNewSource(Constants.NYT_NS)
-        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS))
+        .setDataSources(Sets.newHashSet(Constants.GN_NS, Constants.NYT_NS))
         .build();
 
     Graph<Long, ObjectMap, NullValue> workGraph = baseGraph
@@ -85,7 +86,7 @@ public class LSHBlockingTest {
     IncrementalClustering dbpClustering = baseBuilder
         .setMatchElements(dbpSource)
         .setNewSource(Constants.DBP_NS)
-        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
+        .setDataSources(Sets.newHashSet(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS))
         .build();
 
     clusters = workGraph.run(dbpClustering);
@@ -103,7 +104,7 @@ public class LSHBlockingTest {
     IncrementalClustering fbClustering = baseBuilder
         .setMatchElements(fbSource)
         .setNewSource(Constants.FB_NS)
-        .setDataSources(Lists.newArrayList(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
+        .setDataSources(Sets.newHashSet(Constants.GN_NS, Constants.NYT_NS, Constants.DBP_NS, Constants.FB_NS))
         .build();
 
     clusters = workGraph.run(fbClustering);

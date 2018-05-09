@@ -1,23 +1,20 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.Graph;
-import org.apache.flink.graph.GraphAlgorithm;
-import org.apache.flink.graph.Triplet;
+import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
-
-import java.util.Set;
 
 /**
  * Compute similarities based on the existing vertex properties,
@@ -89,6 +86,18 @@ public class BasicEdgeSimilarityComputation
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph)
       throws Exception {
 
+    DataSet<String> dataSources = graph
+        .getVertices()
+        .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, String>() {
+          @Override
+          public void flatMap(Vertex<Long, ObjectMap> value, Collector<String> out) throws Exception {
+            for (String source : value.getValue().getDataSourcesList()) {
+              out.collect(source);
+            }
+          }
+        })
+        .distinct();
+
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
         = new SimilarityComputation
@@ -98,22 +107,13 @@ public class BasicEdgeSimilarityComputation
         .setStrategy(SimilarityStrategy.EDGE_SIM)
         .build();
 
-    DataSet<Triplet<Long, ObjectMap, NullValue>> triplets = graph.getTriplets();
-
-    /*
-      data source overlap check for incremental clustering
-     */
-//    if (config != null) {
-//      LOG.info("edge sim Comp conf: " + config.toString());
-//    }
-
-//    if (config != null && config.getStep() == ClusteringStep.VERTEX_ADDITION) {
-////      LOG.info("triplet selection");
-//      triplets = triplets
-//          .filter(new TripletFilterFunction());
-//    } // TODO FIX
-
-    DataSet<Edge<Long, ObjectMap>> edges = triplets
+    boolean checkSourceOverlap = false;
+    if (config != null && config.getStep() == ClusteringStep.CLUSTER_ADDITION) {
+      checkSourceOverlap = true;
+    }
+    DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
+        .filter(new DataSourceOverlapCheckFilterFunction(checkSourceOverlap))
+        .withBroadcastSet(dataSources, "dataSources")
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction())
         .map(new AggSimValueEdgeMapFunction());
@@ -121,26 +121,4 @@ public class BasicEdgeSimilarityComputation
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }
 
-  private static class TripletFilterFunction implements FilterFunction<Triplet<Long, ObjectMap, NullValue>> {
-    @Override
-    public boolean filter(Triplet<Long, ObjectMap, NullValue> triplet) throws Exception {
-      Set<String> srcDataSources = triplet.getSrcVertex().getValue().getDataSourcesList();
-      Set<String> trgDataSources = triplet.getTrgVertex().getValue().getDataSourcesList();
-
-      int srcSize = srcDataSources.size();
-      int trgSize = trgDataSources.size();
-
-      srcDataSources.addAll(trgDataSources);
-      int resultSize = srcDataSources.size();
-      boolean hasOverlap = resultSize <= srcSize + trgSize;
-      boolean isOk = (srcSize + trgSize >= 4) && !hasOverlap;
-
-      if (isOk) {
-        LOG.info("ok: " + triplet.toString());
-      } else {
-        LOG.info("no: " + triplet.toString());
-      }
-      return isOk; // TODO no static size
-    }
-  }
 }

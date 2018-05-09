@@ -13,19 +13,19 @@ import java.util.Properties;
 public class Config extends Properties {
 
   public Config(DataDomain domain, ExecutionEnvironment env) {
-    this.setDomain(domain);
+    this.setDataDomain(domain);
     this.setExecutionEnvironment(env);
   }
 
   public Config(DataDomain domain, ExecutionEnvironment env, boolean isIncremental) {
-    this.setDomain(domain);
+    this.setDataDomain(domain);
     this.setExecutionEnvironment(env);
     this.setIncremental(isIncremental);
   }
 
   public Config(Config config) {
     this.setBlockingStrategy(config.getBlockingStrategy());
-    this.setDomain(config.getDataDomain());
+    this.setDataDomain(config.getDataDomain());
   }
 
   /**
@@ -52,7 +52,7 @@ public class Config extends Properties {
     return (BlockingStrategy) this.get(Constants.BLOCKING_STRATEGY);
   }
 
-  public void setDomain(DataDomain domain) {
+  public void setDataDomain(DataDomain domain) {
     this.put(Constants.DATA_DOMAIN, domain);
 
     /*

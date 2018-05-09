@@ -12,6 +12,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.List;
+import java.util.Set;
 
 public class IncrementalClustering
     implements GraphAlgorithm<Long, ObjectMap, NullValue, DataSet<Vertex<Long, ObjectMap>>> {
@@ -50,7 +51,7 @@ public class IncrementalClustering
     }
 
     public IncrementalClusteringBuilder(DataDomain domain,  ExecutionEnvironment env) {
-      this.config.setDomain(domain);
+      this.config.setDataDomain(domain);
       this.config.setExecutionEnvironment(env);
     }
 
@@ -79,7 +80,7 @@ public class IncrementalClustering
      * @return IncrementalClusteringBuilder
      */
     public IncrementalClusteringBuilder setDataSources(
-        List<String> sources) {
+        Set<String> sources) {
       // TODO check, perhaps only size is needed in general?
       this.config.setExistingSourcesCount(sources.size());
 

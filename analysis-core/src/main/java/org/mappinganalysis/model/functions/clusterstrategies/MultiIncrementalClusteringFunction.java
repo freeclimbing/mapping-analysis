@@ -1,12 +1,18 @@
 package org.mappinganalysis.model.functions.clusterstrategies;
 
 import com.google.common.collect.Sets;
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.operators.DistinctOperator;
+import org.apache.flink.api.java.operators.ReduceOperator;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -18,6 +24,8 @@ import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
+
+import java.util.Set;
 
 
 /**
@@ -98,21 +106,15 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
             .getVertices()
             .union(toBeMergedElements);
 
-        //TODO  get source count total
-
         DataSet<Edge<Long, NullValue>> edges = clusterWorkset
             .groupBy(new BlockingKeySelector())
             .reduceGroup(new AllEdgesCreateGroupReducer<>());
 
-        Graph<Long, ObjectMap, NullValue> preprocGraph = Graph
+        return Graph
             .fromDataSet(clusterWorkset,
                 edges,
-                config.getExecutionEnvironment());
-
-        Graph<Long, ObjectMap, ObjectMap> preprocStep = preprocGraph
-            .run(new DefaultPreprocessing(config));
-
-        return preprocStep
+                config.getExecutionEnvironment())
+            .run(new DefaultPreprocessing(config))
             .run(new SimSort(config))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));

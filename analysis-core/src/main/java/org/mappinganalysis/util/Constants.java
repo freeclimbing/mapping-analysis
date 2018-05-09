@@ -62,6 +62,8 @@ public class Constants {
   public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
   public static final String DATA_DOMAIN = "dataDomain";
   public static final String STEP = "step";
+  public static final String DATA_SOURCES_DATASET = "dataSourcesDataSet";
+
   @Deprecated
   public static final String MODE = "mode";
   public static final String NEW_SOURCE = "newSource";

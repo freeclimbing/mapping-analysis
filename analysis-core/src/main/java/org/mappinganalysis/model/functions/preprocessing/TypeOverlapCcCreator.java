@@ -40,7 +40,7 @@ public class TypeOverlapCcCreator
   public Graph<Long, ObjectMap, ObjectMap> run(
       Graph<Long, ObjectMap, ObjectMap> graph) throws Exception {
     DataSet<Vertex<Long, ObjectMap>> vertices = graph.getVertices()
-        .map(new AddShadingTypeMapFunction())
+//        .map(new AddShadingTypeMapFunction())
         .groupBy(new CcIdKeySelector())
         .reduceGroup(new HashCcIdOverlappingFunction(domain));
 

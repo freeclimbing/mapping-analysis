@@ -10,6 +10,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
 import org.mappinganalysis.model.impl.LinkFilterStrategy;
 import org.mappinganalysis.util.Constants;
@@ -88,7 +89,7 @@ public class DefaultPreprocessing
         .build();
 
     return graph
-//        .mapVertices(new InternalTypeMapFunction() // TODO fix only needed for big geography
+//        .mapVertices(new InternalTypeMapFunction())
         .run(new IntraSourceLinkRemover(config)) // optional
 //        .mapVertices(new AddSettlementTypeMapFunction(config.getDataDomain())) // TODO FIX add type settlement for entities without type
 //        .run(new TypeMisMatchCorrection(env)) // old, commented for SettlementBenchmark
@@ -102,15 +103,15 @@ public class DefaultPreprocessing
    * found. therefore, "settlement" is added, if needed.
    */
   private static class AddSettlementTypeMapFunction implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
-    private IncrementalConfig config;
+    private DataDomain dataDomain;
 
-//    public AddSettlementTypeMapFunction(DataDomain config) {
-//      this.config = config;
-//    }
+    public AddSettlementTypeMapFunction(DataDomain config) {
+      this.dataDomain = config;
+    }
 
     @Override
     public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
-      if (config != null && config.getDataDomain() == DataDomain.GEOGRAPHY) {
+      if (dataDomain == DataDomain.GEOGRAPHY) {
         if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
           vertex.getValue().setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
         }
