@@ -11,7 +11,6 @@ import org.mappinganalysis.model.MergeMusicTriplet;
  * not needed for basic edge similarity computation.
  */
 public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
-//    private static final Logger LOG = Logger.getLogger(MinThresholdFilterFunction.class);
   private final Double threshold;
 
   public MinThresholdFilterFunction(Double threshold) {
@@ -20,10 +19,6 @@ public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
 
   @Override
   public boolean filter(T value) throws Exception {
-//    if (value.getSimilarity() < threshold) {
-//      LOG.info("excluded triplet: " + value.toString());
-//    }
-
     if (value instanceof MergeGeoTriplet) {
       MergeGeoTriplet triplet = (MergeGeoTriplet) value;
       return triplet.getSimilarity() >= threshold;

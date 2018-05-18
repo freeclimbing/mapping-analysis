@@ -61,19 +61,10 @@ public class HungarianAlgorithmReduceFunction
     int rightCounter = 0;
 
     for (MergeGeoTriplet triplet : triplets) {
-//      if (triplet.getSrcId() == 3335L
-//          || triplet.getSrcId() == 6507L
-//          || triplet.getSrcId() == 2380L
-//          || triplet.getTrgId() == 3335
-//          || triplet.getTrgId() == 6507L
-//          || triplet.getTrgId() == 2380L) {
-//        LOG.info("in HA: " + triplets.size()  + " " + triplet.toString());
-//      }
       int leftThisRound;
       int rightThisRound;
 
       if (!leftSource.containsKey(triplet.getSrcId())) {
-//        LOG.info("put: " + leftCounter + " " + triplet.getSrcId());
         leftSource.put(triplet.getSrcId(), leftCounter);
         leftThisRound = leftCounter;
         ++leftCounter;
@@ -81,7 +72,6 @@ public class HungarianAlgorithmReduceFunction
         leftThisRound = leftSource.get(triplet.getSrcId());
       }
       if (!rightSource.containsKey(triplet.getTrgId())) {
-//        LOG.info("put: " + rightCounter + " " + triplet.getTrgId());
         rightSource.put(triplet.getTrgId(), rightCounter);
         rightThisRound = rightCounter;
         ++rightCounter;
@@ -89,8 +79,6 @@ public class HungarianAlgorithmReduceFunction
         rightThisRound = rightSource.get(triplet.getTrgId());
       }
 
-//      LOG.info("add [" + leftThisRound + "][" + rightThisRound + "] = "
-//          + (1 - triplet.getSimilarity()));
       tmpWeights[leftThisRound][rightThisRound] = 1 - triplet.getSimilarity();
     }
 
@@ -108,13 +96,9 @@ public class HungarianAlgorithmReduceFunction
     HashMap<Long, Long> resultMap = Maps.newHashMap();
     // iterate over all matrix elements and assign original ids
     for (int leftPos = 0; leftPos < matrixResult.length; leftPos++) {
-//      LOG.info("run: " + leftPos);
-//      LOG.info("key: " + MapUtils.invertMap(leftSource).get(leftPos).toString());
       Long key = (long) MapUtils.invertMap(leftSource).get(leftPos);
 
       if (matrixResult[leftPos] != -1) {
-//        LOG.info("matrix value for: " + leftPos + " is " + matrixResult[leftPos]);
-//        LOG.info("value: " + MapUtils.invertMap(rightSource).get(matrixResult[leftPos]).toString());
         Long value = (long) MapUtils.invertMap(rightSource)
             .get(matrixResult[leftPos]);
         // remove processed elements, in the end only not matched elements remain
@@ -122,9 +106,6 @@ public class HungarianAlgorithmReduceFunction
         resultMap.put(key, value);
       }
     }
-//    for (Map.Entry<Long, Integer> longIntegerEntry : rightSource.entrySet()) {
-//      LOG.info("right side single elements: " + longIntegerEntry.toString());
-//    }
 
     HashSet<Long> checkSet = Sets.newHashSet();
     for (MergeGeoTriplet triplet : triplets) {
@@ -132,7 +113,6 @@ public class HungarianAlgorithmReduceFunction
       long trgId = triplet.getTrgId();
 
       if (resultMap.get(srcId) == null && !checkSet.contains(srcId)) { // no (left side) match for vertex
-//        LOG.info(resultMap.get(srcId) + " SET SRC TO TRG  and collect NULLtriplet: " + triplet.toString());
         triplet.setTrgTuple(triplet.getSrcTuple());
         triplet.setTrgId(srcId);
         triplet.setSimilarity(1D);
