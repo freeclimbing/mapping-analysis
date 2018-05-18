@@ -79,12 +79,6 @@ public abstract class SimilarityComputation<T, O>
       return this;
     }
 
-//    @Deprecated
-//    public SimilarityComputationBuilder<T, O> setAggregationMode(AggregationMode<T> mode) {
-//      this.mode = mode;
-//      return this;
-//    }
-
     /**
      * Set minimum threshold for similarity
      */

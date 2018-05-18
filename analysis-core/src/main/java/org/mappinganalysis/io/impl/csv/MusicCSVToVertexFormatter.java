@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.MusicUtils;
+import org.mappinganalysis.util.Utils;
 
 /**
  * Musicbrainz vertex formatter.
@@ -54,9 +55,6 @@ public class MusicCSVToVertexFormatter
     if (songLength != null) {
       properties.setLength(songLength);
     }
-//    fixSongLength(value.f5);
-//        properties.put(Constants.LENGTH, fixSongLength(value.f5));
-//        properties.put("oLength", value.f5);
     properties.put(Constants.ARTIST, value.f6);
     properties.put(Constants.ALBUM, value.f7);
 
@@ -64,10 +62,11 @@ public class MusicCSVToVertexFormatter
     if (year != null) {
       properties.setYear(year);
     }
-//         properties.put("oYear", value.f8);
     properties.setLanguage(MusicUtils.fixLanguage(value.f9));
-//         properties.put("orig", value.f9);  // tmp for test
 
+    properties.setArtistTitleAlbum(Utils.createSimpleArtistTitleAlbum(properties));
+
+//    LOG.info("props: " + properties.toString());
     vertex.setValue(properties);
     return vertex;
   }

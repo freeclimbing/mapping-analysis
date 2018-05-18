@@ -15,6 +15,7 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+@Deprecated
 public class FixedIncrementalClusteringFunction
     extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(FixedIncrementalClusteringFunction.class);

@@ -34,6 +34,7 @@ import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 // TODO candidates based on blocking strategy
 // TODO restrict candidates to needed properties!?
@@ -55,6 +56,7 @@ public class CandidateCreator
   private int sourceCount;
   private ExecutionEnvironment env;
   private DataSet<Vertex<Long, ObjectMap>> inputVertices;
+  private IncrementalConfig config;
 
   /**
    * Constructor for incremental clustering
@@ -66,6 +68,15 @@ public class CandidateCreator
     this.env = config.getExecutionEnvironment();
     this.newSource = newSource;
     this.sourceCount = sourceCount;
+  }
+
+  public CandidateCreator(IncrementalConfig config) {
+    this.config = config;
+    this.blockingStrategy = config.getBlockingStrategy();
+    this.domain = config.getDataDomain();
+    this.metric = config.getMetric();
+    this.env = config.getExecutionEnvironment();
+    this.newSource = config.getNewSource();
   }
 
 
@@ -87,10 +98,25 @@ public class CandidateCreator
         .setThreshold(0.7)
         .build();
 
+     if (!blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
+      /*
+        STANDARD BLOCKING / BLOCK SPLIT
+       */
+      return inputVertices
+          .map(new AddShadingTypeMapFunction())
+          .map(new MergeGeoTupleCreator(blockingStrategy))
+          .groupBy(7)
+          .reduceGroup(new MergeGeoTripletCreator(
+              sourceCount, newSource, true))
+          .distinct(0, 1)
+          .runOperation(similarityComputation)
+          .groupBy(5)
+          .reduceGroup(new HungarianAlgorithmReduceFunction());
+
+    } else {
     /*
     TODO LSH MUCH CODE refactor
      */
-    if (blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
       boolean isIdfOptimizeEnabled = true;
       boolean isLogEnabled = false;
       DataSet<Tuple2<Long, Long>> lshCandidates = inputVertices
@@ -222,21 +248,6 @@ public class CandidateCreator
               return triplet;
             }
           })
-          .groupBy(5)
-          .reduceGroup(new HungarianAlgorithmReduceFunction());
-    } else {
-      /*
-        STANDARD BLOCKING / BLOCK SPLIT
-       */
-
-      return inputVertices
-          .map(new AddShadingTypeMapFunction())
-          .map(new MergeGeoTupleCreator(blockingStrategy))
-          .groupBy(7)
-          .reduceGroup(new MergeGeoTripletCreator(
-              sourceCount, newSource, true))
-          .distinct(0, 1)
-          .runOperation(similarityComputation)
           .groupBy(5)
           .reduceGroup(new HungarianAlgorithmReduceFunction());
     }

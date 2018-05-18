@@ -157,11 +157,6 @@ public class MusicBrainzTest {
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
-
-//      representatives.print();
-
-//      final String outPath = MusicBrainzTest.class
-//          .getResource("csimq").getFile();
       /*
         tmp solution
        */
@@ -173,7 +168,7 @@ public class MusicBrainzTest {
 //      } // sim for
       env.execute();
 
-//    // merge
+    // merge
       DataSet<Vertex<Long, ObjectMap>> diskRepresentatives =
           new org.mappinganalysis.io.impl.json.JSONDataSource(
               reprOut.concat("output/repr/"), true, env)

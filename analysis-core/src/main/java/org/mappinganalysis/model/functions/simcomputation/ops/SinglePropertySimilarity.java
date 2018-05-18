@@ -63,6 +63,7 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
       case Constants.LABEL:
       case Constants.ARTIST:
       case Constants.ALBUM:
+      case Constants.ARTIST_TITLE_ALBUM:
         return handleString(property);
       case Constants.YEAR:
         return handleYear();
@@ -162,14 +163,31 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
 
   }
 
-
+  /**
+   * Add similarity for String property value, compare both vertex values.
+   * @param property property to be used for sim computation
+   * @return updated triplet
+   */
   private EdgeObjectMapTriplet handleString(String property) {
     String srcProperty = triplet.getSrcVertex().getValue().get(property).toString();
     String trgProperty = triplet.getTrgVertex().getValue().get(property).toString();
 
     Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcProperty, trgProperty, metric);
     if (similarity != null) {
-      triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
+      switch (property) {
+        case Constants.ARTIST_TITLE_ALBUM:
+          triplet.getEdge().getValue().put(Constants.SIM_ARTIST_LABEL_ALBUM, similarity);
+          break;
+        case Constants.ALBUM:
+          triplet.getEdge().getValue().put(Constants.SIM_ALBUM, similarity);
+          break;
+        case Constants.ARTIST:
+          triplet.getEdge().getValue().put(Constants.SIM_ARTIST, similarity);
+          break;
+        case Constants.LABEL:
+          triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
+          break;
+      }
     }
 
     return triplet;

@@ -21,6 +21,7 @@ import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.Config;
 
 import java.util.HashMap;
 import java.util.List;
@@ -100,12 +101,11 @@ public class MergeGeoBlockingTest {
                 4,
                 env));
 
-        Properties properties = new Properties();
+        Config properties = new Config(DataDomain.GEOGRAPHY, env);
         properties.setProperty(Constants.DATASET, dataset);
         properties.put(Constants.MERGE_THRESHOLD, mergeThreshold);
         properties.put(Constants.SIMSORT_THRESHOLD, simThreshold);
         properties.put(Constants.SOURCE_COUNT_LABEL, 4);
-        properties.put(Constants.ENV, env);
 
         QualityUtils.printGeoQuality(merged, properties);
       }

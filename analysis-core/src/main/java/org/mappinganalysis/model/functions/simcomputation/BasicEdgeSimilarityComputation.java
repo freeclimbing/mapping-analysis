@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.SourceExtraction;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.decomposition.simsort.TripletToEdgeMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
@@ -63,6 +64,7 @@ public class BasicEdgeSimilarityComputation
     this.config = config;
     this.env = config.getExecutionEnvironment();
     this.mode = config.getMode();
+
     if (config.getDataDomain() == DataDomain.MUSIC) {
       this.simFunction = new MusicSimilarityFunction(config.getMetric());
     } else if (config.getDataDomain() == DataDomain.NC) {
@@ -85,19 +87,6 @@ public class BasicEdgeSimilarityComputation
   @Override
   public Graph<Long, ObjectMap, ObjectMap> run(Graph<Long, ObjectMap, NullValue> graph)
       throws Exception {
-
-    DataSet<String> dataSources = graph
-        .getVertices()
-        .flatMap(new FlatMapFunction<Vertex<Long, ObjectMap>, String>() {
-          @Override
-          public void flatMap(Vertex<Long, ObjectMap> value, Collector<String> out) throws Exception {
-            for (String source : value.getValue().getDataSourcesList()) {
-              out.collect(source);
-            }
-          }
-        })
-        .distinct();
-
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
         = new SimilarityComputation
@@ -108,15 +97,19 @@ public class BasicEdgeSimilarityComputation
         .build();
 
     boolean checkSourceOverlap = false;
-    if (config != null && config.getStep() == ClusteringStep.CLUSTER_ADDITION) {
+    if (config != null
+        && (config.getStep() == ClusteringStep.CLUSTER_ADDITION
+        || config.getStep() == ClusteringStep.SOURCE_ADDITION)) {
       checkSourceOverlap = true;
     }
+
     DataSet<Edge<Long, ObjectMap>> edges = graph.getTriplets()
         .filter(new DataSourceOverlapCheckFilterFunction(checkSourceOverlap))
-        .withBroadcastSet(dataSources, "dataSources")
+        .withBroadcastSet(graph.run(new SourceExtraction<>()), "dataSources")
         .runOperation(similarityComputation)
         .map(new TripletToEdgeMapFunction())
-        .map(new AggSimValueEdgeMapFunction());
+        .map(new AggSimValueEdgeMapFunction())
+        .filter(edge -> edge.getValue().getEdgeSimilarity() > 0.6); // music 0.6 or 0.65 could be better for f1
 
     return Graph.fromDataSet(graph.getVertices(), edges, env);
   }

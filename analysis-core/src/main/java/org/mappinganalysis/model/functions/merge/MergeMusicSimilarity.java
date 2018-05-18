@@ -30,13 +30,14 @@ public class MergeMusicSimilarity
   }
 
   // TODO add min sim check
-  // TODO really only these 2 sims?
+  /**
+   * Compute similarities for MUSIC domain based on properties.
+   * {@value Constants#ARTIST_TITLE_ALBUM} is chosen over single values due to more reliability.
+   * @param triplet triplet where similarity is added to
+   * @return updated triplet
+   */
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
-//    Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet);
-//    Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet);
-//    Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet);
-
     Double artistLabelAlbumSim = getAttributeSimilarity(Constants.ARTIST_TITLE_ALBUM, triplet);
     Double yearSim = getAttributeSimilarity(Constants.YEAR, triplet);
     Double lengthSim = getAttributeSimilarity(Constants.LENGTH, triplet);
@@ -48,17 +49,6 @@ public class MergeMusicSimilarity
     if (artistLabelAlbumSim != null) {
       values.put(Constants.SIM_ARTIST_LABEL_ALBUM, artistLabelAlbumSim);
     }
-
-//    if (labelSimilarity != null) {
-//      values.put(Constants.SIM_LABEL, labelSimilarity);
-//    }
-//    if (artistSimilarity != null) {
-//      values.put(Constants.SIM_ARTIST, artistSimilarity);
-//    }
-//    if (albumSimilarity != null) {
-//      values.put(Constants.SIM_ALBUM, albumSimilarity);
-//    }
-
     if (yearSim != null) {
       values.put(Constants.SIM_YEAR, yearSim);
     }
@@ -72,12 +62,9 @@ public class MergeMusicSimilarity
 //      values.put(Constants.SIM_LANG, languageSim);
 //    }
 
-//    LOG.info("music: " + values.toString());
-
     triplet.setSimilarity(values
         .runOperation(aggregationFunction)
         .getEdgeSimilarity());
-
     return triplet;
   }
 

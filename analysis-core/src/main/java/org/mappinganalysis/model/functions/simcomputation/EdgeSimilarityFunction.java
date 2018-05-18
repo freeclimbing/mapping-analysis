@@ -33,7 +33,6 @@ public class EdgeSimilarityFunction
   @Override
   public Triplet<Long, ObjectMap, ObjectMap> map(Triplet<Long, ObjectMap, NullValue> triplet)
       throws Exception {
-//    LOG.info("EdgeSimFunction: " + triplet.toString());
     ObjectMap srcProps = triplet.getSrcVertex().getValue();
     ObjectMap trgProps = triplet.getTrgVertex().getValue();
     Triplet<Long, ObjectMap, ObjectMap> result = initResultTriplet(triplet);

@@ -62,7 +62,9 @@ public class Constants {
   public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
   public static final String DATA_DOMAIN = "dataDomain";
   public static final String STEP = "step";
+  public static final String SUBGRAPH_VERTICES_PATH = "subGraphVerticesPath";
   public static final String DATA_SOURCES_DATASET = "dataSourcesDataSet";
+  public static final String NULL = "null";
 
   @Deprecated
   public static final String MODE = "mode";
@@ -137,12 +139,13 @@ public class Constants {
   public static final String SIM_YEAR = "simYear";
   public static final String SIM_LENGTH = "simLength";
   public static final String SIM_NUMBER = "simNumber";
+  public static final String SIM_ARTIST_LABEL_ALBUM = "simArtistLabelAlbum";
 
   public static final HashSet<String> SIM_VALUES;
-  public static final String SIM_ARTIST_LABEL_ALBUM = "simArtistLabelAlbum";
 
   static {
     SIM_VALUES = Sets.newHashSet();
+    SIM_VALUES.add(SIM_ARTIST_LABEL_ALBUM);
     SIM_VALUES.add(SIM_TYPE);
     SIM_VALUES.add(SIM_LABEL);
     SIM_VALUES.add(SIM_DISTANCE);

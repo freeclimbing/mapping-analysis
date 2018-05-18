@@ -195,10 +195,10 @@ public class Utils {
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
-    } else if (strategy.equals(BlockingStrategy.NO_BLOCKING)) {
+    } else if (strategy.equals(BlockingStrategy.NO_BLOCKING)) { // DUMMY
 
       return Constants.NO_VALUE;
-    } else if (strategy.equals(BlockingStrategy.LSH_BLOCKING)) {
+    } else if (strategy.equals(BlockingStrategy.LSH_BLOCKING)) { // DUMMY
 
       return Constants.NO_VALUE;
     } else {
@@ -586,14 +586,15 @@ public class Utils {
   /**
    * Blocking key string, no hard replacement of non words and special characters.
    * @return simple concatenated album title artist
+   * @param value vertex properties
    */
-  public static String createSimpleArtistTitleAlbum(Vertex<Long, ObjectMap> value) {
+  public static String createSimpleArtistTitleAlbum(ObjectMap value) {
     String artistTitleAlbum = Constants.EMPTY_STRING;
-    String artist = value.getValue().getArtist();
+    String artist = value.getArtist();
     if (!artist.equals(Constants.CSV_NO_VALUE)) {
       artistTitleAlbum = artist;
     }
-    String label = value.getValue().getLabel();
+    String label = value.getLabel();
     if (!label.equals(Constants.CSV_NO_VALUE)) {
       if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = label;
@@ -601,7 +602,7 @@ public class Utils {
         artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(label);
       }
     }
-    String album = value.getValue().getAlbum();
+    String album = value.getAlbum();
     if (!album.equals(Constants.CSV_NO_VALUE)) {
       if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = album;
@@ -611,12 +612,13 @@ public class Utils {
     }
 
     String tmp = artistTitleAlbum;
-    artistTitleAlbum = artistTitleAlbum
-//        .replaceAll("\\W", "")
-        .replaceAll("\\p{Punct}", "");
+    artistTitleAlbum = CharMatcher.WHITESPACE.trimAndCollapseFrom(
+        artistTitleAlbum.toLowerCase()
+            .replaceAll("[\\p{Punct}]", " "),
+        ' ');
 
     if (artistTitleAlbum.isEmpty()) {
-      System.out.println(tmp);
+      System.out.println("Utils: artistTitleAlbum empty: " + tmp);
     }
 
     return artistTitleAlbum;

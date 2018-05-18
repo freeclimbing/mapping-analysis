@@ -12,6 +12,8 @@ import java.util.List;
  * Config class for incremental clustering.
  */
 public class IncrementalConfig extends Config {
+  private String subGraphVerticesPath;
+
   public IncrementalConfig(DataDomain domain, ExecutionEnvironment env) {
     super(domain, env, true);
   }
@@ -63,4 +65,13 @@ public class IncrementalConfig extends Config {
       return null;
     }
   }
+
+  public void setSubGraphVerticesPath(String subGraphVerticesPath) {
+    this.setProperty(Constants.SUBGRAPH_VERTICES_PATH, subGraphVerticesPath);
+  }
+
+  public String getSubGraphVerticesPath() {
+    return this.getProperty(Constants.SUBGRAPH_VERTICES_PATH);
+  }
+
 }

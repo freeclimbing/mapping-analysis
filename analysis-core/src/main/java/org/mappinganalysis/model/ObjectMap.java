@@ -485,7 +485,7 @@ public class ObjectMap
    * Get source dataset name for vertex. Maps old "ontology" data source values to new ones.
    */
   public String getDataSource() {
-    return map.get(Constants.DATA_SOURCE).toString();
+    return String.valueOf(map.get(Constants.DATA_SOURCE));
   }
 
   public void setDataSource(String source) {
@@ -497,10 +497,6 @@ public class ObjectMap
    */
   public Set<String> getDataSourcesList() {
     Object dataSources = map.get(Constants.DATA_SOURCES);
-
-//    if (dataSources == null) {
-//      return null;
-//    }
 
     if (dataSources instanceof Set) {
       return (Set<String>) dataSources;
@@ -716,16 +712,26 @@ public class ObjectMap
    * @param strategy BlockingStrategy {@see BlockingStrategy}
    */
   public void setBlockingKey(BlockingStrategy strategy) {
-    map.put(Constants.BLOCKING_LABEL,
-        Utils.getBlockingKey(strategy, mode, getLabel()));
+    if (mode.equals(Constants.GEO)) {
+      map.put(Constants.BLOCKING_LABEL,
+          Utils.getBlockingKey(strategy, mode, getLabel()));
+    } else if (mode.equals(Constants.MUSIC)) {
+      map.put(Constants.BLOCKING_LABEL,
+          Utils.getBlockingKey(strategy, mode, getArtistTitleAlbum()));
+    } else {
+      throw new IllegalArgumentException("setBlockingKey: Unsupported mode: " + mode);
+    }
+
   }
 
   /**
-   * TODO Blocking key string for IDF?
+   * Get the blocking key for a vertex.
    */
   public String getBlockingKey() {
     if (this.get(Constants.BLOCKING_LABEL) == null) {
-      return Constants.EMPTY_STRING;
+      throw new IllegalArgumentException("missing bkey: " + this.toString());
+
+//      return Constants.EMPTY_STRING;
     } else {
       return this.get(Constants.BLOCKING_LABEL).toString();
     }

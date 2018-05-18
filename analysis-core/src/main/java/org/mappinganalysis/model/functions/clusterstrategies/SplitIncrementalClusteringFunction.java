@@ -24,6 +24,7 @@ import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 /**
  * not good anymore
  */
+@Deprecated
 public class SplitIncrementalClusteringFunction extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(SplitIncrementalClusteringFunction.class);
 

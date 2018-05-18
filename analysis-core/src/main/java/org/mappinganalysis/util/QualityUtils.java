@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -7,10 +8,12 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
 
 import java.util.Properties;
@@ -20,7 +23,7 @@ public class QualityUtils {
 
   public static void printGeoQuality(
       DataSet<Vertex<Long, ObjectMap>> merged,
-      Properties properties)
+      Config properties)
       throws Exception {
     Double mergeThreshold = properties.get(Constants.MERGE_THRESHOLD) == null
         ? 0d : (double) properties.get(Constants.MERGE_THRESHOLD);
@@ -67,6 +70,59 @@ public class QualityUtils {
     LOG.info("\n############### dataset: " + dataset
         + " mergeThreshold: " + mergeThreshold
         + " simSortThreshold: " + simSortThreshold);
+    LOG.info("TP+FN: " + goldCount);
+    LOG.info("TP+FP: " + checkCount);
+    LOG.info("TP: " + tpCount);
+
+    LOG.info("precision: " + precision + " recall: " + recall
+        + " F1: " + 2 * precision * recall / (precision + recall));
+    LOG.info("######################################################");
+  }
+
+  public static void printMusicQuality(
+      DataSet<Vertex<Long, ObjectMap>> checkClusters,
+      Config config)
+      throws Exception {
+    DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
+        .flatMap(new QualityEdgeCreator());
+
+    String path = "/data/musicbrainz/input/";
+    DataSet<Tuple2<Long, Long>> goldLinks;
+
+    String pmPath = QualityUtils.class.getResource(path).getFile();
+
+      DataSet<Tuple2<String, String>> perfectMapping = config
+          .getExecutionEnvironment()
+          .readCsvFile(pmPath.concat("musicbrainz-20000-A01.csv.dapo"))
+          .ignoreFirstLine()
+          .includeFields(true, true, false, false, false, false, false, false, false, false, false, false)
+          .types(String.class, String.class);
+
+      goldLinks = perfectMapping
+          .map(tuple -> new Vertex<>(Long.parseLong(tuple.f0), Long.parseLong(tuple.f1)))
+          .returns(new TypeHint<Vertex<Long, Long>>() {})
+          .groupBy(1)
+          .reduceGroup(new AllEdgesCreateGroupReducer<>())
+          .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+
+    DataSet<Tuple2<Long, Long>> truePositives = goldLinks
+        .join(clusterEdges)
+        .where(0, 1).equalTo(0, 1)
+        .with(new JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
+          @Override
+          public Tuple2<Long, Long> join(Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
+            return first;
+          }
+        });
+
+    long goldCount = goldLinks.count();
+    long checkCount = clusterEdges.count();
+    long tpCount = truePositives.count();
+
+    double precision = (double) tpCount / checkCount; // tp / (tp + fp)
+    double recall = (double) tpCount / goldCount; // tp / (fn + tp)
+    LOG.info("\n############### dataset: " + config.toString());
     LOG.info("TP+FN: " + goldCount);
     LOG.info("TP+FP: " + checkCount);
     LOG.info("TP: " + tpCount);

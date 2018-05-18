@@ -9,7 +9,6 @@ import org.mappinganalysis.util.Utils;
  * MUSIC, NC
  */
 public class SimCompUtils {
-
   public static Double handleNumber(MergeMusicTriplet triplet) {
     String srcNumber = triplet.getSrcTuple().getNumber();
     String trgNumber = triplet.getTrgTuple().getNumber();

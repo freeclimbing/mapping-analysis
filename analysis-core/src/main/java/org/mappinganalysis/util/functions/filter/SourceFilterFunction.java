@@ -3,6 +3,7 @@ package org.mappinganalysis.util.functions.filter;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.util.Constants;
 
 public class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
   private final String source;
@@ -13,9 +14,9 @@ public class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectM
 
   @Override
   public boolean filter(Vertex<Long, ObjectMap> vertex) throws Exception {
-    if (vertex.getValue().getDataSource() != null) {
+    if (!vertex.getValue().getDataSource().equals(Constants.NULL)) {
       return vertex.getValue().getDataSource().equals(source);
-    } else if (vertex.getValue().getDataSourcesList() != null) {
+    } else if (!vertex.getValue().getDataSourcesList().isEmpty()) {
       return vertex.getValue().getDataSourcesList().contains(source);
     } else {
       return false;
