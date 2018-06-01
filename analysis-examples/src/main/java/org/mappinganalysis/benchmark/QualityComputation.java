@@ -10,7 +10,7 @@ import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -54,7 +54,7 @@ public class QualityComputation implements ProgramDescription {
 
     // result set of edges which is to be checked against perfect result
     DataSet<Edge<Long, NullValue>> edgeResultSet = clusters
-        .runOperation(new EdgeComputationVertexCcSet())
+        .runOperation(new EdgeComputationOnVerticesForKeySelector())
         .map(new SmallEdgeIdFirstMapFunction());
 
     long checkCount = edgeResultSet.count();
@@ -62,7 +62,7 @@ public class QualityComputation implements ProgramDescription {
 
 
     DataSet<Edge<Long, NullValue>> goldEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.ALL,
             true));

@@ -12,11 +12,12 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
@@ -24,8 +25,8 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class EdgeComputationVertexCcSetTest {
-  private static final Logger LOG = Logger.getLogger(EdgeComputationVertexCcSetTest.class);
+public class EdgeComputationOnVerticesForKeySelectorTest {
+  private static final Logger LOG = Logger.getLogger(EdgeComputationOnVerticesForKeySelectorTest.class);
 
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -33,18 +34,55 @@ public class EdgeComputationVertexCcSetTest {
   public void SimpleEdgesCreatorTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
-    String graphPath = EdgeComputationVertexCcSetTest
+    String graphPath = EdgeComputationOnVerticesForKeySelectorTest
         .class.getResource("/data/typeGroupBy/").getFile();
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(graphPath, true, env)
         .getVertices();
 
     DataSet<Edge<Long, NullValue>> resultEdges = vertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
     assertEquals(8, resultEdges.count());
+  }
+
+  @Test
+  public void StringKeySelectorTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String graphPath = EdgeComputationOnVerticesForKeySelectorTest
+        .class.getResource("/data/typeGroupBy/").getFile();
+    DataSet<Vertex<Long, ObjectMap>> vertices =
+        new JSONDataSource(graphPath, true, env)
+            .getVertices()
+            .map(vertex -> {
+              vertex.getValue().setMode(Constants.GEO);
+              vertex.getValue().setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
+              return vertex;
+            })
+            .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+    DataSet<Edge<Long, NullValue>> resultEdges = vertices
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
+            new BlockingKeySelector()));
+
+    int clusterOneEdgeCount = 0;
+    int clusterTwoEdgeCount = 0;
+    for (Edge<Long, NullValue> edge : resultEdges.collect()) {
+      if (edge.getSource() == 122L
+          || edge.getSource() == 123L
+          || edge.getSource() == 1181L) {
+        clusterOneEdgeCount++;
+      } else if (edge.getSource() == 617158L
+          || edge.getSource() == 617159L
+          || edge.getSource() == 1022884L) {
+        clusterTwoEdgeCount++;
+      }
+    }
+    assertEquals(6, clusterOneEdgeCount);
+    assertEquals(6, clusterTwoEdgeCount);
   }
 
   /**
@@ -56,29 +94,19 @@ public class EdgeComputationVertexCcSetTest {
     Graph<Long, NullValue, NullValue> graph = createTestGraph();
     DataSet<Vertex<Long, ObjectMap>> inputVertices = prepareVertices(graph);
 
-    // why this test? useless?
-//    DataSet<Edge<Long, NullValue>> allEdges = inputVertices
-//        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector(),
-//            EdgeComputationStrategy.ALL,
-//            false));
-//
-//    allEdges.print();
-//    assertEquals(9, allEdges.count());
-//
-//    DataSet<Edge<Long, NullValue>> newEdges
-//        = restrictToNewEdges(graph.getEdges(), allEdges);
-//    assertEquals(1, newEdges.count());
-//    assertTrue(newEdges.collect()
-//        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
-
-
     final DataSet<Edge<Long, NullValue>> distinctEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(new CcIdKeySelector()));
 
-    distinctEdges.print();
-    assertEquals(3, distinctEdges.count());
-    assertTrue(distinctEdges.collect()
-        .contains(new Edge<>(5681L, 5984L, NullValue.getInstance())));
+    int count = 0;
+    for (Edge<Long, NullValue> edge : distinctEdges.collect()) {
+      count++;
+      if (edge.getSource() == 5680L) {
+        assertTrue(edge.getTarget() == 5984L || edge.getTarget() == 5681L);
+      } else if (edge.getSource() == 5681L) {
+        assertTrue(edge.getTarget() == 5984L);
+      }
+    }
+    assertEquals(3, count);
   }
 
   /**
@@ -103,31 +131,5 @@ public class EdgeComputationVertexCcSetTest {
     edgeList.add(new Edge<>(5680L, 5984L, NullValue.getInstance()));
 
     return Graph.fromCollection(edgeList, env);
-  }
-
-  /**
-   * Restrict given set to edges which are not in the input edges set.
-   * @param input edges in this dataset should no longer be in the result set
-   * @param processEdges remove edges from input edge dataset from these and return
-   *
-   * Used for tests.
-   */
-  @Deprecated
-  private DataSet<Edge<Long, NullValue>> restrictToNewEdges(
-      DataSet<Edge<Long, NullValue>> input,
-      DataSet<Edge<Long, NullValue>> processEdges) {
-    return processEdges
-        .filter(edge -> edge.getSource().longValue() != edge.getTarget())
-        .leftOuterJoin(input)
-        .where(0, 1)
-        .equalTo(0, 1)
-        .with(new LeftMinusRightSideJoinFunction<>())
-        .leftOuterJoin(input)
-        .where(0, 1)
-        .equalTo(1, 0)
-        .with(new LeftMinusRightSideJoinFunction<>())
-        .map(edge -> edge.getSource() < edge.getTarget() ? edge : edge.reverse())
-        .returns(new TypeHint<Edge<Long, NullValue>>() {})
-        .distinct();
   }
 }

@@ -16,13 +16,13 @@ public class SimpleEdgesCreator
   private static final Logger LOG = Logger.getLogger(SimpleEdgesCreator.class);
 
   private DataSet<Vertex<Long, ObjectMap>> vertices;
-  private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+  private KeySelector<Vertex<Long, ObjectMap>, ?> keySelector;
 
   /**
    * Create edges for set of vertices having cc id - optionally create only as many edges
    * to connect all vertices within cc.
    */
-  SimpleEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
+  <T> SimpleEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, T> keySelector) {
     this.keySelector = keySelector;
   }
 

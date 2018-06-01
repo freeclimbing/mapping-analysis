@@ -7,7 +7,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.LinkFilter;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
@@ -65,7 +65,7 @@ public class Clustering {
     // CcIdKeySelector!
     final DataSet<Edge<Long, NullValue>> distinctEdges = graph
         .getVertices()
-        .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(new CcIdKeySelector()));
 
     return Graph.fromDataSet(graph.getVertices(), distinctEdges, env)
         .run(new BasicEdgeSimilarityComputation(Constants.COSINE_TRIGRAM, Constants.GEO, env));

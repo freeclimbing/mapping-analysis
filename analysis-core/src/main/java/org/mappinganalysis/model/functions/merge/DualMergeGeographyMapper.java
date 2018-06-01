@@ -38,66 +38,65 @@ public class DualMergeGeographyMapper
 
   @Override
   public void flatMap(MergeGeoTriplet triplet, Collector<MergeGeoTuple> out) throws Exception {
-    if (triplet.getSrcId() == triplet.getTrgId().longValue()) {
+    if (triplet.getSrcId() == triplet.getTrgId()) {
       out.collect(triplet.getSrcTuple());
-
-      return;
-    }
-
-    MergeGeoTuple priority = triplet.getSrcTuple();
-    MergeGeoTuple minor = triplet.getTrgTuple();
-
-    Set<Long> trgElements = minor.getClusteredElements();
-    Set<Long> srcElements = priority.getClusteredElements();
-    if (srcElements.size() < trgElements.size()) {
-      MergeGeoTuple tmp = minor;
-      minor = priority;
-      priority = tmp;
-    }
-
-    MergeGeoTuple mergedCluster = new MergeGeoTuple();
-    // set tuple properties
-    mergedCluster.setId(priority.getId() > minor.getId() ? minor.getId() : priority.getId());
-    // is there a case where minor label should be taken?
-    if (priority.getLabel().length() >= minor.getLabel().length()) {
-      mergedCluster.setLabel(priority.getLabel());
     } else {
-      mergedCluster.setLabel(minor.getLabel());
-    }
 
-    // geo coordinates
-    MergeGeoTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
-    if (geoTuple != null) {
-      mergedCluster.setGeoProperties(geoTuple);
-    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.GN_NS)) {
-      mergedCluster.setGeoProperties(priority);
-    } else if (AbstractionUtils.containsSrc(Constants.GEO, minor.getIntSources(), Constants.GN_NS)) {
-      mergedCluster.setGeoProperties(minor);
-    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
-      mergedCluster.setGeoProperties(priority);
-    } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
-      mergedCluster.setGeoProperties(minor);
-    }
+      MergeGeoTuple priority = triplet.getSrcTuple();
+      MergeGeoTuple minor = triplet.getTrgTuple();
 
-    srcElements.addAll(trgElements);
-    mergedCluster.addClusteredElements(srcElements);
-    mergedCluster.setIntSources(AbstractionUtils.mergeIntValues(
-        priority.getIntSources(),
-        minor.getIntSources()));
-    mergedCluster.setIntTypes(AbstractionUtils.mergeIntValues(
-        priority.getIntTypes(),
-        minor.getIntTypes()));
-    mergedCluster.setBlockingLabel(priority.getBlockingLabel());
+      Set<Long> trgElements = minor.getClusteredElements();
+      Set<Long> srcElements = priority.getClusteredElements();
+      if (srcElements.size() < trgElements.size()) {
+        MergeGeoTuple tmp = minor;
+        minor = priority;
+        priority = tmp;
+      }
+
+      MergeGeoTuple mergedCluster = new MergeGeoTuple();
+      // set tuple properties
+      mergedCluster.setId(priority.getId() > minor.getId() ? minor.getId() : priority.getId());
+      // is there a case where minor label should be taken?
+      if (priority.getLabel().length() >= minor.getLabel().length()) {
+        mergedCluster.setLabel(priority.getLabel());
+      } else {
+        mergedCluster.setLabel(minor.getLabel());
+      }
+
+      // geo coordinates
+      MergeGeoTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
+      if (geoTuple != null) {
+        mergedCluster.setGeoProperties(geoTuple);
+      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.GN_NS)) {
+        mergedCluster.setGeoProperties(priority);
+      } else if (AbstractionUtils.containsSrc(Constants.GEO, minor.getIntSources(), Constants.GN_NS)) {
+        mergedCluster.setGeoProperties(minor);
+      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
+        mergedCluster.setGeoProperties(priority);
+      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
+        mergedCluster.setGeoProperties(minor);
+      }
+
+      srcElements.addAll(trgElements);
+      mergedCluster.addClusteredElements(srcElements);
+      mergedCluster.setIntSources(AbstractionUtils.mergeIntValues(
+          priority.getIntSources(),
+          minor.getIntSources()));
+      mergedCluster.setIntTypes(AbstractionUtils.mergeIntValues(
+          priority.getIntTypes(),
+          minor.getIntTypes()));
+      mergedCluster.setBlockingLabel(priority.getBlockingLabel());
 
 //        LOG.info("### new cluster: " + mergedCluster.toString());
-    out.collect(mergedCluster);
+      out.collect(mergedCluster);
 
-    if (hasFakeResults) {
-      MergeGeoTuple fakeCluster = new MergeGeoTuple(
-          priority.getId() > minor.getId() ? priority.getId() : minor.getId());
+      if (hasFakeResults) {
+        MergeGeoTuple fakeCluster = new MergeGeoTuple(
+            priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 
 //    LOG.info("### fake cluster: " + fakeCluster.toString());
-      out.collect(fakeCluster);
+        out.collect(fakeCluster);
+      }
     }
   }
 }

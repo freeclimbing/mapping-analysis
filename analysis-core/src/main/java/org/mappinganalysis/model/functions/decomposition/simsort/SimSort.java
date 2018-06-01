@@ -7,7 +7,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.GraphAlgorithm;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.BasicEdgeSimilarityComputation;
@@ -46,7 +46,7 @@ public class SimSort
     DataSet<Edge<Long, NullValue>> distinctEdges = graph
         .getVertices()
 //          .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector())); // TODO perhaps add hash cc id before simsort??
-        .runOperation(new EdgeComputationVertexCcSet(new HashCcIdKeySelector()));
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(new HashCcIdKeySelector()));
 
     graph = Graph
         .fromDataSet(graph.getVertices(),

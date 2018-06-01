@@ -82,7 +82,7 @@ public class MergeGeoTriplet
     setIdAndTuples(left, right);
   }
 
-  public Long getSrcId() {
+  public long getSrcId() {
     return f0;
   }
 
@@ -90,7 +90,7 @@ public class MergeGeoTriplet
     f0 = id;
   }
 
-  public Long getTrgId() {
+  public long getTrgId() {
     return f1;
   }
 

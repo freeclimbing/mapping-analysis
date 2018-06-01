@@ -10,13 +10,11 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
-
-import java.util.Properties;
 
 public class QualityUtils {
   private static final Logger LOG = Logger.getLogger(QualityUtils.class);
@@ -48,7 +46,7 @@ public class QualityUtils {
           pmPath, true, env)
           .getGraph(ObjectMap.class, NullValue.class)
           .getVertices()
-          .runOperation(new EdgeComputationVertexCcSet(
+          .runOperation(new EdgeComputationOnVerticesForKeySelector(
               null,
               EdgeComputationStrategy.REPRESENTATIVE))
           .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))

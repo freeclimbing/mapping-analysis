@@ -11,10 +11,10 @@ import org.mappinganalysis.model.ObjectMap;
 /**
  * Create edges for a given set of vertices having component ids.
  */
-public class EdgeComputationVertexCcSet
+public class EdgeComputationOnVerticesForKeySelector
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
 
-  private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+  private KeySelector<Vertex<Long, ObjectMap>, ?> keySelector;
   private EdgeComputationStrategy strategy = EdgeComputationStrategy.NONE;
   private Boolean isResultEdgeDistinct = true;
   private DataSet<Vertex<Long, ObjectMap>> vertices;
@@ -22,15 +22,15 @@ public class EdgeComputationVertexCcSet
   /**
    * Create all distinct edges for a set of representatives.
    */
-  public EdgeComputationVertexCcSet() {
+  public EdgeComputationOnVerticesForKeySelector() {
     this.strategy = EdgeComputationStrategy.REPRESENTATIVE;
   }
 
   /**
    * Create all distinct edges for a set of vertices with cc ids.
    */
-  public EdgeComputationVertexCcSet(
-      KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
+  public <T> EdgeComputationOnVerticesForKeySelector(
+      KeySelector<Vertex<Long, ObjectMap>, T> keySelector) {
     this(keySelector, EdgeComputationStrategy.ALL, true);
   }
 
@@ -41,8 +41,8 @@ public class EdgeComputationVertexCcSet
    * @param strategy if SIMPLE, only core edges will be computed in cc
    * @param isResultEdgeDistinct if false, no distinct check for edges
    */
-  public EdgeComputationVertexCcSet(
-      KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
+  public <T> EdgeComputationOnVerticesForKeySelector(
+      KeySelector<Vertex<Long, ObjectMap>, T> keySelector,
       EdgeComputationStrategy strategy,
       Boolean isResultEdgeDistinct) {
     this.keySelector = keySelector;
@@ -55,8 +55,8 @@ public class EdgeComputationVertexCcSet
    * @param keySelector used cc id key selector
    * @param strategy needs to be false
    */
-  public EdgeComputationVertexCcSet(
-      KeySelector<Vertex<Long, ObjectMap>, Long> keySelector,
+  public <T> EdgeComputationOnVerticesForKeySelector(
+      KeySelector<Vertex<Long, ObjectMap>, T> keySelector,
       EdgeComputationStrategy strategy) {
     this.keySelector = keySelector;
     this.strategy = strategy;

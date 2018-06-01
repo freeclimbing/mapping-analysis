@@ -7,7 +7,7 @@ import org.mappinganalysis.model.ObjectMap;
 public class BlockingKeySelector
     implements KeySelector<Vertex<Long,ObjectMap>, String> {
   @Override
-  public String getKey(Vertex<Long, ObjectMap> value) throws Exception {
-    return value.getValue().getBlockingKey();
+  public String getKey(Vertex<Long, ObjectMap> vertex) throws Exception {
+    return vertex.getValue().getBlockingKey();
   }
 }

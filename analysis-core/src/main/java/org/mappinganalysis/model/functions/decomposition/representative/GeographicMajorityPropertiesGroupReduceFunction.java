@@ -45,12 +45,12 @@ public class GeographicMajorityPropertiesGroupReduceFunction
     for (Vertex<Long, ObjectMap> vertex : vertices) {
       updateVertexId(resultVertex, vertex);
       updateClusterVertexIds(clusterVertices, vertex);
-      updateClusterOntologies(clusterDataSources, vertex);
+      updateDataSources(clusterDataSources, vertex);
 
       addLabelToMap(labelMap, vertex);
 
-      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
-      addGeoToMap(geoMap, vertex);
+      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypesIntern());
+      Utils.addGeoToMap(geoMap, vertex);
 
       if (vertex.getValue().containsKey(Constants.OLD_HASH_CC)) {
         resultProps.setOldHashCcId(vertex.getValue().getOldHashCcId());
@@ -69,7 +69,7 @@ public class GeographicMajorityPropertiesGroupReduceFunction
     collector.collect(resultVertex);
   }
 
-  private void updateClusterOntologies(
+  private void updateDataSources(
       Set<String> clusterOntologies,
       Vertex<Long, ObjectMap> currentVertex) {
     if (currentVertex.getValue().containsKey(Constants.DATA_SOURCE)) {
@@ -92,24 +92,6 @@ public class GeographicMajorityPropertiesGroupReduceFunction
   private void updateVertexId(Vertex<Long, ObjectMap> resultVertex, Vertex<Long, ObjectMap> currentVertex) {
     if (resultVertex.getId() == null || currentVertex.getId() < resultVertex.getId()) {
       resultVertex.setId(currentVertex.getId());
-    }
-  }
-
-  private void addGeoToMap(
-      HashMap<String, GeoCode> geoMap,
-      Vertex<Long, ObjectMap> vertex) {
-    if (vertex.getValue().hasGeoPropertiesValid()) {
-      Double latitude = vertex.getValue().getLatitude();
-      Double longitude = vertex.getValue().getLongitude();
-
-      if (vertex.getValue().containsKey(Constants.DATA_SOURCE)) {
-        geoMap.put(vertex.getValue().getDataSource(),
-            new GeoCode(latitude, longitude));
-      } else if (vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
-        for (String value : vertex.getValue().getDataSourcesList()) {
-          geoMap.put(value, new GeoCode(latitude, longitude));
-        }
-      }
     }
   }
 

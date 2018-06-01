@@ -1,6 +1,7 @@
 package org.mappinganalysis.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
@@ -412,10 +413,18 @@ public class ObjectMap
     }
   }
 
+  public void addClusterVertices(Set<Long> vertexIds) {
+    if (vertexIds != null && !vertexIds.isEmpty()) {
+      map.put(Constants.CL_VERTICES,
+          Sets.newHashSet(Sets.union(getVerticesList(), vertexIds)));
+    }
+  }
+
   /**
    * Get aggregated similarity of vertex property values such as label, geo coordinates, type.
    */
   public Double getEdgeSimilarity() {
+//    LOG.info("OM: " + map.toString());
     return Doubles.tryParse(map.get(Constants.AGGREGATED_SIM_VALUE).toString());
   }
 
@@ -503,7 +512,7 @@ public class ObjectMap
     } else if (dataSources == null) {
       return Sets.newHashSet();
     } else {
-      return Sets.newHashSet(dataSources.toString());
+      return Sets.newHashSet(dataSources.toString()); // TODO needed?
     }
   }
 
@@ -513,6 +522,13 @@ public class ObjectMap
   public void setClusterDataSources(Set<String> sources) {
     if (sources != null && !sources.isEmpty()) {
       map.put(Constants.DATA_SOURCES, sources);
+    }
+  }
+
+  public void addClusterDataSources(Set<String> sources) {
+    if (sources != null && !sources.isEmpty()) {
+      map.put(Constants.DATA_SOURCES,
+          Sets.newHashSet(Sets.union(getDataSourcesList(), sources)));
     }
   }
 

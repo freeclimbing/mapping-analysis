@@ -188,6 +188,8 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
           triplet.getEdge().getValue().put(Constants.SIM_LABEL, similarity);
           break;
       }
+    } else {
+      LOG.info("SSP: " + triplet.toString());
     }
 
     return triplet;

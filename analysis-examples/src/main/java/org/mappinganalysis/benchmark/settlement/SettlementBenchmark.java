@@ -8,9 +8,8 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.mappinganalysis.corruption.DataCorruption;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
@@ -20,7 +19,6 @@ import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
@@ -65,7 +63,7 @@ public class SettlementBenchmark implements ProgramDescription {
 
       DataSet<Edge<Long, NullValue>> distinctEdges = tmpGraph
           .getVertices()
-          .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+          .runOperation(new EdgeComputationOnVerticesForKeySelector(new CcIdKeySelector()));
 
       new JSONDataSink(inputPath, CORRUPTED)
           .writeGraph(Graph.fromDataSet(tmpGraph.getVertices(), distinctEdges, env));

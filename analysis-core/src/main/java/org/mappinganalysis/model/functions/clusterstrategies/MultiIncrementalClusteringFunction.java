@@ -8,16 +8,13 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.CandidateCreator;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
-import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
-import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
@@ -58,8 +55,8 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
     if (config.getStep() == ClusteringStep.INITIAL_CLUSTERING) {
       DataSet<Edge<Long, NullValue>> edges = vertices
           .map(new BlockingKeyMapFunction(config.getConfigNoEnv()))
-          .groupBy(new BlockingKeySelector())
-          .reduceGroup(new AllEdgesCreateGroupReducer<>());
+          .runOperation(new EdgeComputationOnVerticesForKeySelector(
+              new BlockingKeySelector()));
 
     /*
       representative creation based on hash cc ids, most likely only for initial clustering
@@ -74,7 +71,7 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
           .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
     } else
       /*
-      VERTEX ADDITION
+      VERTEX ADDITION || SOURCE ADDITION
        */
       if (config.getStep() == ClusteringStep.VERTEX_ADDITION
           || config.getStep() == ClusteringStep.SOURCE_ADDITION) {
@@ -84,6 +81,7 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
         if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
           toBeMergedElements = toBeMergedElements
               .map(vertex -> {
+                vertex.getValue().remove(Constants.TYPE);
                 if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
                   vertex.getValue()
                       .setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
@@ -95,13 +93,18 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
 
         DataSet<Vertex<Long, ObjectMap>> clusterWorkset = input
             .getVertices()
+            // TODO check if this works in every test
+            .runOperation(new RepresentativeCreator(config))
             .union(toBeMergedElements)
             .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()));
 
+        /*
+        VERTEX ADDITION
+         */
         if (config.getStep() == ClusteringStep.VERTEX_ADDITION) {
           DataSet<Edge<Long, NullValue>> edges = clusterWorkset
-              .groupBy(new BlockingKeySelector())
-              .reduceGroup(new AllEdgesCreateGroupReducer<>());
+              .runOperation(new EdgeComputationOnVerticesForKeySelector(
+                  new BlockingKeySelector()));
 
           return Graph
               .fromDataSet(clusterWorkset,
@@ -111,21 +114,12 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
               .run(new SimSort(config))
               .getVertices()
               .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
+          /*
+          SOURCE ADDITION
+           */
         } else if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
-          return null;
-//          return clusterWorkset
-//              .runOperation(new CandidateCreator(config))
-//
-//
-//              .flatMap(new DualMergeGeographyMapper(false))
-//
-//              .leftOuterJoin(inputClusters) // TODO get orig vertices, not GeoTuplets
-//              .where(0)
-//              .equalTo(0)
-//              .with(new FinalMergeGeoVertexCreator())
-//
-//              .runOperation(new RepresentativeCreator(config));
-//          // Todo simsort?
+          return clusterWorkset
+              .runOperation(new HungarianAddSourceClustering(config));
         }
       }
     return null;

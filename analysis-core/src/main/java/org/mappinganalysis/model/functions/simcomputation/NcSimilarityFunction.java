@@ -16,7 +16,7 @@ public class NcSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(NcSimilarityFunction.class);
 
-  NcSimilarityFunction(String metric) {
+  public NcSimilarityFunction(String metric) {
     this.metric = metric;
   }
 

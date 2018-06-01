@@ -10,7 +10,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
@@ -68,7 +68,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
             new CSVDataSource(inputPath, vertexFileName, env)
                 .getVertices();
         DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-            .runOperation(new EdgeComputationVertexCcSet(
+            .runOperation(new EdgeComputationOnVerticesForKeySelector(
                 new CcIdKeySelector(), EdgeComputationStrategy.SIMPLE));
 
         new JSONDataSink(inputPath, INPUT_STEP)

@@ -14,13 +14,13 @@ import org.mappinganalysis.model.ObjectMap;
 public class AllEdgesCreator
       implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Edge<Long, NullValue>> {
     private DataSet<Vertex<Long, ObjectMap>> vertices;
-    private KeySelector<Vertex<Long, ObjectMap>, Long> keySelector;
+    private KeySelector<Vertex<Long, ObjectMap>, ?> keySelector;
 
   /**
    * Within a set of vertices having connected component ids,
    * compute all edges within each component - only return distinct edges.
    */
-  AllEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, Long> keySelector) {
+  <T> AllEdgesCreator(KeySelector<Vertex<Long, ObjectMap>, T> keySelector) {
     this.keySelector = keySelector;
   }
 
@@ -31,7 +31,8 @@ public class AllEdgesCreator
 
   @Override
   public DataSet<Edge<Long, NullValue>> createResult() {
-    return vertices.groupBy(keySelector)
+    return vertices
+        .groupBy(keySelector)
         .reduceGroup(new AllEdgesCreateGroupReducer<>());
   }
 }

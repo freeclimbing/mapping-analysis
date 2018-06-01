@@ -5,6 +5,9 @@ import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Constants;
 
+/**
+ * Filter vertices based on data source.
+ */
 public class SourceFilterFunction implements FilterFunction<Vertex<Long, ObjectMap>> {
   private final String source;
 

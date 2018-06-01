@@ -2,19 +2,16 @@ package org.mappinganalysis;
 
 import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
@@ -23,7 +20,7 @@ import org.mappinganalysis.corruption.EdgeRemoveCorruptionFunction;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
@@ -41,7 +38,6 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
-import org.mappinganalysis.util.functions.SmallEdgeIdFirstMapFunction;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
@@ -66,7 +62,7 @@ public class MusicBrainzTest {
             .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
@@ -94,7 +90,7 @@ public class MusicBrainzTest {
             .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
@@ -303,7 +299,7 @@ public class MusicBrainzTest {
             });
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 

@@ -4,52 +4,34 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.MapUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.graph.Edge;
+import org.apache.flink.graph.Triplet;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeGeoTriplet;
+import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.HungarianAlgorithm;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
-/**
- * Create a format which can be handled by HungarianAlgorithm. Handle result and
- * create "fake" triplets for elements which do not have matching elements.
- *
- * On left as well as right side of stable marriage matrix isolated elements may occur.
- */
 public class HungarianAlgorithmReduceFunction
-    implements GroupReduceFunction<MergeGeoTriplet, MergeGeoTriplet> {
-  private static final Logger LOG = Logger.getLogger(HungarianAlgorithmReduceFunction.class);
+    implements GroupReduceFunction<
+    Triplet<Long, ObjectMap, ObjectMap>,
+    Triplet<Long, ObjectMap, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(HungarianAlgorithmGeoReduceFunction.class);
 
   @Override
-  public void reduce(Iterable<MergeGeoTriplet> values,
-                     Collector<MergeGeoTriplet> out) throws Exception {
-    HashSet<MergeGeoTriplet> triplets = Sets.newHashSet(values);
-    // if only one triplet is there, no stable marriage needed
+  public void reduce(Iterable<Triplet<Long, ObjectMap, ObjectMap>> values,
+                     Collector<Triplet<Long, ObjectMap, ObjectMap>> out) throws Exception {
+    HashSet<Triplet<Long, ObjectMap, ObjectMap>> triplets = Sets.newHashSet(values);
+    // if only one triplet is there, no hungarian needed
     if (triplets.size() == 1) {
       out.collect(triplets.iterator().next());
+
       return;
     }
-
-//    if (triplets.size() == 2) {
-//      MergeGeoTriplet first = triplets.iterator().next();
-//      MergeGeoTriplet second = triplets.iterator().next();
-//
-//      if (first.getSrcId() == second.getSrcId().longValue()
-//        || first.getSrcId() == second.getTrgId().longValue()
-//        || first.getTrgId() == second.getSrcId().longValue()
-//        || first.getTrgId() == second.getTrgId().longValue()) {
-//
-//        if (first.getSimilarity() > second.getSimilarity()) {
-//          out.collect(first);
-//        } else {
-//          out.collect(second);
-//        }
-//        return;
-//      }
-//    }
 
     double[][] tmpWeights = new double[triplets.size()][triplets.size()];
     for (double[] weight : tmpWeights) {
@@ -60,26 +42,28 @@ public class HungarianAlgorithmReduceFunction
     int leftCounter = 0;
     int rightCounter = 0;
 
-    for (MergeGeoTriplet triplet : triplets) {
+    for (Triplet<Long, ObjectMap, ObjectMap> triplet : triplets) {
+//      LOG.info("inTrip: " + triplet.toString());
       int leftThisRound;
       int rightThisRound;
 
-      if (!leftSource.containsKey(triplet.getSrcId())) {
-        leftSource.put(triplet.getSrcId(), leftCounter);
+      if (!leftSource.containsKey(triplet.getSrcVertex().getId())) {
+        leftSource.put(triplet.getSrcVertex().getId(), leftCounter);
         leftThisRound = leftCounter;
         ++leftCounter;
       } else {
-        leftThisRound = leftSource.get(triplet.getSrcId());
+        leftThisRound = leftSource.get(triplet.getSrcVertex().getId());
       }
-      if (!rightSource.containsKey(triplet.getTrgId())) {
-        rightSource.put(triplet.getTrgId(), rightCounter);
+      if (!rightSource.containsKey(triplet.getTrgVertex().getId())) {
+        rightSource.put(triplet.getTrgVertex().getId(), rightCounter);
         rightThisRound = rightCounter;
         ++rightCounter;
       } else {
-        rightThisRound = rightSource.get(triplet.getTrgId());
+        rightThisRound = rightSource.get(triplet.getTrgVertex().getId());
       }
 
-      tmpWeights[leftThisRound][rightThisRound] = 1 - triplet.getSimilarity();
+      tmpWeights[leftThisRound][rightThisRound]
+          = 1 - triplet.getEdge().getValue().getEdgeSimilarity();
     }
 
     double[][] weights = new double[leftCounter][rightCounter];
@@ -90,11 +74,17 @@ public class HungarianAlgorithmReduceFunction
           rightCounter);
     }
 
+//    for (double[] weight : weights) {
+//      LOG.info(Arrays.toString(weight));
+//    }
+
     HungarianAlgorithm algorithm = new HungarianAlgorithm(weights);
     int[] matrixResult = algorithm.execute();
 
+    /*
+     iterate over all matrix elements and assign original ids
+      */
     HashMap<Long, Long> resultMap = Maps.newHashMap();
-    // iterate over all matrix elements and assign original ids
     for (int leftPos = 0; leftPos < matrixResult.length; leftPos++) {
       Long key = (long) MapUtils.invertMap(leftSource).get(leftPos);
 
@@ -103,35 +93,106 @@ public class HungarianAlgorithmReduceFunction
             .get(matrixResult[leftPos]);
         // remove processed elements, in the end only not matched elements remain
         rightSource.remove(value);
+        leftSource.remove(key);
         resultMap.put(key, value);
       }
     }
 
+//    for (Map.Entry<Long, Long> longLongEntry : resultMap.entrySet()) {
+//      LOG.info("resultmap: " + longLongEntry);
+//    }
+
     HashSet<Long> checkSet = Sets.newHashSet();
-    for (MergeGeoTriplet triplet : triplets) {
-      long srcId = triplet.getSrcId();
-      long trgId = triplet.getTrgId();
+    HashSet<Triplet<Long, ObjectMap, ObjectMap>> secondRound = Sets.newHashSet();
 
-      if (resultMap.get(srcId) == null && !checkSet.contains(srcId)) { // no (left side) match for vertex
-        triplet.setTrgTuple(triplet.getSrcTuple());
-        triplet.setTrgId(srcId);
-        triplet.setSimilarity(1D);
+    /*
+    First iteration on triplets, only if src and target are in result, its collected.
+     */
+    for (Triplet<Long, ObjectMap, ObjectMap> triplet : triplets) {
+//      LOG.info("\n iter triplet: " + triplet.toString());
+//
+//      for (Map.Entry<Long, Integer> longIntegerEntry : rightSource.entrySet()) {
+//        LOG.info("rightSource: " + longIntegerEntry);
+//      }
+//
+//      for (Map.Entry<Long, Integer> longIntegerEntry : leftSource.entrySet()) {
+//        LOG.info("leftSource: " + longIntegerEntry);
+//      }
+
+      long srcId = triplet.getSrcVertex().getId();
+      long trgId = triplet.getTrgVertex().getId();
+
+      // triplet is in result, can be collected.
+      // elements are added to check set, do not collect them again.
+      if (resultMap.get(srcId) != null && resultMap.get(srcId) == trgId) {
+//        LOG.info("(1) triplet in result: " + triplet.toString());
+
         checkSet.add(srcId);
+        checkSet.add(trgId);
 
         out.collect(triplet);
-      } else if (resultMap.get(srcId) != null && resultMap.get(srcId) == trgId) {
-
-        out.collect(triplet);
-      } else if (rightSource.containsKey(trgId)) { // no (right side) match for vertex
-        rightSource.remove(trgId);
-        triplet.setSrcTuple(triplet.getTrgTuple());
-        triplet.setSrcId(trgId);
-        triplet.setSimilarity(1D);
-
-        out.collect(triplet);
+      } else {
+//        LOG.info("(1a) added for second round: " + triplet.toString());
+        secondRound.add(triplet);
       }
-//      else { // everything else are unneeded candidates
-//        LOG.info("not handled: " + triplet.toString());
+    }
+
+    for (Triplet<Long, ObjectMap, ObjectMap> triplet : secondRound) {
+      long srcId = triplet.getSrcVertex().getId();
+      long trgId = triplet.getTrgVertex().getId();
+
+      if (checkSet.contains(srcId) && checkSet.contains(trgId)) {
+        // don't do sth if both src and trg are already handled
+      }
+      // no (left side) match for vertex
+      else if (leftSource.containsKey(srcId)) {
+        leftSource.remove(srcId);
+        ObjectMap edgeValue = triplet.getEdge().getValue();
+        edgeValue.setEdgeSimilarity(1D);
+
+        Triplet<Long, ObjectMap, ObjectMap> resultTriplet = new Triplet<>(
+            triplet.getSrcVertex().getId(),
+            triplet.getSrcVertex().getId(),
+            triplet.getSrcVertex().getValue(),
+            triplet.getSrcVertex().getValue(),
+            edgeValue);
+
+//        LOG.info("(2) no (left side) match: " + resultTriplet.toString());
+        out.collect(resultTriplet);
+      }
+//      else if (resultMap.get(srcId) == null && !checkSet.contains(srcId)) {
+//        checkSet.add(srcId);
+//        ObjectMap edgeValue = triplet.getEdge().getValue();
+//        edgeValue.setEdgeSimilarity(1D);
+//
+//        Triplet<Long, ObjectMap, ObjectMap> resultTriplet = new Triplet<>(
+//            triplet.getSrcVertex().getId(),
+//            triplet.getSrcVertex().getId(),
+//            triplet.getSrcVertex().getValue(),
+//            triplet.getSrcVertex().getValue(),
+//            edgeValue);
+//
+//        LOG.info("(2) no (left side) match: "  +resultTriplet.toString());
+//        out.collect(resultTriplet);
+//      }
+      // no (right side) match for vertex
+      else if (rightSource.containsKey(trgId)) {
+        rightSource.remove(trgId);
+        ObjectMap edgeValue = triplet.getEdge().getValue();
+        edgeValue.setEdgeSimilarity(1D);
+
+        Triplet<Long, ObjectMap, ObjectMap> resultTriplet = new Triplet<>(
+            triplet.getTrgVertex().getId(),
+            triplet.getTrgVertex().getId(),
+            triplet.getTrgVertex().getValue(),
+            triplet.getTrgVertex().getValue(),
+            edgeValue);
+
+//        LOG.info("(3) no (right side) match: " + resultTriplet.toString());
+        out.collect(resultTriplet);
+      }
+//      else { // unhandled should not occur
+//        throw new IllegalStateException("Should be handled: " + triplet.toString());
 //      }
     }
   }

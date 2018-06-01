@@ -4,6 +4,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -28,6 +29,7 @@ import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.mappinganalysis.graph.utils.GradoopEdgeToGellyEdgeMapper;
 import org.mappinganalysis.graph.utils.GradoopToGellyEdgeJoinFunction;
 import org.mappinganalysis.graph.utils.GradoopToObjectMapVertexMapper;
+import org.mappinganalysis.model.GeoCode;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.CharSet;
@@ -243,6 +245,100 @@ public class Utils {
     } else {
       throw new IllegalArgumentException("Unsupported blocking strategy: " + strategy);
     }
+  }
+
+  public static HashMap<String, GeoCode> addGeoToMap(
+      HashMap<String, GeoCode> geoMap,
+      Vertex<Long, ObjectMap> vertex) {
+    if (vertex.getValue().hasGeoPropertiesValid()) {
+      Double latitude = vertex.getValue().getLatitude();
+      Double longitude = vertex.getValue().getLongitude();
+
+      if (vertex.getValue().containsKey(Constants.DATA_SOURCE)) {
+        geoMap.put(vertex.getValue().getDataSource(),
+            new GeoCode(latitude, longitude));
+      } else if (vertex.getValue().containsKey(Constants.DATA_SOURCES)) {
+        for (String value : vertex.getValue().getDataSourcesList()) {
+          geoMap.put(value, new GeoCode(latitude, longitude));
+        }
+      }
+    }
+    return geoMap;
+  }
+
+  public static ObjectMap handleMusicProperties(
+      Vertex<Long, ObjectMap> pri,
+      Vertex<Long, ObjectMap> min) {
+    ObjectMap priority = pri.getValue();
+    ObjectMap minor = min.getValue();
+
+
+    //Constants.ALBUM
+    Boolean saneMinAlbum = isSane(minor.getAlbum());
+    if (isSane(priority.getAlbum())) {
+      if (saneMinAlbum) {
+        String album = priority.getAlbum().length() >= minor.getAlbum().length()
+            ? priority.getAlbum() : minor.getAlbum();
+        priority.setAlbum(album);
+      }
+    } else {
+      if (saneMinAlbum) {
+        priority.setAlbum(minor.getAlbum());
+      }
+    }
+
+    //Constants.ARTIST, priority, minor);
+    Boolean saneMinArtist = isSane(minor.getArtist());
+    if (isSane(priority.getArtist())) {
+      if (saneMinArtist) {
+        String artist = priority.getArtist().length() >= minor.getArtist().length()
+            ? priority.getArtist() : minor.getArtist();
+        priority.setArtist(artist);
+      }
+    } else {
+      if (saneMinArtist) {
+        priority.setArtist(minor.getArtist());
+      }
+    }
+
+    //Constants.NUMBER, priority, minor);
+    if (!isSane(priority.getNumber())
+        && isSane(minor.getNumber())) {
+      priority.setNumber(minor.getNumber());
+    }
+
+    if (!isSane(priority.getLanguage())
+        && isSane(minor.getLanguage())) {
+      priority.setLanguage(minor.getLanguage());
+    }
+
+    //Constants.YEAR, priority, minor);
+    if (!isSaneInt(priority.getYear())
+        && isSaneInt(minor.getYear())) {
+      priority.setYear(minor.getYear());
+    }
+
+    //Constants.LENGTH, priority, minor);
+    if (!isSaneInt(priority.getLength())
+        && isSaneInt(minor.getLength())) {
+      priority.setLength(minor.getLength());
+    }
+
+    return priority;
+  }
+
+  public static ObjectMap handleGeoProperties(
+      Vertex<Long, ObjectMap> priorities,
+      Vertex<Long, ObjectMap> minorities) {
+    HashMap<String, GeoCode> geoMap = Maps.newHashMap();
+    geoMap = addGeoToMap(geoMap, priorities);
+    geoMap = addGeoToMap(geoMap, minorities);
+    priorities.getValue().setGeoProperties(geoMap);
+
+//    priorities.getValue().addTypes(
+//        Constants.TYPE_INTERN, minorities.getValue().getTypesIntern());
+
+    return priorities.getValue();
   }
 
   public static class DataSetTextFormatter<V>

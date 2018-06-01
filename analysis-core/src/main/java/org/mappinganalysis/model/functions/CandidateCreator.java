@@ -19,16 +19,16 @@ import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
+import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.lsh.LshCandidateCreator;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateGeoMergeTripletCreator;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.SwitchMapFunction;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.VertexWithNewObjectMapFunction;
+import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmGeoReduceFunction;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
-import org.mappinganalysis.model.functions.merge.MergeGeoSimilarity;
-import org.mappinganalysis.model.functions.merge.MergeGeoTripletCreator;
-import org.mappinganalysis.model.functions.merge.MergeGeoTupleCreator;
+import org.mappinganalysis.model.functions.merge.*;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
@@ -87,9 +87,10 @@ public class CandidateCreator
 
   @Override
   public DataSet<MergeGeoTriplet> createResult() {
+
     // TODO check sim comp
     SimilarityComputation<MergeGeoTriplet,
-        MergeGeoTriplet> similarityComputation
+        MergeGeoTriplet> simGeoComputation
         = new SimilarityComputation
         .SimilarityComputationBuilder<MergeGeoTriplet,
         MergeGeoTriplet>()
@@ -97,21 +98,43 @@ public class CandidateCreator
         .setStrategy(SimilarityStrategy.MERGE)
         .setThreshold(0.7)
         .build();
+    SimilarityComputation<MergeMusicTriplet,
+        MergeMusicTriplet> simMusicComputation
+        = new SimilarityComputation
+        .SimilarityComputationBuilder<MergeMusicTriplet,
+        MergeMusicTriplet>()
+        .setSimilarityFunction(new MergeMusicSimilarity(metric)) // TODO check sim function
+        .setStrategy(SimilarityStrategy.MERGE)
+        .setThreshold(0.7)
+        .build();
 
-     if (!blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
+    if (!blockingStrategy.equals(BlockingStrategy.LSH_BLOCKING)) {
       /*
         STANDARD BLOCKING / BLOCK SPLIT
        */
-      return inputVertices
-          .map(new AddShadingTypeMapFunction())
-          .map(new MergeGeoTupleCreator(blockingStrategy))
-          .groupBy(7)
-          .reduceGroup(new MergeGeoTripletCreator(
-              sourceCount, newSource, true))
-          .distinct(0, 1)
-          .runOperation(similarityComputation)
-          .groupBy(5)
-          .reduceGroup(new HungarianAlgorithmReduceFunction());
+      if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
+        return inputVertices
+            .map(new AddShadingTypeMapFunction())
+            .map(new MergeGeoTupleCreator(blockingStrategy))
+            .groupBy(7)
+            .reduceGroup(new MergeGeoTripletCreator(
+                sourceCount, newSource, true))
+            .distinct(0, 1)
+            .runOperation(simGeoComputation)
+            .groupBy(5)
+            .reduceGroup(new HungarianAlgorithmGeoReduceFunction());
+      } else if (config.getDataDomain() == DataDomain.MUSIC) {
+        return null;
+//        return inputVertices
+//            .map(new AddShadingTypeMapFunction())
+//            .map(new MergeMusicTupleCreator(blockingStrategy))
+//            .groupBy(7)
+//            .reduceGroup(new MergeMusicTripletCreator(23))
+//            .distinct(0, 1)
+//            .runOperation(simMusicComputation)
+//            .groupBy(5)
+//            .reduceGroup(new HungarianAlgorithmReduceFunction());
+      }
 
     } else {
     /*
@@ -122,7 +145,8 @@ public class CandidateCreator
       DataSet<Tuple2<Long, Long>> lshCandidates = inputVertices
           .map(vertex -> new Tuple2<>(vertex.getId(),
               Utils.simplify(vertex.getValue().getLabel())))
-          .returns(new TypeHint<Tuple2<Long, String>>() {})
+          .returns(new TypeHint<Tuple2<Long, String>>() {
+          })
           .runOperation(new LshCandidateCreator(isIdfOptimizeEnabled));
 
       DataSet<MergeGeoTuple> geoTuples = inputVertices
@@ -140,7 +164,8 @@ public class CandidateCreator
 //          .returns(new TypeHint<Tuple2<Long, Long>>() {
 //          })
           .map(candidate -> new MergeGeoTriplet(candidate.f0, candidate.f1))
-          .returns(new TypeHint<MergeGeoTriplet>() {})
+          .returns(new TypeHint<MergeGeoTriplet>() {
+          })
           .join(geoTuples)
           .where(0).equalTo(0)
           .with(new CandidateGeoMergeTripletCreator(0))
@@ -148,7 +173,7 @@ public class CandidateCreator
           .where(1).equalTo(0)
           .with(new CandidateGeoMergeTripletCreator(1))
           .map(new SwitchMapFunction(newSource))
-          .runOperation(similarityComputation)
+          .runOperation(simGeoComputation)
 //          .map(x -> {
 //            if (isLogEnabled && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
 //                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
@@ -203,16 +228,18 @@ public class CandidateCreator
           .join(geoTuples)
           .where(0).equalTo(0)
           .with((left, right) -> right)
-          .returns(new TypeHint<MergeGeoTuple>() {})
+          .returns(new TypeHint<MergeGeoTuple>() {
+          })
           .map(tuple -> {
 //            LOG.info("rec tuple: " + tuple.toString());
             return new MergeGeoTriplet(tuple, tuple, 0d);
           })
-          .returns(new TypeHint<MergeGeoTriplet>() {});
+          .returns(new TypeHint<MergeGeoTriplet>() {
+          });
 
       mergeGeoTriplets = mergeGeoTriplets
           .union(recovered)
-        .distinct(0,1);
+          .distinct(0, 1);
 
       DataSet<Edge<Long, NullValue>> edges = mergeGeoTriplets
           .map(x -> {
@@ -222,7 +249,8 @@ public class CandidateCreator
             }
             return new Edge<>(x.f0, x.f1, NullValue.getInstance());
           })
-          .returns(new TypeHint<Edge<Long, NullValue>>() {});
+          .returns(new TypeHint<Edge<Long, NullValue>>() {
+          });
 
       DataSet<Vertex<Long, ObjectMap>> vertices = null;
       try {
@@ -238,7 +266,7 @@ public class CandidateCreator
       return mergeGeoTriplets.join(vertices)
           .where(0)
           .equalTo(0)
-          .with(new JoinFunction<MergeGeoTriplet, Vertex<Long,ObjectMap>, MergeGeoTriplet>() {
+          .with(new JoinFunction<MergeGeoTriplet, Vertex<Long, ObjectMap>, MergeGeoTriplet>() {
             @Override
             public MergeGeoTriplet join(MergeGeoTriplet triplet, Vertex<Long, ObjectMap> vertex) throws Exception {
               triplet.setBlockingLabel(vertex.getValue().getCcId().toString());
@@ -249,7 +277,8 @@ public class CandidateCreator
             }
           })
           .groupBy(5)
-          .reduceGroup(new HungarianAlgorithmReduceFunction());
+          .reduceGroup(new HungarianAlgorithmGeoReduceFunction());
     }
+    return null;
   }
 }

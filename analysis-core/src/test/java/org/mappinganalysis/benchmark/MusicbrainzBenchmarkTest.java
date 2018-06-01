@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
-import org.mappinganalysis.graph.utils.EdgeComputationVertexCcSet;
+import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -147,7 +147,7 @@ public class MusicbrainzBenchmarkTest {
         .getVertices();
 
     DataSet<Edge<Long, NullValue>> inputEdges = inputVertices
-        .runOperation(new EdgeComputationVertexCcSet(
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
