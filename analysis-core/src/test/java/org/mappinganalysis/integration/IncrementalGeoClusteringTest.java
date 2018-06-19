@@ -1,19 +1,27 @@
 package org.mappinganalysis.integration;
 
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
+import org.apache.flink.api.java.operators.AggregateOperator;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.operators.FilterOperator;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.hadoop.hdfs.util.Diff;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
+import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -22,14 +30,18 @@ import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
+import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 import org.mappinganalysis.util.functions.filter.VertexFilterFunction;
 
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static java.util.Collections.reverseOrder;
 import static org.junit.Assert.*;
 
 public class IncrementalGeoClusteringTest {
@@ -473,163 +485,167 @@ public class IncrementalGeoClusteringTest {
     QualityUtils.printGeoQuality(checkElements, config);
   }
 
-
   /**
    *
-   * GEO INC SOURCE BY SOURCE integration test holistic
+   * GEO INC SOURCE BY SOURCE integration test hungarian
    *
-   * ((((gn) + dbp) + fb) + nyt)
-   * precision: 0.993474288697468 recall: 0.8667729446595308 F1: 0.9258088056433957
-   *
-   * ((((gn) + fb) + dbp) + nyt)
-   * precision: 0.9959848842701937 recall: 0.9603734912320656 F1: 0.9778550724637681
-   *
-   * ((((gn) + fb) + nyt) + dbp)
-   * precision: 0.9992951127819549 recall: 0.9685720792530176 F1: 0.983693766624262
-   *
-   * ((((fb) + nyt) + gn) + dbp) <-- best option
-   * pr: 0.99882 re: 0.96652 F1: 0.98241
-   *
-   * ((((nyt) + dbp) + gn) + fb)
-   * precision: 0.998026153466568 recall: 0.9212024595764063 F1: 0.9580767408810991
-   *
-   * pr: 0.99616 re: 0.94534 F1: 0.97009 (without hungarian)
-   * pr: 0.99617 re: 0.94807 F1: 0.97152 (hungarian)
+   * (http://rdf.freebase.com/,774)
+   * (http://data.nytimes.com/,754)
+   * (http://sws.geonames.org/,749)
+   * (http://dbpedia.org/,445)
    */
 //          .flatMap(new HungarianDualVertexMergeFlatMapFunction(
 //      config.getDataDomain())) // TODO manual threshold
   @Test
-  public void incrementalGeoSourceBySourceTest() throws Exception {
+  public void allPermutationsSourceBySourceHungarianIncTest() throws Exception {
     String graphPath = IncrementalGeoClusteringTest.class
         .getResource("/data/geography").getFile();
     final Graph<Long, ObjectMap, NullValue> baseGraph =
         new JSONDataSource(graphPath, true, env)
             .getGraph(ObjectMap.class, NullValue.class);
 
-    Graph<Long, ObjectMap, NullValue> inputGraph = baseGraph
-        .filterOnVertices(new SourceFilterFunction(Constants.NYT_NS));
-
-    FilterOperator<Vertex<Long, ObjectMap>> newVertices = baseGraph
-        .getVertices()
-        .filter(new SourceFilterFunction(Constants.FB_NS));
-    /*
-    clustering config
-     */
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.SOURCE_ADDITION);
-    config.setSimSortSimilarity(0.5);
+    config.setSimSortSimilarity(0.7);
 
-    IncrementalClustering gnDbpClustering =
-        new IncrementalClustering
-            .IncrementalClusteringBuilder(config)
-            .setMatchElements(newVertices)
-            .setNewSource(Constants.FB_NS)
-            .build();
+    HashMap<String, BigDecimal> resultMap = Maps.newHashMap();
+    List<String> sourcesList = Constants.GEO_SOURCES;
+    sourcesList.remove(Constants.LGD_NS);
+    Collection<List<String>> permutedLists = Collections2.orderedPermutations(sourcesList);
+    graphPath = graphPath.concat("temp/");
+    List<Vertex<Long, ObjectMap>> representatives = null;
 
-    /*
-      start clustering
-     */
-    DataSet<Vertex<Long, ObjectMap>> clusters = inputGraph
-        .run(gnDbpClustering);
+    for (List<String> list : permutedLists) {
+      Graph<Long, ObjectMap, NullValue> workingGraph = null;
+      DataSet<Vertex<Long, ObjectMap>> clusters;
+      representatives = null;
 
-    ArrayList<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
-    clusters.output(new LocalCollectionOutputFormat<>(representatives));
-    new JSONDataSink(graphPath.concat("/gnDbp/"), "test")
-        .writeVertices(clusters);
-    env.execute();
+      boolean isFirst = true;
+      boolean isSecond = true;
+      for (String source : list) {
+        LOG.info("Working on source: " + source);
+        if (isFirst) { // first, only one source is selected as clusters repr
+          workingGraph = baseGraph
+              .filterOnVertices(new SourceFilterFunction(source));
+          isFirst = false;
+        } else {
+          if (isSecond) { // second, working graph should not be read from file
+            isSecond = false;
+          } else {
+            workingGraph = new JSONDataSource(
+                graphPath.concat("output/test/"),
+                "test",
+                true,
+                env)
+                .getGraph(ObjectMap.class, NullValue.class);
+          }
+          DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+              .getVertices()
+              .filter(new SourceFilterFunction(source));
+
+          IncrementalClustering clustering = new IncrementalClustering
+              .IncrementalClusteringBuilder(config)
+              .setMatchElements(newVertices)
+              .setNewSource(source)
+              .build();
+
+          clusters = workingGraph.run(clustering);
+
+          representatives = Lists.newArrayList();
+          clusters.output(new LocalCollectionOutputFormat<>(representatives));
+          new JSONDataSink(graphPath, "test")
+              .writeVertices(clusters);
+          env.execute();
+        }
+      }
+
+      assert representatives != null;
+      HashMap<String, BigDecimal> singleResult = QualityUtils
+          .printGeoQuality(env.fromCollection(representatives), config);
+
+      String singleString = String.join(", ", list);
+      singleString = singleString.concat("### pr: " + singleResult.get("precision")
+          .setScale(4, BigDecimal.ROUND_HALF_UP))
+          .concat(" re: " + singleResult.get("recall")
+              .setScale(4, BigDecimal.ROUND_HALF_UP));
+      resultMap.put( singleString, singleResult.get("f1")
+          .setScale(4, BigDecimal.ROUND_HALF_UP));
+    }
 
     /*
       actual tests
      */
     List<Long> resultingVerticesList = Lists.newArrayList();
-    LOG.info("gn dbp repr size: " + representatives.size());
+    assert representatives != null;
     for (Vertex<Long, ObjectMap> representative : representatives) {
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
     HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
-//    assertEquals(1825, resultingVerticesList.size());
-
-    /*
-    SECOND PART, MERGE FB
-     */
-    inputGraph = new JSONDataSource(
-        graphPath.concat("/gnDbp/output/test/"), "test", true, env)
-        .getGraph(ObjectMap.class, NullValue.class);
-    newVertices = baseGraph
-        .getVertices()
-        .filter(new SourceFilterFunction(Constants.GN_NS));
-
-    IncrementalClustering addFbClustering =
-        new IncrementalClustering
-            .IncrementalClusteringBuilder(config)
-            .setMatchElements(newVertices)
-            .setNewSource(Constants.GN_NS)
-            .build();
-
-    clusters = inputGraph.run(addFbClustering);
-
-    representatives = Lists.newArrayList();
-    clusters.output(new LocalCollectionOutputFormat<>(representatives));
-    new JSONDataSink(graphPath.concat("/addFb/"), "test")
-        .writeVertices(clusters);
-    env.execute();
-
-    /*
-      actual tests
-     */
-    LOG.info("add fb size: " + representatives.size());
-    resultingVerticesList = Lists.newArrayList();
-    for (Vertex<Long, ObjectMap> representative : representatives) {
-      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-    }
-    uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
-    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
-
-    /*
-    THIRD PART, MERGE NYT
-     */
-    inputGraph = new JSONDataSource(
-        graphPath.concat("/addFb/output/test/"), "test", true, env)
-        .getGraph(ObjectMap.class, NullValue.class);
-    newVertices = baseGraph
-        .getVertices()
-        .filter(new SourceFilterFunction(Constants.DBP_NS));
-
-    IncrementalClustering fbAddClustering =
-        new IncrementalClustering
-            .IncrementalClusteringBuilder(config)
-            .setMatchElements(newVertices)
-            .setNewSource(Constants.DBP_NS)
-            .build();
-
-    clusters = inputGraph.run(fbAddClustering);
-
-    representatives = Lists.newArrayList();
-    clusters.output(new LocalCollectionOutputFormat<>(representatives));
-    new JSONDataSink(graphPath.concat("/plusFb/"), "test")
-        .writeVertices(clusters);
-    env.execute();
-
-    /*
-      actual tests
-     */
-    resultingVerticesList = Lists.newArrayList();
-    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      LOG.info("result: " + representative.toString());
-
-      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-    }
-
-    uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
-    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     assertEquals(3054, resultingVerticesList.size());
 
-    DataSource<Vertex<Long, ObjectMap>> checkElements = env
-        .fromCollection(representatives);
-    QualityUtils.printGeoQuality(checkElements, config);
+    // print sorted list
+    List<Map.Entry<String, BigDecimal>> sorted_map =
+        resultMap.entrySet()
+            .stream()
+            .sorted(reverseOrder(Map.Entry.comparingByValue()))
+            .collect(Collectors.toList());
+
+    boolean first = true;
+    for (Map.Entry<String, BigDecimal> entry : sorted_map) {
+      if (first) {
+        assertTrue(entry
+            .getKey()
+            .startsWith("http://rdf.freebase.com/, http://sws.geonames.org/, " +
+                "http://data.nytimes.com/, http://dbpedia.org/"));
+        assertEquals(0.9838, entry.getValue().doubleValue(), 0.0001);
+        first = false;
+      }
+      LOG.info(entry.toString());
+    }
+  }
+
+
+  @Test
+  public void geoCoordCountTest() throws Exception {
+    String graphPath = IncrementalGeoClusteringTest.class
+        .getResource("/data/geography").getFile();
+    final Graph<Long, ObjectMap, NullValue> baseGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    DataSet<Tuple2<String, Integer>> sum = baseGraph.getVertices()
+        .map(vertex -> {
+          boolean hasValidGeo = vertex.getValue().hasGeoPropertiesValid();
+
+          if (hasValidGeo) {
+            return new Tuple2<>(
+                vertex.getValue().getDataSource(), 1);
+          } else {
+            return new Tuple2<>(
+                vertex.getValue().getDataSource(), 0);
+          }
+        })
+        .returns(new TypeHint<Tuple2<String, Integer>>() {
+        })
+        .groupBy(0)
+        .sum(1);
+
+    sum.print();
+
+    for (Tuple2<String, Integer> tuple : sum.collect()) {
+      if (tuple.f0.equals("http://sws.geonames.org/")) {
+        assertEquals(749, tuple.f1.intValue());
+      } else if (tuple.f0.equals("http://dbpedia.org/")) {
+        assertEquals(445, tuple.f1.intValue());
+      } else if (tuple.f0.equals("http://data.nytimes.com/")) {
+        assertEquals(754, tuple.f1.intValue());
+      } else if (tuple.f0.equals("http://rdf.freebase.com/")) {
+        assertEquals(774, tuple.f1.intValue());
+      }
+    }
   }
 }

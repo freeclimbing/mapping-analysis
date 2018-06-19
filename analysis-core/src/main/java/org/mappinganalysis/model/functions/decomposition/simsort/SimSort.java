@@ -45,7 +45,8 @@ public class SimSort
 
     DataSet<Edge<Long, NullValue>> distinctEdges = graph
         .getVertices()
-//          .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector())); // TODO perhaps add hash cc id before simsort??
+//          .runOperation(new EdgeComputationVertexCcSet(new CcIdKeySelector()));
+// TODO perhaps add hash cc id before simsort??
         .runOperation(new EdgeComputationOnVerticesForKeySelector(new HashCcIdKeySelector()));
 
     graph = Graph

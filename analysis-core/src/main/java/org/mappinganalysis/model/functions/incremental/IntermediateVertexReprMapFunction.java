@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.clusterstrategies.MultiIncrementalClusteringFunction;
 import org.mappinganalysis.util.Constants;
 
 /**
@@ -14,6 +15,8 @@ import org.mappinganalysis.util.Constants;
  */
 class IntermediateVertexReprMapFunction
     implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(IntermediateVertexReprMapFunction.class);
+
   private final Vertex<Long, ObjectMap> reuseVertex;
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;

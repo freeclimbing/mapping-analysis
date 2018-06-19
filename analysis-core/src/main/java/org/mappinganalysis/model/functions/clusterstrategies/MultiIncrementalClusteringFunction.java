@@ -34,6 +34,7 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
     super();
     this.config = config;
     this.toBeMergedElements = toBeMergedElements
+        .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
         .runOperation(new RepresentativeCreator(config));
   }
 
@@ -94,9 +95,9 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
         DataSet<Vertex<Long, ObjectMap>> clusterWorkset = input
             .getVertices()
             // TODO check if this works in every test
+            .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
             .runOperation(new RepresentativeCreator(config))
-            .union(toBeMergedElements)
-            .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()));
+            .union(toBeMergedElements);
 
         /*
         VERTEX ADDITION

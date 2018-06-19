@@ -31,6 +31,7 @@ public class HungarianTripletCreator
     HashSet<Vertex<Long, ObjectMap>> leftSide = Sets.newHashSet();
 
     for (Vertex<Long, ObjectMap> vertex : vertexSet) {
+//      LOG.info("HTC: " + vertex.toString());
       Set<String> dataSourcesList = vertex.getValue().getDataSourcesList();
       if (dataSourcesList.contains(newSource)) {
         if (dataSourcesList.size() == 1) {

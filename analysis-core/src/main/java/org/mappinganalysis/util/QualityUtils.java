@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import com.google.common.collect.Maps;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -16,10 +17,13 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
+
 public class QualityUtils {
   private static final Logger LOG = Logger.getLogger(QualityUtils.class);
 
-  public static void printGeoQuality(
+  public static HashMap<String, BigDecimal> printGeoQuality(
       DataSet<Vertex<Long, ObjectMap>> merged,
       Config properties)
       throws Exception {
@@ -72,12 +76,19 @@ public class QualityUtils {
     LOG.info("TP+FP: " + checkCount);
     LOG.info("TP: " + tpCount);
 
-    LOG.info("precision: " + precision + " recall: " + recall
-        + " F1: " + 2 * precision * recall / (precision + recall));
+    double f1 = 2 * precision * recall / (precision + recall);
+    LOG.info("precision: " + precision + " recall: " + recall + " F1: " + f1);
     LOG.info("######################################################");
+
+    HashMap<String, BigDecimal> result = Maps.newHashMap();
+    result.put("precision", new BigDecimal(precision));
+    result.put("recall", new BigDecimal(recall));
+    result.put("f1", new BigDecimal(f1));
+
+    return result;
   }
 
-  public static void printMusicQuality(
+  public static HashMap<String, BigDecimal> printMusicQuality(
       DataSet<Vertex<Long, ObjectMap>> checkClusters,
       Config config)
       throws Exception {
@@ -125,9 +136,16 @@ public class QualityUtils {
     LOG.info("TP+FP: " + checkCount);
     LOG.info("TP: " + tpCount);
 
-    LOG.info("precision: " + precision + " recall: " + recall
-        + " F1: " + 2 * precision * recall / (precision + recall));
+    double f1 = 2 * precision * recall / (precision + recall);
+    LOG.info("precision: " + precision + " recall: " + recall + " F1: " + f1);
     LOG.info("######################################################");
+
+    HashMap<String, BigDecimal> result = Maps.newHashMap();
+    result.put("precision", new BigDecimal(precision));
+    result.put("recall", new BigDecimal(recall));
+    result.put("f1", new BigDecimal(f1));
+
+    return result;
   }
 
 }

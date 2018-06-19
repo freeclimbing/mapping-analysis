@@ -138,7 +138,6 @@ public class ObjectMap
    * @return label
    */
   public String getLabel() {
-//    LOG.info("getLabel");
     if (map == null) {
       LOG.info("map null in get label");
       return Constants.NO_LABEL_FOUND;
@@ -185,7 +184,12 @@ public class ObjectMap
   }
 
   public String getArtistTitleAlbum() {
-    return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
+    if (map.containsKey(Constants.ARTIST_TITLE_ALBUM)) {
+      return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
+    } else {
+      throw new NullPointerException("ARTIST_TITLE_ALBUM not found for: " + map.toString());
+    }
+
   }
 
   public HashMap<String, Double> getIDFs() {
@@ -424,7 +428,6 @@ public class ObjectMap
    * Get aggregated similarity of vertex property values such as label, geo coordinates, type.
    */
   public Double getEdgeSimilarity() {
-//    LOG.info("OM: " + map.toString());
     return Doubles.tryParse(map.get(Constants.AGGREGATED_SIM_VALUE).toString());
   }
 
@@ -737,7 +740,6 @@ public class ObjectMap
     } else {
       throw new IllegalArgumentException("setBlockingKey: Unsupported mode: " + mode);
     }
-
   }
 
   /**
@@ -746,8 +748,6 @@ public class ObjectMap
   public String getBlockingKey() {
     if (this.get(Constants.BLOCKING_LABEL) == null) {
       throw new IllegalArgumentException("missing bkey: " + this.toString());
-
-//      return Constants.EMPTY_STRING;
     } else {
       return this.get(Constants.BLOCKING_LABEL).toString();
     }
@@ -818,11 +818,6 @@ public class ObjectMap
    */
   @Override
   public Object put(String s, Object o) {
-//    LOG.info("s: " + s);
-//    LOG.info("o: " + o);
-//    LOG.info(map);
-//    LOG.info(map.toString());
-//    LOG.info("l: " + getLabel());
     return map.put(s, o);
   }
 

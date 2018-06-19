@@ -46,6 +46,7 @@ import org.mappinganalysis.util.config.IncrementalConfig;
  * similarity strategy for all candidates which are named MergeTriplets. Finally, with
  * HungarianAlgorithm a selection of best candidates is done.
  */
+@Deprecated
 public class CandidateCreator
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, MergeGeoTriplet> {
   private static final Logger LOG = Logger.getLogger(CandidateCreator.class);
@@ -95,15 +96,6 @@ public class CandidateCreator
         .SimilarityComputationBuilder<MergeGeoTriplet,
         MergeGeoTriplet>()
         .setSimilarityFunction(new MergeGeoSimilarity(metric)) // TODO check sim function
-        .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.7)
-        .build();
-    SimilarityComputation<MergeMusicTriplet,
-        MergeMusicTriplet> simMusicComputation
-        = new SimilarityComputation
-        .SimilarityComputationBuilder<MergeMusicTriplet,
-        MergeMusicTriplet>()
-        .setSimilarityFunction(new MergeMusicSimilarity(metric)) // TODO check sim function
         .setStrategy(SimilarityStrategy.MERGE)
         .setThreshold(0.7)
         .build();

@@ -24,7 +24,5 @@ public class GeoNamesTypeRetrieverTest {
     String codeCorrectResult = "seaplane landing area";
     String codeExperiment = handler.getInstanceType("#H.AIRS", false);
     assertEquals(codeCorrectResult, codeExperiment);
-
-
   }
 }

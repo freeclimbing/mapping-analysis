@@ -60,7 +60,6 @@ public class HungarianDualVertexMergeFlatMapFunction
       priority.setId(priority.getId() > minority.getId() ? minority.getId() : priority.getId());
       if (priorities.getLabel().length() < minorities.getLabel().length()) {
         priorities.setLabel(minorities.getLabel());
-
       }
 
 //      LOG.info("out result: " + priority.toString());
