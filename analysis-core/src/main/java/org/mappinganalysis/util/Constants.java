@@ -38,10 +38,7 @@ public class Constants {
   /*
     Incremental strategies
    */
-  public static final String FIXED = "fixed";
-  public static final String BIG = "big";
-  public static final String SINGLE_SETTING = "single-setting";
-  public static final String SPLIT_SETTING = "split-setting";
+  public static final String MULTI = "multi";
 
   public static final String JARO_WINKLER = "jw";
   public static final String COSINE_TRIGRAM = "ct";

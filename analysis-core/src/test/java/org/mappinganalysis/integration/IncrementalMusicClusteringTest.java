@@ -4,11 +4,11 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.math.DoubleMath;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -20,6 +20,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
+import org.mappinganalysis.io.impl.json.JSONToEdgeFormatter;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.SubGraphFromIds;
 import org.mappinganalysis.model.functions.SubGraphVertexExtraction;
@@ -29,16 +30,17 @@ import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteri
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
-import static java.util.Collections.reverseOrder;
-import static java.util.Collections.sort;
-import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.reverseOrder;
+import static org.junit.Assert.assertEquals;
 
 public class IncrementalMusicClusteringTest {
   private static final Logger LOG = Logger.getLogger(IncrementalMusicClusteringTest.class);
@@ -139,19 +141,11 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     DataSet<Vertex<Long, ObjectMap>> clusters = startingGraph
         .run(initialClustering);
 
-//    List<Long> resultingVerticesList = Lists.newArrayList();
     Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     new JSONDataSink(path.concat("eighty/"), "test")
         .writeVertices(clusters);
     env.execute();
-
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-//      LOG.info(representative.toString());
-//    }
-//
-//    LOG.info("initial: " + resultingVerticesList.size());
 
     /*
       Add 10% clustering
@@ -173,19 +167,11 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     clusters = startingGraph.run(plusTenClustering);
 
-//    resultingVerticesList = Lists.newArrayList();
     representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     new JSONDataSink(path.concat("plusTen/"), "test")
         .writeVertices(clusters);
     env.execute();
-
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-//      LOG.info(representative.toString());
-//    }
-//
-//    LOG.info("add 10%: " + resultingVerticesList.size());
 
     /*
       Add a source
@@ -206,19 +192,11 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     clusters = startingGraph.run(plusSourceFiveClustering);
 
-//    resultingVerticesList = Lists.newArrayList();
     representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     new JSONDataSink(path.concat("addSource/"), "test")
         .writeVertices(clusters);
     env.execute();
-
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-//      LOG.info(representative.toString());
-//    }
-//
-//    LOG.info("add source 5: " + resultingVerticesList.size());
 
     /*
       Add final 10% clustering
@@ -256,8 +234,6 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
 //    assertEquals(12439, resultingVerticesList.size());
       QualityUtils.printMusicQuality(clusters, config);
-
-//    clusters.print();
   }
 
   @Test
@@ -504,18 +480,70 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     assertEquals(19375, resultingVerticesList.size());
 
-    // print sorted list
-//    List<Map.Entry<String, BigDecimal>> sorted_map =
-        resultMap.entrySet()
-            .stream()
-            .sorted(reverseOrder(Map.Entry.comparingByValue()))
-            .forEach(System.out::println);
-//            .collect(Collectors.toList());
+    resultMap.entrySet()
+        .stream()
+        .sorted(reverseOrder(Map.Entry.comparingByValue()))
+        .forEach(System.out::println);
+  }
 
-//    boolean first = true;
-//    for (Map.Entry<String, BigDecimal> entry : sorted_map) {
-//      LOG.info(entry.toString());
-//    }
+  /**
+   * Test, if source addition can be executed multiple times without
+   * env.execute() in between.
+   */
+  @Test
+  public void allInOneTest() throws Exception {
+    final String path = MusicbrainzBenchmarkTest.class
+        .getResource("/data/musicbrainz/").getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+    Graph<Long, ObjectMap, NullValue> baseGraph
+        = new CSVDataSource(path, vertexFileName, env)
+        .getGraph();
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.SOURCE_ADDITION);
+    config.setSimSortSimilarity(0.7);
+
+    List<String> musicSources = Constants.MUSIC_SOURCES;
+    Graph<Long, ObjectMap, NullValue> workingGraph = null;
+    DataSet<Vertex<Long, ObjectMap>> clusters = null;
+
+    boolean isFirst = true;
+    for (String musicSource : musicSources) {
+      if (isFirst) {
+        workingGraph = baseGraph.filterOnVertices(new SourceFilterFunction(musicSource));
+        isFirst = false;
+      } else {
+        DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+            .getVertices()
+            .filter(new SourceFilterFunction(musicSource));
+
+        IncrementalClustering clustering = new IncrementalClustering
+            .IncrementalClusteringBuilder(config)
+            .setMatchElements(newVertices)
+            .setNewSource(musicSource)
+            .build();
+
+        clusters = workingGraph.run(clustering);
+
+        DataSet<Edge<Long, NullValue>> edges = env.fromCollection(
+            Lists.newArrayList(""))
+            .map(new JSONToEdgeFormatter<>(NullValue.class));
+
+        workingGraph = Graph.fromDataSet(clusters, edges, env);
+      }
+    }
+
+    assert clusters != null;
+
+    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
+//    clusters.print();
   }
 
   @Test
@@ -525,11 +553,11 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
       LOG.info(s);
     }
 
-//    Collection<List<String>> lists = Collections2.orderedPermutations(sourcesList);
-//
-//    for (List<String> list : lists) {
-//      LOG.info(String.join(",", list));
-//    }
+    Collection<List<String>> lists = Collections2.orderedPermutations(sourcesList);
+
+    for (List<String> list : lists) {
+      LOG.info(String.join(",", list));
+    }
 
     Map<String, BigDecimal> map = Maps.newHashMap();
 

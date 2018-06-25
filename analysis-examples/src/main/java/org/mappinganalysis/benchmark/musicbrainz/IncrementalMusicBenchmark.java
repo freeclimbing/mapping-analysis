@@ -1,16 +1,21 @@
-package org.mappinganalysis.incremental;
+package org.mappinganalysis.benchmark.musicbrainz;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.FilterOperator;
+import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
+import org.mappinganalysis.io.impl.json.JSONToEdgeFormatter;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
@@ -18,10 +23,12 @@ import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteri
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
+import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class IncrementalWorkflow implements ProgramDescription {
+public class IncrementalMusicBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
   private static final String PREPROCESSING_STEP = "incremental-preprocessing";
@@ -32,27 +39,14 @@ public class IncrementalWorkflow implements ProgramDescription {
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 3,
         "args[0]: input dir, " +
-            "args[1]: domain (geo, music, nc), " +
+            "args[1]: file name, " +
             "args[2]: selection strategy (entity, source)");
-    String INPUT_PATH = args[0];
-    String domain = args[1];
-    DataDomain dataDomain;
-    switch (domain) {
-      case Constants.GEO:
-        dataDomain = DataDomain.GEOGRAPHY; // optional
-        break;
-      case Constants.MUSIC:
-        dataDomain = DataDomain.MUSIC;
-        break;
-      case Constants.NC:
-        dataDomain = DataDomain.NC;
-        break;
-      default:
-        throw new IllegalArgumentException("Unsupported domain: " + domain);
-    }
+    final String inputPath = args[0];
+    final String vertexFileName = args[1];
+    final DataDomain dataDomain = DataDomain.MUSIC;
 
     String strategy = args[2];
-    ClusteringStep clusteringStep;
+    final ClusteringStep clusteringStep;
     switch (strategy) {
       case "entity":
         clusteringStep = ClusteringStep.VERTEX_ADDITION;
@@ -63,10 +57,8 @@ public class IncrementalWorkflow implements ProgramDescription {
       default:
         throw new IllegalArgumentException("Unsupported step: " + strategy);
     }
-//    String VERTEX_FILE_NAME = args[1];
 
     JobExecutionResult result;
-    Constants.LL_MODE = "all";
 
     IncrementalConfig config = new IncrementalConfig(dataDomain, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
@@ -75,31 +67,41 @@ public class IncrementalWorkflow implements ProgramDescription {
     config.setStep(clusteringStep);
     config.setSimSortSimilarity(0.7);
 
-    IncrementalClustering clustering = new IncrementalClustering
-        .IncrementalClusteringBuilder(config)
-//        .setMatchElements(newVertices)
-//        .setNewSource(source)
-        .build();
+    // read base graph
+    Graph<Long, ObjectMap, NullValue> baseGraph =
+        new CSVDataSource(inputPath, vertexFileName, env)
+            .getGraph();
 
-    Graph<Long, ObjectMap, NullValue> graph = new JSONDataSource(
-        INPUT_PATH,
-        Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
-        env)
-        .getGraph(ObjectMap.class, NullValue.class);
+    List<String> musicSources = Constants.MUSIC_SOURCES;
+    Graph<Long, ObjectMap, NullValue> workingGraph = null;
+    DataSet<Vertex<Long, ObjectMap>> clusters;
 
-    new JSONDataSink(INPUT_PATH, PREPROCESSING_STEP)
-        .writeGraph(graph);
-    result = env.execute(PRE_JOB);
-    System.out.println(PRE_JOB + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    boolean isFirst = true;
+    for (String musicSource : musicSources) {
+      if (isFirst) {
+        workingGraph = baseGraph.filterOnVertices(new SourceFilterFunction(musicSource));
+        isFirst = false;
+      } else {
+        DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+            .getVertices()
+            .filter(new SourceFilterFunction(musicSource));
 
-    DataSet<Vertex<Long, ObjectMap>> vertices =
-        new JSONDataSource(INPUT_PATH, PREPROCESSING_STEP, env)
-            .getGraph(ObjectMap.class, NullValue.class)
-            .run(clustering);
+        IncrementalClustering clustering = new IncrementalClustering
+            .IncrementalClusteringBuilder(config)
+            .setMatchElements(newVertices)
+            .setNewSource(musicSource)
+            .build();
 
-    new JSONDataSink(INPUT_PATH, MERGE_STEP)
-        .writeVertices(vertices);
+        clusters = workingGraph.run(clustering);
+
+        DataSet<Edge<Long, NullValue>> edges = env.fromCollection(
+            Lists.newArrayList(""))
+            .map(new JSONToEdgeFormatter<>(NullValue.class));
+
+        workingGraph = Graph.fromDataSet(clusters, edges, env);
+      }
+    }
+
     result = env.execute(MER_JOB);
     System.out.println(MER_JOB + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");

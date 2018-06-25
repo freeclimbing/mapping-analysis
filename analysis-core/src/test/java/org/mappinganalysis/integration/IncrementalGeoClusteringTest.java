@@ -8,20 +8,15 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
-import org.apache.flink.api.java.operators.AggregateOperator;
 import org.apache.flink.api.java.operators.DataSource;
-import org.apache.flink.api.java.operators.FilterOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.hadoop.hdfs.util.Diff;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
-import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
@@ -30,7 +25,6 @@ import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
-import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.config.IncrementalConfig;
@@ -42,7 +36,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.reverseOrder;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class IncrementalGeoClusteringTest {
   private static final Logger LOG = Logger.getLogger(IncrementalGeoClusteringTest.class);
@@ -68,7 +63,6 @@ public class IncrementalGeoClusteringTest {
    * 100% of settlements dataset, baseline
    *
    * pr: 0.99504 re: 0.96037 F1: 0.97740
-
    */
   @Test
   public void allSettlementsAtOnceTest() throws Exception {
@@ -114,7 +108,6 @@ public class IncrementalGeoClusteringTest {
   }
 
   /**
-   *
    * GEO INC no holistic integration test
    * default setting, initial clustering 80%, add 10%, add a source, add final 10%
    *
@@ -298,7 +291,6 @@ public class IncrementalGeoClusteringTest {
   }
 
   /**
-   *
    * GEO INC HUNGARIAN integration test holistic
    * initial clustering 80%, add 10%, add a source, add final 10%
    *
@@ -486,7 +478,6 @@ public class IncrementalGeoClusteringTest {
   }
 
   /**
-   *
    * GEO INC SOURCE BY SOURCE integration test hungarian
    *
    * (http://rdf.freebase.com/,774)

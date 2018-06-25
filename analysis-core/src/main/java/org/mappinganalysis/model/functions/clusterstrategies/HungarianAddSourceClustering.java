@@ -63,18 +63,6 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
         .build();
 
     return input
-//        .filter(vertex -> { // TODO REMOVE AFTER TEST
-////          if (vertex.getId() == 416L || vertex.getId() == 7341L || vertex.getId() == 6589L) {
-//          if (vertex.getId() == 627L || vertex.getId() == 628L || vertex.getId() == 2485L || vertex.getId() == 4800L) {
-////          if (vertex.getId() == 685L || vertex.getId() == 686L || vertex.getId() == 3696L || vertex.getId() == 6283L
-////              ||  vertex.getId() == 1374L || vertex.getId() == 1375L) {
-//
-//              LOG.info("filter: " + vertex.toString());
-//            return true;
-//          } else {
-//            return false;
-//          }
-//        })
         .groupBy(new BlockingKeySelector())
         .reduceGroup(new HungarianTripletCreator(config.getNewSource()))
         .runOperation(similarityComputation)
@@ -85,8 +73,5 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
             config.getDataDomain())) // TODO manual threshold
         .runOperation(new RepresentativeCreator(config));
       // Todo simsort?
-
-
-
   }
 }
