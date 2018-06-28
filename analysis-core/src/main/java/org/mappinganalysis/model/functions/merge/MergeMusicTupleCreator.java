@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.merge;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -57,6 +58,7 @@ public class MergeMusicTupleCreator
     tuple.setYear(properties.getYear());
 
     tuple.setIntSources(properties.getIntDataSources());
+    properties.addClusterVertices(Sets.newHashSet(vertex.getId()));
     tuple.addClusteredElements(properties.getVerticesList());
     String artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex.getValue());
 //    tuple.setBlockingLabel(

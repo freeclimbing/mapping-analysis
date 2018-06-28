@@ -11,9 +11,12 @@ import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -46,24 +49,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Lists.newArrayList;
 import static org.simmetrics.builders.StringMetricBuilder.with;
 
 public class Utils {
   private static final Logger LOG = Logger.getLogger(Utils.class);
-
   private static final HashFunction HF = Hashing.md5();
-
-  /**
-   * Write any dataset to disk, not working currently, old.
-   */
-  @Deprecated
-  public static <T> void writeToFile(DataSet<T> data, String outDir) {
-    if (Constants.VERBOSITY.equals(Constants.DEBUG)) {
-      data.writeAsFormattedText(Constants.INPUT_PATH + "output/" + outDir,
-          FileSystem.WriteMode.OVERWRITE,
-          new DataSetTextFormatter<>());
-    }
-  }
 
   /**
    * Get the hash map value having the highest count of occurrence.
@@ -339,6 +330,19 @@ public class Utils {
 //        Constants.TYPE_INTERN, minorities.getValue().getTypesIntern());
 
     return priorities.getValue();
+  }
+
+  /**
+   * quick and dirty get an empty set of edges, how to fix?
+   */
+  public static DataSet<Edge<Long, NullValue>> getFakeEdges(ExecutionEnvironment env) {
+    DataSource<Tuple2<Long, Long>> fakeTuple = env
+        .fromCollection(newArrayList(
+            new Tuple2<>(Long.MAX_VALUE, Long.MIN_VALUE)));
+    return fakeTuple
+        .map(tuple -> new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance()))
+        .returns(new TypeHint<Edge<Long, NullValue>>() {})
+        .filter(edge -> edge.getSource() != Long.MAX_VALUE && edge.getTarget() != Long.MIN_VALUE);
   }
 
   public static class DataSetTextFormatter<V>

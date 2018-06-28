@@ -1,6 +1,9 @@
 package org.mappinganalysis.model;
 
+import com.google.common.collect.Sets;
 import org.apache.flink.api.java.tuple.Tuple13;
+import org.apache.flink.graph.Vertex;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.api.Identifiable;
 import org.mappinganalysis.model.api.IntSources;
 import org.mappinganalysis.model.api.Labeled;
@@ -32,6 +35,51 @@ public class MergeMusicTuple
   public MergeMusicTuple() {
     this.f9 = new LongSet();
     this.f11 = true;
+  }
+
+  public Vertex<Long, ObjectMap> toVertex(DataDomain domain) {
+    if (this.isActive()) {
+      ObjectMap properties = new ObjectMap(domain);
+
+      if (!getLabel().isEmpty()) {
+        properties.setLabel(getLabel());
+      }
+      if (!getAlbum().isEmpty()) {
+        properties.setAlbum(getAlbum());
+      }
+      if (!getArtist().isEmpty()) {
+        properties.setArtist(getArtist());
+      }
+      if (!getNumber().isEmpty()) {
+        properties.setNumber(getNumber());
+      }
+      if (!getLang().isEmpty()) {
+        properties.setLanguage(getLang());
+      }
+      if (getYear() != Constants.EMPTY_INT) {
+        properties.setYear(getYear());
+      }
+      if (getLength() != Constants.EMPTY_INT) {
+        properties.setLength(getLength());
+      }
+
+      // TODO temp construction
+      String mode;
+      if (domain == DataDomain.GEOGRAPHY) {
+        mode = Constants.GEO;
+      } else if (domain == DataDomain.MUSIC) {
+        mode = Constants.MUSIC;
+      } else {
+        mode = Constants.NC;
+      }
+
+      properties.setClusterDataSources(AbstractionUtils.getSourcesStringSet(mode, getIntSources()));
+      properties.setClusterVertices(Sets.newHashSet(getClusteredElements()));
+
+      return new Vertex<>(getId(), properties);
+    } else {
+      return null;
+    }
   }
 
   /**

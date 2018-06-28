@@ -12,7 +12,7 @@ import org.mappinganalysis.util.config.Config;
  */
 public class TestBase {
   public static void setupConstants() {
-    Constants.INPUT_PATH = "linklion";
+//    Constants.INPUT_PATH = "linklion";
     Constants.SOURCE_COUNT = 5;
   }
 

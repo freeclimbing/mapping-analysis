@@ -29,7 +29,6 @@ public class Clustering {
   @Deprecated
   public static Graph<Long, ObjectMap, ObjectMap> createInitialClustering(
       Graph<Long, ObjectMap, ObjectMap> graph,
-      String verbosity,
       ExecutionEnvironment env) throws Exception {
 
     LinkFilter linkFilter = new LinkFilter

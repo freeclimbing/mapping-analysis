@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
+import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
@@ -30,7 +31,6 @@ import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteri
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
-import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -65,6 +65,7 @@ public class IncrementalMusicClusteringTest {
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.INITIAL_CLUSTERING);
     config.setSimSortSimilarity(0.7);
+    config.setMinResultSimilarity(0.6);
 
     IncrementalClustering initialClustering =
         new IncrementalClustering
@@ -270,7 +271,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
-    new JSONDataSink(path.concat("/eighty/"), "test")
+    new JSONDataSink(path.concat("eighty/"), "test")
         .writeVertices(clusters);
     env.execute();
 
@@ -278,7 +279,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
       Add 10% clustering
      */
     startingGraph = new JSONDataSource(
-        path.concat("/eighty/output/test/"), "test", true, env)
+        path.concat("eighty/output/test/"), "test", true, env)
         .getGraph(ObjectMap.class, NullValue.class);
     config.setStep(ClusteringStep.VERTEX_ADDITION);
     config.setSubGraphVerticesPath(path.concat("split/addTen.txt"));
@@ -304,7 +305,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
       Add a source
      */
     startingGraph = new JSONDataSource(
-        path.concat("/plusTen/output/test/"), "test", true, env)
+        path.concat("plusTen/output/test/"), "test", true, env)
         .getGraph(ObjectMap.class, NullValue.class);
 
     String newSource = "5";
@@ -313,6 +314,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
         .filter(new SourceFilterFunction(newSource));
 
     config.setStep(ClusteringStep.SOURCE_ADDITION);
+    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
 
     IncrementalClustering plusSourceFiveClustering =
         new IncrementalClustering
@@ -323,25 +325,25 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     clusters = startingGraph.run(plusSourceFiveClustering);
 
-//    resultingVerticesList = Lists.newArrayList();
+    List<Long> resultingVerticesList = Lists.newArrayList();
     representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
-    new JSONDataSink(path.concat("/addSource/"), "test")
+    new JSONDataSink(path.concat("addSource/"), "test")
         .writeVertices(clusters);
     env.execute();
 
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      resultingVerticesList.addAll(representative.getValue().getVerticesList());
 //      LOG.info(representative.toString());
-//    }
-//
-//    LOG.info("add source 5: " + resultingVerticesList.size());
+    }
+
+    LOG.info("add source 5: " + resultingVerticesList.size());
 
     /*
       Add final 10% clustering
      */
     startingGraph = new JSONDataSource(
-        path.concat("/addSource/output/test/"), "test", true, env)
+        path.concat("addSource/output/test/"), "test", true, env)
         .getGraph(ObjectMap.class, NullValue.class);
     config.setStep(ClusteringStep.VERTEX_ADDITION);
     config.setSubGraphVerticesPath(path.concat("split/lastTen.txt"));
@@ -357,22 +359,22 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     clusters = startingGraph.run(finalClustering);
 
-//    resultingVerticesList = Lists.newArrayList();
+    resultingVerticesList = Lists.newArrayList();
     representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     new JSONDataSink(path.concat("/finalClustering/"), "test")
         .writeVertices(clusters);
     env.execute();
 
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      resultingVerticesList.addAll(representative.getValue().getVerticesList());
 //      LOG.info(representative.toString());
-//    }
-//
-//    LOG.info("final 10%: " + resultingVerticesList.size());
+    }
+
+    LOG.info("final 10%: " + resultingVerticesList.size());
 
 //    assertEquals(12439, resultingVerticesList.size());
-    QualityUtils.printMusicQuality(clusters, config);
+    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
 
 //    clusters.print();
   }
@@ -505,6 +507,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.SOURCE_ADDITION);
     config.setSimSortSimilarity(0.7);
+    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
 
     List<String> musicSources = Constants.MUSIC_SOURCES;
     Graph<Long, ObjectMap, NullValue> workingGraph = null;
@@ -540,6 +543,13 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
 
     List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
+
+    List<Long> resultingVerticesList = Lists.newArrayList();
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      resultingVerticesList.addAll(representative.getValue().getVerticesList());
+    }
+    HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
+    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     env.execute();
 
     QualityUtils.printMusicQuality(env.fromCollection(representatives), config);

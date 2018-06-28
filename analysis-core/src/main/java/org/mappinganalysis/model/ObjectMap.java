@@ -187,7 +187,9 @@ public class ObjectMap
     if (map.containsKey(Constants.ARTIST_TITLE_ALBUM)) {
       return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
     } else {
-      throw new NullPointerException("ARTIST_TITLE_ALBUM not found for: " + map.toString());
+      setArtistTitleAlbum(Utils.createSimpleArtistTitleAlbum(this));
+      return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
+//      throw new NullPointerException("ARTIST_TITLE_ALBUM not found for: " + map.toString());
     }
 
   }
@@ -399,7 +401,7 @@ public class ObjectMap
     Object clusteredVertices = map.get(Constants.CL_VERTICES);
 
     if (clusteredVertices == null) {
-      return null;
+      return Sets.newHashSet();
     } else if (clusteredVertices instanceof Set) {
       return (Set<Long>) clusteredVertices;
     } else {

@@ -16,6 +16,9 @@ import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
+import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
@@ -23,6 +26,8 @@ import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.concurrent.TimeUnit;
@@ -79,6 +84,11 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         return;
       }
 
+      IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+      config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+      config.setMetric(metric);
+      config.setSimSortSimilarity(0.5);
+
     /*
       preprocessing
      */
@@ -87,7 +97,7 @@ public class MusicbrainzBenchmark implements ProgramDescription {
               .getGraph(ObjectMap.class, NullValue.class);
 
       new JSONDataSink(inputPath, PREPROCESSING_STEP)
-          .writeGraph(graph.run(new DefaultPreprocessing(metric, domain, env)));
+          .writeGraph(graph.run(new DefaultPreprocessing(config)));
       result = env.execute(PRE_JOB);
       System.out.println(PRE_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 

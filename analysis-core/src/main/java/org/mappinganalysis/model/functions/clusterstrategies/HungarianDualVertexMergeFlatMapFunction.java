@@ -10,7 +10,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.util.Utils;
 
 /**
- * hungarian inc clustering
+ * hungarian inc clustering, merge only if similarity is above threshold
  */
 public class HungarianDualVertexMergeFlatMapFunction
     implements FlatMapFunction<Triplet<Long,ObjectMap,ObjectMap>,
@@ -35,11 +35,10 @@ public class HungarianDualVertexMergeFlatMapFunction
       out.collect(priority);
       out.collect(minority);
     } else {
-//      LOG.info("init: " + priority.toString() + " " + dataDomain.toString());
       ObjectMap priorities;
       ObjectMap minorities = minority.getValue();
 
-      //   geo properties
+      // geo properties
       if (dataDomain == DataDomain.GEOGRAPHY) {
         priorities = Utils.handleGeoProperties(priority, minority);
       } else if (dataDomain == DataDomain.MUSIC) {
@@ -49,7 +48,7 @@ public class HungarianDualVertexMergeFlatMapFunction
             + dataDomain);
       }
 
-      //    general properties
+      // general properties
       priorities.addClusterDataSources(
           minorities.getDataSourcesList());
       priorities.addClusterVertices(
@@ -62,7 +61,6 @@ public class HungarianDualVertexMergeFlatMapFunction
         priorities.setLabel(minorities.getLabel());
       }
 
-//      LOG.info("out result: " + priority.toString());
       out.collect(priority);
     }
   }

@@ -11,7 +11,8 @@ import org.mappinganalysis.model.MergeMusicTuple;
 // output: Tuple5<Vertex, String, Long, Boolean, Integer> ~ Tuple5<Vertex, Key, VertexIndex, IsLast, ReducerId>
 
 public class ReplicateAndAssignReducerId
-    extends RichFlatMapFunction<Tuple6<MergeMusicTuple, String, Long, Long, Long, Long>,
+    extends RichFlatMapFunction<
+    Tuple6<MergeMusicTuple, String, Long, Long, Long, Long>,
     Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> {
   private int parallelism;
 
@@ -54,10 +55,8 @@ public class ReplicateAndAssignReducerId
     int minReducerId = Math.toIntExact(parallelism * pMin / input.f5);
     int maxReducerId = Math.toIntExact(parallelism * pMax / input.f5);
 
-
-//        System.out.println(input.f2+","+input.f3+","+parallelism * pMin / input.f5+","+parallelism * pMax / input.f5);
     if (minReducerId != maxReducerId)
-      for (int i= minReducerId; i < maxReducerId; i++){
+      for (int i = minReducerId; i < maxReducerId; i++){
         out.collect(Tuple5.of(input.f0, input.f1, input.f2, false, i));
       }
     out.collect(Tuple5.of(input.f0, input.f1, input.f2, true, maxReducerId));

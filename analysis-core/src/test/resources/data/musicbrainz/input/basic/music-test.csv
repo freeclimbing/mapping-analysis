@@ -1,0 +1,12 @@
+TID,CID,CTID,SourceID,id,number,title,length,artist,album,year,language
+1,1,1,2,MBox7368722-HH,9, Daniel Balavoine - L'enfant aux yeux d'Italie, 219,--,De vous à elle en passant par moi,75,French
+15184,1,2,3,11854016MB-01,9,L'enfant aux yeux d'Italie - De vous à elle en passant par moi,3.663,Daniel Balavoine,--,'75,French
+3,2,1,2,MBox38440522-HH,17,Action PAINTING! - Mustard Gas,129,--,There and Back Again Lane,95,English
+14722,2,2,3,6183919MB-01,17,Mustard Gas - There and Back Again Lane,2.15,Action Painting!,--,'95,English
+4,3,1,5,4489993,10,Your Grace,unk.,Kathy Troccoli,Comfort,2005,English
+5,4,1,5,10339621,2,Well You Needn't,321266,Ernie Stadler Jazz Quintet,First Down,2010,English
+6,5,1,3,49425110MB-01,6,"Try (acoustic) - 2008-02-15: Le Grand Rex, Paris, France",--,Neil Young,--,--,English
+8,6,1,2,MBox9589118-HH,9,Luce Dufault - Ballade à donner,242,--,Luce Dufault,96,French
+2379,6,3,4,49971-A065,9,009-Ballade a donner,4m 2sec,Luce Dufault,Luce Dufault (1996),null,Fre.
+3827,6,2,3,1542600MB-01,9,Ballade à donner - Luce Dufault,4.033,Luce Dufault,--,'96,French
+9,7,1,5,10992441,9,Just Like Tom Thumb's Blues (live),462000,Wendy Saddington,"Blues Women Anthology, Volume 7",2007,English

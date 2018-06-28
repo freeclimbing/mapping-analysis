@@ -2,6 +2,7 @@ package org.mappinganalysis.model.functions.merge;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.Graph;
@@ -138,7 +139,7 @@ public class MergeGeoBlockingTest {
         assertTrue(vertex.getValue().getVerticesList().contains(395207L)
             && vertex.getValue().getVerticesList().contains(513732L));
       } else {
-        assertNull(vertex.getValue().getVerticesList());
+        assertEquals(Sets.newHashSet(), vertex.getValue().getVerticesList());
       }
     }
     assertEquals(6, count);

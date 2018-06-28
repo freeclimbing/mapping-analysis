@@ -36,7 +36,6 @@ public class MusicSimilarityFunction
 //        .runOperation(new SinglePropertySimilarity(Constants.LENGTH, metric))
     ;
 
-//    System.out.println("muSiFu: " + result.getEdge().getValue().toString());
     return result;
   }
 }

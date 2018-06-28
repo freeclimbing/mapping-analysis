@@ -37,6 +37,7 @@ import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
@@ -122,6 +123,8 @@ public class MusicBrainzTest {
   public void csimqTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setMetric(Constants.COSINE_TRIGRAM);
     String graphPath =
         "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/csimq/";
     List<String> sourceList = Lists.newArrayList(
@@ -138,7 +141,7 @@ public class MusicBrainzTest {
 
       LOG.info("inEdges: " + inputGraph.getEdgeIds().count());
       Graph<Long, ObjectMap, ObjectMap> graph = inputGraph
-          .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+          .run(new DefaultPreprocessing(config));
 
 
 //      for (int simFor = 20; simFor <= 30; simFor += 5) {

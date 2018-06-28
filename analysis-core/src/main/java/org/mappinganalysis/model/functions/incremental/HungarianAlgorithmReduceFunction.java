@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.MapUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
@@ -14,13 +13,16 @@ import org.mappinganalysis.util.HungarianAlgorithm;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
+/**
+ * Transform triplets to simple double weights and determine assignment according to
+ * hungarian algorithm. Afterwards, create new set of triplets with the resulting edges.
+ */
 public class HungarianAlgorithmReduceFunction
     implements GroupReduceFunction<
     Triplet<Long, ObjectMap, ObjectMap>,
     Triplet<Long, ObjectMap, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(HungarianAlgorithmGeoReduceFunction.class);
+  private static final Logger LOG = Logger.getLogger(HungarianAlgorithmReduceFunction.class);
 
   @Override
   public void reduce(Iterable<Triplet<Long, ObjectMap, ObjectMap>> values,
@@ -74,10 +76,6 @@ public class HungarianAlgorithmReduceFunction
           rightCounter);
     }
 
-//    for (double[] weight : weights) {
-//      LOG.info(Arrays.toString(weight));
-//    }
-
     HungarianAlgorithm algorithm = new HungarianAlgorithm(weights);
     int[] matrixResult = algorithm.execute();
 
@@ -109,16 +107,6 @@ public class HungarianAlgorithmReduceFunction
     First iteration on triplets, only if src and target are in result, its collected.
      */
     for (Triplet<Long, ObjectMap, ObjectMap> triplet : triplets) {
-//      LOG.info("\n iter triplet: " + triplet.toString());
-//
-//      for (Map.Entry<Long, Integer> longIntegerEntry : rightSource.entrySet()) {
-//        LOG.info("rightSource: " + longIntegerEntry);
-//      }
-//
-//      for (Map.Entry<Long, Integer> longIntegerEntry : leftSource.entrySet()) {
-//        LOG.info("leftSource: " + longIntegerEntry);
-//      }
-
       long srcId = triplet.getSrcVertex().getId();
       long trgId = triplet.getTrgVertex().getId();
 
@@ -126,7 +114,6 @@ public class HungarianAlgorithmReduceFunction
       // elements are added to check set, do not collect them again.
       if (resultMap.get(srcId) != null && resultMap.get(srcId) == trgId) {
 //        LOG.info("(1) triplet in result: " + triplet.toString());
-
         checkSet.add(srcId);
         checkSet.add(trgId);
 

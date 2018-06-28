@@ -169,8 +169,20 @@ public class SinglePropertySimilarity implements CustomOperation<EdgeObjectMapTr
    * @return updated triplet
    */
   private EdgeObjectMapTriplet handleString(String property) {
-    String srcProperty = triplet.getSrcVertex().getValue().get(property).toString();
-    String trgProperty = triplet.getTrgVertex().getValue().get(property).toString();
+    String srcProperty;
+    String trgProperty;
+    if (property.equals(Constants.ARTIST_TITLE_ALBUM)
+      && triplet.getSrcVertex().getValue().get(property) == null) {
+      srcProperty = Utils.createSimpleArtistTitleAlbum(triplet.getSrcVertex().getValue());
+    } else {
+      srcProperty = triplet.getSrcVertex().getValue().get(property).toString();
+    }
+    if (property.equals(Constants.ARTIST_TITLE_ALBUM)
+        && triplet.getTrgVertex().getValue().get(property) == null) {
+      trgProperty = Utils.createSimpleArtistTitleAlbum(triplet.getTrgVertex().getValue());
+    } else {
+      trgProperty = triplet.getTrgVertex().getValue().get(property).toString();
+    }
 
     Double similarity = Utils.getSimilarityAndSimplifyForMetric(srcProperty, trgProperty, metric);
     if (similarity != null) {

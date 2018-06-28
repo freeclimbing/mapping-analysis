@@ -32,10 +32,6 @@ public class LinkSelectionWithCcIdFunction
     HashMap<Long, Integer> entitySourceMap = Maps.newHashMap();
 
     for (EdgeSourceSimTuple edge : values) {
-      /*
-      preparation
-       */
-
       // get accumulated (and updated) src/trg dataset values
       int srcDataSetInt;
       if (entitySourceMap.containsKey(edge.getSrcId())) {

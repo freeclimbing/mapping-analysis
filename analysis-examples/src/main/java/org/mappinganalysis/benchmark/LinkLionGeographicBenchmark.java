@@ -21,8 +21,7 @@ import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 
 /**
- * TODO fix paths
- * TODO fix constant variables
+ * LL Benchmark, old.
  */
 public class LinkLionGeographicBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -41,13 +40,11 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
 
     Double minSimilarity = Doubles.tryParse(args[1]);
     final String inputPath = args[0];
-    Constants.SOURCE_COUNT = 5;
     final String metric = Constants.COSINE_TRIGRAM;
 
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
-        // TODO check path
-        Constants.INPUT_PATH,
-        Constants.LL_MODE.concat(Constants.INPUT_GRAPH),
+        inputPath,
+        Constants.INPUT_GRAPH,
         env)
         .getGraph(ObjectMap.class, NullValue.class)
         .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env));
@@ -84,7 +81,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
             .runOperation(new MergeExecution(DataDomain.GEOGRAPHY,
                 metric,
                 0.5,
-                Constants.SOURCE_COUNT,
+                5,
                 env));
 
     new JSONDataSink(inputPath, MERGE)

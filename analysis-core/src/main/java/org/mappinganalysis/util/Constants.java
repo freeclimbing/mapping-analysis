@@ -61,6 +61,8 @@ public class Constants {
   public static final String STEP = "step";
   public static final String SUBGRAPH_VERTICES_PATH = "subGraphVerticesPath";
   public static final String DATA_SOURCES_DATASET = "dataSourcesDataSet";
+  public static final String MATCHING_STRATEGY = "matchingStrategy";
+  public static final String MIN_RESULT_SIMILARITY = "minResultSimilarity";
   public static final String NULL = "null";
 
   @Deprecated
@@ -255,16 +257,16 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
-  public static final String NC_1 = "geco1";
-  public static final String NC_2 = "geco2";
-  public static final String NC_3 = "geco3";
-  public static final String NC_4 = "geco4";
-  public static final String NC_5 = "geco5";
-  public static final String NC_6 = "geco6";
-  public static final String NC_7 = "geco7";
-  public static final String NC_8 = "geco8";
-  public static final String NC_9 = "geco9";
-  public static final String NC_10 = "geco10";
+  private static final String NC_1 = "geco1";
+  private static final String NC_2 = "geco2";
+  private static final String NC_3 = "geco3";
+  private static final String NC_4 = "geco4";
+  private static final String NC_5 = "geco5";
+  private static final String NC_6 = "geco6";
+  private static final String NC_7 = "geco7";
+  private static final String NC_8 = "geco8";
+  private static final String NC_9 = "geco9";
+  private static final String NC_10 = "geco10";
 
   public static final List<String> GEO_SOURCES = Lists
       .newArrayList(DBP_NS, GN_NS, LGD_NS, FB_NS, NYT_NS);
@@ -334,28 +336,18 @@ public class Constants {
 
   public static final String READ_INPUT = "read-input";
   public static final String PREPROC = "preproc";
-  public static final String LF = "lf";
   public static final String PREPROCESSING_COMPLETE = "pc";
-  public static final String IC = "ic";
   public static final String DECOMP = "decomp";
   public static final String SIMSORT = "simsort";
   public static final String DECOMPOSITION_COMPLETE = "dc";
   public static final String ANALYSIS = "analysis";
   public static final String ALL = "all"; // all parts in a row, multiple jobs
-  public static final String COMPLETE = "c"; // all parts together
-  public static final String EVAL = "eval";
   public static final String STATS_EDGE_INPUT = "stats-edge-input";
   public static final String STATS_EDGE_PREPROC = "stats-edge-preproc";
   public static final String STATS_VERTEX_INPUT = "stats-vertex-input";
   public static final String STATS_VERTEX_PREPROC = "stats-vertex-preproc";
   public static final String INIT_CLUST = "2-initial-clustering";
   public static final String MISS = "miss";
-  public static final String TEST = "test";
-
-  /**
-   * Command line option names.
-   */
-  public static String INPUT_PATH;
 
   public static final String VERTICES = "vertices/";
   public static final String EDGES = "edges/";
@@ -369,6 +361,4 @@ public class Constants {
   public static Integer SOURCE_COUNT;
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
-  public static String VERBOSITY;
-  public static boolean IS_SIMSORT_ENABLED;
 }
