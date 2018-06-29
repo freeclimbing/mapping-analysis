@@ -116,6 +116,12 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
         }
       });
 
+      // we get duplicate entries for multiple runs
+      //{"id":1279572,"data":{"number":"2","blockingLabel":" ele","artist":"Some Electric Noise","year":2010,"album":"Blackout","artistTitleAlbum":"some electric noise some electric the death of the radio son blackout","length":235,"language":"no_or_minor_lang","label":"Some Electric - The Death of the Radio Son","dataSources":["1","2","3","4","5"],"clusteredVertices":[1315540,1389969,1279572,1349788,1549336]}}
+//      {"id":1279572,"data":{"number":"2","blockingLabel":" ele","artist":"Some Electric Noise","year":2010,"album":"Blackout","artistTitleAlbum":"some electric noise some electric the death of the radio son blackout","length":235,"language":"no_or_minor_lang","label":"Some Electric - The Death of the Radio Son","dataSources":["1","2","3","5"],"clusteredVertices":[1315540,1279572,1349788,1549336]}}
+//      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
+//      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
+
       return maxBothTriplets
           .flatMap(new HungarianDualVertexMergeFlatMapFunction(config.getDataDomain()))
           .union(notHandledVertices)
