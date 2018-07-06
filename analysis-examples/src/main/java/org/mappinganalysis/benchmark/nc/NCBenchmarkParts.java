@@ -16,7 +16,7 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
-import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTupleCreator;
+import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
@@ -129,7 +129,7 @@ public class NCBenchmarkParts implements ProgramDescription {
                     .runOperation(similarityComputation);
               } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
                 initialWorkingSet = preBlockingClusters.runOperation(
-                    new BlockSplitTupleCreator())
+                    new BlockSplitTripletCreator())
                     .runOperation(similarityComputation);
               }
 

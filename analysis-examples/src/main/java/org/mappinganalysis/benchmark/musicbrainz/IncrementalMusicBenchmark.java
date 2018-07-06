@@ -38,18 +38,16 @@ import static com.google.common.collect.Lists.newArrayList;
 public class IncrementalMusicBenchmark implements ProgramDescription {
   private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
+  // TODO FIX or remove
   private static final String PREPROCESSING_STEP = "incremental-preprocessing";
   private static final String MERGE_STEP = "incremental-merged-clusters";
   private static final String PRE_JOB = "Incremental Preprocessing";
   private static final String MER_JOB = "Incremental Merge";
-  private static IncrementalConfig jobName;
 
   public static void main(String[] args) throws Exception {
     Preconditions.checkArgument(args.length == 3, "args[0]: input dir, " + "args[1]: file name, " + "args[2]: selection strategy (entity, source)");
     final String inputPath = args[0];
     final String vertexFileName = args[1];
-    final DataDomain dataDomain = DataDomain.MUSIC;
-
     String strategy = args[2];
     final ClusteringStep clusteringStep;
     switch (strategy) {
@@ -65,7 +63,7 @@ public class IncrementalMusicBenchmark implements ProgramDescription {
 
     MatchingStrategy matchStrategy = MatchingStrategy.MAX_BOTH;
 
-    IncrementalConfig config = new IncrementalConfig(dataDomain, env);
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);

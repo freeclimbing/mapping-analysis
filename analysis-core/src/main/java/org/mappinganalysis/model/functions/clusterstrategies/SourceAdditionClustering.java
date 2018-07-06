@@ -2,9 +2,11 @@ package org.mappinganalysis.model.functions.clusterstrategies;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DistinctOperator;
+import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
@@ -13,8 +15,9 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
+import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTupleCreator;
+import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
@@ -28,13 +31,22 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.BlockingKeyFromAnyElementKeySelector;
 
-class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(HungarianAddSourceClustering.class);
+/**
+ * Implementations of clustering for the use case of adding a new knowledge base to
+ * an existing set of clusters.
+ *
+ * Currently, MAX_BOTH and HUNGARIAN can be used.
+ */
+class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
+  private static final Logger LOG = Logger.getLogger(SourceAdditionClustering.class);
 
   private DataSet<Vertex<Long, ObjectMap>> input;
   private IncrementalConfig config;
 
-  public HungarianAddSourceClustering(IncrementalConfig config) {
+  /**
+   * Default constructor.
+   */
+  SourceAdditionClustering(IncrementalConfig config) {
     this.config = config;
   }
 
@@ -60,6 +72,7 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
     } else {
       simFunction = null;
     }
+
     SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
         Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
         = new SimilarityComputation
@@ -72,12 +85,10 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> simTriplets = input
         // blocking TODO add proper handling for different blocking methods
         .map(new MergeMusicTupleCreator())
-        .runOperation(new BlockSplitTupleCreator())
-        .map(new MusicTripletToTripletFunction(config.getDataDomain()))
-        // old begin
-//        .groupBy(new BlockingKeySelector())
-//        .reduceGroup(new HungarianTripletCreator(config.getNewSource())) // TODO CHECK THIS LINE (first round)
-        // old end
+        .runOperation(new BlockSplitTripletCreator(config.getDataDomain(),
+            config.getNewSource()))
+        .map(new MusicTripletToTripletFunction(config.getDataDomain(),
+            config.getNewSource()))
         .runOperation(similarityComputation)
         .map(new TripletMeanAggregationFunction());
 
@@ -87,7 +98,7 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
           .groupBy(new BlockingKeyFromAnyElementKeySelector())
           .reduceGroup(new HungarianAlgorithmReduceFunction())
           .flatMap(new HungarianDualVertexMergeFlatMapFunction(
-          config.getDataDomain())) // TODO manual threshold
+              config.getDataDomain())) // TODO manual threshold
           .runOperation(new RepresentativeCreator(config));
     } else if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
@@ -123,6 +134,15 @@ class HungarianAddSourceClustering implements CustomUnaryOperation<Vertex<Long,O
 //      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
 
       return maxBothTriplets
+          .map(x -> {
+//            if (x.getTrgVertex().getId() == 16889L || x.getSrcVertex().getId() == 16889L
+//                || x.getSrcVertex().getId() == 9919L || x.getTrgVertex().getId() == 9919L) {
+//              LOG.info("SAC: " + x.toString());
+//            }
+
+            return x;
+          })
+          .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {})
           .flatMap(new HungarianDualVertexMergeFlatMapFunction(config.getDataDomain()))
           .union(notHandledVertices)
           .runOperation(new RepresentativeCreator(config));

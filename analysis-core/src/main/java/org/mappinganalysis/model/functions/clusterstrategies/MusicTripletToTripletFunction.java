@@ -14,18 +14,37 @@ import org.mappinganalysis.model.ObjectMap;
 class MusicTripletToTripletFunction
     implements MapFunction<MergeMusicTriplet, Triplet<Long, ObjectMap, NullValue>> {
   private DataDomain dataDomain;
+  private String newSource;
 
-  public MusicTripletToTripletFunction(DataDomain dataDomain) {
+  /**
+   * Constructor for incremental source addition
+   * @param dataDomain data domain
+   * @param newSource new source
+   */
+  public MusicTripletToTripletFunction(DataDomain dataDomain, String newSource) {
     this.dataDomain = dataDomain;
+    this.newSource = newSource;
   }
 
   @Override
   public Triplet<Long, ObjectMap, NullValue> map(MergeMusicTriplet triplet) throws Exception {
-    Vertex<Long, ObjectMap> source = triplet.getSrcTuple()
+    Vertex<Long, ObjectMap> source;
+    Vertex<Long, ObjectMap> target;
+
+    Vertex<Long, ObjectMap> firstVertex = triplet
+        .getSrcTuple()
+        .toVertex(dataDomain);
+    Vertex<Long, ObjectMap> secondVertex = triplet
+        .getTrgTuple()
         .toVertex(dataDomain);
 
-    Vertex<Long, ObjectMap> target = triplet.getTrgTuple()
-        .toVertex(dataDomain);
+    if (firstVertex.getValue().getDataSourcesList().contains(newSource)) {
+      source = firstVertex;
+      target = secondVertex;
+    } else {
+      source = secondVertex;
+      target = firstVertex;
+    }
 
     return new Triplet<>(source.getId(),
         target.getId(),

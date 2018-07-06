@@ -3,6 +3,7 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
 import org.mappinganalysis.util.AbstractionUtils;
@@ -67,13 +68,13 @@ public class DualMergeGeographyMapper
       MergeGeoTuple geoTuple = Utils.isOnlyOneValidGeoObject(priority, minor);
       if (geoTuple != null) {
         mergedCluster.setGeoProperties(geoTuple);
-      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.GN_NS)) {
+      } else if (AbstractionUtils.containsSrc(DataDomain.GEOGRAPHY, priority.getIntSources(), Constants.GN_NS)) {
         mergedCluster.setGeoProperties(priority);
-      } else if (AbstractionUtils.containsSrc(Constants.GEO, minor.getIntSources(), Constants.GN_NS)) {
+      } else if (AbstractionUtils.containsSrc(DataDomain.GEOGRAPHY, minor.getIntSources(), Constants.GN_NS)) {
         mergedCluster.setGeoProperties(minor);
-      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
+      } else if (AbstractionUtils.containsSrc(DataDomain.GEOGRAPHY, priority.getIntSources(), Constants.DBP_NS)) {
         mergedCluster.setGeoProperties(priority);
-      } else if (AbstractionUtils.containsSrc(Constants.GEO, priority.getIntSources(), Constants.DBP_NS)) {
+      } else if (AbstractionUtils.containsSrc(DataDomain.GEOGRAPHY, priority.getIntSources(), Constants.DBP_NS)) {
         mergedCluster.setGeoProperties(minor);
       }
 

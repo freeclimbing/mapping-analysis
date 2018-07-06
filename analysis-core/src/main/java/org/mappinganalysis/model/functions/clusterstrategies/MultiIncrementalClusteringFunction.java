@@ -120,7 +120,7 @@ public class MultiIncrementalClusteringFunction extends IncrementalClusteringFun
            */
         } else if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
           return clusterWorkset
-              .runOperation(new HungarianAddSourceClustering(config));
+              .runOperation(new SourceAdditionClustering(config));
         }
       }
     return null;

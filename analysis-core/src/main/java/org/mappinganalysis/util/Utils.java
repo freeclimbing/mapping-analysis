@@ -691,19 +691,20 @@ public class Utils {
   public static String createSimpleArtistTitleAlbum(ObjectMap value) {
     String artistTitleAlbum = Constants.EMPTY_STRING;
     String artist = value.getArtist();
-    if (!artist.equals(Constants.CSV_NO_VALUE)) {
+    String label = value.getLabel();
+    String album = value.getAlbum();
+
+    if (isSane(artist)) {
       artistTitleAlbum = artist;
     }
-    String label = value.getLabel();
-    if (!label.equals(Constants.CSV_NO_VALUE)) {
+    if (isSane(label)) {
       if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = label;
       } else {
         artistTitleAlbum = artistTitleAlbum.concat(Constants.DEVIDER).concat(label);
       }
     }
-    String album = value.getAlbum();
-    if (!album.equals(Constants.CSV_NO_VALUE)) {
+    if (isSane(album)) {
       if (artistTitleAlbum.isEmpty()) {
         artistTitleAlbum = album;
       } else {

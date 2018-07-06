@@ -3,6 +3,7 @@ package org.mappinganalysis.util;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.functions.preprocessing.utils.ComponentSourceTuple;
 
 import java.util.*;
@@ -65,6 +66,16 @@ public class AbstractionUtils {
     } else if (mode.equals(Constants.GEO)) {
       SOURCES_MAP = Constants.GEO_MAP;
     } else if (mode.equals(Constants.NC)) {
+      SOURCES_MAP = Constants.NC_MAP;
+    }
+  }
+
+  private static void setupDataDomain(DataDomain domain) {
+    if (domain == DataDomain.MUSIC) {
+      SOURCES_MAP = Constants.MUSIC_MAP;
+    } else if (domain == DataDomain.GEOGRAPHY) {
+      SOURCES_MAP = Constants.GEO_MAP;
+    } else if (domain == DataDomain.NC) {
       SOURCES_MAP = Constants.NC_MAP;
     }
   }
@@ -168,8 +179,8 @@ public class AbstractionUtils {
   /**
    * Check if certain int sources representation contains a specific source value.
    */
-  public static boolean containsSrc(String mode, Integer sources, String checkSrc) {
-    setupMode(mode);
+  public static boolean containsSrc(DataDomain domain, Integer sources, String checkSrc) {
+    setupDataDomain(domain);
     Set<Integer> values = getValuesIntSet(sources);
     Integer checkInt = SOURCES_MAP.get(checkSrc);
 

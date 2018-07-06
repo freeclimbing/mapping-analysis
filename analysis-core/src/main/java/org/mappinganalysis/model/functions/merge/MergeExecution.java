@@ -16,7 +16,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.*;
 import org.mappinganalysis.model.functions.NcLshCandidateTupleCreator;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
-import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTupleCreator;
+import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.blocking.tfidf.IdfBlockingOperation;
 import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
@@ -193,8 +193,8 @@ public class MergeExecution
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation);
       } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
-        initialWorkingSet = preBlockingClusters.runOperation(
-            new BlockSplitTupleCreator())
+        initialWorkingSet = preBlockingClusters
+            .runOperation(new BlockSplitTripletCreator())
             .runOperation(similarityComputation);
       } else if (blockingStrategy == BlockingStrategy.LSH_BLOCKING) {
         initialWorkingSet = preBlockingClusters.runOperation(
