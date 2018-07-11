@@ -281,8 +281,9 @@ public class NorthCarolinaVoterBaseTest {
       return new Tuple2<>(Utils.getBlockingKey(
           BlockingStrategy.STANDARD_BLOCKING,
           Constants.MUSIC,
-          label.substring(0, 2).concat(artist.substring(0, 2))
-      ), 1);
+          label.substring(0, 2).concat(artist.substring(0, 2)),
+          4),
+          1);
     })
         .returns(new TypeHint<Tuple2<String, Integer>>() {})
         .groupBy(0)

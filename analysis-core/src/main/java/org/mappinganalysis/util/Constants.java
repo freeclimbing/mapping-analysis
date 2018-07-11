@@ -56,6 +56,7 @@ public class Constants {
   public static final String SOURCE_COUNT_LABEL = "sourceCountLabel";
   public static final String DATA_SOURCES_LABEL = "dataSourcesLabel";
   public static final String BLOCKING_STRATEGY = "blockingStrategy";
+  public static final String BLOCKING_LENGTH = "blockingLength";
   public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
   public static final String DATA_DOMAIN = "dataDomain";
   public static final String STEP = "step";

@@ -20,11 +20,17 @@ public class MergeMusicSimilarity
   private MeanAggregationFunction aggregationFunction;
   private String metric;
 
+  /**
+   * Similarity function for MergeMusicTriplets, used in (old) Merge.
+   */
   private MergeMusicSimilarity(String metric, MeanAggregationFunction aggregationFunction) {
     this.metric = metric;
     this.aggregationFunction = aggregationFunction;
   }
 
+  /**
+   * Constructor for intern and test usage.
+   */
   public MergeMusicSimilarity(String metric) {
     this(metric, new MeanAggregationFunction());
   }

@@ -6,10 +6,7 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.api.java.tuple.Tuple5;
-import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -51,29 +48,29 @@ public class BlockSplitTripletCreator
    */
   @Override
   public DataSet<MergeMusicTriplet> createResult() {
-    DataSet<Tuple3<MergeMusicTuple, String, Integer>> bkeyPid = inputTuples
+    DataSet<Tuple3<Long, String, Integer>> bkeyPid = inputTuples
         .map(new TuplePartitionIdMapper());
 
     UnsortedGrouping<Tuple3<String, Integer, Long>> bKeyPidCountGroupingByBkey = bkeyPid
-        .groupBy(2,1)
+        .groupBy(2, 1)
         .combineGroup(new EnumeratePartitionEntities())
         .groupBy(0);
 
-    DataSet<Tuple4<MergeMusicTuple, String, Integer, Long>> tupleKeyPartIdStartPoint
+    DataSet<Tuple4<Long, String, Integer, Long>> tupleKeyPartIdStartPoint
         = bKeyPidCountGroupingByBkey
         .sortGroup(1, Order.ASCENDING)
         .reduceGroup(new ComputePartitionEnumerationStartPoint()) /* Generate vertex index */
         .join(bkeyPid)
-        .where(0,1).equalTo(1,2)
+        .where(0, 1).equalTo(1, 2)
         .with((JoinFunction<Tuple3<String, Integer, Long>,
-            Tuple3<MergeMusicTuple, String, Integer>,
-            Tuple4<MergeMusicTuple, String, Integer, Long>>) (startPoint, tuple)
+            Tuple3<Long, String, Integer>,
+            Tuple4<Long, String, Integer, Long>>) (startPoint, tuple)
             -> Tuple4.of(tuple.f0, tuple.f1, tuple.f2, startPoint.f2))
-        .returns(new TypeHint<Tuple4<MergeMusicTuple, String, Integer, Long>>() {});
+        .returns(new TypeHint<Tuple4<Long, String, Integer, Long>>() {});
 
 
-    DataSet<Tuple3<MergeMusicTuple, String, Long>> tupleBkeyTupleId = tupleKeyPartIdStartPoint
-        .groupBy(1,2)
+    DataSet<Tuple3<Long, String, Long>> tupleBkeyTupleId = tupleKeyPartIdStartPoint
+        .groupBy(1, 2)
         .reduceGroup(new AssignVertexIndex());
 
     /* Prepare key (block) information (size, index, no. of pairs in prev blocks, no. of all pairs) */
@@ -83,7 +80,7 @@ public class BlockSplitTripletCreator
         .map(new AssignBlockIndex());
 
     /* Provide information (BlockIndex, BlockSize, PrevBlockPairs, allPairs) for each vertex         */
-    DataSet<Tuple6<MergeMusicTuple, String, Long, Long, Long, Long>> tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
+    DataSet<Tuple6<Long, String, Long, Long, Long, Long>> tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
         = tupleBkeyTupleId
         .join(bkeySizeIndex
             .reduceGroup(new ComputePrevBlocksPairNoAllPairs()))
@@ -91,26 +88,30 @@ public class BlockSplitTripletCreator
         .with(new ConcatAllInfoToVertex());
 
     /* Load Balancing */
-    DataSet<Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> tupleBkeyVindexIsLastReducerId
+    DataSet<Tuple5<Long, String, Long, Boolean, Integer>> tupleBkeyVindexIsLastReducerId
         = tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
         .flatMap(new ReplicateAndAssignReducerId())
-        .partitionCustom(new PartitionVertices(), 4)
-        .map(x -> {
-//          if (x.f0.f0 == 16889L || x.f0.f0 == 9919L)
-//          LOG.info("PartitionVertices: " + x.toString());
-          return x;
-        })
-        .returns(new TypeHint<Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>>() {});
+        .partitionCustom(new PartitionVertices(), 4);
 
     /* Make pairs */
-    return tupleBkeyVindexIsLastReducerId
+    DataSet<Tuple2<Long, Long>> tripletCandidates
+        = tupleBkeyVindexIsLastReducerId
         .groupBy(1)
         .sortGroup(2, Order.ASCENDING)
-        .combineGroup(new CreatePairedVertices(dataDomain, newSource))
-        .map(x -> {
-//          LOG.info("CreatePairedVertices: " + x.toString());
-          return x;
+        .combineGroup(new CreatePairedVertices());
+
+    return tripletCandidates.join(inputTuples)
+        .where(0).equalTo(0)
+        .with(new JoinFunction<Tuple2<Long,Long>, MergeMusicTuple,
+            Tuple2<MergeMusicTuple, Long>>() {
+          @Override
+          public Tuple2<MergeMusicTuple, Long> join(
+              Tuple2<Long, Long> left, MergeMusicTuple right) throws Exception {
+            return new Tuple2<>(right, left.f1);
+          }
         })
-        .returns(new TypeHint<MergeMusicTriplet>() {});
+        .join(inputTuples)
+        .where(1).equalTo(0)
+        .with(new TripletCandidateRestrictor(dataDomain, newSource));
   }
 }

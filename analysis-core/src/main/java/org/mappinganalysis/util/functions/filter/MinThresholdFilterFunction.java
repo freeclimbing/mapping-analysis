@@ -1,4 +1,4 @@
-package org.mappinganalysis.model.functions.merge;
+package org.mappinganalysis.util.functions.filter;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.mappinganalysis.model.MergeGeoTriplet;
@@ -9,6 +9,8 @@ import org.mappinganalysis.model.MergeMusicTriplet;
  *
  * Temporary solution, should be integrated in similarity computation process,
  * not needed for basic edge similarity computation.
+ *
+ * TODO add T implements 'similarity' or similar
  */
 public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
   private final Double threshold;
@@ -26,7 +28,7 @@ public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
       MergeMusicTriplet triplet = (MergeMusicTriplet) value;
       return triplet.getSimilarity() >= threshold;
     } else {
-        return false;
+      return false;
     }
   }
 }

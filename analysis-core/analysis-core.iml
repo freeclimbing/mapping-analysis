@@ -10,7 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: com.github.mpkorstanje:simmetrics-core:4.0.1" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
@@ -122,7 +122,7 @@
     <orderEntry type="module-library">
       <library name="Maven: jdk.tools:jdk.tools:1.6">
         <CLASSES>
-          <root url="jar:///usr/lib/jvm/oracle-java8-jdk-amd64/lib/tools.jar!/" />
+          <root url="jar:///usr/lib/jvm/default-java/lib/tools.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

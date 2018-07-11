@@ -12,15 +12,17 @@ import org.mappinganalysis.util.Utils;
 /**
  * hungarian inc clustering, merge only if similarity is above threshold
  */
-public class HungarianDualVertexMergeFlatMapFunction
+public class DualVertexMergeFlatMapper
     implements FlatMapFunction<Triplet<Long,ObjectMap,ObjectMap>,
     Vertex<Long, ObjectMap>> {
-  private static final Logger LOG = Logger.getLogger(HungarianDualVertexMergeFlatMapFunction.class);
+  private static final Logger LOG = Logger.getLogger(DualVertexMergeFlatMapper.class);
 
   private DataDomain dataDomain;
+  private double minResultSimilarity;
 
-  public HungarianDualVertexMergeFlatMapFunction(DataDomain dataDomain) {
+  public DualVertexMergeFlatMapper(DataDomain dataDomain, double minResultSimilarity) {
     this.dataDomain = dataDomain;
+    this.minResultSimilarity = minResultSimilarity;
   }
 
   @Override
@@ -29,9 +31,7 @@ public class HungarianDualVertexMergeFlatMapFunction
     Vertex<Long, ObjectMap> priority = triplet.getSrcVertex();
     Vertex<Long, ObjectMap> minority = triplet.getTrgVertex();
 
-//    LOG.info("dvm: " + triplet.toString());
-
-    if (triplet.getEdge().getValue().getEdgeSimilarity() < 0.6) {
+    if (triplet.getEdge().getValue().getEdgeSimilarity() < minResultSimilarity) {
       out.collect(priority);
       out.collect(minority);
     } else {
@@ -44,7 +44,7 @@ public class HungarianDualVertexMergeFlatMapFunction
       } else if (dataDomain == DataDomain.MUSIC) {
         priorities = Utils.handleMusicProperties(priority, minority);
       } else {
-        throw new IllegalArgumentException("MultiIncremental DualVertexMerge not implemented: "
+        throw new IllegalArgumentException("DualVertexMerge data domain not implemented: "
             + dataDomain);
       }
 
@@ -54,7 +54,6 @@ public class HungarianDualVertexMergeFlatMapFunction
       priorities.addClusterVertices(
           minorities.getVerticesList());
 //      LOG.info("properties after adding id+sources: " + priorities.toString());
-
 
       priority.setId(priority.getId() > minority.getId() ? minority.getId() : priority.getId());
       if (priorities.getLabel().length() < minorities.getLabel().length()) {

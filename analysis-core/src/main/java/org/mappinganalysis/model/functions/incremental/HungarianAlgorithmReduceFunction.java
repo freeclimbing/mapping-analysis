@@ -96,10 +96,6 @@ public class HungarianAlgorithmReduceFunction
       }
     }
 
-//    for (Map.Entry<Long, Long> longLongEntry : resultMap.entrySet()) {
-//      LOG.info("resultmap: " + longLongEntry);
-//    }
-
     HashSet<Long> checkSet = Sets.newHashSet();
     HashSet<Triplet<Long, ObjectMap, ObjectMap>> secondRound = Sets.newHashSet();
 

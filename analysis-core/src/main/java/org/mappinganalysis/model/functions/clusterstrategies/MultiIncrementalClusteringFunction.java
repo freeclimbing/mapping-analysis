@@ -23,7 +23,8 @@ import org.mappinganalysis.util.config.IncrementalConfig;
 /**
  * Incremental clustering with multiple sources.
  */
-public class MultiIncrementalClusteringFunction extends IncrementalClusteringFunction {
+public class MultiIncrementalClusteringFunction
+    extends IncrementalClusteringFunction {
   private static final Logger LOG = Logger.getLogger(MultiIncrementalClusteringFunction.class);
   private DataSet<Vertex<Long, ObjectMap>> toBeMergedElements = null;
   private IncrementalConfig config;

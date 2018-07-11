@@ -61,21 +61,21 @@ public class MergeMusicTupleCreator
     properties.addClusterVertices(Sets.newHashSet(vertex.getId()));
     tuple.addClusteredElements(properties.getVerticesList());
     String artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex.getValue());
-//    tuple.setBlockingLabel(
-//        Utils.getMusicBlockingLabel(artistTitleAlbum));
+
     if (mode.equals(Constants.MUSIC)) {
       tuple.setBlockingLabel(Utils.getBlockingKey(
           blockingStrategy,
           Constants.MUSIC,
-          artistTitleAlbum));
-//          properties.getLabel()));
+          artistTitleAlbum,
+          4)); // TODO FIX
     } else {
       String ncBlocking = Utils.getNcBlockingLabel(
           properties.getLabel(), properties.getArtist());
       tuple.setBlockingLabel(Utils.getBlockingKey(
           blockingStrategy,
           Constants.MUSIC,
-          ncBlocking));
+          ncBlocking,
+          4));
     }
     tuple.setArtistTitleAlbum(artistTitleAlbum);
 

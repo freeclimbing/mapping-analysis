@@ -8,7 +8,6 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
-import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -17,7 +16,6 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
@@ -30,9 +28,10 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
-import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -582,8 +581,11 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     config.setStep(ClusteringStep.SOURCE_ADDITION);
     config.setSimSortSimilarity(0.7);
     config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+    config.setMinResultSimilarity(0.6);
+    config.setBlockingLength(4);
 
-    String jobName = setJobName(config);
+    LOG.info(config.toString());
+    String jobName = ExecutionUtils.setJobName(config);
 
     DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph.getVertices()
         .filter(new SourceFilterFunction("2"));
@@ -600,41 +602,48 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     DataSet<Vertex<Long, ObjectMap>> clusters = startingGraph
         .run(initialClustering);
 
-
-//    new JSONDataSink(inputPath, "1+2".concat(jobName))
-//        .writeVertices(clusters);
-
     // test start
     List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
     assert clusters != null;
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    new JSONDataSink(inputPath, "1+2".concat(jobName))
+        .writeVertices(clusters);
 
     JobExecutionResult result = env.execute("1+2".concat(jobName));
     System.out.println("1+2".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
     List<Long> resultingVerticesList = Lists.newArrayList();
+    int sizeOne = 0;
+    int sizeTwo = 0;
+    int sizeNotHappen = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
-//      LOG.info(representative.toString());
+      if (representative.getValue().getVerticesList().size() == 1) {
+        sizeOne++;
+      } else if (representative.getValue().getVerticesList().size() == 2) {
+        sizeTwo++;
+      } else {
+        sizeNotHappen++;
+      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
     LOG.info("result cluster elements size 1+2: " + resultingVerticesList.size());
+    LOG.info("clusters with size 1: " + sizeOne);
+    LOG.info("clusters with size 2: " + sizeTwo);
+    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     // test end
 
-
-
-
     /*
       +3
      */
-    // todo make graph from representatives
-    DataSource<Vertex<Long, ObjectMap>> vertexDataSource = env.fromCollection(representatives);
-    startingGraph = Graph.fromDataSet(vertexDataSource, Utils.getFakeEdges(env), env);
+//    // todo make graph from representatives
+//    DataSource<Vertex<Long, ObjectMap>> vertexDataSource = env.fromCollection(representatives);
+//    startingGraph = Graph.fromDataSet(vertexDataSource, Utils.getFakeEdges(env), env);
 
-//    startingGraph = new JSONDataSource(inputPath, "1+2".concat(jobName), env)
-//        .getGraph(ObjectMap.class, NullValue.class);
+    startingGraph = new JSONDataSource(inputPath, "1+2".concat(jobName), env)
+        .getGraph(ObjectMap.class, NullValue.class);
 
     newVertices = baseGraph.getVertices()
         .filter(new SourceFilterFunction("3"));
@@ -652,176 +661,202 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     // test start
     representatives = Lists.newArrayList();
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    new JSONDataSink(inputPath, "+3".concat(jobName))
+        .writeVertices(clusters);
 
     result = env.execute("+3".concat(jobName));
     System.out.println("+3".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
     resultingVerticesList = Lists.newArrayList();
+    sizeOne = 0;
+    sizeTwo = 0;
+    sizeNotHappen = 0;
+    int sizeThree = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
 //      if (representative.getValue().getVerticesList().contains(16889L)
 //          || representative.getValue().getVerticesList().contains(9919L)
 //          || representative.getValue().getVerticesList().contains(1492L)) {
 //        LOG.info("duplicate: " + representative.toString());
 //      }
+      if (representative.getValue().getVerticesList().size() == 1) {
+        sizeOne++;
+      } else if (representative.getValue().getVerticesList().size() == 2) {
+        sizeTwo++;
+      } else if (representative.getValue().getVerticesList().size() == 3) {
+        sizeThree++;
+      } else {
+        sizeNotHappen++;
+      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
     LOG.info("result cluster elements size 1+2+3: " + resultingVerticesList.size());
+    LOG.info("clusters with size 1: " + sizeOne);
+    LOG.info("clusters with size 2: " + sizeTwo);
+    LOG.info("clusters with size 3: " + sizeThree);
+    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
 
-//    HashSet<Object> testSet = Sets.newHashSet();
-//    for (Long duplicatePotential : resultingVerticesList) {
-//      if (!testSet.add(duplicatePotential)) {
-//        System.out.println("duplicate id: " + duplicatePotential);
-//      }
-//    }
+    HashSet<Object> testSet = Sets.newHashSet();
+    for (Long duplicatePotential : resultingVerticesList) {
+      if (!testSet.add(duplicatePotential)) {
+        System.out.println("duplicate id: " + duplicatePotential);
+      }
+    }
 
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     // test end
 
+    /*
+      +4
+     */
+    startingGraph = new JSONDataSource(inputPath, "+3".concat(jobName), env)
+        .getGraph(ObjectMap.class, NullValue.class);
 
+    newVertices = baseGraph.getVertices()
+        .filter(new SourceFilterFunction("4"));
 
+    IncrementalClustering addFourClustering = new IncrementalClustering
+        .IncrementalClusteringBuilder(config)
+        .setMatchElements(newVertices)
+        .setNewSource("4")
+        .build();
 
-//    /*
-//      +4
-//     */
-//    startingGraph = new JSONDataSource(inputPath, "+3".concat(jobName), env)
-//        .getGraph(ObjectMap.class, NullValue.class);
-//
-//    newVertices = baseGraph.getVertices()
-//        .filter(new SourceFilterFunction("4"));
-//
-//    IncrementalClustering addFourClustering = new IncrementalClustering
-//        .IncrementalClusteringBuilder(config)
-//        .setMatchElements(newVertices)
-//        .setNewSource("4")
-//        .build();
-//
-//    clusters = startingGraph
-//        .run(addFourClustering);
-//
-//    new JSONDataSink(inputPath, "+4".concat(jobName))
-//        .writeVertices(clusters);
-//    result = env.execute("+4".concat(jobName));
-//    System.out.println("+4".concat(jobName) + " needed "
-//        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-//
-//    /*
-//      +5
-//     */
-//    startingGraph = new JSONDataSource(inputPath, "+4".concat(jobName), env)
-//        .getGraph(ObjectMap.class, NullValue.class);
-//
-//    newVertices = baseGraph.getVertices()
-//        .filter(new SourceFilterFunction("5"));
-//
-//    IncrementalClustering addFiveClustering = new IncrementalClustering
-//        .IncrementalClusteringBuilder(config)
-//        .setMatchElements(newVertices)
-//        .setNewSource("5")
-//        .build();
-//
-//    clusters = startingGraph
-//        .run(addFiveClustering);
-//
-//    new JSONDataSink(inputPath, "+5".concat(jobName))
-//        .writeVertices(clusters);
-//    result = env.execute("+5".concat(jobName));
-//    System.out.println("+5".concat(jobName) + " needed "
-//        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    clusters = startingGraph
+        .run(addFourClustering);
 
+    representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    new JSONDataSink(inputPath, "+4".concat(jobName))
+        .writeVertices(clusters);
+    result = env.execute("+4".concat(jobName));
+    System.out.println("+4".concat(jobName) + " needed "
+        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
+    resultingVerticesList = Lists.newArrayList();
+    sizeOne = 0;
+    sizeTwo = 0;
+    sizeNotHappen = 0;
+    sizeThree = 0;
+    int sizeFour = 0;
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+      if (representative.getValue().getVerticesList().size() == 1) {
+        sizeOne++;
+      } else if (representative.getValue().getVerticesList().size() == 2) {
+        sizeTwo++;
+      } else if (representative.getValue().getVerticesList().size() == 3) {
+        sizeThree++;
+      } else if (representative.getValue().getVerticesList().size() == 4) {
+        sizeFour++;
+      } else {
+        sizeNotHappen++;
+      }
+      resultingVerticesList.addAll(representative.getValue().getVerticesList());
+    }
+    LOG.info("result cluster elements size 1+2+3+4: " + resultingVerticesList.size());
+    LOG.info("clusters with size 1: " + sizeOne);
+    LOG.info("clusters with size 2: " + sizeTwo);
+    LOG.info("clusters with size 3: " + sizeThree);
+    LOG.info("clusters with size 4: " + sizeFour);
+    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
+    uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
+    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
 
+    /*
+      +5
+     */
+    startingGraph = new JSONDataSource(inputPath, "+4".concat(jobName), env)
+        .getGraph(ObjectMap.class, NullValue.class);
 
+    newVertices = baseGraph.getVertices()
+        .filter(new SourceFilterFunction("5"));
 
+    IncrementalClustering addFiveClustering = new IncrementalClustering
+        .IncrementalClusteringBuilder(config)
+        .setMatchElements(newVertices)
+        .setNewSource("5")
+        .build();
 
+    clusters = startingGraph
+        .run(addFiveClustering);
 
+    representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    new JSONDataSink(inputPath, "+5".concat(jobName))
+        .writeVertices(clusters);
+    result = env.execute("+5".concat(jobName));
+    System.out.println("+5".concat(jobName) + " needed "
+        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
-
-
-
-
-
-
-
-//    // TODO OLD
-//    List<String> musicSources = Constants.MUSIC_SOURCES;
-//    Graph<Long, ObjectMap, NullValue> workingGraph = null;
-//    DataSet<Vertex<Long, ObjectMap>> clusters = null;
-//
-//    boolean isFirst = true;
-//    for (String musicSource : musicSources) {
-//      if (isFirst) {
-//        workingGraph = baseGraph.filterOnVertices(new SourceFilterFunction(musicSource));
-//        isFirst = false;
-//      } else {
-//        DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
-//            .getVertices()
-//            .filter(new SourceFilterFunction(musicSource));
-//
-//        IncrementalClustering clustering = new IncrementalClustering
-//            .IncrementalClusteringBuilder(config)
-//            .setMatchElements(newVertices)
-//            .setNewSource(musicSource)
-//            .build();
-//
-//        clusters = workingGraph.run(clustering);
-//
-//        DataSet<Edge<Long, NullValue>> edges = env.fromCollection(
-//            Lists.newArrayList(""))
-//            .map(new JSONToEdgeFormatter<>(NullValue.class));
-//
-//        workingGraph = Graph.fromDataSet(clusters, edges, env);
+    resultingVerticesList = Lists.newArrayList();
+    sizeOne = 0;
+    sizeTwo = 0;
+    sizeNotHappen = 0;
+    sizeThree = 0;
+    sizeFour = 0;
+    int sizeFive = 0;
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+//      if (representative.getValue().getVerticesList().size() > 4) {
+//        LOG.info(representative.toString());
 //      }
-//    }
+      if (representative.getValue().getVerticesList().size() == 1) {
+        sizeOne++;
+      } else if (representative.getValue().getVerticesList().size() == 2) {
+        sizeTwo++;
+      } else if (representative.getValue().getVerticesList().size() == 3) {
+        sizeThree++;
+      } else if (representative.getValue().getVerticesList().size() == 4) {
+        sizeFour++;
+      } else if (representative.getValue().getVerticesList().size() == 5) {
+        sizeFive++;
+      } else {
+        sizeNotHappen++;
+      }
+      resultingVerticesList.addAll(representative.getValue().getVerticesList());
+    }
+    LOG.info("result cluster elements size 1+2+3+4+5: " + resultingVerticesList.size());
+    LOG.info("clusters with size 1: " + sizeOne);
+    LOG.info("clusters with size 2: " + sizeTwo);
+    LOG.info("clusters with size 3: " + sizeThree);
+    LOG.info("clusters with size 4: " + sizeFour);
+    LOG.info("clusters with size 5: " + sizeFive);
+    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
+    uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
+    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
 
-
-
-
-
-
-
-
-
-
-
-    // TODO CHECKS
-//    assert clusters != null;
-//
-//    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
-//    clusters.output(new LocalCollectionOutputFormat<>(representatives));
-//
-//    List<Long> resultingVerticesList = Lists.newArrayList();
-//    for (Vertex<Long, ObjectMap> representative : representatives) {
-//      resultingVerticesList.addAll(representative.getValue().getVerticesList());
-//    }
-//    HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
-//    assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
-//    env.execute();
-//
-//    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
-//    clusters.print();
+    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
   }
 
-  // TODO remove if not relevant
-  private static String setJobName(IncrementalConfig config) {
-    String jobName = "Inc-";
-    if (config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
-      jobName = jobName.concat("Mb-");
-    } else if (config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
-      jobName = jobName.concat("Hu-");
-    }
-    if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
-      jobName = jobName.concat("Sa-");
-    } else if (config.getStep() == ClusteringStep.VERTEX_ADDITION) {
-      jobName = jobName.concat("Va-");
-    }
-    if (config.getBlockingStrategy() == BlockingStrategy.STANDARD_BLOCKING) {
-      jobName = jobName.concat("Sb-");
-    } else if (config.getBlockingStrategy() == BlockingStrategy.BLOCK_SPLIT) {
-      jobName = jobName.concat("Bs-");
-    }
-    return jobName;
+
+  @Test
+  public void qualityCheckOnClusterTest() throws Exception {
+    final String graphPath
+        = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
+        "/user/nentwig/musicbrainz/output/+5Inc-Mb-Sa-Sb-0.6/";
+
+    Graph<Long, ObjectMap, NullValue> graph
+        = new JSONDataSource(graphPath, true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.SOURCE_ADDITION);
+    config.setSimSortSimilarity(0.7);
+    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+    config.setMinResultSimilarity(0.6);
+    config.setBlockingLength(4);
+
+    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+    graph.getVertices()
+        .output(new LocalCollectionOutputFormat<>(representatives));
+
+    env.execute();
+
+    // TODO FIX INPUT PATH gold mapping
+    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
+
   }
 
   @Test

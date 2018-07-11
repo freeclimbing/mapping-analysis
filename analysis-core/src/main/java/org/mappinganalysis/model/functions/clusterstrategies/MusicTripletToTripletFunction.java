@@ -3,7 +3,6 @@ package org.mappinganalysis.model.functions.clusterstrategies;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.NullValue;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
@@ -12,7 +11,7 @@ import org.mappinganalysis.model.ObjectMap;
  * Provide a transformation from MusicTriplet to Triplet<Long, ObjectMap, NullValue>.
  */
 class MusicTripletToTripletFunction
-    implements MapFunction<MergeMusicTriplet, Triplet<Long, ObjectMap, NullValue>> {
+    implements MapFunction<MergeMusicTriplet, Triplet<Long, ObjectMap, ObjectMap>> {
   private DataDomain dataDomain;
   private String newSource;
 
@@ -27,7 +26,7 @@ class MusicTripletToTripletFunction
   }
 
   @Override
-  public Triplet<Long, ObjectMap, NullValue> map(MergeMusicTriplet triplet) throws Exception {
+  public Triplet<Long, ObjectMap, ObjectMap> map(MergeMusicTriplet triplet) throws Exception {
     Vertex<Long, ObjectMap> source;
     Vertex<Long, ObjectMap> target;
 
@@ -46,10 +45,13 @@ class MusicTripletToTripletFunction
       target = firstVertex;
     }
 
+    ObjectMap edgeProperties = new ObjectMap(dataDomain);
+    edgeProperties.setEdgeSimilarity(triplet.getSimilarity());
+
     return new Triplet<>(source.getId(),
         target.getId(),
         source.getValue(),
         target.getValue(),
-        NullValue.getInstance());
+        edgeProperties);
   }
 }

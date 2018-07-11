@@ -6,7 +6,7 @@ import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.merge.MinThresholdFilterFunction;
+import org.mappinganalysis.util.functions.filter.MinThresholdFilterFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 

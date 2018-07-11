@@ -15,7 +15,6 @@ import org.mappinganalysis.model.functions.merge.DualMergeGeographyMapper;
 import org.mappinganalysis.model.functions.merge.FinalMergeGeoVertexCreator;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
-import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -40,7 +39,7 @@ public class BigIncrementalClusteringFunction
   @Override
   public DataSet<Vertex<Long, ObjectMap>> run(
       Graph<Long, ObjectMap, NullValue> input) throws Exception {
-    Config config = new Config(DataDomain.GEOGRAPHY, env);
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
     config.setBlockingStrategy(blockingStrategy);
     config.setMetric(metric);
 

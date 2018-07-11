@@ -18,12 +18,39 @@ public class IncrementalConfig extends Config {
     super(domain, env, true);
   }
 
+  public IncrementalConfig(IncrementalConfig config) {
+    this.setBlockingStrategy(config.getBlockingStrategy());
+    this.setDataDomain(config.getDataDomain());
+    this.setBlockingLength(config.getBlockingLength());
+  }
+
+  public IncrementalConfig(DataDomain domain, ExecutionEnvironment env, boolean isIncremental) {
+    super(domain, env, isIncremental);
+  }
+
+  /**
+   * Get a config without env (and other properites).
+   * TODO How to do this better?
+   */
+  public IncrementalConfig getConfigNoEnv() {
+    return new IncrementalConfig(this);
+  }
+
+
   public void setStrategy(IncrementalClusteringStrategy strategy) {
     this.put(Constants.INCREMENTAL_STRATEGY, strategy);
   }
 
   public IncrementalClusteringStrategy getStrategy() {
     return (IncrementalClusteringStrategy) this.get(Constants.INCREMENTAL_STRATEGY);
+  }
+
+  public void setBlockingLength(int blockingLength) {
+    this.put(Constants.BLOCKING_LENGTH, blockingLength);
+  }
+
+  public int getBlockingLength() {
+    return (int) this.get(Constants.BLOCKING_LENGTH);
   }
 
   public void setNewSource(String newSource) {

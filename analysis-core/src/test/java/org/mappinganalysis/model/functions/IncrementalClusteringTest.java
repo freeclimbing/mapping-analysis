@@ -258,7 +258,7 @@ public class IncrementalClusteringTest {
   // TODO RepresentativeCreator only adds blocking label, remove and use map function
   @Test
   public void multiSourceTest() throws Exception {
-    Config config = new Config(DataDomain.GEOGRAPHY, env);
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setMetric(Constants.COSINE_TRIGRAM);
 

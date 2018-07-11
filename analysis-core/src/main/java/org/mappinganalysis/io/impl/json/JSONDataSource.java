@@ -32,7 +32,10 @@ public class JSONDataSource implements DataSource {
    * all vertices.json files are in subdirectory vertices
    * all edges.json files are in subdirectory edges
    */
-  public JSONDataSource(String path, Boolean isAbsolutePath, ExecutionEnvironment environment) {
+  public JSONDataSource(
+      String path,
+      Boolean isAbsolutePath,
+      ExecutionEnvironment environment) {
     this(path, null, isAbsolutePath, environment);
   }
 

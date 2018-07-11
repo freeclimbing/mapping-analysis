@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
-import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  * Create representatives for vertices within incremental setting.
@@ -20,19 +20,22 @@ public class RepresentativeCreator
   private DataSet<Vertex<Long, ObjectMap>> initialVertices;
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
+  private final int blockingLength;
 
   public RepresentativeCreator(DataDomain domain, BlockingStrategy blockingStrategy) {
     this.domain = domain;
     this.blockingStrategy = blockingStrategy;
+    this.blockingLength = 4; // TODO FIX tests
   }
 
   /**
    * Create representatives for vertices within incremental setting.
    * Adds blocking label, clustered vertices and cluster sources to representative.
    */
-  public RepresentativeCreator(Config config) {
+  public RepresentativeCreator(IncrementalConfig config) {
     this.domain = config.getDataDomain();
     this.blockingStrategy = config.getBlockingStrategy();
+    this.blockingLength = config.getBlockingLength();
   }
 
   @Override
@@ -43,7 +46,9 @@ public class RepresentativeCreator
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
     return initialVertices
-        .map(new IntermediateVertexReprMapFunction(domain, blockingStrategy));
+        .map(new IntermediateVertexReprMapFunction(
+            domain,
+            blockingStrategy,
+            blockingLength));
   }
-
 }

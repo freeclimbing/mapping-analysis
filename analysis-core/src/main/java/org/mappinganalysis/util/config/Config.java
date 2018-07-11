@@ -12,6 +12,9 @@ import java.util.Properties;
  */
 public class Config extends Properties {
 
+  public Config() {
+  }
+
   public Config(DataDomain domain, ExecutionEnvironment env) {
     this.setDataDomain(domain);
     this.setExecutionEnvironment(env);
@@ -21,19 +24,6 @@ public class Config extends Properties {
     this.setDataDomain(domain);
     this.setExecutionEnvironment(env);
     this.setIncremental(isIncremental);
-  }
-
-  public Config(Config config) {
-    this.setBlockingStrategy(config.getBlockingStrategy());
-    this.setDataDomain(config.getDataDomain());
-  }
-
-  /**
-   * Get a config without env (and other properites).
-   * TODO How to do this better?
-   */
-  public Config getConfigNoEnv() {
-    return new Config(this);
   }
 
   public void setExecutionEnvironment(ExecutionEnvironment executionEnvironment) {

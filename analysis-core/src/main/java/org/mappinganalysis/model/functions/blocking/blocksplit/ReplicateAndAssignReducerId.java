@@ -5,15 +5,17 @@ import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
-import org.mappinganalysis.model.MergeMusicTuple;
 
 //input: Tuple6<Vertex, String, Long, Long, Long, Long> ~ Tuple6<Vertex, Key, VIndex, BlkSize, PrevPairs, allPairs>
 // output: Tuple5<Vertex, String, Long, Boolean, Integer> ~ Tuple5<Vertex, Key, VertexIndex, IsLast, ReducerId>
 
+/**
+ * input and output tuple f0 is tuple id
+ */
 public class ReplicateAndAssignReducerId
     extends RichFlatMapFunction<
-    Tuple6<MergeMusicTuple, String, Long, Long, Long, Long>,
-    Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> {
+    Tuple6<Long, String, Long, Long, Long, Long>,
+    Tuple5<Long, String, Long, Boolean, Integer>> {
   private int parallelism;
 
   @Override
@@ -22,8 +24,8 @@ public class ReplicateAndAssignReducerId
     this.parallelism = getRuntimeContext().getNumberOfParallelSubtasks();
   }
 
-  public void flatMap(Tuple6<MergeMusicTuple, String, Long, Long, Long, Long> input,
-                      Collector<Tuple5<MergeMusicTuple, String, Long, Boolean, Integer>> out) {
+  public void flatMap(Tuple6<Long, String, Long, Long, Long, Long> input,
+                      Collector<Tuple5<Long, String, Long, Boolean, Integer>> out) {
     //p (x,y) = x/2 (2 * blkSize -x-3) + y-1 + prvBlkSize
     long xMin, yMin, xMax, yMax;
     xMin = 0;
@@ -59,6 +61,7 @@ public class ReplicateAndAssignReducerId
       for (int i = minReducerId; i < maxReducerId; i++){
         out.collect(Tuple5.of(input.f0, input.f1, input.f2, false, i));
       }
+
     out.collect(Tuple5.of(input.f0, input.f1, input.f2, true, maxReducerId));
   }
 }

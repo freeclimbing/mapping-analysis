@@ -60,7 +60,8 @@ public class MergeGeoTupleCreator
     tuple.setBlockingLabel(Utils.getBlockingKey(
         blockingStrategy,
         Constants.GEO,
-        properties.getLabel()));
+        properties.getLabel(),
+        0));
 
 //    LOG.info("### CREATE: " + tuple.toString());
     return tuple;

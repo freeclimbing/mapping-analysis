@@ -4,9 +4,8 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
-import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.Utils;
-import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  * Add meta properties to vertices for incremental use case:
@@ -14,13 +13,13 @@ import org.mappinganalysis.util.config.Config;
  */
 public class RuntimePropertiesMapFunction
     implements MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
-  private Config config;
+  private IncrementalConfig config;
 
   /**
    * Default constructor
    * @param config read properties from config
    */
-  public RuntimePropertiesMapFunction(Config config) {
+  public RuntimePropertiesMapFunction(IncrementalConfig config) {
     this.config = config;
   }
 
@@ -32,7 +31,10 @@ public class RuntimePropertiesMapFunction
       properties.setArtistTitleAlbum(
           Utils.createSimpleArtistTitleAlbum(properties));
     }
-    properties.setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
+
+    properties.setBlockingKey(
+        config.getBlockingStrategy(),
+        config.getBlockingLength());
 
     return vertex;
   }

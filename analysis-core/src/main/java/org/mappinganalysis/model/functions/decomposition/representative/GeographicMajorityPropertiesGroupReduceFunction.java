@@ -59,7 +59,9 @@ public class GeographicMajorityPropertiesGroupReduceFunction
 
     resultProps.setGeoProperties(geoMap);
     resultProps.setLabel(Utils.getFinalValue(labelMap));
-    resultProps.setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
+    resultProps.setBlockingKey(
+        BlockingStrategy.STANDARD_BLOCKING,
+        4);
 
     resultProps.setClusterDataSources(clusterDataSources);
     resultProps.setClusterVertices(clusterVertices);

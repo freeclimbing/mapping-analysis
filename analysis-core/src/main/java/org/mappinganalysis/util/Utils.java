@@ -164,10 +164,6 @@ public class Utils {
     return Graph.fromDataSet(vertices, edges, env);
   }
 
-//  public void setBlockingKey(BlockingStrategy strategy, String mode, String label) {
-//    map.put(Constants.BLOCKING_LABEL,
-//        Utils.getBlockingKey(strategy, mode, label));
-//  }
   /**
    * Use outside of ObjectMap:
    * Based on a blocking strategy and based on data domain
@@ -177,14 +173,16 @@ public class Utils {
   public static String getBlockingKey(
       BlockingStrategy strategy,
       String bMode,
-      String label) {
-    if (strategy.equals(BlockingStrategy.STANDARD_BLOCKING)) {
+      String label,
+      int blockingLength) {
+    if (strategy == BlockingStrategy.STANDARD_BLOCKING
+        || strategy == BlockingStrategy.BLOCK_SPLIT) {
       if (bMode.equals(Constants.GEO)) {
 
         return Utils.getGeoBlockingLabel(label);
       } else if (bMode.equals(Constants.MUSIC) || bMode.equals(Constants.NC)) {
 
-        return Utils.getMusicBlockingLabel(label);
+        return Utils.getMusicBlockingLabel(label, blockingLength);
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
@@ -343,14 +341,6 @@ public class Utils {
         .map(tuple -> new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance()))
         .returns(new TypeHint<Edge<Long, NullValue>>() {})
         .filter(edge -> edge.getSource() != Long.MAX_VALUE && edge.getTarget() != Long.MIN_VALUE);
-  }
-
-  public static class DataSetTextFormatter<V>
-      implements TextOutputFormat.TextFormatter<V> {
-    @Override
-    public String format(V v) {
-      return v.toString();
-    }
   }
 
   /**
@@ -617,15 +607,21 @@ public class Utils {
   }
 
   /**
-   * music blocking
-   * Get the first 4 chars of string.
-   *
-   * Check dataset for blocked prefix values!
+   * Legacy method to get blocking label.
    */
   public static String getMusicBlockingLabel(String label) {
+    return getMusicBlockingLabel(label, 4);
+  }
+
+    /**
+     * music blocking
+     * Get the first x chars of string.
+     *
+     * Check dataset for blocked prefix values!
+     */
+  public static String getMusicBlockingLabel(String label, int blockingLength) {
     label = label.toLowerCase();
     String tmp = label;
-    int blockingLength = 4;
 
     Set<String> blockElements = Sets.newHashSet
         // artist first common start words
@@ -719,7 +715,7 @@ public class Utils {
         ' ');
 
     if (artistTitleAlbum.isEmpty()) {
-      System.out.println("Utils: artistTitleAlbum empty: " + tmp);
+//      LOG.warn("Utils: artistTitleAlbum empty: " + value.toString());
     }
 
     return artistTitleAlbum;

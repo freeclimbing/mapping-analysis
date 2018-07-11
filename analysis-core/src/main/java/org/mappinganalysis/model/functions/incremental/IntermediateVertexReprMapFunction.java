@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
-import org.mappinganalysis.model.functions.clusterstrategies.MultiIncrementalClusteringFunction;
 import org.mappinganalysis.util.Constants;
 
 /**
@@ -20,13 +19,15 @@ class IntermediateVertexReprMapFunction
   private final Vertex<Long, ObjectMap> reuseVertex;
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
+  private int blockingLength;
 
   /**
    * Map single vertex value to intermediate representative representation.
    */
-  IntermediateVertexReprMapFunction(DataDomain domain, BlockingStrategy blockingStrategy) {
+  IntermediateVertexReprMapFunction(DataDomain domain, BlockingStrategy blockingStrategy, int blockingLength) {
     this.domain = domain;
     this.blockingStrategy = blockingStrategy;
+    this.blockingLength = blockingLength;
     this.reuseVertex = new Vertex<>();
   }
 
@@ -35,7 +36,7 @@ class IntermediateVertexReprMapFunction
     reuseVertex.setId(vertex.getId());
     ObjectMap properties = vertex.getValue();
     properties.setMode(domain);
-    properties.setBlockingKey(blockingStrategy);
+    properties.setBlockingKey(blockingStrategy, blockingLength);
 
     if (!properties.hasClusterDataSources()) {
       properties.setClusterDataSources(Sets.newHashSet(properties.getDataSource()));

@@ -33,18 +33,7 @@ class MaxBothSelection
         .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
     });
 
-    // theoretically: only one entity with max similarity available
-//    ReduceOperator<Tuple3<Long, Long, Double>> left = inputTuples.groupBy(0).maxBy(2);
-//    ReduceOperator<Tuple3<Long, Long, Double>> right = inputTuples.groupBy(1).maxBy(2);
-//
-//    DataSet<Tuple3<Long, Long, Double>> resultTuple = left
-//        .join(right)
-//        .where(0, 1).equalTo(0, 1)
-//        .with((l, r) -> l)
-//        .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
-//    });
-
-    // realistically: multiple entities may have same similarity, decision currently based on min id
+    // multiple entities may have same similarity, decision currently based on min id
     DataSet<Tuple3<Long, Long, Double>> leftSide = inputTuples
         .groupBy(0)
         .max(2)
@@ -79,10 +68,5 @@ class MaxBothSelection
         .equalTo(0,1)
         .with((inputTriplet, tuple) -> inputTriplet)
         .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
-
-//    return input.leftOuterJoin(resultTuple)
-//        .where(0,1)
-//        .equalTo(0,1)
-//        .with(new MaxBothResultExtractJoinFunction());
   }
 }

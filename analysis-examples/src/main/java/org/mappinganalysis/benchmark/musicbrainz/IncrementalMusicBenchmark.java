@@ -26,6 +26,7 @@ import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteri
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
@@ -35,20 +36,21 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Lists.newArrayList;
 
-public class IncrementalMusicBenchmark implements ProgramDescription {
-  private static ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-
-  // TODO FIX or remove
-  private static final String PREPROCESSING_STEP = "incremental-preprocessing";
-  private static final String MERGE_STEP = "incremental-merged-clusters";
-  private static final String PRE_JOB = "Incremental Preprocessing";
-  private static final String MER_JOB = "Incremental Merge";
+public class IncrementalMusicBenchmark
+    implements ProgramDescription {
+  private static ExecutionEnvironment env = ExecutionEnvironment
+      .getExecutionEnvironment();
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 3, "args[0]: input dir, " + "args[1]: file name, " + "args[2]: selection strategy (entity, source)");
+    Preconditions.checkArgument(args.length == 5,
+        "args[0]: input dir, "
+            + "args[1]: file name, "
+            + "args[2]: selection strategy (entity, source)"
+            + "args[3]: threshold, "
+            + "args[4]: blockingLength, " );
     final String inputPath = args[0];
     final String vertexFileName = args[1];
-    String strategy = args[2];
+    final String strategy = args[2];
     final ClusteringStep clusteringStep;
     switch (strategy) {
       case "entity":
@@ -60,18 +62,21 @@ public class IncrementalMusicBenchmark implements ProgramDescription {
       default:
         throw new IllegalArgumentException("Unsupported step: " + strategy);
     }
+    final double threshold = Double.valueOf(args[3]);
+    final int blockingLength = Integer.valueOf(args[4]);
 
     MatchingStrategy matchStrategy = MatchingStrategy.MAX_BOTH;
-
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(clusteringStep);
-    config.setSimSortSimilarity(0.7);
+//    config.setSimSortSimilarity(0.7); // not currently needed
+    config.setMinResultSimilarity(threshold);
     config.setMatchStrategy(matchStrategy);
+    config.setBlockingLength(blockingLength);
 
-    String jobName = setJobName(config);
+    String jobName = ExecutionUtils.setJobName(config);
 
     // read base graph
     Graph<Long, ObjectMap, NullValue> baseGraph
@@ -170,26 +175,6 @@ public class IncrementalMusicBenchmark implements ProgramDescription {
     result = env.execute("+5".concat(jobName));
     System.out.println("+5".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-  }
-
-  private static String setJobName(IncrementalConfig config) {
-    String jobName = "Inc-";
-    if (config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
-      jobName = jobName.concat("Mb-");
-    } else if (config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
-      jobName = jobName.concat("Hu-");
-    }
-    if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
-      jobName = jobName.concat("Sa-");
-    } else if (config.getStep() == ClusteringStep.VERTEX_ADDITION) {
-      jobName = jobName.concat("Va-");
-    }
-    if (config.getBlockingStrategy() == BlockingStrategy.STANDARD_BLOCKING) {
-      jobName = jobName.concat("Sb-");
-    } else if (config.getBlockingStrategy() == BlockingStrategy.BLOCK_SPLIT) {
-      jobName = jobName.concat("Bs-");
-    }
-    return jobName;
   }
 
   @Override

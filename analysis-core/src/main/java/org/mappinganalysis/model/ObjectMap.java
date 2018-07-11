@@ -732,13 +732,23 @@ public class ObjectMap
    * set the blocking label for a single instance.
    * @param strategy BlockingStrategy {@see BlockingStrategy}
    */
-  public void setBlockingKey(BlockingStrategy strategy) {
+  public void setBlockingKey(
+      BlockingStrategy strategy,
+      int blockingLength) {
     if (mode.equals(Constants.GEO)) {
       map.put(Constants.BLOCKING_LABEL,
-          Utils.getBlockingKey(strategy, mode, getLabel()));
+          Utils.getBlockingKey(
+              strategy,
+              mode,
+              getLabel(),
+              blockingLength));
     } else if (mode.equals(Constants.MUSIC)) {
       map.put(Constants.BLOCKING_LABEL,
-          Utils.getBlockingKey(strategy, mode, getArtistTitleAlbum()));
+          Utils.getBlockingKey(
+              strategy,
+              mode,
+              getArtistTitleAlbum(),
+              blockingLength));
     } else {
       throw new IllegalArgumentException("setBlockingKey: Unsupported mode: " + mode);
     }

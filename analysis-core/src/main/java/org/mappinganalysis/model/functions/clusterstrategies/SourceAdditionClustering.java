@@ -2,19 +2,14 @@ package org.mappinganalysis.model.functions.clusterstrategies;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DistinctOperator;
-import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
-import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
@@ -22,20 +17,21 @@ import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceF
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
-import org.mappinganalysis.model.functions.simcomputation.EdgeSimilarityFunction;
-import org.mappinganalysis.model.functions.simcomputation.MusicSimilarityFunction;
-import org.mappinganalysis.model.functions.simcomputation.NcSimilarityFunction;
+import org.mappinganalysis.model.functions.simcomputation.MusicTripletSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
-import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
+import org.mappinganalysis.util.functions.filter.MinThresholdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.BlockingKeyFromAnyElementKeySelector;
 
 /**
  * Implementations of clustering for the use case of adding a new knowledge base to
  * an existing set of clusters.
  *
- * Currently, MAX_BOTH and HUNGARIAN can be used.
+ * MAX_BOTH default
+ * Currently, MAX_BOTH and HUNGARIAN can be used
+ * TODO support different blocking strategies
+ * TODO support different data domain
  */
 class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(SourceAdditionClustering.class);
@@ -57,48 +53,33 @@ class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,Objec
 
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
-    // replace TODO have simple function call for source addition
-    final SimilarityFunction<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>> simFunction;
-    if (config.getDataDomain() == DataDomain.MUSIC) {
-      simFunction = new MusicSimilarityFunction(config.getMetric());
-    } else if (config.getDataDomain() == DataDomain.NC) {
-      simFunction = new NcSimilarityFunction(config.getMetric());
-    } else if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
-      simFunction = new EdgeSimilarityFunction(
-          config.getMetric(),
-          config.getMode(),
-          Constants.MAXIMAL_GEO_DISTANCE);
-    } else {
-      simFunction = null;
-    }
-
-    SimilarityComputation<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>> similarityComputation
+    SimilarityComputation<MergeMusicTriplet,
+        MergeMusicTriplet> simCompMusic
         = new SimilarityComputation
-        .SimilarityComputationBuilder<Triplet<Long, ObjectMap, NullValue>,
-        Triplet<Long, ObjectMap, ObjectMap>>()
-        .setSimilarityFunction(simFunction)
-        .setStrategy(SimilarityStrategy.EDGE_SIM)
+        .SimilarityComputationBuilder<MergeMusicTriplet,
+        MergeMusicTriplet>()
+        .setSimilarityFunction(new MusicTripletSimilarityFunction(config.getMetric()))
+        .setStrategy(SimilarityStrategy.MUSIC)
         .build();
 
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> simTriplets = input
-        // blocking TODO add proper handling for different blocking methods
         .map(new MergeMusicTupleCreator())
         .runOperation(new BlockSplitTripletCreator(config.getDataDomain(),
             config.getNewSource()))
+        .rebalance()
+        .runOperation(simCompMusic)
+        .filter(new MinThresholdFilterFunction<>(config.getMinResultSimilarity()))
         .map(new MusicTripletToTripletFunction(config.getDataDomain(),
-            config.getNewSource()))
-        .runOperation(similarityComputation)
-        .map(new TripletMeanAggregationFunction());
+            config.getNewSource()));
 
     if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
       return simTriplets
           .groupBy(new BlockingKeyFromAnyElementKeySelector())
           .reduceGroup(new HungarianAlgorithmReduceFunction())
-          .flatMap(new HungarianDualVertexMergeFlatMapFunction(
-              config.getDataDomain())) // TODO manual threshold
+          .flatMap(new DualVertexMergeFlatMapper(
+              config.getDataDomain(),
+              config.getMinResultSimilarity()))
           .runOperation(new RepresentativeCreator(config));
     } else if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
@@ -134,16 +115,9 @@ class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,Objec
 //      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
 
       return maxBothTriplets
-          .map(x -> {
-//            if (x.getTrgVertex().getId() == 16889L || x.getSrcVertex().getId() == 16889L
-//                || x.getSrcVertex().getId() == 9919L || x.getTrgVertex().getId() == 9919L) {
-//              LOG.info("SAC: " + x.toString());
-//            }
-
-            return x;
-          })
-          .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {})
-          .flatMap(new HungarianDualVertexMergeFlatMapFunction(config.getDataDomain()))
+          .flatMap(new DualVertexMergeFlatMapper(
+              config.getDataDomain(),
+              config.getMinResultSimilarity()))
           .union(notHandledVertices)
           .runOperation(new RepresentativeCreator(config));
 

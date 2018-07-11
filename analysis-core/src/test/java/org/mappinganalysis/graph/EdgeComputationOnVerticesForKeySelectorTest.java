@@ -59,7 +59,9 @@ public class EdgeComputationOnVerticesForKeySelectorTest {
             .getVertices()
             .map(vertex -> {
               vertex.getValue().setMode(Constants.GEO);
-              vertex.getValue().setBlockingKey(BlockingStrategy.STANDARD_BLOCKING);
+              vertex.getValue().setBlockingKey(
+                  BlockingStrategy.STANDARD_BLOCKING,
+                  4);
               return vertex;
             })
             .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
