@@ -51,7 +51,9 @@ class SimSortComputeFunction
         iterationAggSim += message.getEdgeSim();
       }
 
-      iterationAggSim = Utils.getExactDoubleResult(iterationAggSim, messageCount);
+      iterationAggSim = Utils.getExactDoubleResult(
+          iterationAggSim,
+          (double) messageCount);
 //      LOG.debug(vertex.getId() + " itAggSim: " + iterationAggSim + " old: " + vertex.getValue().getSim());
 
       if (Doubles.compare(vertexAggSim, Constants.DEFAULT_VERTEX_SIM) != 0

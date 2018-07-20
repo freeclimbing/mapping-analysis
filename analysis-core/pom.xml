@@ -25,11 +25,13 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
+                <version>${plugin.maven-findbugs.version}</version>
             </plugin>
             <!-- Creates an extra *-tests.jar which can be used as dependency -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>${plugin.maven-jar.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -48,7 +50,6 @@
             <version>4.0.1</version>
         </dependency>
 
-
         <dependency>
             <groupId>org.s1ck</groupId>
             <artifactId>gdl</artifactId>
@@ -62,19 +63,15 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients_2.10</artifactId>
+            <artifactId>flink-gelly_2.11</artifactId>
             <version>${dep.flink.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-gelly_2.10</artifactId>
+            <artifactId>flink-clients_2.11</artifactId>
             <version>${dep.flink.version}</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.apache.flink</groupId>-->
-            <!--<artifactId>flink-gelly_2.11</artifactId>-->
-            <!--<version>${dep.flink.version}</version>-->
-        <!--</dependency>-->
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-jdbc</artifactId>

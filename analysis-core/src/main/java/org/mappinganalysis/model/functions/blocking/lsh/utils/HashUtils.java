@@ -1,7 +1,5 @@
 package org.mappinganalysis.model.functions.blocking.lsh.utils;
 
-import scala.collection.generic.BitOperations.Int;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,7 +22,7 @@ public class HashUtils {
 	/**
 	 * Calculates the MD5 hash for a string input. 
 	 * @param input a String value. 
-	 * @return the {@link Int} representation of the MDH5 hash value.
+	 * @return the {@link int} representation of the MDH5 hash value.
 	 */
 	public static int getMD5(String input) {
 		try {
@@ -41,7 +39,7 @@ public class HashUtils {
 	/**
 	 * Calculates the SHA hash for a string input.
 	 * @param input a String value.
-	 * @return the {@link Int} representation of the SHA hash value.
+	 * @return the {@link int} representation of the SHA hash value.
 	 */
 	public static int getSHA(String input) {
 		try {
@@ -92,7 +90,7 @@ public class HashUtils {
 	/**
 	 * Calculates the SHA hash for a BitSet input.
 	 * @param input a {@link BitSet} object.
-	 * @return the {@link Int} representation of the SHA hash value.
+	 * @return the {@link int} representation of the SHA hash value.
 	 */
 	public static int getSHA(BitSet input) {
 		try {

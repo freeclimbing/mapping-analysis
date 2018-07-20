@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.Constants;
 
 public class BlockSplitTripletCreator
@@ -23,8 +24,6 @@ public class BlockSplitTripletCreator
 
   /**
    * Source based addition constructor
-   * @param dataDomain
-   * @param newSource
    */
   public BlockSplitTripletCreator(DataDomain dataDomain, String newSource) {
     this.dataDomain = dataDomain;
@@ -98,7 +97,9 @@ public class BlockSplitTripletCreator
         = tupleBkeyVindexIsLastReducerId
         .groupBy(1)
         .sortGroup(2, Order.ASCENDING)
-        .combineGroup(new CreatePairedVertices());
+        .combineGroup(new CreatePairedVertices())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.BLOCK_SPLIT_TRIPLET_ACCUMULATOR));
 
     return tripletCandidates.join(inputTuples)
         .where(0).equalTo(0)

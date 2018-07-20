@@ -19,59 +19,20 @@ import org.mappinganalysis.util.config.IncrementalConfig;
 /**
  * Default (geographic) preprocessing: remove duplicate links, add cc ids,
  * type mismatch correction, link similarity
+ *
+ * At the end of preprocessing, neither ccId nor hashCcId is correct!! Do not group on these keys.
  */
 public class DefaultPreprocessing
     implements GraphAlgorithm<Long, ObjectMap, NullValue, Graph<Long, ObjectMap, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(DefaultPreprocessing.class);
 
-  private final ExecutionEnvironment env;
-  private final boolean linkFilterEnabled;
-  private IncrementalConfig config = null;
-  private String metric;
-  private final DataDomain domain;
+  private IncrementalConfig config;
 
   /**
-   * Basic preprocessing: link filter enabled
-   * At the end of preprocessing, neither ccId nor hashCcId is correct!! Do not group on these keys.
+   * Default constructor, link filter enabled by default.
    */
-  @Deprecated
-  public DefaultPreprocessing(ExecutionEnvironment env) {
-    this(true, env);
-  }
-
-  /**
-   * Preprocessing with optional link filter.
-   */
-  @Deprecated
-  public DefaultPreprocessing(boolean isBasicLinkFilterEnabled, ExecutionEnvironment env) {
-    this.linkFilterEnabled = isBasicLinkFilterEnabled;
-    this.env = env;
-    this.domain = DataDomain.GEOGRAPHY;
-  }
-
-  /**
-   * Music constructor, link filter enabled by default.
-   */
-  public DefaultPreprocessing(DataDomain domain, ExecutionEnvironment env) {
-    this.domain = domain;
-    this.env = env;
-    this.linkFilterEnabled = true;
-    this.metric = Constants.COSINE_TRIGRAM;
-  }
-
-  public DefaultPreprocessing(String metric, DataDomain domain, ExecutionEnvironment env) {
-    this.metric = metric;
-    this.domain = domain;
-    this.env = env;
-    this.linkFilterEnabled = true;
-  }
-
   public DefaultPreprocessing(IncrementalConfig config) {
     this.config = config;
-    this.metric = config.getMetric();
-    this.domain = config.getDataDomain();
-    this.env = config.getExecutionEnvironment();
-    this.linkFilterEnabled = true;
   }
 
   @Override

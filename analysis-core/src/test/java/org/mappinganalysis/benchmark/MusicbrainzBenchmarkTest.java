@@ -16,14 +16,15 @@ import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
-import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import org.simmetrics.StringMetric;
 
@@ -37,8 +38,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by markus on 3/31/17.
- *
  * songLength.equals("012-nur nooch ") // not equal?
  * songLength.contains("001-patton") // 14599 verschoben
  * songLength.equals("0e1-fizzzyblood") // 7452 verschoben
@@ -135,11 +134,9 @@ public class MusicbrainzBenchmarkTest {
   @Test
   public void testSim() throws Exception {
     env = TestBase.setupLocalEnvironment();
-
     String path = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/")
         .getFile();
-//    final String vertexFileName = "musicbrainz-20000000-A01.csv.dapo";
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
 
     DataSet<Vertex<Long, ObjectMap>> inputVertices =
@@ -151,10 +148,11 @@ public class MusicbrainzBenchmarkTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setMetric(Constants.COSINE_TRIGRAM);
     Graph<Long, ObjectMap, ObjectMap> graph = Graph
         .fromDataSet(inputVertices, inputEdges, env)
-//        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
-        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+        .run(new DefaultPreprocessing(config));
 
 //    graph.getVertices().print();
     graph.getEdges().print();
@@ -205,7 +203,10 @@ public class MusicbrainzBenchmarkTest {
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
     for (Map.Entry<String, Long> entry : result.entrySet()) {
-      System.out.println(entry.toString());
+      if (entry.getKey().equals("30")) { // 30 seconds most often
+        assertEquals(129, entry.getValue().intValue());
+      }
+//      System.out.println(entry.toString());
     }
   }
 
@@ -217,10 +218,8 @@ public class MusicbrainzBenchmarkTest {
         .getResource("/data/musicbrainz/")
         .getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
-
     DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
-
     Map<String, Long> result = new LinkedHashMap<>();
 
     vertices
@@ -234,8 +233,11 @@ public class MusicbrainzBenchmarkTest {
         .sorted(Map.Entry.comparingByValue())
         .forEachOrdered(x -> result.put(x.getKey(), x.getValue()));
 
-    for (Map.Entry<String, Long> stringLongEntry : result.entrySet()) {
-      System.out.println(stringLongEntry.toString());
+    for (Map.Entry<String, Long> entry : result.entrySet()) {
+//      System.out.println(entry.toString());
+      if (entry.getKey().equals(Constants.EN)) { // en most often
+        assertEquals(10462, entry.getValue().intValue());
+      }
     }
   }
 
@@ -245,7 +247,36 @@ public class MusicbrainzBenchmarkTest {
     String musicBlockingLabel = Utils.getMusicBlockingLabel(test);
 
     assertTrue(musicBlockingLabel.equals("hony"));
-//    System.out.println(musicBlockingLabel);
+  }
+
+  /**
+   * Show blocking label distribution
+   */
+  @Test
+  public void findPaperExampleTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    String path = MusicbrainzBenchmarkTest.class
+        .getResource("/data/musicbrainz/")
+        .getFile();
+    final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
+
+    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+        .getVertices();
+
+    DataSet<Tuple2<String, Double>> johnResults = vertices
+        .map(vertex -> Utils.createSimpleArtistTitleAlbum(vertex.getValue())).returns(new TypeHint<String>() {
+        }).filter(vertex -> vertex.startsWith("john")).map(value -> {
+          String compare = "johnny cash ring of fire san quentin other hits";
+          return new Tuple2<>(value, Utils.getSimilarityAndSimplifyForMetric(value, compare, Constants.COSINE_TRIGRAM));
+        }).returns(new TypeHint<Tuple2<String, Double>>() {
+        });
+
+    List<Tuple2<String, Double>> collect = johnResults.collect();
+    collect
+        .stream()
+        .sorted(Comparator.comparing(x->x.f1))
+    .forEach(System.out::println);
   }
 
   /**
@@ -259,10 +290,9 @@ public class MusicbrainzBenchmarkTest {
         .getResource("/data/musicbrainz/")
         .getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = new CSVDataSource(path, vertexFileName, env)
+    DataSet<Vertex<Long, ObjectMap>> vertices
+        = new CSVDataSource(path, vertexFileName, env)
         .getVertices();
-
     Map<String, Long> result = new LinkedHashMap<>();
 
     vertices
@@ -271,8 +301,8 @@ public class MusicbrainzBenchmarkTest {
         .collect(Collectors
             .groupingBy(v ->
                     Utils.getMusicBlockingLabel(
-                v.getValue().get(Constants.LABEL).toString()),
-//                Utils.createArtistTitleAlbum(v.getValue().getArtistTitleAlbum())),
+                v.getValue().get(Constants.LABEL).toString()), // rock
+//                Utils.createSimpleArtistTitleAlbum(v.getValue())), // test for andr
                 Collectors.counting()))
         .entrySet()
         .stream()
@@ -287,7 +317,6 @@ public class MusicbrainzBenchmarkTest {
       assertTrue(58L >= resultEntry.getValue());
     }
   }
-
   /**
    * special for big input file, not a real test
    *

@@ -207,7 +207,7 @@ public class MusicBrainzTest {
     DataSet<Tuple2<Long, Long>> goldLinks;
 
     if (pmPath.equals(Constants.EMPTY_STRING)) {
-      pmPath = NorthCarolinaVoterBaseTest.class
+      pmPath = NcBaseTest.class
           .getResource(path).getFile();
 
       DataSet<Tuple2<String, String>> perfectMapping = env
@@ -306,10 +306,13 @@ public class MusicBrainzTest {
             new CcIdKeySelector(),
             EdgeComputationStrategy.SIMPLE));
 
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+
     Graph<Long, ObjectMap, ObjectMap> graph = Graph
         .fromDataSet(inputVertices, inputEdges, env)
 //        .run(new BasicEdgeSimilarityComputation(Constants.MUSIC, env)); // working similarity run
-        .run(new DefaultPreprocessing(DataDomain.MUSIC, env));
+        .run(new DefaultPreprocessing(config));
 
     DataSet<Vertex<Long, ObjectMap>> representatives = graph
         .run(new TypeGroupBy(env))

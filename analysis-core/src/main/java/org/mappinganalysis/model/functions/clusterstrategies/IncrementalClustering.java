@@ -167,12 +167,8 @@ public class IncrementalClustering
           } else {
             return new MultiIncrementalClustering(newElements, config);
           }
-        } else if (clusteringStrategy == IncrementalClusteringStrategy.FIXED_SEQUENCE) {
-          return new FixedIncrementalClustering(config); // basic test clusteringStrategy
         } else if (clusteringStrategy == IncrementalClusteringStrategy.BIG) {
           return new BigIncrementalClustering(config);
-        } else if (clusteringStrategy == IncrementalClusteringStrategy.SPLIT_SETTING) {
-          return new SplitIncrementalClustering(config, part);
         } else if (clusteringStrategy == IncrementalClusteringStrategy.SINGLE_SETTING) {
           return new SingleSourceIncrementalClustering(newElements, config);
         } else {

@@ -559,14 +559,10 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     env.execute();
 
     QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
-//    clusters.print();
   }
 
-  /**
-   * try to replicate duplication which occurs in incremental benchmark
-   **/
   @Test
-  public void incrementalMusicBenchmarkDuplicateReplicationTest() throws Exception {
+  public void checkClusterSizesForSourceAdditionTest() throws Exception {
     final String inputPath = MusicbrainzBenchmarkTest.class
         .getResource("/data/musicbrainz/").getFile();
     final String vertexFileName = "musicbrainz-20000-A01.csv.dapo";
@@ -825,38 +821,6 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
 
     QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
-  }
-
-
-  @Test
-  public void qualityCheckOnClusterTest() throws Exception {
-    final String graphPath
-        = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
-        "/user/nentwig/musicbrainz/output/+5Inc-Mb-Sa-Sb-0.6/";
-
-    Graph<Long, ObjectMap, NullValue> graph
-        = new JSONDataSource(graphPath, true, env)
-        .getGraph(ObjectMap.class, NullValue.class);
-
-    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
-    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
-    config.setStrategy(IncrementalClusteringStrategy.MULTI);
-    config.setMetric(Constants.COSINE_TRIGRAM);
-    config.setStep(ClusteringStep.SOURCE_ADDITION);
-    config.setSimSortSimilarity(0.7);
-    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
-    config.setMinResultSimilarity(0.6);
-    config.setBlockingLength(4);
-
-    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
-    graph.getVertices()
-        .output(new LocalCollectionOutputFormat<>(representatives));
-
-    env.execute();
-
-    // TODO FIX INPUT PATH gold mapping
-    QualityUtils.printMusicQuality(env.fromCollection(representatives), config);
-
   }
 
   @Test

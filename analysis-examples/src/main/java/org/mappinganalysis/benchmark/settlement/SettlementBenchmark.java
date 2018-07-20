@@ -19,6 +19,8 @@ import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 /**
@@ -44,9 +46,11 @@ public class SettlementBenchmark implements ProgramDescription {
     int sourceCount = 4;
     boolean isCorrupted = args[1].equals("isCorrupted");
     String inputPath = args[0];
-    String metric = args[2];
-    Double minSimSortSim = 0.7;
-    String usecase = args[3];
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(0.7);
+    config.setMetric(args[2]);
 
     /*
       preprocessing
@@ -71,7 +75,7 @@ public class SettlementBenchmark implements ProgramDescription {
 
     new JSONDataSink(inputPath, PREPROCESSING)
         .writeGraph(preprocGraph
-            .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env)));
+            .run(new DefaultPreprocessing(config)));
     env.execute(PRE_JOB);
 
     /*
@@ -80,8 +84,7 @@ public class SettlementBenchmark implements ProgramDescription {
     DataSet<Vertex<Long, ObjectMap>> vertices =
         new JSONDataSource(inputPath, PREPROCESSING, env)
         .getGraph()
-//        .run(new TypeGroupBy(env)) // not needed? TODO
-        .run(new SimSort(DataDomain.GEOGRAPHY, metric, minSimSortSim, env))
+        .run(new SimSort(config))
         .getVertices()
         .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
@@ -98,7 +101,7 @@ public class SettlementBenchmark implements ProgramDescription {
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
             .runOperation(new MergeExecution(
                 DataDomain.GEOGRAPHY,
-                metric,
+                config.getMetric(),
                 0.5,
                 sourceCount,
                 env));

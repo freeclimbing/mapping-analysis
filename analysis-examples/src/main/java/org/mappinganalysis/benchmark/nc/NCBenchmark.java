@@ -21,6 +21,7 @@ import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,15 +42,17 @@ public class NCBenchmark implements ProgramDescription {
     final int sourcesCount = Integer.parseInt(args[1]);
     final String INPUT_PATH = args[0];
     double simSortThreshold = 0.7;
+    IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
 
     /*
       METRICS
      */
     ArrayList<String> metrics = Lists.newArrayList(
-//        Constants.COSINE_TRIGRAM//,
-        Constants.JARO_WINKLER
+        Constants.COSINE_TRIGRAM
+//        Constants.JARO_WINKLER // TODO check quality compare
     );
     for (String metric : metrics) {
+      config.setMetric(metric);
 
       /*
         DATA SET SOURCES LIST
@@ -68,15 +71,16 @@ public class NCBenchmark implements ProgramDescription {
         Graph<Long, ObjectMap, NullValue> graph = Utils
             .getInputGraph(logicalGraph, Constants.NC, env);
         Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
-            .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
+            .run(new DefaultPreprocessing(config));
 
         for (int simFor = 90; simFor <= 90; simFor += 10) {
           simSortThreshold = (double) simFor / 100;
+          config.setSimSortSimilarity(simSortThreshold);
 
           // Decomposition + Representative
           DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
               .run(new TypeGroupBy(env))
-              .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
+              .run(new SimSort(config))
               .getVertices()
               .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 
@@ -111,7 +115,7 @@ public class NCBenchmark implements ProgramDescription {
                   .runOperation(new MergeInitialization(DataDomain.NC))
                   .runOperation(new MergeExecution(
                       DataDomain.NC,
-                      metric,
+                      config.getMetric(),
                       blockingStrategy,
                       mergeThreshold,
                       sourcesCount,

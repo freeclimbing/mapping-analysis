@@ -23,10 +23,10 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -40,7 +40,8 @@ public class MergeGeoBlockingTest {
   @Test
   public void csimqSettlementTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    String metric = Constants.JARO_WINKLER;
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setMetric(Constants.JARO_WINKLER);
 
     String graphPath =
         "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/settlement-benchmark/csimq/";
@@ -58,16 +59,18 @@ public class MergeGeoBlockingTest {
 
 //      LOG.info("inEdges: " + inputGraph.getEdgeIds().count());
       Graph<Long, ObjectMap, ObjectMap> graph = inputGraph
-          .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env));
+          .run(new DefaultPreprocessing(config));
 
 //      for (int simFor = 5; simFor <= 70; simFor += 5) {
 //        double simThreshold = (double) simFor / 100;
       double simThreshold = 0.75; // TODO
+      config.setSimSortSimilarity(simThreshold);
+
     /*
        representative creation
      */
       DataSet<Vertex<Long, ObjectMap>> representatives = graph
-          .run(new SimSort(DataDomain.GEOGRAPHY, metric, simThreshold, env))
+          .run(new SimSort(config))
           .getVertices()
           .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
@@ -97,7 +100,7 @@ public class MergeGeoBlockingTest {
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
             .runOperation(new MergeExecution(
                 DataDomain.GEOGRAPHY,
-                metric,
+                config.getMetric(),
                 mergeThreshold,
                 4,
                 env));

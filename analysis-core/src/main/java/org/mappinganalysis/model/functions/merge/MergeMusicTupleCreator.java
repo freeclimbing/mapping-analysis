@@ -10,6 +10,7 @@ import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  */
@@ -18,19 +19,44 @@ public class MergeMusicTupleCreator
   private static final Logger LOG = Logger.getLogger(MergeMusicTupleCreator.class);
   private String mode = null;
   private BlockingStrategy blockingStrategy;
+  private int blockingLength;
 
   public MergeMusicTupleCreator(BlockingStrategy blockingStrategy) {
     this.blockingStrategy = blockingStrategy;
     this.mode = Constants.MUSIC;
   }
 
+  public MergeMusicTupleCreator(IncrementalConfig config) {
+    this(config.getBlockingStrategy(),
+        config.getDataDomain(),
+        config.getBlockingLength());
+  }
+
+  /**
+   * Test only
+   */
   public MergeMusicTupleCreator() {
     blockingStrategy = BlockingStrategy.STANDARD_BLOCKING;
     this.mode = Constants.MUSIC;
   }
 
-  public MergeMusicTupleCreator(BlockingStrategy blockingStrategy, DataDomain domain) {
+  /**
+   * old: NC Benchmark parts and MergeExecution only
+   */
+  @Deprecated
+  public MergeMusicTupleCreator(
+      BlockingStrategy blockingStrategy,
+      DataDomain domain) {
+    this(blockingStrategy, domain, 4);
+  }
+
+  public MergeMusicTupleCreator(
+      BlockingStrategy blockingStrategy,
+      DataDomain domain,
+      int blockingLength) {
     this.blockingStrategy = blockingStrategy;
+    this.blockingLength = blockingLength;
+    // TODO fix remove mode
     if (domain == DataDomain.MUSIC) {
       this.mode = Constants.MUSIC;
     } else if (domain == DataDomain.NC) {
@@ -65,21 +91,21 @@ public class MergeMusicTupleCreator
     if (mode.equals(Constants.MUSIC)) {
       tuple.setBlockingLabel(Utils.getBlockingKey(
           blockingStrategy,
-          Constants.MUSIC,
+          mode,
           artistTitleAlbum,
-          4)); // TODO FIX
+          blockingLength));
     } else {
       String ncBlocking = Utils.getNcBlockingLabel(
-          properties.getLabel(), properties.getArtist());
+          properties.getArtist(), properties.getLabel(), blockingLength);
+
       tuple.setBlockingLabel(Utils.getBlockingKey(
           blockingStrategy,
-          Constants.MUSIC,
+          Constants.NC,
           ncBlocking,
-          4));
+          blockingLength));
     }
-    tuple.setArtistTitleAlbum(artistTitleAlbum);
 
-//    LOG.info("### CREATE: " + tuple.toString());
+    tuple.setArtistTitleAlbum(artistTitleAlbum);
     return tuple;
   }
 }

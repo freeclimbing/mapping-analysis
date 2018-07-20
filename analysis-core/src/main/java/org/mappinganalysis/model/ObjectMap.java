@@ -749,6 +749,14 @@ public class ObjectMap
               mode,
               getArtistTitleAlbum(),
               blockingLength));
+    } else if (mode.equals(Constants.NC)) { // TODO fix quick'n'dirty
+      map.put(Constants.BLOCKING_LABEL,
+          Utils.getBlockingKey(
+              strategy,
+              mode,
+              Utils.getNcBlockingLabel(
+                  getArtist(), getLabel(), blockingLength),
+              blockingLength));
     } else {
       throw new IllegalArgumentException("setBlockingKey: Unsupported mode: " + mode);
     }

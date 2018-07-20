@@ -19,7 +19,9 @@ import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
 import org.mappinganalysis.model.functions.simcomputation.MusicTripletSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
+import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.MinThresholdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.BlockingKeyFromAnyElementKeySelector;
@@ -62,16 +64,26 @@ class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,Objec
         .setStrategy(SimilarityStrategy.MUSIC)
         .build();
 
+    /*
+      block split triplet creator
+     */
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> simTriplets = input
-        .map(new MergeMusicTupleCreator())
+        .map(new MergeMusicTupleCreator(config))
         .runOperation(new BlockSplitTripletCreator(config.getDataDomain(),
             config.getNewSource()))
         .rebalance()
         .runOperation(simCompMusic)
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.SIM_TRIPLET_ACCUMULATOR))
         .filter(new MinThresholdFilterFunction<>(config.getMinResultSimilarity()))
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.THRESHOLD_TRIPLET_ACCUMULATOR))
         .map(new MusicTripletToTripletFunction(config.getDataDomain(),
             config.getNewSource()));
 
+    /*
+      hungarian
+     */
     if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
       return simTriplets
@@ -81,7 +93,11 @@ class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,Objec
               config.getDataDomain(),
               config.getMinResultSimilarity()))
           .runOperation(new RepresentativeCreator(config));
-    } else if (config.getMatchStrategy() != null
+    } else
+      /*
+      max both
+       */
+      if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> maxBothTriplets = simTriplets
           .runOperation(new MaxBothSelection());
@@ -118,6 +134,8 @@ class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,Objec
           .flatMap(new DualVertexMergeFlatMapper(
               config.getDataDomain(),
               config.getMinResultSimilarity()))
+          .map(new StatisticsCountElementsRichMapFunction<>(
+              Constants.MAX_BOTH_CREATE_ACCUMULATOR))
           .union(notHandledVertices)
           .runOperation(new RepresentativeCreator(config));
 

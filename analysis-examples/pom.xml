@@ -27,9 +27,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-gelly</artifactId>
-            <version>${dep.flinkSnapshot.version}</version>
+            <artifactId>flink-gelly_2.11</artifactId>
+            <version>${dep.flink.version}</version>
         </dependency>
+
     </dependencies>
 
 </project>

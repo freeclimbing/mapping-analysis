@@ -26,6 +26,7 @@ import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +49,8 @@ public class NCBenchmarkParts implements ProgramDescription {
         "args[0]: input dir");
     final int sourcesCount = 10;
     final String INPUT_PATH = args[0];
-    final double simSortThreshold = 0.7;
+//    final double simSortThreshold = 0.7;
+    IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
 
     List<String> sourceList = Lists.newArrayList(
         "1/"//, "3/"
@@ -70,14 +72,15 @@ public class NCBenchmarkParts implements ProgramDescription {
           Constants.JARO_WINKLER, Constants.COSINE_TRIGRAM
       );
       for (String metric : metrics) {
+        config.setMetric(metric);
 
         Graph<Long, ObjectMap, ObjectMap> preprocGraph = graph
-            .run(new DefaultPreprocessing(metric, DataDomain.NC, env));
+            .run(new DefaultPreprocessing(config));
 
         // Decomposition + Representative
         DataSet<Vertex<Long, ObjectMap>> representatives = preprocGraph
             .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.NC, metric, simSortThreshold, env))
+            .run(new SimSort(config))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.NC));
 

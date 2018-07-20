@@ -14,10 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -142,6 +140,9 @@ public class Utils {
     return dataSource.getLogicalGraph();
   }
 
+  /**
+   * Helper method to transform GRADOOP graph to Gelly graph.
+   */
   public static Graph<Long, ObjectMap, NullValue> getInputGraph(
       LogicalGraph logicalGraph, String domain, ExecutionEnvironment env) {
     // get gelly vertices
@@ -179,34 +180,52 @@ public class Utils {
         || strategy == BlockingStrategy.BLOCK_SPLIT) {
       if (bMode.equals(Constants.GEO)) {
 
-        return Utils.getGeoBlockingLabel(label);
-      } else if (bMode.equals(Constants.MUSIC) || bMode.equals(Constants.NC)) {
+        return getGeoBlockingLabel(label);
+      } else if (bMode.equals(Constants.MUSIC)) { //|| bMode.equals(Constants.NC)) {
 
-        return Utils.getMusicBlockingLabel(label, blockingLength);
+        return getMusicBlockingLabel(label, blockingLength);
+      } else if (bMode.equals(Constants.NC)) {
+        // already computed, fix quick'n'dirty
+        return label;
       } else {
         throw new IllegalArgumentException("Unsupported strategy: " + strategy);
       }
     } else if (strategy.equals(BlockingStrategy.NO_BLOCKING)) { // DUMMY
 
-      return Constants.NO_VALUE;
+      throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     } else if (strategy.equals(BlockingStrategy.LSH_BLOCKING)) { // DUMMY
 
-      return Constants.NO_VALUE;
+      throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     } else {
       throw new IllegalArgumentException("Unsupported strategy: " + strategy);
     }
   }
 
-  public static String getNcBlockingLabel(String name, String surname) {
+  /**
+   * special blocking for NC, multiples of 2 chars can be used
+   */
+  public static String getNcBlockingLabel(String name, String surname, int blockingLength) {
+    int specialLength;
+    int lastChar;
+    if (blockingLength == 2) {
+      specialLength = 0;
+      lastChar = 1;
+    } else if (blockingLength == 6) {
+      specialLength = 2;
+      lastChar = 3;
+    } else { // default setting
+      specialLength = 1;
+      lastChar = 2;
+    }
 
-    while (surname.length() <= 1) {
+    while (surname.length() <= specialLength) {
       surname = surname.concat(Constants.WHITE_SPACE);
     }
-    while (name.length() <= 1) {
+    while (name.length() <= specialLength) {
       name = name.concat(Constants.WHITE_SPACE);
     }
 
-    return name.substring(0, 2).concat(surname.substring(0, 2));
+    return name.substring(0, lastChar).concat(surname.substring(0, lastChar));
   }
 
   public static double getExactDoubleResult(double value) {
@@ -215,14 +234,24 @@ public class Utils {
         .doubleValue();
   }
 
-  public static double getExactDoubleResult(double dividend, long divisor) {
+  /**
+   * Get exact double division result with 6 digits after comma.
+   */
+  public static double getExactDoubleResult(double dividend, double divisor) {
+    return getExactDoubleResult(dividend, divisor, 6);
+  }
+
+  /**
+   * Get exact double division result with an arbitrary number of digits.
+   */
+  public static double getExactDoubleResult(double dividend, double divisor, int scale) {
     return new BigDecimal(dividend / divisor)
-        .setScale(6, BigDecimal.ROUND_HALF_UP)
+        .setScale(scale, BigDecimal.ROUND_HALF_UP)
         .doubleValue();
   }
 
   /**
-   * Get blocking short name for logging.
+   * For logging, get blocking short name.
    */
   public static String getShortBlockingStrategy(BlockingStrategy strategy) {
     if (strategy == BlockingStrategy.STANDARD_BLOCKING) {
@@ -236,6 +265,10 @@ public class Utils {
     }
   }
 
+  /**
+   * Add a geo location from a vertex to a map containing
+   * data source / geo code entries.
+   */
   public static HashMap<String, GeoCode> addGeoToMap(
       HashMap<String, GeoCode> geoMap,
       Vertex<Long, ObjectMap> vertex) {
@@ -346,7 +379,8 @@ public class Utils {
   /**
    * When exact one geo property set for two tuples is valid, take it.
    */
-  public static MergeGeoTuple isOnlyOneValidGeoObject(MergeGeoTuple left, MergeGeoTuple right) {
+  public static MergeGeoTuple isOnlyOneValidGeoObject(
+      MergeGeoTuple left, MergeGeoTuple right) {
     if (isValidGeoObject(left) && !isValidGeoObject(right)) {
       return left;
     } else if (!isValidGeoObject(left) && isValidGeoObject(right)) {
@@ -419,7 +453,8 @@ public class Utils {
   /**
    * get similarity for given strings based on metric
    */
-  public static Double getSimilarityAndSimplifyForMetric(String left, String right, String metric) {
+  public static Double getSimilarityAndSimplifyForMetric(
+      String left, String right, String metric) {
     Preconditions.checkNotNull(left);
     Preconditions.checkNotNull(right);
 
@@ -609,16 +644,17 @@ public class Utils {
   /**
    * Legacy method to get blocking label.
    */
+  @Deprecated
   public static String getMusicBlockingLabel(String label) {
     return getMusicBlockingLabel(label, 4);
   }
 
-    /**
-     * music blocking
-     * Get the first x chars of string.
-     *
-     * Check dataset for blocked prefix values!
-     */
+  /**
+   * music blocking
+   * Get the first x chars of string.
+   *
+   * Check dataset for blocked prefix values!
+   */
   public static String getMusicBlockingLabel(String label, int blockingLength) {
     label = label.toLowerCase();
     String tmp = label;
@@ -648,13 +684,12 @@ public class Utils {
     }
 
     if (label.equals("")) {
-//      System.out.println(label + " --- " + tmp);
       if (tmp.length() >= blockingLength) {
         tmp = tmp.substring(0, blockingLength);
       }
-//      LOG.info(tmp);
       return tmp;
     }
+//    System.out.println(label + " " + blockingLength);
     return label;
   }
 
@@ -708,17 +743,10 @@ public class Utils {
       }
     }
 
-    String tmp = artistTitleAlbum;
-    artistTitleAlbum = CharMatcher.WHITESPACE.trimAndCollapseFrom(
+    return CharMatcher.WHITESPACE.trimAndCollapseFrom(
         artistTitleAlbum.toLowerCase()
             .replaceAll("[\\p{Punct}]", " "),
         ' ');
-
-    if (artistTitleAlbum.isEmpty()) {
-//      LOG.warn("Utils: artistTitleAlbum empty: " + value.toString());
-    }
-
-    return artistTitleAlbum;
   }
 
   /**

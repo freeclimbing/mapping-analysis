@@ -17,7 +17,10 @@ import java.util.regex.Pattern;
  * copied from
  * https://github.com/dataArtisans/flink-training-exercises/blob/master/src/main/java/com/dataartisans/flinktraining/exercises/dataset_java/tf_idf/MailTFIDF.java
  */
-public class TfComputer extends RichFlatMapFunction<Tuple2<String, String>, Tuple3<String, String, Integer>> {
+public class TfComputer
+    extends RichFlatMapFunction<
+    Tuple2<String, String>,
+    Tuple3<String, String, Integer>> {
 
   // set of stop words
   private Set<String> stopWords;
@@ -44,7 +47,9 @@ public class TfComputer extends RichFlatMapFunction<Tuple2<String, String>, Tupl
   }
 
   @Override
-  public void flatMap(Tuple2<String, String> mail, Collector<Tuple3<String, String, Integer>> out) throws Exception {
+  public void flatMap(
+      Tuple2<String, String> mail,
+      Collector<Tuple3<String, String, Integer>> out) throws Exception {
 
     // clear count map
     this.wordCounts.clear();
@@ -55,8 +60,8 @@ public class TfComputer extends RichFlatMapFunction<Tuple2<String, String>, Tupl
     while(st.hasMoreTokens()) {
       // normalize to lower case
       String word = st.nextToken().toLowerCase();
-      Matcher m = this.wordPattern.matcher(word);
-      if(m.matches() && !this.stopWords.contains(word)) {
+      Matcher m = wordPattern.matcher(word);
+      if(m.matches() && !stopWords.contains(word)) {
         // word matches pattern and is not a stop word -> increase word count
         int count = 0;
         if(wordCounts.containsKey(word)) {
@@ -67,8 +72,8 @@ public class TfComputer extends RichFlatMapFunction<Tuple2<String, String>, Tupl
     }
 
     // emit all counted words
-    for(String word : this.wordCounts.keySet()) {
-      out.collect(new Tuple3<>(mail.f0, word, this.wordCounts.get(word)));
+    for(String word : wordCounts.keySet()) {
+      out.collect(new Tuple3<>(mail.f0, word, wordCounts.get(word)));
     }
   }
 }

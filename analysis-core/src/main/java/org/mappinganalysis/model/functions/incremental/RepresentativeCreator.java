@@ -22,6 +22,10 @@ public class RepresentativeCreator
   private BlockingStrategy blockingStrategy;
   private final int blockingLength;
 
+  /**
+   * Only for tests.
+   */
+  @Deprecated
   public RepresentativeCreator(DataDomain domain, BlockingStrategy blockingStrategy) {
     this.domain = domain;
     this.blockingStrategy = blockingStrategy;

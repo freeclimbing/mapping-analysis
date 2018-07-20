@@ -50,16 +50,16 @@ public class BigIncrementalClusteringFunction
 
     DataSet<Vertex<Long, ObjectMap>> gn = baseClusters
         .filter(new SourceFilterFunction(Constants.GN_NS));
-    DataSet<Vertex<Long, ObjectMap>> nyt = baseClusters
-        .filter(new SourceFilterFunction(Constants.NYT_NS));
+//    DataSet<Vertex<Long, ObjectMap>> nyt = baseClusters
+//        .filter(new SourceFilterFunction(Constants.NYT_NS));
     DataSet<Vertex<Long, ObjectMap>> dbp = baseClusters
         .filter(new SourceFilterFunction(Constants.DBP_NS));
-    DataSet<Vertex<Long, ObjectMap>> fb = baseClusters
-        .filter(new SourceFilterFunction(Constants.FB_NS));
-    DataSet<Vertex<Long, ObjectMap>> lgd = baseClusters
-        .filter(new SourceFilterFunction(Constants.LGD_NS));
+//    DataSet<Vertex<Long, ObjectMap>> fb = baseClusters
+//        .filter(new SourceFilterFunction(Constants.FB_NS));
+//    DataSet<Vertex<Long, ObjectMap>> lgd = baseClusters
+//        .filter(new SourceFilterFunction(Constants.LGD_NS));
 
-    DataSet<Vertex<Long, ObjectMap>> result = gn.union(dbp)
+    return gn.union(dbp)
         .runOperation(new CandidateCreator(config, Constants.DBP_NS, 2))
         .flatMap(new DualMergeGeographyMapper(false))
         .leftOuterJoin(baseClusters)
@@ -67,7 +67,5 @@ public class BigIncrementalClusteringFunction
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
         .runOperation(new RepresentativeCreator(config));
-
-    return result;
   }
 }

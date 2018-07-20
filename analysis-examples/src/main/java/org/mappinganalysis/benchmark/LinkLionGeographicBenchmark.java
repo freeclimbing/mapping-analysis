@@ -19,6 +19,7 @@ import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  * LL Benchmark, old.
@@ -38,16 +39,17 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         "args[0]: input dir, " +
             "args[1]: min SimSort similarity (e.g., 0.7)");
 
-    Double minSimilarity = Doubles.tryParse(args[1]);
     final String inputPath = args[0];
-    final String metric = Constants.COSINE_TRIGRAM;
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(Doubles.tryParse(args[1]));
 
     Graph<Long, ObjectMap, ObjectMap> graph = new JSONDataSource(
         inputPath,
         Constants.INPUT_GRAPH,
         env)
         .getGraph(ObjectMap.class, NullValue.class)
-        .run(new DefaultPreprocessing(metric, DataDomain.GEOGRAPHY, env));
+        .run(new DefaultPreprocessing(config));
 
     new JSONDataSink(inputPath, PREPROCESSING)
         .writeGraph(graph);
@@ -60,10 +62,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
         new JSONDataSource(inputPath, PREPROCESSING, env)
             .getGraph()
             .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.GEOGRAPHY,
-                metric,
-                minSimilarity,
-                env))
+            .run(new SimSort(config))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.GEOGRAPHY));
 
@@ -79,7 +78,7 @@ public class LinkLionGeographicBenchmark implements ProgramDescription {
             .getVertices()
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
             .runOperation(new MergeExecution(DataDomain.GEOGRAPHY,
-                metric,
+                config.getMetric(),
                 0.5,
                 5,
                 env));

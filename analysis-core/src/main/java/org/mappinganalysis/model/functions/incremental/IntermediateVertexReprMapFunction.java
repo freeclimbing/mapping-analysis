@@ -24,7 +24,10 @@ class IntermediateVertexReprMapFunction
   /**
    * Map single vertex value to intermediate representative representation.
    */
-  IntermediateVertexReprMapFunction(DataDomain domain, BlockingStrategy blockingStrategy, int blockingLength) {
+  IntermediateVertexReprMapFunction(
+      DataDomain domain,
+      BlockingStrategy blockingStrategy,
+      int blockingLength) {
     this.domain = domain;
     this.blockingStrategy = blockingStrategy;
     this.blockingLength = blockingLength;

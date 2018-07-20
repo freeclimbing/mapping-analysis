@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
@@ -17,6 +18,13 @@ public class ExecutionUtils {
    */
   public static String setJobName(IncrementalConfig config) {
     String jobName = "Inc-";
+    if (config.getDataDomain() == DataDomain.MUSIC) {
+      jobName = jobName.concat("Music-");
+    } else if (config.getDataDomain() == DataDomain.NC) {
+      jobName = jobName.concat("Nc-");
+    } else if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
+      jobName = jobName.concat("Geo-");
+    }
     if (config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
       jobName = jobName.concat("Mb-");
     } else if (config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {

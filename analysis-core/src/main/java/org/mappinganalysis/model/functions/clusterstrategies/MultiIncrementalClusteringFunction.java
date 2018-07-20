@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.clusterstrategies;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -16,6 +17,8 @@ import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.incremental.BlockingKeySelector;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
+import org.mappinganalysis.model.functions.stats.StatisticsClusterCounterRichMapFunction;
+import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
 
@@ -34,9 +37,13 @@ public class MultiIncrementalClusteringFunction
       IncrementalConfig config) {
     super();
     this.config = config;
+    Preconditions.checkNotNull(toBeMergedElements,
+        "no elements added to clustering");
     this.toBeMergedElements = toBeMergedElements
         .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
-        .runOperation(new RepresentativeCreator(config));
+        .runOperation(new RepresentativeCreator(config))
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.ADDED_VERTICES_ACCUMULATOR));
   }
 
   MultiIncrementalClusteringFunction(IncrementalConfig config) {
@@ -98,6 +105,8 @@ public class MultiIncrementalClusteringFunction
             // TODO check if this works in every test
             .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
             .runOperation(new RepresentativeCreator(config))
+            .map(new StatisticsCountElementsRichMapFunction<>(
+                Constants.EXISTING_CLUSTERS_ACCUMULATOR))
             .union(toBeMergedElements);
 
         /*
@@ -121,7 +130,8 @@ public class MultiIncrementalClusteringFunction
            */
         } else if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
           return clusterWorkset
-              .runOperation(new SourceAdditionClustering(config));
+              .runOperation(new SourceAdditionClustering(config))
+              .map(new StatisticsClusterCounterRichMapFunction("run-"));
         }
       }
     return null;

@@ -93,26 +93,6 @@ public class PreprocessingTest {
     }
   }
 
-//  @Test
-//  // 819;label;Łęgowo;string
-//  // sometimes the following line is created
-//  // ����gowo
-//  // todo fix dont write to target folder
-//  public void writeToDiskEncodingTest() throws Exception {
-//        String graphPath = PreprocessingTest.class
-//        .getResource("/data/preprocessing/general/").getFile();
-//    DataSet<Vertex<Long, ObjectMap>> vertices =
-//        new JSONDataSource(graphPath, true, env).getVertices();
-//
-//    // TODO use discarding output format to check encoding?
-//    // use somewhat like this vertexOutFile = outDir + "output/";
-//    JSONDataSink dataSink = new JSONDataSink(graphPath);
-//    // write to disk works like suspected with UTF8
-//    dataSink.writeVertices(vertices);
-//
-//    vertices.print();
-//  }
-
   /**
    * Clustering link filter
    */
@@ -240,31 +220,6 @@ public class PreprocessingTest {
       } else {
         assertFalse(true);
       }
-    }
-  }
-
-  /**
-   * EqualDataSourceLinkRemover not tested, but tested separately
-   */
-  @Test
-  public void defaultPreprocessingTest() throws Exception {
-    env = TestBase.setupLocalEnvironment();
-    String graphPath = PreprocessingTest.class
-        .getResource("/data/preprocessing/defaultPreprocessing/").getFile();
-    Graph<Long, ObjectMap, NullValue> inGraph = new JSONDataSource(graphPath, true, env)
-        .getGraph(ObjectMap.class, NullValue.class);
-
-    DataSet<Vertex<Long, ObjectMap>> vertices = inGraph
-        .run(new DefaultPreprocessing(env))
-        .getVertices();
-
-    // both 59 and 84 are from LGD, this is correct, because the link filter
-    // only affects direct links and not sth like 84 <-- 58 --> 59
-    for (Vertex<Long, ObjectMap> vertex : vertices.collect()) {
-      assertTrue(vertex.getId() == 1375705L
-      || vertex.getId() == 617158L
-      || vertex.getId() == 617159L
-      || vertex.getId() == 1022884L);
     }
   }
 

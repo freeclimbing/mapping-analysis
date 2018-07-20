@@ -41,7 +41,7 @@ public class DualVertexMergeFlatMapper
       // geo properties
       if (dataDomain == DataDomain.GEOGRAPHY) {
         priorities = Utils.handleGeoProperties(priority, minority);
-      } else if (dataDomain == DataDomain.MUSIC) {
+      } else if (dataDomain == DataDomain.MUSIC || dataDomain == DataDomain.NC) {
         priorities = Utils.handleMusicProperties(priority, minority);
       } else {
         throw new IllegalArgumentException("DualVertexMerge data domain not implemented: "

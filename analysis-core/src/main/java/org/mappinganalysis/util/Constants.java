@@ -28,12 +28,63 @@ public class Constants {
 
   /**
    * Accumulators
+   * check each, most likely deprecated
    */
   public static final String PROP_COUNT_ACCUMULATOR = "prop-count";
   public static final String EDGE_COUNT_ACCUMULATOR = "edge-count";
   public static final String VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String BASE_VERTEX_COUNT_ACCUMULATOR = "vertex-count";
   public static final String REPRESENTATIVE_ACCUMULATOR = "representative-counter";
+
+  /**
+   * Count added vertices for one step in incremental clustering.
+   */
+  public static final String ADDED_VERTICES_ACCUMULATOR = "added-vertices-counter";
+  /**
+   * Count existing clusters for one step in incremental clustering.
+   */
+  public static final String EXISTING_CLUSTERS_ACCUMULATOR = "existing-clusters-counter";
+  /**
+   * Count basic number of block split triplets.
+   */
+  public static final String BLOCK_SPLIT_TRIPLET_ACCUMULATOR = "block-split-triplet-counter";
+  /**
+   * Count triplets after computing triplet similarity.
+   */
+  public static final String SIM_TRIPLET_ACCUMULATOR = "sim-triplet-counter";
+  /**
+   * Count triplets after applying minimal threshold parameter.
+   */
+  public static final String THRESHOLD_TRIPLET_ACCUMULATOR = "threshold-triplet-counter";
+  /**
+   * Count max both aggreements.
+   */
+  public static final String MAX_BOTH_CREATE_ACCUMULATOR = "max-both-create-accumulator";
+  /**
+   * Count all different cluster sizes.
+   */
+  public static final String CLUSTER_SIZE_ONE_ACCUMULATOR = "cluster-size-one-count";
+  public static final String CLUSTER_SIZE_TWO_ACCUMULATOR = "cluster-size-two-count";
+  public static final String CLUSTER_SIZE_THREE_ACCUMULATOR = "cluster-size-three-count";
+  public static final String CLUSTER_SIZE_FOUR_ACCUMULATOR = "cluster-size-four-count";
+  public static final String CLUSTER_SIZE_FIVE_ACCUMULATOR = "cluster-size-five-count";
+  public static final String CLUSTER_SIZE_SIX_ACCUMULATOR = "cluster-size-six-count";
+  public static final String CLUSTER_SIZE_SEVEN_ACCUMULATOR = "cluster-size-seven-count";
+  public static final String CLUSTER_SIZE_EIGHT_ACCUMULATOR = "cluster-size-eight-count";
+  public static final String CLUSTER_SIZE_NINE_ACCUMULATOR = "cluster-size-nine-count";
+  public static final String CLUSTER_SIZE_TEN_ACCUMULATOR = "cluster-size-ten-count";
+  /**
+   * Count gold links for evaluation process.
+   */
+  public static final String GOLD_LINKS_ACCUMULATOR = "gold-links-counter";
+  /**
+   * Count true positives in evaluation process.
+   */
+  public static final String TRUE_POSITIVE_ACCUMULATOR = "true-posititive-counter";
+  /**
+   * Count links which should be tested within evaluation process.
+   */
+  public static final String TEST_LINKS_ACCUMULATOR = "test-links-counter";
 
   /*
     Incremental strategies
@@ -57,6 +108,7 @@ public class Constants {
   public static final String DATA_SOURCES_LABEL = "dataSourcesLabel";
   public static final String BLOCKING_STRATEGY = "blockingStrategy";
   public static final String BLOCKING_LENGTH = "blockingLength";
+  public static final int BLOCKING_LENGTH_DEFAULT_VALUE = 4;
   public static final String INCREMENTAL_STRATEGY = "incrementalStrategy";
   public static final String DATA_DOMAIN = "dataDomain";
   public static final String STEP = "step";
@@ -74,10 +126,16 @@ public class Constants {
   public static final String IS_INCREMENTAL = "isIncremental";
 
   /**
-   * blocking strategies
+   * standard blocking strategy
    */
   public static final String SB = "SB";
+  /**
+   * block split blocking strategy
+   */
   public static final String BS = "BS";
+  /**
+   * LSH blocking strategy
+   */
   public static final String LSHB = "LSHB";
 
   /**
@@ -258,11 +316,11 @@ public class Constants {
   public static final String FB_NS = "http://rdf.freebase.com/";
   public static final String NYT_NS = "http://data.nytimes.com/";
 
-  private static final String NC_1 = "geco1";
-  private static final String NC_2 = "geco2";
-  private static final String NC_3 = "geco3";
-  private static final String NC_4 = "geco4";
-  private static final String NC_5 = "geco5";
+  public static final String NC_1 = "geco1";
+  public static final String NC_2 = "geco2";
+  public static final String NC_3 = "geco3";
+  public static final String NC_4 = "geco4";
+  public static final String NC_5 = "geco5";
   private static final String NC_6 = "geco6";
   private static final String NC_7 = "geco7";
   private static final String NC_8 = "geco8";

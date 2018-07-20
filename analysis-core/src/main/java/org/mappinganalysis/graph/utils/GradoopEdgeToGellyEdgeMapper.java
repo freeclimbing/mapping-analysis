@@ -20,17 +20,20 @@ public class GradoopEdgeToGellyEdgeMapper
 
   @Override
   public Edge<Long, NullValue> map(org.gradoop.common.model.impl.pojo.Edge value) throws Exception {
-    ObjectMap edgeProperties = new ObjectMap();
+    // TODO edge value from gradoop ever needed? remove!?
+//    ObjectMap edgeProperties = new ObjectMap();
+    assert value.getProperties() != null;
     for (Property property : value.getProperties()) {
       if (property.getKey().equals("left")) {
         reuseEdge.setSource(property.getValue().getLong());
       } else if (property.getKey().equals("right")) {
         reuseEdge.setTarget(property.getValue().getLong());
-      } else if (property.getKey().equals("value")) {
+      }
+//      else if (property.getKey().equals("value")) {
         // todo similarity needed?
 //        edgeProperties.setEdgeSimilarity(property.getValue().getDouble());
 //        LOG.info(property.getKey() + "additional property: " + property.getValue().toString());
-      }
+//      }
     }
     reuseEdge.setValue(NullValue.getInstance());
 

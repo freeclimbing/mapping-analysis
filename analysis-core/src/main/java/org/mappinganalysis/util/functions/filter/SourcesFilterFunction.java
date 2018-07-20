@@ -1,4 +1,4 @@
-package org.mappinganalysis.integration;
+package org.mappinganalysis.util.functions.filter;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.graph.Vertex;

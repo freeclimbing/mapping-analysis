@@ -13,7 +13,8 @@ import org.mappinganalysis.util.Utils;
  * Get a Gelly Vertex representation for north carolina input vertices.
  */
 public class GradoopToObjectMapVertexMapper
-    implements MapFunction<org.gradoop.common.model.impl.pojo.Vertex, Vertex<Long, ObjectMap>> {
+    implements MapFunction<org.gradoop.common.model.impl.pojo.Vertex,
+    Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(GradoopToObjectMapVertexMapper.class);
 
   private final Vertex<Long, ObjectMap> reuseVertex;
@@ -25,7 +26,8 @@ public class GradoopToObjectMapVertexMapper
   }
 
   @Override
-  public Vertex<Long, ObjectMap> map(org.gradoop.common.model.impl.pojo.Vertex gradoopVertex) throws Exception {
+  public Vertex<Long, ObjectMap> map(
+      org.gradoop.common.model.impl.pojo.Vertex gradoopVertex) throws Exception {
     Properties gradoopProperties = gradoopVertex.getProperties();
     ObjectMap properties = new ObjectMap(Constants.NC);
     double lat = 200;
@@ -42,7 +44,7 @@ public class GradoopToObjectMapVertexMapper
             reuseVertex.setId(Long.valueOf(idString));
           }
           break;
-        case Constants.NAME:
+        case Constants.SURNAME:
         case Constants.TITLE:
         case Constants.LABEL:
           properties.setLabel(gradoopProperties.get(property).getString());
@@ -54,7 +56,7 @@ public class GradoopToObjectMapVertexMapper
         case Constants.TYPE:
           properties.setDataSource(gradoopProperties.get(property).getString());
           break;
-        case Constants.SURNAME:
+        case Constants.NAME:
         case Constants.ARTIST:
           properties.setArtist(gradoopProperties.get(property).getString());
           break;
@@ -63,20 +65,23 @@ public class GradoopToObjectMapVertexMapper
           properties.setNumber(gradoopProperties.get(property).getString());
           break;
         case Constants.CLS_ID:
-          properties.put(Constants.CLS_ID, gradoopProperties.get(property).getLong());
+          properties.put(Constants.CLS_ID,
+              Long.parseLong(gradoopProperties.get(property).getString()));
           break;
         case Constants.LANGUAGE:
           properties.setLanguage(MusicUtils.fixLanguage(
               gradoopProperties.get(property).getString()));
           break;
         case Constants.YEAR:
-          Integer year = MusicUtils.fixYear(gradoopProperties.get(property).getString());
+          Integer year = MusicUtils.fixYear(
+              gradoopProperties.get(property).getString());
           if (year != null) {
             properties.setYear(year);
           }
           break;
         case Constants.LENGTH:
-          Integer length = MusicUtils.fixSongLength(gradoopProperties.get(property).getString());
+          Integer length = MusicUtils.fixSongLength(
+              gradoopProperties.get(property).getString());
           if (length != null) {
             properties.setLength(length);
           }
