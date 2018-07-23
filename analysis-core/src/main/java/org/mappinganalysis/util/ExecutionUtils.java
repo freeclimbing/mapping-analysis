@@ -36,12 +36,14 @@ public class ExecutionUtils {
       jobName = jobName.concat("Va-");
     }
     if (config.getBlockingStrategy() == BlockingStrategy.STANDARD_BLOCKING) {
-      jobName = jobName.concat("Sb-");
+      jobName = jobName.concat("Sb");
     } else if (config.getBlockingStrategy() == BlockingStrategy.BLOCK_SPLIT) {
-      jobName = jobName.concat("Bs-");
+      jobName = jobName.concat("Bs");
     }
 
-    jobName = jobName + config.getMinResultSimilarity();
+    jobName = jobName + config.getBlockingLength()
+        + "-"
+        + config.getMinResultSimilarity();
 
     return jobName;
   }
