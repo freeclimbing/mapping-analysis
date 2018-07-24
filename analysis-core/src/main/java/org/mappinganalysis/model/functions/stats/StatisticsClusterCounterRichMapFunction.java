@@ -67,6 +67,7 @@ public class StatisticsClusterCounterRichMapFunction
         break;
       case 8:
         counterEight.add(1L);
+        break;
       case 9:
         counterNine.add(1L);
         break;

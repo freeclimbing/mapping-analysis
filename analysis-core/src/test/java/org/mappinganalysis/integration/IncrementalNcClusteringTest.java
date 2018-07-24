@@ -1,6 +1,8 @@
 package org.mappinganalysis.integration;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -29,15 +31,39 @@ import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class IncrementalNcClusteringTest {
   private static final Logger LOG = Logger
       .getLogger(IncrementalNcClusteringTest.class);
   private static ExecutionEnvironment env = ExecutionEnvironment
       .getExecutionEnvironment();
+
+  @Test
+  public void stringSplitTest() throws Exception {
+    String toSplit = "/user/saeedi/1000-ocp20/output/10987654321Inc-Nc-Mb-Sa-Bs-0.7/";
+
+    if (toSplit.endsWith("/")) {
+      toSplit = toSplit.substring(0, toSplit.length() - 1);
+    }
+
+    Iterator<String> split = Splitter.on('/').split(toSplit).iterator();
+
+    String jobName = "";
+    while (split.hasNext()) {
+      jobName = split.next();
+      System.out.println(jobName);
+    }
+
+    System.out.println("jobname: " + jobName);
+
+    String newPath = toSplit.substring(0, toSplit.length() - jobName.length());
+
+    System.out.println("newPath: " + newPath);
+
+  }
 
   @Test
   public void initialNcTest() throws Exception {
@@ -72,9 +98,9 @@ public class IncrementalNcClusteringTest {
       Graph<Long, ObjectMap, NullValue> inputGraph = null;
       DataSet<Vertex<Long, ObjectMap>> newVertices;
       DataSet<Vertex<Long, ObjectMap>> clusters = null;
-      Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
 
       for (String source : Constants.NC_SOURCES) {
+        System.out.println("Adding source " + source);
         if (isFirst) {
           inputGraph = baseGraph
               .filterOnVertices(new SourceFilterFunction(source));
@@ -105,6 +131,7 @@ public class IncrementalNcClusteringTest {
           clusters = inputGraph.run(clustering);
 
           List<Long> resultingVerticesList = Lists.newArrayList();
+          Collection<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
           clusters.output(new LocalCollectionOutputFormat<>(representatives));
           new JSONDataSink(path, jobName)
               .writeVertices(clusters);
@@ -117,9 +144,27 @@ public class IncrementalNcClusteringTest {
           }
 
           for (Vertex<Long, ObjectMap> representative : representatives) {
+            if (representative.getValue().getVerticesList().contains(107858765L)) {
+              LOG.info(representative.toString());
+            }
             resultingVerticesList.addAll(representative.getValue().getVerticesList());
 //            LOG.info(representative.toString());
           }
+
+          LOG.info("all contained: " + resultingVerticesList.size());
+
+
+          HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
+
+          HashSet<Object> testSet = Sets.newHashSet();
+          for (Long duplicatePotential : resultingVerticesList) {
+            if (!testSet.add(duplicatePotential)) {
+              System.out.println("duplicate id: " + duplicatePotential);
+            }
+          }
+
+          assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
+
         }
       }
 

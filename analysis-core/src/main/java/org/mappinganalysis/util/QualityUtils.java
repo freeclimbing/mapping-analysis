@@ -163,6 +163,10 @@ public class QualityUtils {
       String inputPath,
       String clusterExecution,
       String jobName) throws Exception {
+
+    System.out.println("Printing evaluation for job: "
+        + jobName + " on input path: " + inputPath + " config: " + config.toString());
+
     int sourcesCount;
     DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
         .flatMap(new QualityEdgeCreator())

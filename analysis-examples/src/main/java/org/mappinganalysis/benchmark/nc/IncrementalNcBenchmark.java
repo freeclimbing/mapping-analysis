@@ -1,6 +1,7 @@
 package org.mappinganalysis.benchmark.nc;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.ProgramDescription;
@@ -19,6 +20,7 @@ import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.stats.StatisticsClusterCounterRichMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
@@ -26,6 +28,7 @@ import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,14 +38,16 @@ public class IncrementalNcBenchmark implements ProgramDescription {
       .getExecutionEnvironment();
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 5,
+    Preconditions.checkArgument(args.length == 6,
         "args[0]: input dir, "
             + "args[1]: file name, "
             + "args[2]: selection strategy (entity, source)"
             + "args[3]: threshold, "
-            + "args[4]: blockingLength, " );
-    final String INPUT_PATH = args[0].concat(args[1]);
+            + "args[4]: blockingLength, "
+            + "args[5]: run [eval/full]");
+    String INPUT_PATH = args[0].concat(args[1]);
     final String STRATEGY = args[2];
+    final String FULL_OR_EVAL = args[5];
     final ClusteringStep CLUSTERING_STEP;
     switch (STRATEGY) {
       case "entity":
@@ -65,6 +70,7 @@ public class IncrementalNcBenchmark implements ProgramDescription {
     config.setBlockingLength(Integer.valueOf(args[4]));
 
     String jobName = ExecutionUtils.setJobName(config);
+    System.out.println("Now running ... " + jobName);
 
     boolean isFirst = true;
     boolean isSecond = true;
@@ -85,66 +91,90 @@ public class IncrementalNcBenchmark implements ProgramDescription {
       sources = Constants.NC_SOURCES;
     }
 
-    long completeTime = 0;
-    for (String source : sources) {
-      if (isFirst) {
-        inputGraph = baseGraph
-            .filterOnVertices(new SourceFilterFunction(source));
-        jobName = source.replaceAll("[^\\d.]", "")
-            .concat(jobName);
-        isFirst = false;
-      } else {
-        if (isSecond) {
+    if (FULL_OR_EVAL.equals("full")) {
+      long completeTime = 0;
+      for (String source : sources) {
+        if (isFirst) {
+          inputGraph = baseGraph
+              .filterOnVertices(new SourceFilterFunction(source));
           jobName = source.replaceAll("[^\\d.]", "")
               .concat(jobName);
-          isSecond = false;
+          isFirst = false;
         } else {
-          inputGraph = new JSONDataSource(INPUT_PATH, jobName, env)
-              .getGraph(ObjectMap.class, NullValue.class);
-          jobName = source.replaceAll("[^\\d.]", "")
-              .concat(jobName);
-        }
+          if (isSecond) {
+            jobName = source.replaceAll("[^\\d.]", "")
+                .concat(jobName);
+            isSecond = false;
+          } else {
+            inputGraph = new JSONDataSource(INPUT_PATH, jobName, env)
+                .getGraph(ObjectMap.class, NullValue.class);
+            jobName = source.replaceAll("[^\\d.]", "")
+                .concat(jobName);
+          }
 
-        newVertices = baseGraph.getVertices()
-            .filter(new SourceFilterFunction(source));
+          newVertices = baseGraph.getVertices()
+              .filter(new SourceFilterFunction(source));
 
-        IncrementalClustering clustering = new IncrementalClustering
-            .IncrementalClusteringBuilder(config)
-            .setNewSource(source)
-            .setMatchElements(newVertices)
-            .build();
+          IncrementalClustering clustering = new IncrementalClustering
+              .IncrementalClusteringBuilder(config)
+              .setNewSource(source)
+              .setMatchElements(newVertices)
+              .build();
 
-        clusters = inputGraph.run(clustering);
+          clusters = inputGraph.run(clustering);
 
-        new JSONDataSink(INPUT_PATH, jobName)
-            .writeVertices(clusters);
-        JobExecutionResult execResult = env.execute(jobName);
+          new JSONDataSink(INPUT_PATH, jobName)
+              .writeVertices(clusters);
+          JobExecutionResult execResult = env.execute(jobName);
 
-        long netRuntimeSecs = execResult.getNetRuntime(TimeUnit.SECONDS);
-        completeTime += netRuntimeSecs;
-        System.out.println(jobName + " needs "
-            + netRuntimeSecs + " seconds.");
-        Map<String, Object> allAccumulatorResults = execResult
-            .getAllAccumulatorResults();
+          long netRuntimeSecs = execResult.getNetRuntime(TimeUnit.SECONDS);
+          completeTime += netRuntimeSecs;
+          System.out.println(jobName + " needs "
+              + netRuntimeSecs + " seconds.");
 
-        for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
-          System.out.println(stringObjectEntry);
+          Map<String, Object> allAccumulatorResults = execResult
+              .getAllAccumulatorResults();
+          for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
+            System.out.println(stringObjectEntry);
+          }
         }
       }
+
+      System.out.println("Overall time for all parts of "
+          + jobName + ": " + completeTime + "s.");
     }
 
-    System.out.println("Overall time for all parts of "
-        + jobName + ": " + completeTime + "s.");
-    // quality
-    Graph<Long, ObjectMap, NullValue> statisticsGraph =
-        new JSONDataSource(INPUT_PATH, jobName, env)
-            .getGraph(ObjectMap.class, NullValue.class);
+    /*
+      Adaptation to evaluate single results.
+     */
+    if (FULL_OR_EVAL.equals("eval")) {
+      if (INPUT_PATH.endsWith("/")) {
+        INPUT_PATH = INPUT_PATH.substring(0, INPUT_PATH.length() - 1);
+      }
 
-    QualityUtils.printNcQuality(statisticsGraph.getVertices(),
-        config,
-        INPUT_PATH,
-        "cluster",
-        jobName);
+      Iterator<String> split = Splitter.on('/').split(INPUT_PATH).iterator();
+      jobName = "";
+
+      while (split.hasNext()) {
+        jobName = split.next();
+      }
+
+      INPUT_PATH = INPUT_PATH.substring(0, INPUT_PATH.length() - jobName.length());
+    }
+
+      // quality
+      Graph<Long, ObjectMap, NullValue> statisticsGraph
+          = new JSONDataSource(INPUT_PATH, jobName, env)
+          .getGraph(ObjectMap.class, NullValue.class);
+
+      QualityUtils.printNcQuality(
+          statisticsGraph.getVertices()
+              .map(new StatisticsClusterCounterRichMapFunction("eval-")),
+          config,
+          INPUT_PATH,
+          "cluster",
+          jobName);
+
   }
 
   @Override

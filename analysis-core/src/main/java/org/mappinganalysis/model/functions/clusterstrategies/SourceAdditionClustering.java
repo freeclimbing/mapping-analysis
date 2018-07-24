@@ -35,7 +35,8 @@ import org.mappinganalysis.util.functions.keyselector.BlockingKeyFromAnyElementK
  * TODO support different blocking strategies
  * TODO support different data domain
  */
-class SourceAdditionClustering implements CustomUnaryOperation<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
+class SourceAdditionClustering
+    implements CustomUnaryOperation<Vertex<Long,ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(SourceAdditionClustering.class);
 
   private DataSet<Vertex<Long, ObjectMap>> input;
