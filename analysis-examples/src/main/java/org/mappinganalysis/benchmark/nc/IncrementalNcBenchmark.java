@@ -30,7 +30,6 @@ import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class IncrementalNcBenchmark implements ProgramDescription {
@@ -132,11 +131,7 @@ public class IncrementalNcBenchmark implements ProgramDescription {
           System.out.println(jobName + " needs "
               + netRuntimeSecs + " seconds.");
 
-          Map<String, Object> allAccumulatorResults = execResult
-              .getAllAccumulatorResults();
-          for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
-            System.out.println(stringObjectEntry);
-          }
+          QualityUtils.printExecPlusAccumulatorResults(execResult);
         }
       }
 

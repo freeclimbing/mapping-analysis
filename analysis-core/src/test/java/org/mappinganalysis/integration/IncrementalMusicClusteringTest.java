@@ -610,23 +610,13 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
     List<Long> resultingVerticesList = Lists.newArrayList();
-    int sizeOne = 0;
-    int sizeTwo = 0;
-    int sizeNotHappen = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
-      if (representative.getValue().getVerticesList().size() == 1) {
-        sizeOne++;
-      } else if (representative.getValue().getVerticesList().size() == 2) {
-        sizeTwo++;
-      } else {
-        sizeNotHappen++;
-      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
+
+    QualityUtils.printExecPlusAccumulatorResults(result);
+
     LOG.info("result cluster elements size 1+2: " + resultingVerticesList.size());
-    LOG.info("clusters with size 1: " + sizeOne);
-    LOG.info("clusters with size 2: " + sizeTwo);
-    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     HashSet<Long> uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
     // test end
@@ -664,33 +654,18 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     System.out.println("+3".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
+    QualityUtils.printExecPlusAccumulatorResults(result);
+
     resultingVerticesList = Lists.newArrayList();
-    sizeOne = 0;
-    sizeTwo = 0;
-    sizeNotHappen = 0;
-    int sizeThree = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
 //      if (representative.getValue().getVerticesList().contains(16889L)
 //          || representative.getValue().getVerticesList().contains(9919L)
 //          || representative.getValue().getVerticesList().contains(1492L)) {
 //        LOG.info("duplicate: " + representative.toString());
 //      }
-      if (representative.getValue().getVerticesList().size() == 1) {
-        sizeOne++;
-      } else if (representative.getValue().getVerticesList().size() == 2) {
-        sizeTwo++;
-      } else if (representative.getValue().getVerticesList().size() == 3) {
-        sizeThree++;
-      } else {
-        sizeNotHappen++;
-      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
     LOG.info("result cluster elements size 1+2+3: " + resultingVerticesList.size());
-    LOG.info("clusters with size 1: " + sizeOne);
-    LOG.info("clusters with size 2: " + sizeTwo);
-    LOG.info("clusters with size 3: " + sizeThree);
-    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
 
     HashSet<Object> testSet = Sets.newHashSet();
@@ -729,32 +704,12 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     System.out.println("+4".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
+    QualityUtils.printExecPlusAccumulatorResults(result);
+
     resultingVerticesList = Lists.newArrayList();
-    sizeOne = 0;
-    sizeTwo = 0;
-    sizeNotHappen = 0;
-    sizeThree = 0;
-    int sizeFour = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
-      if (representative.getValue().getVerticesList().size() == 1) {
-        sizeOne++;
-      } else if (representative.getValue().getVerticesList().size() == 2) {
-        sizeTwo++;
-      } else if (representative.getValue().getVerticesList().size() == 3) {
-        sizeThree++;
-      } else if (representative.getValue().getVerticesList().size() == 4) {
-        sizeFour++;
-      } else {
-        sizeNotHappen++;
-      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
-    LOG.info("result cluster elements size 1+2+3+4: " + resultingVerticesList.size());
-    LOG.info("clusters with size 1: " + sizeOne);
-    LOG.info("clusters with size 2: " + sizeTwo);
-    LOG.info("clusters with size 3: " + sizeThree);
-    LOG.info("clusters with size 4: " + sizeFour);
-    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
 
@@ -784,39 +739,16 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     System.out.println("+5".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
 
+    QualityUtils.printExecPlusAccumulatorResults(result);
+
     resultingVerticesList = Lists.newArrayList();
-    sizeOne = 0;
-    sizeTwo = 0;
-    sizeNotHappen = 0;
-    sizeThree = 0;
-    sizeFour = 0;
-    int sizeFive = 0;
     for (Vertex<Long, ObjectMap> representative : representatives) {
 //      if (representative.getValue().getVerticesList().size() > 4) {
 //        LOG.info(representative.toString());
 //      }
-      if (representative.getValue().getVerticesList().size() == 1) {
-        sizeOne++;
-      } else if (representative.getValue().getVerticesList().size() == 2) {
-        sizeTwo++;
-      } else if (representative.getValue().getVerticesList().size() == 3) {
-        sizeThree++;
-      } else if (representative.getValue().getVerticesList().size() == 4) {
-        sizeFour++;
-      } else if (representative.getValue().getVerticesList().size() == 5) {
-        sizeFive++;
-      } else {
-        sizeNotHappen++;
-      }
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
     }
     LOG.info("result cluster elements size 1+2+3+4+5: " + resultingVerticesList.size());
-    LOG.info("clusters with size 1: " + sizeOne);
-    LOG.info("clusters with size 2: " + sizeTwo);
-    LOG.info("clusters with size 3: " + sizeThree);
-    LOG.info("clusters with size 4: " + sizeFour);
-    LOG.info("clusters with size 5: " + sizeFive);
-    LOG.info("clusters with higher count of elements: " + sizeNotHappen);
     uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
 

@@ -338,6 +338,21 @@ public class QualityUtils {
         .reduceGroup(new AllEdgesCreateGroupReducer<>("gold-"));
   }
 
+  public static void printExecPlusAccumulatorResults(JobExecutionResult execResult) {
+    Map<String, Object> allAccumulatorResults = execResult.getAllAccumulatorResults();
+
+    for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
+      if (stringObjectEntry.getValue() instanceof Long) {
+        long value = Long.parseLong(stringObjectEntry.getValue().toString());
+        if (value != 0L) {
+          System.out.println(stringObjectEntry.getKey() + " = " + value);
+        }
+      } else {
+        System.out.println(stringObjectEntry);
+      }
+    }
+  }
+
   private static class NcPmMapFunction implements MapFunction<Tuple2<String, String>, Tuple2<Long, Long>> {
     @Override
     public Tuple2<Long, Long> map(Tuple2<String, String> pmValue) throws Exception {

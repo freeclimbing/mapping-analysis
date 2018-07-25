@@ -1,16 +1,10 @@
 package org.mappinganalysis.benchmark.musicbrainz;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.ProgramDescription;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
-import org.apache.flink.api.java.operators.FilterOperator;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
@@ -18,7 +12,6 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.io.impl.json.JSONToEdgeFormatter;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
@@ -27,14 +20,11 @@ import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteri
 import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
-import org.mappinganalysis.util.Utils;
+import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.collect.Lists.newArrayList;
 
 public class IncrementalMusicBenchmark
     implements ProgramDescription {
@@ -101,8 +91,10 @@ public class IncrementalMusicBenchmark
     new JSONDataSink(inputPath, "1+2".concat(jobName))
         .writeVertices(clusters);
     JobExecutionResult result = env.execute("1+2".concat(jobName));
+
     System.out.println("1+2".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +3
@@ -125,8 +117,10 @@ public class IncrementalMusicBenchmark
     new JSONDataSink(inputPath, "+3".concat(jobName))
         .writeVertices(clusters);
     result = env.execute("+3".concat(jobName));
+
     System.out.println("+3".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +4
@@ -149,8 +143,10 @@ public class IncrementalMusicBenchmark
     new JSONDataSink(inputPath, "+4".concat(jobName))
         .writeVertices(clusters);
     result = env.execute("+4".concat(jobName));
+
     System.out.println("+4".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +5
@@ -173,8 +169,10 @@ public class IncrementalMusicBenchmark
     new JSONDataSink(inputPath, "+5".concat(jobName))
         .writeVertices(clusters);
     result = env.execute("+5".concat(jobName));
+
     System.out.println("+5".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+    QualityUtils.printExecPlusAccumulatorResults(result);
   }
 
   @Override

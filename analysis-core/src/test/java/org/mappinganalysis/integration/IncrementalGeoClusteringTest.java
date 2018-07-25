@@ -24,6 +24,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
@@ -478,7 +479,8 @@ public class IncrementalGeoClusteringTest {
   }
 
   /**
-   * GEO INC SOURCE BY SOURCE integration test hungarian
+   * GEO INC SOURCE BY SOURCE integration test hungarian,
+   * sources with more geo properties should be first
    *
    * (http://rdf.freebase.com/,774)
    * (http://data.nytimes.com/,754)
@@ -501,6 +503,9 @@ public class IncrementalGeoClusteringTest {
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.SOURCE_ADDITION);
     config.setSimSortSimilarity(0.7);
+    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+    config.setBlockingLength(4);
+    config.setMinResultSimilarity(0.7);
 
     HashMap<String, BigDecimal> resultMap = Maps.newHashMap();
     List<String> sourcesList = Constants.GEO_SOURCES;
@@ -509,7 +514,14 @@ public class IncrementalGeoClusteringTest {
     graphPath = graphPath.concat("temp/");
     List<Vertex<Long, ObjectMap>> representatives = null;
 
-    for (List<String> list : permutedLists) {
+
+//    for (List<String> list : permutedLists) {
+    List<String> list = Lists.newArrayList();
+      list.add(Constants.FB_NS);
+      list.add(Constants.NYT_NS);
+      list.add(Constants.GN_NS);
+      list.add(Constants.DBP_NS);
+
       Graph<Long, ObjectMap, NullValue> workingGraph = null;
       DataSet<Vertex<Long, ObjectMap>> clusters;
       representatives = null;
@@ -564,7 +576,7 @@ public class IncrementalGeoClusteringTest {
               .setScale(4, BigDecimal.ROUND_HALF_UP));
       resultMap.put( singleString, singleResult.get("f1")
           .setScale(4, BigDecimal.ROUND_HALF_UP));
-    }
+//    }
 
     /*
       actual tests

@@ -137,16 +137,12 @@ public class IncrementalNcClusteringTest {
               .writeVertices(clusters);
           JobExecutionResult execResult = env.execute();
 
-          Map<String, Object> allAccumulatorResults = execResult.getAllAccumulatorResults();
-
-          for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
-            LOG.info(stringObjectEntry);
-          }
+          QualityUtils.printExecPlusAccumulatorResults(execResult);
 
           for (Vertex<Long, ObjectMap> representative : representatives) {
-            if (representative.getValue().getVerticesList().contains(107858765L)) {
-              LOG.info(representative.toString());
-            }
+//            if (representative.getValue().getVerticesList().contains(107858765L)) {
+//              LOG.info(representative.toString());
+//            }
             resultingVerticesList.addAll(representative.getValue().getVerticesList());
 //            LOG.info(representative.toString());
           }
@@ -178,4 +174,5 @@ public class IncrementalNcClusteringTest {
           jobName);
     }
   }
+
 }
