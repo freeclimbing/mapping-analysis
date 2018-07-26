@@ -14,7 +14,7 @@ import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
 import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
 import org.mappinganalysis.model.functions.simcomputation.MusicTripletSimilarityFunction;
@@ -86,7 +86,7 @@ class SourceAdditionClustering
       hungarian
      */
     if (config.getMatchStrategy() != null
-        && config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
+        && config.getMatchStrategy() == MatchStrategy.HUNGARIAN) {
       return simTriplets
           .groupBy(new BlockingKeyFromAnyElementKeySelector())
           .reduceGroup(new HungarianAlgorithmReduceFunction())
@@ -99,7 +99,7 @@ class SourceAdditionClustering
       max both
        */
       if (config.getMatchStrategy() != null
-        && config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
+        && config.getMatchStrategy() == MatchStrategy.MAX_BOTH) {
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> maxBothTriplets = simTriplets
           .runOperation(new MaxBothSelection());
 

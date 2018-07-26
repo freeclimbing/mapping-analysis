@@ -3,7 +3,7 @@ package org.mappinganalysis.util;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
@@ -25,9 +25,9 @@ public class ExecutionUtils {
     } else if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
       jobName = jobName.concat("Geo-");
     }
-    if (config.getMatchStrategy() == MatchingStrategy.MAX_BOTH) {
+    if (config.getMatchStrategy() == MatchStrategy.MAX_BOTH) {
       jobName = jobName.concat("Mb-");
-    } else if (config.getMatchStrategy() == MatchingStrategy.HUNGARIAN) {
+    } else if (config.getMatchStrategy() == MatchStrategy.HUNGARIAN) {
       jobName = jobName.concat("Hu-");
     }
     if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {

@@ -188,10 +188,9 @@ public class ObjectMap
       return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
     } else {
       setArtistTitleAlbum(Utils.createSimpleArtistTitleAlbum(this));
-      return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
-//      throw new NullPointerException("ARTIST_TITLE_ALBUM not found for: " + map.toString());
-    }
 
+      return map.get(Constants.ARTIST_TITLE_ALBUM).toString();
+    }
   }
 
   public HashMap<String, Double> getIDFs() {

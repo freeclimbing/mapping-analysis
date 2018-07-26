@@ -1,11 +1,10 @@
 package org.mappinganalysis.util.config;
 
-import com.sun.tools.internal.jxc.ap.Const;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.Constants;
 
 import java.util.List;
@@ -102,12 +101,12 @@ public class IncrementalConfig extends Config {
     return this.getProperty(Constants.SUBGRAPH_VERTICES_PATH);
   }
 
-  public void setMatchStrategy(MatchingStrategy matchStrategy) {
+  public void setMatchStrategy(MatchStrategy matchStrategy) {
     this.put(Constants.MATCHING_STRATEGY, matchStrategy);
   }
 
-  public MatchingStrategy getMatchStrategy() {
-    return (MatchingStrategy) this.get(Constants.MATCHING_STRATEGY);
+  public MatchStrategy getMatchStrategy() {
+    return (MatchStrategy) this.get(Constants.MATCHING_STRATEGY);
   }
 
   public void setMinResultSimilarity(double similarity) {

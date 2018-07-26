@@ -102,7 +102,6 @@ public class MultiIncrementalClusteringFunction
 
         DataSet<Vertex<Long, ObjectMap>> clusterWorkset = input
             .getVertices()
-            // TODO check if this works in every test
             .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
             .runOperation(new RepresentativeCreator(config))
             .map(new StatisticsCountElementsRichMapFunction<>(

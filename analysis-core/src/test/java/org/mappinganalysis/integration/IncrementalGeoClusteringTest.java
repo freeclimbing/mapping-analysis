@@ -24,7 +24,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.model.functions.preprocessing.utils.InternalTypeMapFunction;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.QualityUtils;
@@ -503,7 +503,7 @@ public class IncrementalGeoClusteringTest {
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.SOURCE_ADDITION);
     config.setSimSortSimilarity(0.7);
-    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+    config.setMatchStrategy(MatchStrategy.MAX_BOTH);
     config.setBlockingLength(4);
     config.setMinResultSimilarity(0.7);
 

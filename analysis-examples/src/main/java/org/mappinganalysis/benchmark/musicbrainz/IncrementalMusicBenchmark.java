@@ -17,7 +17,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
@@ -55,9 +55,9 @@ public class IncrementalMusicBenchmark
     final double threshold = Double.valueOf(args[3]);
     final int blockingLength = Integer.valueOf(args[4]);
 
-    MatchingStrategy matchStrategy = MatchingStrategy.MAX_BOTH;
+    MatchStrategy matchStrategy = MatchStrategy.MAX_BOTH;
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
-    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(clusteringStep);
@@ -173,6 +173,18 @@ public class IncrementalMusicBenchmark
     System.out.println("+5".concat(jobName) + " needed "
         + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
     QualityUtils.printExecPlusAccumulatorResults(result);
+
+    // quality
+    Graph<Long, ObjectMap, NullValue> statisticsGraph
+        = new JSONDataSource(inputPath, jobName, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+
+    QualityUtils.printMusicQuality(
+        statisticsGraph.getVertices(),
+        config,
+        inputPath,
+        vertexFileName,
+        "cluster");
   }
 
   @Override

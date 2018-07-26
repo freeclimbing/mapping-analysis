@@ -19,8 +19,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
-import org.mappinganalysis.model.functions.stats.StatisticsClusterCounterRichMapFunction;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
@@ -65,7 +64,7 @@ public class IncrementalNcBenchmark implements ProgramDescription {
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(CLUSTERING_STEP);
     config.setMinResultSimilarity(Double.valueOf(args[3]));
-    config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+    config.setMatchStrategy(MatchStrategy.MAX_BOTH);
     config.setBlockingLength(Integer.valueOf(args[4]));
 
     String jobName = ExecutionUtils.setJobName(config);
@@ -163,8 +162,7 @@ public class IncrementalNcBenchmark implements ProgramDescription {
           .getGraph(ObjectMap.class, NullValue.class);
 
       QualityUtils.printNcQuality(
-          statisticsGraph.getVertices()
-              .map(new StatisticsClusterCounterRichMapFunction("eval-")),
+          statisticsGraph.getVertices(),
           config,
           INPUT_PATH,
           "cluster",

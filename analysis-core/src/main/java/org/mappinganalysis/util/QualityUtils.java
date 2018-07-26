@@ -1,5 +1,6 @@
 package org.mappinganalysis.util;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.JoinFunction;
@@ -7,9 +8,9 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
-import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
@@ -20,11 +21,13 @@ import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.stats.StatisticsClusterCounterRichMapFunction;
 import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,81 +74,117 @@ public class QualityUtils {
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
     long goldCount = goldLinks.count();
-//    LOG.info("gold links: " + goldCount); // new execution
     long checkCount = clusterEdges.count();
     long tpCount = truePositives.count();
 
-    double precision = (double) tpCount / checkCount; // tp / (tp + fp)
-    double recall = (double) tpCount / goldCount; // tp / (fn + tp)
-    LOG.info("\n############### dataset: " + dataset
-        + " mergeThreshold: " + mergeThreshold
-        + " simSortThreshold: " + simSortThreshold);
-    LOG.info("TP+FN: " + goldCount);
-    LOG.info("TP+FP: " + checkCount);
-    LOG.info("TP: " + tpCount);
-
-    double f1 = 2 * precision * recall / (precision + recall);
-    LOG.info("precision: " + precision + " recall: " + recall + " F1: " + f1);
-    LOG.info("######################################################");
-
-    HashMap<String, BigDecimal> result = Maps.newHashMap();
-    result.put("precision", new BigDecimal(precision));
-    result.put("recall", new BigDecimal(recall));
-    result.put("f1", new BigDecimal(f1));
-
-    return result;
+    // todo get config + jobname
+    return getAndprintRecallPrecisionFM(
+        null,
+        "jobname",
+        goldCount,
+        checkCount,
+        tpCount);
   }
 
+  /**
+   * Print music dataset quality for different sizes, use Accumulators.
+   * @param checkClusters vertices to be checked
+   * @param config execution config
+   * @param inputPath csv input path to read from
+   * @param vertexFileName dataset name
+   * @return resulting quality f1
+   */
   public static HashMap<String, BigDecimal> printMusicQuality(
       DataSet<Vertex<Long, ObjectMap>> checkClusters,
-      Config config)
-      throws Exception {
+      Config config,
+      String inputPath,
+      String vertexFileName,
+      String mode) throws Exception {
     DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
-        .flatMap(new QualityEdgeCreator());
+        .map(new StatisticsClusterCounterRichMapFunction("gold-"))
+        .flatMap(new QualityEdgeCreator())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TEST_LINKS_ACCUMULATOR));
 
-    String path = "/data/musicbrainz/input/";
-    DataSet<Tuple2<Long, Long>> goldLinks;
+    DataSet<Tuple2<String, String>> perfectMapping;
+    String readFromPath;
+    if (vertexFileName.contains("2000000")) {
+      if (!inputPath.endsWith(Constants.SLASH)) {
+        readFromPath = inputPath.concat(Constants.SLASH);
+      } else {
+        readFromPath = inputPath;
+      }
+      readFromPath = readFromPath.concat("input/").concat(vertexFileName);
+    } else {
+      readFromPath = QualityUtils.class
+          .getResource("/data/musicbrainz/input/")
+          .getFile()
+          .concat("musicbrainz-20000-A01.csv.dapo");
+    }
+    perfectMapping = config
+        .getExecutionEnvironment()
+        .readCsvFile(readFromPath)
+        .ignoreFirstLine()
+        .includeFields(true, true, false, false, false, false, false, false, false,
+            false, false, false)
+        .types(String.class, String.class);
 
-    String pmPath = QualityUtils.class.getResource(path).getFile();
-
-      DataSet<Tuple2<String, String>> perfectMapping = config
-          .getExecutionEnvironment()
-          .readCsvFile(pmPath.concat("musicbrainz-20000-A01.csv.dapo"))
-          .ignoreFirstLine()
-          .includeFields(true, true, false, false, false, false, false, false, false, false, false, false)
-          .types(String.class, String.class);
-
-      goldLinks = perfectMapping
-          .map(tuple -> new Vertex<>(Long.parseLong(tuple.f0), Long.parseLong(tuple.f1)))
-          .returns(new TypeHint<Vertex<Long, Long>>() {})
-          .groupBy(1)
-          .reduceGroup(new AllEdgesCreateGroupReducer<>())
-          .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
-          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+    DataSet<Tuple2<Long, Long>> goldLinks = perfectMapping
+        .map(tuple -> new Vertex<>(Long.parseLong(tuple.f0), Long.parseLong(tuple.f1)))
+        .returns(new TypeHint<Vertex<Long, Long>>() {})
+        .groupBy(1)
+        .reduceGroup(new AllEdgesCreateGroupReducer<>())
+        .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.GOLD_LINKS_ACCUMULATOR));
 
     DataSet<Tuple2<Long, Long>> truePositives = goldLinks
         .join(clusterEdges)
         .where(0, 1).equalTo(0, 1)
-        .with(new JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> join(
-              Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
-            return first;
-          }
-        });
+        .with(new GetLeftSideJoinFunction())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TRUE_POSITIVE_ACCUMULATOR));
 
-    long goldCount = goldLinks.count();
-    long checkCount = clusterEdges.count();
-    long tpCount = truePositives.count();
+    if (mode.equals("cluster")) {
+      new JSONDataSink(inputPath, "statistics")
+          .writeTuples(truePositives);
+    } else {
+      ArrayList<Tuple2<Long, Long>> representatives = Lists.newArrayList();
+      truePositives.output(new LocalCollectionOutputFormat<>(representatives));
+    }
 
-    double precision = (double) tpCount / checkCount; // tp / (tp + fp)
-    double recall = (double) tpCount / goldCount; // tp / (fn + tp)
-    LOG.info("\n############### dataset: " + config.toString());
+    JobExecutionResult jobResult = config
+        .getExecutionEnvironment()
+        .execute("statistics");
+
+    QualityUtils.printExecPlusAccumulatorResults(jobResult);
+
+    return getAndprintRecallPrecisionFM(
+        config,
+        vertexFileName,
+        jobResult.getAccumulatorResult(Constants.GOLD_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TEST_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TRUE_POSITIVE_ACCUMULATOR));
+  }
+
+  private static HashMap<String, BigDecimal> getAndprintRecallPrecisionFM(
+      Config config,
+      String jobName,
+      long goldCount,
+      long checkCount,
+      long tpCount) {
+    double precision = Utils.getExactDoubleResult(tpCount, checkCount, 4);
+    double recall = Utils.getExactDoubleResult(tpCount, goldCount, 4);
+    System.out.println("\n############### job: " + jobName + " config: " + config.toString());
     LOG.info("TP+FN: " + goldCount);
     LOG.info("TP+FP: " + checkCount);
     LOG.info("TP: " + tpCount);
 
-    double f1 = 2 * precision * recall / (precision + recall);
+    double f1 = Utils.getExactDoubleResult(
+        2 * precision * recall,
+        precision + recall,
+        4);
     LOG.info("precision: " + precision + " recall: " + recall + " F1: " + f1);
     LOG.info("######################################################");
 
@@ -167,20 +206,22 @@ public class QualityUtils {
     System.out.println("Printing evaluation for job: "
         + jobName + " on input path: " + inputPath + " config: " + config.toString());
 
-    int sourcesCount;
     DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
+        .map(new StatisticsClusterCounterRichMapFunction("gold-"))
         .flatMap(new QualityEdgeCreator())
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.TEST_LINKS_ACCUMULATOR));
-    if (jobName.contains("10")) {
-      sourcesCount = 10;
-    } else {
-      sourcesCount = 5;
-    }
 
     DataSet<Tuple2<Long, Long>> goldLinks;
 
     if (clusterExecution.equals("local")) {
+      int sourcesCount;
+      if (jobName.contains("10")) {
+        sourcesCount = 10;
+      } else {
+        sourcesCount = 5;
+      }
+
       String path = QualityUtils.class
           .getResource("/data/nc/" + sourcesCount + "pm/")
           .getFile();
@@ -191,27 +232,6 @@ public class QualityUtils {
 
       goldLinks = perfectMapping
           .map(new NcPmMapFunction());
-
-      /**
-       * only for gold graph cluster sizes
-       */
-      LogicalGraph logicalGraph = Utils
-          .getGradoopGraph(inputPath, config.getExecutionEnvironment());
-
-      DataSet<Vertex<Long, ObjectMap>> vertices = Utils
-          .getInputGraph(logicalGraph, Constants.NC, config.getExecutionEnvironment())
-          .getVertices();
-
-
-      DataSet<Edge<Long, NullValue>> edges = goldLinks
-          .map(tuple -> new Edge<>(tuple.f0, tuple.f1, NullValue.getInstance()))
-          .returns(new TypeHint<Edge<Long, NullValue>>() {
-          });
-      Graph<Long, ObjectMap, NullValue> graph = Graph.fromDataSet(vertices, edges, config.getExecutionEnvironment());
-
-
-
-
     } else { // get pm edges from hdfs
       goldLinks = getPmEdges(inputPath, config.getExecutionEnvironment())
           .map(edge -> new Tuple2<>(edge.f0, edge.f1))
@@ -236,30 +256,14 @@ public class QualityUtils {
         .getExecutionEnvironment()
         .execute("statistics-".concat(jobName));
 
-    Map<String, Object> allAccumulatorResults = jobResult
-        .getAllAccumulatorResults();
+    QualityUtils.printExecPlusAccumulatorResults(jobResult);
 
-    for (Map.Entry<String, Object> stringObjectEntry : allAccumulatorResults.entrySet()) {
-      System.out.println(stringObjectEntry);
-    }
-
-    long goldCount = jobResult.getAccumulatorResult(Constants.GOLD_LINKS_ACCUMULATOR);
-    long checkCount = jobResult.getAccumulatorResult(Constants.TEST_LINKS_ACCUMULATOR);
-    long tpCount = jobResult.getAccumulatorResult(Constants.TRUE_POSITIVE_ACCUMULATOR);
-
-    double precision = Utils.getExactDoubleResult(tpCount, checkCount, 4);
-    double recall = Utils.getExactDoubleResult(tpCount, goldCount, 4);
-    System.out.println("\n############### job: " + jobName + " config: " + config.toString());
-    System.out.println("TP+FN: " + goldCount);
-    System.out.println("TP+FP: " + checkCount);
-    System.out.println("TP: " + tpCount);
-
-    System.out.println("precision: " + precision + " recall: " + recall
-        + " F1: " + Utils.getExactDoubleResult(
-        2 * precision * recall,
-        precision + recall,
-        4));
-    System.out.println("######################################################");
+    getAndprintRecallPrecisionFM(
+        config,
+        jobName,
+        jobResult.getAccumulatorResult(Constants.GOLD_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TEST_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TRUE_POSITIVE_ACCUMULATOR));
   }
 
 
@@ -367,7 +371,8 @@ public class QualityUtils {
     }
   }
 
-  private static class GetLeftSideJoinFunction implements JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>> {
+  private static class GetLeftSideJoinFunction
+      implements JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>> {
     @Override
     public Tuple2<Long, Long> join(Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
       return first;

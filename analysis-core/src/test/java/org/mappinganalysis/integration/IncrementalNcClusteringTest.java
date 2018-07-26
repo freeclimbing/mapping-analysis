@@ -23,7 +23,7 @@ import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.clusterstrategies.ClusteringStep;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClustering;
 import org.mappinganalysis.model.functions.clusterstrategies.IncrementalClusteringStrategy;
-import org.mappinganalysis.model.functions.incremental.MatchingStrategy;
+import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
@@ -86,7 +86,7 @@ public class IncrementalNcClusteringTest {
       config.setStrategy(IncrementalClusteringStrategy.MULTI);
       config.setMetric(Constants.COSINE_TRIGRAM);
       config.setStep(ClusteringStep.SOURCE_ADDITION);
-      config.setMatchStrategy(MatchingStrategy.MAX_BOTH);
+      config.setMatchStrategy(MatchStrategy.MAX_BOTH);
       config.setMinResultSimilarity(0.6);
       config.setBlockingLength(4);
 

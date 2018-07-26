@@ -659,25 +659,40 @@ public class Utils {
     label = label.toLowerCase();
     String tmp = label;
 
-    Set<String> blockElements = Sets.newHashSet
-        // artist first common start words
-//        ("the ", "john", "joha", "nn s", "ebas", "tian", " bac", "fran", "geor", "wolf", "gang",
-//            "chri", "unkn", "own ", "mich", " ama", "deus", " moz", "art ");
-        // titles + common start words, TITLE attribute
-        ("the ", "001-", "003-", "005-", "002-", "004-",
-        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
-        "018-", "019-", "020-", "love", "you ", "some", "all ", "don'", "symp");
-        // numbers only, TITLE attribute
-//            ("001-", "003-", "005-", "002-", "004-",
-//        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
-//        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
-
-    String blockedLabel = updateBlockedLabel(label, blockingLength);
-
-    while (blockElements.contains(blockedLabel)) {
-      label = label.substring(blockedLabel.length());
-      blockedLabel = updateBlockedLabel(label, blockingLength);
+    if (label.startsWith("the")) {
+      label = label.substring(4).trim();
     }
+
+
+//    Set<String> blockElements = Sets.newHashSet
+////        // artist first common start words
+////        ("the ", "john", "joha", "nn s", "ebas", "tian", " bac", "fran", "geor", "wolf", "gang",
+////            "chri", "unkn", "own ", "mich", " ama", "deus", " moz", "art ");
+////        // titles + common start words, TITLE attribute
+//////        ("001-", "003-", "005-", "002-", "004-",
+//////        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
+//////        "018-", "019-", "020-",
+////        ("the ", "love", "you ", "some", "all ", "don'", "symp");
+//        ("the "); //, "love", "you ", "some", "all ", "don'", "symp");
+//
+////        // numbers only, TITLE attribute
+////            ("001-", "003-", "005-", "002-", "004-",
+////        "007-", "006-", "009-", "008-", "010-", "011-", "012-", "013-", "014-", "015-", "016-", "017-",
+////        "018-", "019-", "020-");//, "love", "you ", "some", "all ");//, "don'", "symp", "no_va") ;
+//////
+//////    Set<String> blockElements = Sets.newHashSet();
+//////    for (String templateElement : templateElements) {
+//////      blockElements.add(templateElement.substring(0, blockingLength))
+//////    }
+////
+//    String blockedLabel = updateBlockedLabel(label, blockingLength);
+//
+//
+//    while (blockElements.contains(blockedLabel)) {
+//      System.out.println("Utils: contains blocked: " + tmp);
+//      label = label.substring(blockedLabel.length());
+//      blockedLabel = updateBlockedLabel(label, blockingLength);
+//    }
 
     if (label.length() >= blockingLength) {
       label = label.substring(0, blockingLength);
