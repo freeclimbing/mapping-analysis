@@ -121,6 +121,7 @@ public class QualityUtils {
           .getFile()
           .concat("musicbrainz-20000-A01.csv.dapo");
     }
+
     perfectMapping = config
         .getExecutionEnvironment()
         .readCsvFile(readFromPath)
@@ -177,16 +178,16 @@ public class QualityUtils {
     double precision = Utils.getExactDoubleResult(tpCount, checkCount, 4);
     double recall = Utils.getExactDoubleResult(tpCount, goldCount, 4);
     System.out.println("\n############### job: " + jobName + " config: " + config.toString());
-    LOG.info("TP+FN: " + goldCount);
-    LOG.info("TP+FP: " + checkCount);
-    LOG.info("TP: " + tpCount);
+    System.out.println("TP+FN: " + goldCount);
+    System.out.println("TP+FP: " + checkCount);
+    System.out.println("TP: " + tpCount);
 
     double f1 = Utils.getExactDoubleResult(
         2 * precision * recall,
         precision + recall,
         4);
-    LOG.info("precision: " + precision + " recall: " + recall + " F1: " + f1);
-    LOG.info("######################################################");
+    System.out.println("precision: " + precision + " recall: " + recall + " F1: " + f1);
+    System.out.println("######################################################");
 
     HashMap<String, BigDecimal> result = Maps.newHashMap();
     result.put("precision", new BigDecimal(precision));
@@ -255,6 +256,8 @@ public class QualityUtils {
     JobExecutionResult jobResult = config
         .getExecutionEnvironment()
         .execute("statistics-".concat(jobName));
+
+
 
     QualityUtils.printExecPlusAccumulatorResults(jobResult);
 

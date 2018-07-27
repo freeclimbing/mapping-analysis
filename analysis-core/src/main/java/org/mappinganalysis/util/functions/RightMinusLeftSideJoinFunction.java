@@ -8,7 +8,8 @@ import org.apache.flink.util.Collector;
  * @param <O>
  * @param <T>
  */
-public class RightMinusLeftSideJoinFunction<O, T> implements FlatJoinFunction<O, T, T> {
+public class RightMinusLeftSideJoinFunction<O, T>
+    implements FlatJoinFunction<O, T, T> {
   @Override
   public void join(O left, T right, Collector<T> collector) throws Exception {
     if (left == null) {

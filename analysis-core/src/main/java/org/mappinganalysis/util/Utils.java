@@ -659,10 +659,9 @@ public class Utils {
     label = label.toLowerCase();
     String tmp = label;
 
-    if (label.startsWith("the")) {
-      label = label.substring(4).trim();
+    if (label.startsWith("the") && label.length() > 3) {
+        label = label.substring(4).trim();
     }
-
 
 //    Set<String> blockElements = Sets.newHashSet
 ////        // artist first common start words

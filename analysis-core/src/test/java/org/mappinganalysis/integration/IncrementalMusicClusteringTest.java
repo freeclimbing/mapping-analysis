@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
@@ -32,6 +33,7 @@ import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.ExecutionUtils;
 import org.mappinganalysis.util.QualityUtils;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
@@ -589,12 +591,20 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     config.setMatchStrategy(MatchStrategy.MAX_BOTH);
 
     HashMap<String, BigDecimal> resultMap = Maps.newHashMap();
-    config.setMinResultSimilarity(0.6);
-    for (int b = 5; b >= 1; b--) {
+    config.setMinResultSimilarity(0.5);
+    for (int b = 5; b >= 2; b--) {
       config.setBlockingLength(b);
 
       LOG.info(config.toString());
       String jobName = ExecutionUtils.setJobName(config);
+
+      if (vertexFileName.contains("20000000")) {
+        jobName = "-20mio-".concat(jobName);
+      } else if (vertexFileName.contains("2000000")) {
+        jobName = "-2mio-".concat(jobName);
+      } else {
+        jobName = "-20k-".concat(jobName);
+      }
 
       DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph.getVertices()
           .filter(new SourceFilterFunction("2"));
@@ -781,7 +791,7 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
   public void qualityTest() throws Exception {
     String inputPath =
         "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/";
-    String jobName = "+5Inc-Music-Mb-Sa-Bs2-0.6";
+    String jobName = "+5Inc-Music-Mb-Sa-Bs1-0.8";
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
 
     Graph<Long, ObjectMap, NullValue> statisticsGraph
@@ -794,6 +804,32 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
         inputPath,
         "musicbrainz-2000000-A01.csv.dapo",
         "local");
+  }
+
+  @Test
+  public void blockingTest() throws Exception {
+    String inputPath =
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/";
+
+    Graph<Long, ObjectMap, NullValue> baseGraph
+        = new CSVDataSource(
+            inputPath,
+        "musicbrainz-20000000-A01.csv.dapo",
+        env)
+        .getGraph();
+
+    baseGraph.getVertices()
+        .map(vertex -> {
+//          System.out.println(vertex.toString());
+          vertex.getValue()
+              .setBlockingKey(BlockingStrategy.BLOCK_SPLIT, 4);
+//          System.out.println(vertex.getId() + " " + vertex.getValue().getBlockingKey());
+          return vertex;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
+        .filter(vertex -> vertex.getValue().getBlockingKey().startsWith(" "))
+        .print();
+
   }
 
   @Test

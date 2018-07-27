@@ -156,6 +156,7 @@ public class IncrementalNcBenchmark implements ProgramDescription {
       INPUT_PATH = INPUT_PATH.substring(0, INPUT_PATH.length() - jobName.length());
     }
 
+    System.out.println("statistics input path: " + INPUT_PATH + " job name: " + jobName);
       // quality
       Graph<Long, ObjectMap, NullValue> statisticsGraph
           = new JSONDataSource(INPUT_PATH, jobName, env)

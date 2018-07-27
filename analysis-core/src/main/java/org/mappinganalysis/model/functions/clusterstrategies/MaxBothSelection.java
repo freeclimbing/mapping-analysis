@@ -63,6 +63,17 @@ class MaxBothSelection
         .returns(new TypeHint<Tuple3<Long, Long, Double>>() {
     });
 
+//    return input.join(leftSide.union(rightSide)
+//        .distinct(0,1)
+//        .filter(x -> x.f2 > 0.6))
+//        .where(0,1)
+//        .equalTo(0,1)
+//        .with((inputTriplet, tuple) -> {
+//          System.out.println("mb: " + inputTriplet.toString());
+//        return inputTriplet;
+//        })
+//        .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {});
+
     return input.join(resultTuple)
         .where(0,1)
         .equalTo(0,1)

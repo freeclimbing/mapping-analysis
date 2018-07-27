@@ -1,6 +1,7 @@
 package org.mappinganalysis.benchmark.musicbrainz;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.DataSet;
@@ -24,6 +25,7 @@ import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 public class IncrementalMusicBenchmark
@@ -32,15 +34,17 @@ public class IncrementalMusicBenchmark
       .getExecutionEnvironment();
 
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 5,
+    Preconditions.checkArgument(args.length == 6,
         "args[0]: input dir, "
             + "args[1]: file name, "
             + "args[2]: selection strategy (entity, source)"
             + "args[3]: threshold, "
-            + "args[4]: blockingLength, " );
-    final String inputPath = args[0];
+            + "args[4]: blockingLength, "
+            + "args[5]: run [eval/full]");
+    String inputPath = args[0];
     final String vertexFileName = args[1];
     final String strategy = args[2];
+    final String FULL_OR_EVAL = args[5];
     final ClusteringStep clusteringStep;
     switch (strategy) {
       case "entity":
@@ -68,111 +72,142 @@ public class IncrementalMusicBenchmark
 
     String jobName = ExecutionUtils.setJobName(config);
 
-    // read base graph
-    Graph<Long, ObjectMap, NullValue> baseGraph
-        = new CSVDataSource(inputPath, vertexFileName, env)
-        .getGraph();
+    if (vertexFileName.contains("20000000")) {
+      jobName = "-20mio-".concat(jobName);
+    } else if (vertexFileName.contains("2000000")) {
+      jobName = "-2mio-".concat(jobName);
+    } else {
+      jobName = "-20k-".concat(jobName);
+    }
 
-    DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph.getVertices()
-        .filter(new SourceFilterFunction("2"));
+    if (FULL_OR_EVAL.equals("full")) {
 
-    IncrementalClustering initialClustering = new IncrementalClustering
-        .IncrementalClusteringBuilder(config)
-        .setMatchElements(newVertices)
-        .setNewSource("2")
-        .build();
+      // read base graph
+      Graph<Long, ObjectMap, NullValue> baseGraph
+          = new CSVDataSource(inputPath, vertexFileName, env)
+          .getGraph();
 
-    Graph<Long, ObjectMap, NullValue> startingGraph = baseGraph
-        .filterOnVertices(new SourceFilterFunction("1"));
+      DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph.getVertices()
+          .filter(new SourceFilterFunction("2"));
 
-    DataSet<Vertex<Long, ObjectMap>> clusters = startingGraph
-        .run(initialClustering);
+      IncrementalClustering initialClustering = new IncrementalClustering
+          .IncrementalClusteringBuilder(config)
+          .setMatchElements(newVertices)
+          .setNewSource("2")
+          .build();
 
-    new JSONDataSink(inputPath, "1+2".concat(jobName))
-        .writeVertices(clusters);
-    JobExecutionResult result = env.execute("1+2".concat(jobName));
+      Graph<Long, ObjectMap, NullValue> startingGraph = baseGraph
+          .filterOnVertices(new SourceFilterFunction("1"));
 
-    System.out.println("1+2".concat(jobName) + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-    QualityUtils.printExecPlusAccumulatorResults(result);
+      DataSet<Vertex<Long, ObjectMap>> clusters = startingGraph
+          .run(initialClustering);
+
+      new JSONDataSink(inputPath, "1+2".concat(jobName))
+          .writeVertices(clusters);
+      JobExecutionResult result = env.execute("1+2".concat(jobName));
+
+      System.out.println("1+2".concat(jobName) + " needed "
+          + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+      QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +3
      */
-    startingGraph = new JSONDataSource(inputPath, "1+2".concat(jobName), env)
-        .getGraph(ObjectMap.class, NullValue.class);
+      startingGraph = new JSONDataSource(inputPath, "1+2".concat(jobName), env)
+          .getGraph(ObjectMap.class, NullValue.class);
 
-    newVertices = baseGraph.getVertices()
-        .filter(new SourceFilterFunction("3"));
+      newVertices = baseGraph.getVertices()
+          .filter(new SourceFilterFunction("3"));
 
-    IncrementalClustering addThreeClustering = new IncrementalClustering
-        .IncrementalClusteringBuilder(config)
-        .setMatchElements(newVertices)
-        .setNewSource("3")
-        .build();
+      IncrementalClustering addThreeClustering = new IncrementalClustering
+          .IncrementalClusteringBuilder(config)
+          .setMatchElements(newVertices)
+          .setNewSource("3")
+          .build();
 
-    clusters = startingGraph
-        .run(addThreeClustering);
+      clusters = startingGraph
+          .run(addThreeClustering);
 
-    new JSONDataSink(inputPath, "+3".concat(jobName))
-        .writeVertices(clusters);
-    result = env.execute("+3".concat(jobName));
+      new JSONDataSink(inputPath, "+3".concat(jobName))
+          .writeVertices(clusters);
+      result = env.execute("+3".concat(jobName));
 
-    System.out.println("+3".concat(jobName) + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-    QualityUtils.printExecPlusAccumulatorResults(result);
+      System.out.println("+3".concat(jobName) + " needed "
+          + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+      QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +4
      */
-    startingGraph = new JSONDataSource(inputPath, "+3".concat(jobName), env)
-        .getGraph(ObjectMap.class, NullValue.class);
+      startingGraph = new JSONDataSource(inputPath, "+3".concat(jobName), env)
+          .getGraph(ObjectMap.class, NullValue.class);
 
-    newVertices = baseGraph.getVertices()
-        .filter(new SourceFilterFunction("4"));
+      newVertices = baseGraph.getVertices()
+          .filter(new SourceFilterFunction("4"));
 
-    IncrementalClustering addFourClustering = new IncrementalClustering
-        .IncrementalClusteringBuilder(config)
-        .setMatchElements(newVertices)
-        .setNewSource("4")
-        .build();
+      IncrementalClustering addFourClustering = new IncrementalClustering
+          .IncrementalClusteringBuilder(config)
+          .setMatchElements(newVertices)
+          .setNewSource("4")
+          .build();
 
-    clusters = startingGraph
-        .run(addFourClustering);
+      clusters = startingGraph
+          .run(addFourClustering);
 
-    new JSONDataSink(inputPath, "+4".concat(jobName))
-        .writeVertices(clusters);
-    result = env.execute("+4".concat(jobName));
+      new JSONDataSink(inputPath, "+4".concat(jobName))
+          .writeVertices(clusters);
+      result = env.execute("+4".concat(jobName));
 
-    System.out.println("+4".concat(jobName) + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-    QualityUtils.printExecPlusAccumulatorResults(result);
+      System.out.println("+4".concat(jobName) + " needed "
+          + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+      QualityUtils.printExecPlusAccumulatorResults(result);
 
     /*
       +5
      */
-    startingGraph = new JSONDataSource(inputPath, "+4".concat(jobName), env)
-        .getGraph(ObjectMap.class, NullValue.class);
+      startingGraph = new JSONDataSource(inputPath, "+4".concat(jobName), env)
+          .getGraph(ObjectMap.class, NullValue.class);
 
-    newVertices = baseGraph.getVertices()
-        .filter(new SourceFilterFunction("5"));
+      newVertices = baseGraph.getVertices()
+          .filter(new SourceFilterFunction("5"));
 
-    IncrementalClustering addFiveClustering = new IncrementalClustering
-        .IncrementalClusteringBuilder(config)
-        .setMatchElements(newVertices)
-        .setNewSource("5")
-        .build();
+      IncrementalClustering addFiveClustering = new IncrementalClustering
+          .IncrementalClusteringBuilder(config)
+          .setMatchElements(newVertices)
+          .setNewSource("5")
+          .build();
 
-    clusters = startingGraph
-        .run(addFiveClustering);
+      clusters = startingGraph
+          .run(addFiveClustering);
 
-    new JSONDataSink(inputPath, "+5".concat(jobName))
-        .writeVertices(clusters);
-    result = env.execute("+5".concat(jobName));
+      new JSONDataSink(inputPath, "+5".concat(jobName))
+          .writeVertices(clusters);
+      result = env.execute("+5".concat(jobName));
 
-    System.out.println("+5".concat(jobName) + " needed "
-        + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
-    QualityUtils.printExecPlusAccumulatorResults(result);
+      System.out.println("+5".concat(jobName) + " needed "
+          + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+      QualityUtils.printExecPlusAccumulatorResults(result);
+    }
+
+    /*
+      Adaptation to evaluate single results.
+     */
+    if (FULL_OR_EVAL.equals("eval")) {
+      if (inputPath.endsWith("/")) {
+        inputPath = inputPath.substring(0, inputPath.length() - 1);
+      }
+
+      Iterator<String> split = Splitter.on('/').split(inputPath).iterator();
+      jobName = "";
+
+      while (split.hasNext()) {
+        jobName = split.next();
+      }
+
+      inputPath = inputPath.substring(0, inputPath.length() - jobName.length());
+    }
+
+    System.out.println("statistics input path: " + inputPath + " job name: " + jobName);
 
     // quality
     Graph<Long, ObjectMap, NullValue> statisticsGraph

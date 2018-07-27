@@ -23,6 +23,7 @@ import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapF
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.config.IncrementalConfig;
+import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 import org.mappinganalysis.util.functions.filter.MinThresholdFilterFunction;
 import org.mappinganalysis.util.functions.keyselector.BlockingKeyFromAnyElementKeySelector;
 
@@ -116,20 +117,7 @@ class SourceAdditionClustering
       DataSet<Vertex<Long, ObjectMap>> notHandledVertices = input
           .leftOuterJoin(handledVertexIds)
           .where(0).equalTo(0)
-          .with(new FlatJoinFunction<Vertex<Long, ObjectMap>, Tuple1<Long>, Vertex<Long, ObjectMap>>() {
-        @Override
-        public void join(Vertex<Long, ObjectMap> vertex, Tuple1<Long> tuple, Collector<Vertex<Long, ObjectMap>> out) throws Exception {
-          if (tuple == null) {
-            out.collect(vertex);
-          }
-        }
-      });
-
-      // we get duplicate entries for multiple runs
-      //{"id":1279572,"data":{"number":"2","blockingLabel":" ele","artist":"Some Electric Noise","year":2010,"album":"Blackout","artistTitleAlbum":"some electric noise some electric the death of the radio son blackout","length":235,"language":"no_or_minor_lang","label":"Some Electric - The Death of the Radio Son","dataSources":["1","2","3","4","5"],"clusteredVertices":[1315540,1389969,1279572,1349788,1549336]}}
-//      {"id":1279572,"data":{"number":"2","blockingLabel":" ele","artist":"Some Electric Noise","year":2010,"album":"Blackout","artistTitleAlbum":"some electric noise some electric the death of the radio son blackout","length":235,"language":"no_or_minor_lang","label":"Some Electric - The Death of the Radio Son","dataSources":["1","2","3","5"],"clusteredVertices":[1315540,1279572,1349788,1549336]}}
-//      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
-//      {"id":1411798,"data":{"number":"1","blockingLabel":" me ","artist":"Love Me Destroyer","year":2007,"album":"The Things Around Us Burn (2007)","artistTitleAlbum":"love me destroyer 001 choked and charmed the things around us burn 2007","length":142,"language":"english","label":"001-Choked and Charmed","dataSources":["4","5"],"clusteredVertices":[1411798,1598308]}}
+          .with(new LeftMinusRightSideJoinFunction<>());
 
       return maxBothTriplets
           .flatMap(new DualVertexMergeFlatMapper(
