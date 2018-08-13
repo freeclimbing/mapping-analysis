@@ -573,6 +573,13 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
         "local");
   }
 
+  /**
+   * DINA 2018 paper source addition incremental test for 20k
+   *
+   * DS-M1
+   *
+   * source addition b4: precision: 0.9858 recall: 0.8867 F1: 0.9336
+   */
   @Test
   public void checkClusterSizesForSourceAdditionTest() throws Exception {
     final String inputPath = MusicbrainzBenchmarkTest.class
@@ -586,13 +593,13 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
     config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
-    config.setStep(ClusteringStep.SOURCE_ADDITION);
-    config.setSimSortSimilarity(0.7);
+    config.setStep(ClusteringStep.VERTEX_ADDITION);
+//    config.setSimSortSimilarity(0.5);
     config.setMatchStrategy(MatchStrategy.MAX_BOTH);
 
     HashMap<String, BigDecimal> resultMap = Maps.newHashMap();
     config.setMinResultSimilarity(0.5);
-    for (int b = 5; b >= 2; b--) {
+    for (int b = 4; b >= 4; b--) {
       config.setBlockingLength(b);
 
       LOG.info(config.toString());
@@ -790,20 +797,33 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
   @Test
   public void qualityTest() throws Exception {
     String inputPath =
-        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/";
-    String jobName = "+5Inc-Music-Mb-Sa-Bs1-0.8";
+//        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/";
+    "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/10p/inputGraphs/initialGraph/";
+
+
+
+
+    String jobName = "10987654321Inc-Nc-Mb-Sa-Bs2-0.9";
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
 
     Graph<Long, ObjectMap, NullValue> statisticsGraph
         = new JSONDataSource(inputPath, jobName, env)
         .getGraph(ObjectMap.class, NullValue.class);
 
-    QualityUtils.printMusicQuality(
+    QualityUtils.printNcQuality(
         statisticsGraph.getVertices(),
         config,
         inputPath,
-        "musicbrainz-2000000-A01.csv.dapo",
-        "local");
+        "cluster",
+        jobName
+    );
+
+//    QualityUtils.printMusicQuality(
+//        statisticsGraph.getVertices(),
+//        config,
+//        inputPath,
+//        "musicbrainz-2000000-A01.csv.dapo",
+//        "local");
   }
 
   @Test

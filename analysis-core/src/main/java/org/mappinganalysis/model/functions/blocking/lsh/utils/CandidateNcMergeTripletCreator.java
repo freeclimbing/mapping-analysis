@@ -3,11 +3,11 @@ package org.mappinganalysis.model.functions.blocking.lsh.utils;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
 public class CandidateNcMergeTripletCreator
-    implements FlatJoinFunction<MergeMusicTriplet, MergeMusicTuple, MergeMusicTriplet> {
+    implements FlatJoinFunction<MergeMusicTriplet, MergeTuple, MergeMusicTriplet> {
   private int side;
 
   public CandidateNcMergeTripletCreator(int side) {
@@ -15,7 +15,7 @@ public class CandidateNcMergeTripletCreator
   }
 
   @Override
-  public void join(MergeMusicTriplet triplet, MergeMusicTuple mergeTuple,
+  public void join(MergeMusicTriplet triplet, MergeTuple mergeTuple,
                    Collector<MergeMusicTriplet> out) throws Exception {
     if (side == 0) {
       triplet.setSrcTuple(mergeTuple);

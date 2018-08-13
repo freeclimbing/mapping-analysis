@@ -39,6 +39,7 @@ public class MultiIncrementalClusteringFunction
     this.config = config;
     Preconditions.checkNotNull(toBeMergedElements,
         "no elements added to clustering");
+    // TODO fix this
     this.toBeMergedElements = toBeMergedElements
         .map(new RuntimePropertiesMapFunction(config.getConfigNoEnv()))
         .runOperation(new RepresentativeCreator(config))
@@ -75,7 +76,6 @@ public class MultiIncrementalClusteringFunction
               edges,
               config.getExecutionEnvironment())
           .run(new DefaultPreprocessing(config))
-          .run(new SimSort(config))
           .getVertices()
           .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
     } else
@@ -91,6 +91,7 @@ public class MultiIncrementalClusteringFunction
           toBeMergedElements = toBeMergedElements
               .map(vertex -> {
                 vertex.getValue().remove(Constants.TYPE);
+                vertex.getValue().remove(Constants.GN_TYPE_DETAIL);
                 if (vertex.getValue().getTypesIntern().contains(Constants.NO_TYPE)) {
                   vertex.getValue()
                       .setTypes(Constants.TYPE_INTERN, Sets.newHashSet(Constants.S));
@@ -121,16 +122,16 @@ public class MultiIncrementalClusteringFunction
                   edges,
                   config.getExecutionEnvironment())
               .run(new DefaultPreprocessing(config))
-              .run(new SimSort(config))
               .getVertices()
-              .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
+              .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()))
+              .map(new StatisticsClusterCounterRichMapFunction("e-size-"));
           /*
           SOURCE ADDITION
            */
         } else if (config.getStep() == ClusteringStep.SOURCE_ADDITION) {
           return clusterWorkset
               .runOperation(new SourceAdditionClustering(config))
-              .map(new StatisticsClusterCounterRichMapFunction("run-"));
+              .map(new StatisticsClusterCounterRichMapFunction("s-size-"));
         }
       }
     return null;

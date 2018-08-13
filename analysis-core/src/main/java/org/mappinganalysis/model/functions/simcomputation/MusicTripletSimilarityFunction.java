@@ -22,6 +22,7 @@ public class MusicTripletSimilarityFunction
 
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
+//    System.out.println(triplet.getSrcTuple().getArtistTitleAlbum() + " second: " + triplet.getTrgTuple().getArtistTitleAlbum());
     Double similarity = Utils.getSimilarityAndSimplifyForMetric(
         triplet.getSrcTuple().getArtistTitleAlbum(),
         triplet.getTrgTuple().getArtistTitleAlbum(),

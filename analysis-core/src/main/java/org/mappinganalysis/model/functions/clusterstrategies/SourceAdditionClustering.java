@@ -1,7 +1,7 @@
 package org.mappinganalysis.model.functions.clusterstrategies;
 
-import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DistinctOperator;
@@ -10,13 +10,16 @@ import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
+import org.mappinganalysis.graph.SimilarityFunction;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
 import org.mappinganalysis.model.functions.incremental.MatchStrategy;
 import org.mappinganalysis.model.functions.incremental.RepresentativeCreator;
-import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
+import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
+import org.mappinganalysis.model.functions.simcomputation.GeoTripletSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.MusicTripletSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
@@ -57,12 +60,30 @@ class SourceAdditionClustering
 
   @Override
   public DataSet<Vertex<Long, ObjectMap>> createResult() {
+    SimilarityFunction similarityFunction;
+
+    if (config.getDataDomain() == DataDomain.MUSIC) {
+      similarityFunction = new MusicTripletSimilarityFunction(
+          config.getMetric());
+    }
+    else if (config.getDataDomain() == DataDomain.NC) {
+      // TODO FIX
+      similarityFunction = new MusicTripletSimilarityFunction(
+          config.getMetric());
+    } else if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
+      similarityFunction = new GeoTripletSimilarityFunction(
+          config.getMetric());
+    } else {
+      throw new IllegalArgumentException("illegal domain: " + config.getDataDomain());
+    }
+
+
     SimilarityComputation<MergeMusicTriplet,
-        MergeMusicTriplet> simCompMusic
+        MergeMusicTriplet> similarityComputation
         = new SimilarityComputation
         .SimilarityComputationBuilder<MergeMusicTriplet,
         MergeMusicTriplet>()
-        .setSimilarityFunction(new MusicTripletSimilarityFunction(config.getMetric()))
+        .setSimilarityFunction(similarityFunction)
         .setStrategy(SimilarityStrategy.MUSIC)
         .build();
 
@@ -70,11 +91,25 @@ class SourceAdditionClustering
       block split triplet creator
      */
     DataSet<Triplet<Long, ObjectMap, ObjectMap>> simTriplets = input
-        .map(new MergeMusicTupleCreator(config))
+        .map(new MergeTupleCreator(config))
         .runOperation(new BlockSplitTripletCreator(config.getDataDomain(),
             config.getNewSource()))
+//        .map(x -> {
+//          System.out.println("+bs: " + x.toString());
+//          return x;
+//        })
+//        .returns(new TypeHint<MergeMusicTriplet>() {})
         .rebalance()
-        .runOperation(simCompMusic)
+        .runOperation(similarityComputation)
+//        .map(x -> {
+//          if (x.getSrcTuple().getId() == 7390L || x.getTrgTuple().getId() ==7390L
+//              || x.getSrcTuple().getId() == 3418L || x.getTrgTuple().getId() ==3418L
+//              || x.getSrcTuple().getId() == 652L || x.getTrgTuple().getId() == 652L) {
+//            System.out.println("+sim: " + x.toString());
+//          }
+//          return x;
+//        })
+//        .returns(new TypeHint<MergeMusicTriplet>() {})
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.SIM_TRIPLET_ACCUMULATOR))
         .filter(new MinThresholdFilterFunction<>(config.getMinResultSimilarity()))
@@ -88,6 +123,7 @@ class SourceAdditionClustering
      */
     if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchStrategy.HUNGARIAN) {
+      System.out.println("running hungarian");
       return simTriplets
           .groupBy(new BlockingKeyFromAnyElementKeySelector())
           .reduceGroup(new HungarianAlgorithmReduceFunction())
@@ -102,7 +138,17 @@ class SourceAdditionClustering
       if (config.getMatchStrategy() != null
         && config.getMatchStrategy() == MatchStrategy.MAX_BOTH) {
       DataSet<Triplet<Long, ObjectMap, ObjectMap>> maxBothTriplets = simTriplets
-          .runOperation(new MaxBothSelection());
+          .runOperation(new MaxBothSelection())
+//          .map(x -> {
+//            if (x.getTrgVertex().getId() == 7390L || x.getSrcVertex().getId() ==7390L
+//                || x.getTrgVertex().getId() == 3418L || x.getSrcVertex().getId() ==3418L
+//                || x.getTrgVertex().getId() == 652L || x.getSrcVertex().getId() == 652L) {
+//              System.out.println("SourceAdd: " + x.toString());
+//            }
+//            return x;
+//          })
+//          .returns(new TypeHint<Triplet<Long, ObjectMap, ObjectMap>>() {})
+      ;
 
       DistinctOperator<Tuple1<Long>> handledVertexIds = maxBothTriplets
           .flatMap(new FlatMapFunction<Triplet<Long, ObjectMap, ObjectMap>, Tuple1<Long>>() {
@@ -115,6 +161,17 @@ class SourceAdditionClustering
 
       // some vertices have no partner (from beginning), here we add them back for next step
       DataSet<Vertex<Long, ObjectMap>> notHandledVertices = input
+          .map(vertex -> {
+            if (vertex.getValue().hasGeoPropertiesValid()) {
+              vertex.getValue().setArtist(vertex.getValue().getLatitude().toString());
+              vertex.getValue().setAlbum(vertex.getValue().getLongitude().toString());
+              vertex.getValue().remove(Constants.LAT);
+              vertex.getValue().remove(Constants.LON);
+            }
+
+            return vertex;
+          })
+          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {})
           .leftOuterJoin(handledVertexIds)
           .where(0).equalTo(0)
           .with(new LeftMinusRightSideJoinFunction<>());

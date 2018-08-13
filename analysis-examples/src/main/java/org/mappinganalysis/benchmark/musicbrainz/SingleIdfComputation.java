@@ -11,14 +11,14 @@ import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.tfidf.PrepareInputMapper;
 import org.mappinganalysis.model.functions.blocking.tfidf.SingleIdfHighMapper;
 import org.mappinganalysis.model.functions.blocking.tfidf.TfIdfComputer;
 import org.mappinganalysis.model.functions.blocking.tfidf.UniqueWordExtractor;
-import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
+import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
 import org.mappinganalysis.model.functions.merge.SourceCountRestrictionFilter;
 
 /**
@@ -47,10 +47,10 @@ public class SingleIdfComputation {
         new JSONDataSource(INPUT_PATH, DECOMPOSITION_STEP, env)
             .getVertices();
 
-    DataSet<MergeMusicTuple> clusters = mergedVertices
-        .map(new MergeMusicTupleCreator(BlockingStrategy.IDF_BLOCKING));
+    DataSet<MergeTuple> clusters = mergedVertices
+        .map(new MergeTupleCreator(BlockingStrategy.IDF_BLOCKING));
 
-    DataSet<MergeMusicTuple> preBlockingClusters = clusters
+    DataSet<MergeTuple> preBlockingClusters = clusters
         .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, 5));
 
 

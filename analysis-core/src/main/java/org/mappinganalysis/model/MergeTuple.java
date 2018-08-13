@@ -1,6 +1,8 @@
 package org.mappinganalysis.model;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Doubles;
 import org.apache.flink.api.java.tuple.Tuple13;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -13,10 +15,13 @@ import org.mappinganalysis.util.Constants;
 import java.util.Set;
 
 /**
+ * MergeTuple contains property in optimized TupleX format. Still in transformation from
+ * old MergeMusicTuple format, but currently base support for all domains.
+ *
  * 0. vertex id - Long
  * 1. label - String
- * 2. album - String
- * 3. artist - String
+ * 2. album == longitude - String
+ * 3. artist == latitude - String
  * 4. number - String
  * 5. year - Int
  * 6. length - Int
@@ -27,12 +32,12 @@ import java.util.Set;
  * 11. activity flag - Bool
  * 12. complex artist title album string
  */
-public class MergeMusicTuple
+public class MergeTuple
     extends Tuple13<Long, String, String, String, String, Integer, Integer,
         String, Integer, LongSet, String, Boolean, String>
     implements Identifiable, Labeled, IntSources, MergeTupleAttributes {
 
-  public MergeMusicTuple() {
+  public MergeTuple() {
     this.f9 = new LongSet();
     this.f11 = true;
   }
@@ -73,8 +78,11 @@ public class MergeMusicTuple
         mode = Constants.NC;
       }
 
-      properties.setClusterDataSources(AbstractionUtils.getSourcesStringSet(mode, getIntSources()));
-      properties.setClusterVertices(Sets.newHashSet(getClusteredElements()));
+      properties.setFinalBlockingKey(getBlockingLabel());
+      properties.setClusterDataSources(
+          AbstractionUtils.getSourcesStringSet(mode, getIntSources()));
+      properties.setClusterVertices(
+          Sets.newHashSet(getClusteredElements()));
 
       return new Vertex<>(getId(), properties);
     } else {
@@ -85,7 +93,7 @@ public class MergeMusicTuple
   /**
    * Constructor for fake tuples (with fake values)
    */
-  public MergeMusicTuple(Long id) {
+  public MergeTuple(Long id) {
     super(id,
         Constants.EMPTY_STRING,
         Constants.EMPTY_STRING,
@@ -118,10 +126,14 @@ public class MergeMusicTuple
     }
   }
 
+  /**
+   * album == longitude
+   */
   public String getAlbum() {
     return f2;
   }
 
+  // album == longitude
   public void setAlbum(String album) {
     f2 = album;
   }
@@ -130,8 +142,31 @@ public class MergeMusicTuple
     return f3;
   }
 
+  /**
+   * artist == latitude
+   */
   public void setArtist(String artist) {
     f3 = artist;
+  }
+
+  /**
+   * artist == latitude
+   */
+  public double getLatitude() {
+    Double latitude = Doubles.tryParse(getArtist());
+
+    Preconditions.checkNotNull(latitude, "latitude is not double value");
+    return latitude;
+  }
+
+  /**
+   * album == longitude
+   */
+  public double getLongitude() {
+    Double longitude = Doubles.tryParse(getAlbum());
+
+    Preconditions.checkNotNull(longitude, "longitude is not double value");
+    return longitude;
   }
 
   public String getNumber() {
@@ -173,7 +208,8 @@ public class MergeMusicTuple
   public String getArtistTitleAlbum() {
     return f12;
   }
-  
+
+  @Deprecated
   public String toString() {
     return String.valueOf(getId()) + Constants.COMMA +
         getLabel() + Constants.COMMA +
@@ -182,12 +218,10 @@ public class MergeMusicTuple
         getYear() + Constants.COMMA +
         getLength() + Constants.COMMA +
         getLang() + Constants.COMMA +
-        AbstractionUtils
-            .getSourcesStringSet(Constants.NC, getIntSources()) +
-        Constants.COMMA +
+        getIntSources() + Constants.COMMA + // int sources returned because we do not know domain
         getClusteredElements() + Constants.COMMA +
         getBlockingLabel() + Constants.COMMA +
-        isActive() + Constants.COMMA;
+        isActive();
   }
 
   @Override

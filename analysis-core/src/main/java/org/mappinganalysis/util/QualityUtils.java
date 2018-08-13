@@ -18,16 +18,19 @@ import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
 import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.stats.StatisticsClusterCounterRichMapFunction;
 import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.config.Config;
+import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.QualityEdgeCreator;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,14 +39,14 @@ public class QualityUtils {
 
   public static HashMap<String, BigDecimal> printGeoQuality(
       DataSet<Vertex<Long, ObjectMap>> merged,
-      Config properties)
+      Config config)
       throws Exception {
-    Double mergeThreshold = properties.get(Constants.MERGE_THRESHOLD) == null
-        ? 0d : (double) properties.get(Constants.MERGE_THRESHOLD);
-    double simSortThreshold = properties.get(Constants.SIMSORT_THRESHOLD) == null
-        ? 0d : (double) properties.get(Constants.SIMSORT_THRESHOLD);
-    String dataset = properties.getProperty(Constants.DATASET, Constants.EMPTY_STRING);
-    ExecutionEnvironment env = (ExecutionEnvironment) properties.get(Constants.ENV);
+    Double mergeThreshold = config.get(Constants.MERGE_THRESHOLD) == null
+        ? 0d : (double) config.get(Constants.MERGE_THRESHOLD);
+    double simSortThreshold = config.get(Constants.SIMSORT_THRESHOLD) == null
+        ? 0d : (double) config.get(Constants.SIMSORT_THRESHOLD);
+    String dataset = config.getProperty(Constants.DATASET, Constants.EMPTY_STRING);
+    ExecutionEnvironment env = (ExecutionEnvironment) config.get(Constants.ENV);
 
     /*
       set merge threshold to 0 to have representative in output label (cosmetic)
@@ -52,38 +55,51 @@ public class QualityUtils {
       dataset = dataset.concat("REPR");
     }
     DataSet<Tuple2<Long, Long>> clusterEdges = merged
-        .flatMap(new QualityEdgeCreator());
+        .map(new StatisticsClusterCounterRichMapFunction("test-"))
+        .flatMap(new QualityEdgeCreator())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TEST_LINKS_ACCUMULATOR));
 
     String pmPath = QualityUtils.class
           .getResource("/data/settlement-benchmark/gold/").getFile();
 
     DataSet<Tuple2<Long, Long>> goldLinks = new JSONDataSource(
-          pmPath, true, env)
-          .getGraph(ObjectMap.class, NullValue.class)
-          .getVertices()
-          .runOperation(new EdgeComputationOnVerticesForKeySelector(
-              null,
-              EdgeComputationStrategy.REPRESENTATIVE))
-          .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
-          .returns(new TypeHint<Tuple2<Long, Long>>() {});
+        pmPath, true, env)
+        .getGraph(ObjectMap.class, NullValue.class)
+        .getVertices()
+        .map(new StatisticsClusterCounterRichMapFunction("gold-"))
+        .runOperation(new EdgeComputationOnVerticesForKeySelector(
+            null,
+            EdgeComputationStrategy.REPRESENTATIVE))
+        .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.GOLD_LINKS_ACCUMULATOR));
 
     DataSet<Tuple2<Long, Long>> truePositives = goldLinks
         .join(clusterEdges)
         .where(0, 1).equalTo(0, 1)
         .with((first, second) -> first)
-        .returns(new TypeHint<Tuple2<Long, Long>>() {});
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TRUE_POSITIVE_ACCUMULATOR));
 
-    long goldCount = goldLinks.count();
-    long checkCount = clusterEdges.count();
-    long tpCount = truePositives.count();
+    ArrayList<Tuple2<Long, Long>> representatives = Lists.newArrayList();
+    truePositives.output(new LocalCollectionOutputFormat<>(representatives));
+
+    JobExecutionResult jobResult = config
+        .getExecutionEnvironment()
+        .execute("statistics");
+
+    printExecPlusAccumulatorResults(jobResult);
 
     // todo get config + jobname
     return getAndprintRecallPrecisionFM(
-        null,
+        new IncrementalConfig(DataDomain.GEOGRAPHY, env),
         "jobname",
-        goldCount,
-        checkCount,
-        tpCount);
+        jobResult.getAccumulatorResult(Constants.GOLD_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TEST_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TRUE_POSITIVE_ACCUMULATOR));
   }
 
   /**
@@ -99,9 +115,9 @@ public class QualityUtils {
       Config config,
       String inputPath,
       String vertexFileName,
-      String mode) throws Exception {
+      String qualityExecMode) throws Exception {
     DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
-        .map(new StatisticsClusterCounterRichMapFunction("gold-"))
+        .map(new StatisticsClusterCounterRichMapFunction("test-"))
         .flatMap(new QualityEdgeCreator())
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.TEST_LINKS_ACCUMULATOR));
@@ -147,7 +163,7 @@ public class QualityUtils {
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.TRUE_POSITIVE_ACCUMULATOR));
 
-    if (mode.equals("cluster")) {
+    if (qualityExecMode.equals("cluster")) {
       new JSONDataSink(inputPath, "statistics")
           .writeTuples(truePositives);
     } else {
@@ -159,7 +175,7 @@ public class QualityUtils {
         .getExecutionEnvironment()
         .execute("statistics");
 
-    QualityUtils.printExecPlusAccumulatorResults(jobResult);
+    printExecPlusAccumulatorResults(jobResult);
 
     return getAndprintRecallPrecisionFM(
         config,
@@ -250,14 +266,17 @@ public class QualityUtils {
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.TRUE_POSITIVE_ACCUMULATOR));
 
-    new JSONDataSink(inputPath, jobName.concat("tp"))
-        .writeTuples(truePositives);
+//    if (clusterExecution.equals("a")) {
+      Collection<Tuple2<Long, Long>> representatives = Lists.newArrayList();
+      truePositives.output(new LocalCollectionOutputFormat<>(representatives));
+//    } else {
+//      new JSONDataSink(inputPath, jobName.concat("tp"))
+//          .writeTuples(truePositives);
+//    }
 
     JobExecutionResult jobResult = config
         .getExecutionEnvironment()
         .execute("statistics-".concat(jobName));
-
-
 
     QualityUtils.printExecPlusAccumulatorResults(jobResult);
 
@@ -345,6 +364,9 @@ public class QualityUtils {
         .reduceGroup(new AllEdgesCreateGroupReducer<>("gold-"));
   }
 
+  /**
+   * Print accumulator results.
+   */
   public static void printExecPlusAccumulatorResults(JobExecutionResult execResult) {
     Map<String, Object> allAccumulatorResults = execResult.getAllAccumulatorResults();
 

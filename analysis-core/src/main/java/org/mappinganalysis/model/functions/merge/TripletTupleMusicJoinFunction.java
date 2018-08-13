@@ -3,13 +3,13 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 
 /**
  * Created by markus on 4/28/17.
  */
 public class TripletTupleMusicJoinFunction
-    implements JoinFunction<MergeMusicTriplet, MergeMusicTuple, MergeMusicTriplet> {
+    implements JoinFunction<MergeMusicTriplet, MergeTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(TripletTupleMusicJoinFunction.class);
   private final Integer position;
 
@@ -19,7 +19,7 @@ public class TripletTupleMusicJoinFunction
 
   @Override
   public MergeMusicTriplet join(MergeMusicTriplet triplet,
-                              MergeMusicTuple newTuple) throws Exception {
+                              MergeTuple newTuple) throws Exception {
     if (position == 0) {
       triplet.setSrcTuple(newTuple);
     } else if (position == 1) {

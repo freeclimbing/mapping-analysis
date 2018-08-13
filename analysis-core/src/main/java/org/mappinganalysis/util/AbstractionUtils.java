@@ -38,7 +38,6 @@ public class AbstractionUtils {
     Collections.sort(sources);
     int running = 1;
 
-//    System.out.println("AbstractionUtils: " + sources);
     for (String source : sources) {
       SOURCES_MAP.put(source, running);
       running *= 2;
@@ -52,6 +51,7 @@ public class AbstractionUtils {
    */
   public static int getSourcesInt(String mode, Set<String> sources) {
     setupMode(mode);
+
     int result = 0;
     for (String source : sources) {
       result += SOURCES_MAP.get(source);

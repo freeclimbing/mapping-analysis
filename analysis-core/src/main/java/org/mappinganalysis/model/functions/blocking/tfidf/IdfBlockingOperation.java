@@ -19,16 +19,16 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
  * tf idf blocking
  */
 public class IdfBlockingOperation
-    implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(IdfBlockingOperation.class);
-  private DataSet<MergeMusicTuple> inputData;
+  private DataSet<MergeTuple> inputData;
   private final static String[] STOP_WORDS = {
       "the", "i", "a", "an", "at", "are", "am", "for", "and", "or", "is",
       "there", "it", "this", "that", "on", "was", "by", "of", "to", "in",
@@ -45,7 +45,7 @@ public class IdfBlockingOperation
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTuple> inputData) {
+  public void setInput(DataSet<MergeTuple> inputData) {
     this.inputData = inputData;
   }
 
@@ -159,24 +159,24 @@ public class IdfBlockingOperation
 
   @ForwardedFieldsSecond("f0; f1; f2->f3")
   private static class JoinIdfFirstFunction
-      implements JoinFunction<MergeMusicTuple, Edge<Long, Integer>,
-      Tuple4<Long, Long, MergeMusicTuple, Integer>> {
+      implements JoinFunction<MergeTuple, Edge<Long, Integer>,
+      Tuple4<Long, Long, MergeTuple, Integer>> {
     @Override
-    public Tuple4<Long, Long, MergeMusicTuple, Integer> join(
-        MergeMusicTuple left,
+    public Tuple4<Long, Long, MergeTuple, Integer> join(
+        MergeTuple left,
         Edge<Long, Integer> right) throws Exception {
       return new Tuple4<>(right.f0, right.f1, left, right.f2);
     }
   }
 
   private static class JoinIdfSecondFunction
-      implements JoinFunction<Tuple4<Long,Long,MergeMusicTuple,Integer>,
-      MergeMusicTuple,
+      implements JoinFunction<Tuple4<Long,Long,MergeTuple,Integer>,
+      MergeTuple,
       MergeMusicTriplet> {
     @Override
     public MergeMusicTriplet join(
-        Tuple4<Long, Long, MergeMusicTuple, Integer> first,
-        MergeMusicTuple second) throws Exception {
+        Tuple4<Long, Long, MergeTuple, Integer> first,
+        MergeTuple second) throws Exception {
       return new MergeMusicTriplet(first.f2, second);
     }
   }

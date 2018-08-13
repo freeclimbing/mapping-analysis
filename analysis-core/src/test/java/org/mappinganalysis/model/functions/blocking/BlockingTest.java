@@ -12,7 +12,7 @@ import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
-import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
+import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class BlockingTest {
@@ -28,7 +28,7 @@ public class BlockingTest {
         .getGraph();
 
     DataSet<MergeMusicTriplet> triplets = baseGraph.getVertices()
-        .map(new MergeMusicTupleCreator())
+        .map(new MergeTupleCreator())
         .runOperation(new BlockSplitTripletCreator());
 
     triplets.print();
@@ -49,7 +49,7 @@ public class BlockingTest {
         .union(baseGraph.getVertices().filter(new SourceFilterFunction("2")));
 
     DataSet<MergeMusicTriplet> triplets = inVertices
-        .map(new MergeMusicTupleCreator())
+        .map(new MergeTupleCreator())
         .runOperation(new BlockSplitTripletCreator());
 
     System.out.println(triplets.count());

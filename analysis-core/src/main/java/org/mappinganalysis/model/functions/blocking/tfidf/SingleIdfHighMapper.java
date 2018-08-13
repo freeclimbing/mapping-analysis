@@ -6,7 +6,7 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 
 import java.util.*;
 
@@ -14,7 +14,7 @@ import java.util.*;
  * Get best TF/IDF values for each input (single idf computation)
  */
 public class SingleIdfHighMapper
-    extends RichFlatMapFunction<MergeMusicTuple, Tuple2<Long, String>> {
+    extends RichFlatMapFunction<MergeTuple, Tuple2<Long, String>> {
   private HashMap<String, Double> valueMap = Maps.newHashMap();
   private Set<String> stopWords;
 
@@ -32,7 +32,7 @@ public class SingleIdfHighMapper
   }
 
   @Override
-  public void flatMap(MergeMusicTuple tuple, Collector<Tuple2<Long, String>> out) throws Exception {
+  public void flatMap(MergeTuple tuple, Collector<Tuple2<Long, String>> out) throws Exception {
     StringTokenizer st = new StringTokenizer(tuple.getArtistTitleAlbum());
     HashMap<String, Double> tmpResult = Maps.newHashMap();
 

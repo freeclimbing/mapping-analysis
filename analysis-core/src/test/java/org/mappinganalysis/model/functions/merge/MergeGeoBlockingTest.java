@@ -41,7 +41,7 @@ public class MergeGeoBlockingTest {
   public void csimqSettlementTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
-    config.setMetric(Constants.JARO_WINKLER);
+    config.setMetric(Constants.COSINE_TRIGRAM);
 
     String graphPath =
         "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/settlement-benchmark/csimq/";
@@ -63,7 +63,7 @@ public class MergeGeoBlockingTest {
 
 //      for (int simFor = 5; simFor <= 70; simFor += 5) {
 //        double simThreshold = (double) simFor / 100;
-      double simThreshold = 0.75; // TODO
+      double simThreshold = 0.4; // TODO
       config.setSimSortSimilarity(simThreshold);
 
     /*
@@ -93,8 +93,9 @@ public class MergeGeoBlockingTest {
               reprOut.concat("output/repr/"), true, env)
               .getVertices();
 
-      for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
-        double mergeThreshold = (double) mergeFor / 100;
+//      for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
+        double mergeThreshold = 0.8;
+//            (double) mergeFor / 100;
 
         DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
             .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
@@ -112,7 +113,7 @@ public class MergeGeoBlockingTest {
         properties.put(Constants.SOURCE_COUNT_LABEL, 4);
 
         QualityUtils.printGeoQuality(merged, properties);
-      }
+//      }
     }
   }
 

@@ -3,7 +3,7 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 
 /**
  * Return only active vertices.
@@ -22,7 +22,7 @@ class ActiveFilterFunction<T>
       MergeGeoTuple tuple = (MergeGeoTuple) value;
       return tuple.isActive();
     } else {
-      MergeMusicTuple tuple = (MergeMusicTuple) value;
+      MergeTuple tuple = (MergeTuple) value;
       return tuple.isActive();
     }
   }

@@ -22,10 +22,10 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
-import org.mappinganalysis.model.functions.merge.MergeMusicTupleCreator;
+import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
 import org.mappinganalysis.util.Utils;
 
 import java.util.HashMap;
@@ -74,7 +74,7 @@ public class UniqueWordsExtractorTest {
 //          }
 //        });
 
-    DataSet<MergeMusicTuple> realMusicTuples = vertices
+    DataSet<MergeTuple> realMusicTuples = vertices
         .map(new MapFunction<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>>() {
           @Override
           public Vertex<Long, ObjectMap> map(Vertex<Long, ObjectMap> vertex) throws Exception {
@@ -85,7 +85,7 @@ public class UniqueWordsExtractorTest {
             return vertex;
           }
         })
-        .map(new MergeMusicTupleCreator(BlockingStrategy.STANDARD_BLOCKING));
+        .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING));
 //            BlockingStrategy.IDF_BLOCKING));
 
     // 2SmoothSavageLife2
@@ -163,13 +163,13 @@ public class UniqueWordsExtractorTest {
 
     DataSet<Vertex<Long, Long>> ccVertices = createCcBlockingKeyVertices(idfSupportEdges);
 
-    DataSet<MergeMusicTuple> unmatchedTuples = ccVertices.rightOuterJoin(realMusicTuples)
+    DataSet<MergeTuple> unmatchedTuples = ccVertices.rightOuterJoin(realMusicTuples)
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<Vertex<Long, Long>, MergeMusicTuple, MergeMusicTuple>() {
+        .with(new FlatJoinFunction<Vertex<Long, Long>, MergeTuple, MergeTuple>() {
           @Override
-          public void join(Vertex<Long, Long> first, MergeMusicTuple second,
-                           Collector<MergeMusicTuple> out) throws Exception {
+          public void join(Vertex<Long, Long> first, MergeTuple second,
+                           Collector<MergeTuple> out) throws Exception {
             if (first == null) {
               out.collect(second);
             }
@@ -198,12 +198,12 @@ public class UniqueWordsExtractorTest {
 
     System.out.println("vertices with cc size 1: " + vertexCcOne.count());
 
-    DataSet<MergeMusicTuple> unmatchedInputAntiJoin = unmatchedTuples.leftOuterJoin(vertexCcOne)
+    DataSet<MergeTuple> unmatchedInputAntiJoin = unmatchedTuples.leftOuterJoin(vertexCcOne)
         .where(0)
         .equalTo(0)
-        .with(new FlatJoinFunction<MergeMusicTuple, Tuple3<Long, Long, Integer>, MergeMusicTuple>() {
+        .with(new FlatJoinFunction<MergeTuple, Tuple3<Long, Long, Integer>, MergeTuple>() {
           @Override
-          public void join(MergeMusicTuple first, Tuple3<Long, Long, Integer> second, Collector<MergeMusicTuple> out) throws Exception {
+          public void join(MergeTuple first, Tuple3<Long, Long, Integer> second, Collector<MergeTuple> out) throws Exception {
             if (second == null) {
               out.collect(first);
             }
@@ -224,12 +224,12 @@ public class UniqueWordsExtractorTest {
 
     System.out.println("unmatched which are not in cc one input group: " + unmatchedInputAntiJoin.count());
 
-    DataSet<MergeMusicTuple> unmatchedInputJoin = unmatchedTuples.join(vertexCcOne)
+    DataSet<MergeTuple> unmatchedInputJoin = unmatchedTuples.join(vertexCcOne)
         .where(0)
         .equalTo(0)
-        .with(new JoinFunction<MergeMusicTuple, Tuple3<Long, Long, Integer>, MergeMusicTuple>() {
+        .with(new JoinFunction<MergeTuple, Tuple3<Long, Long, Integer>, MergeTuple>() {
           @Override
-          public MergeMusicTuple join(MergeMusicTuple first, Tuple3<Long, Long, Integer> second) throws Exception {
+          public MergeTuple join(MergeTuple first, Tuple3<Long, Long, Integer> second) throws Exception {
             return first;
           }
         });
@@ -299,7 +299,7 @@ public class UniqueWordsExtractorTest {
 
   }
 
-  private DataSet<Edge<Long, Integer>> computeForUnmatchedAnti(DataSet<MergeMusicTuple> input) {
+  private DataSet<Edge<Long, Integer>> computeForUnmatchedAnti(DataSet<MergeTuple> input) {
     DataSet<Tuple2<Long, String>> mmTuples = input
         .map(new PrepareInputMapper());
 

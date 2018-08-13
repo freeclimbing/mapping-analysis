@@ -8,7 +8,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
 /**
@@ -18,12 +18,12 @@ public class ChangesMusicOperation
     implements CustomUnaryOperation<MergeMusicTriplet, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(ChangesMusicOperation.class);
 
-  private DataSet<MergeMusicTuple> delta;
+  private DataSet<MergeTuple> delta;
   private DataSet<Tuple2<Long, Long>> transitions;
   private DataDomain domain;
   private DataSet<MergeMusicTriplet> workset;
 
-  ChangesMusicOperation(DataSet<MergeMusicTuple> delta,
+  ChangesMusicOperation(DataSet<MergeTuple> delta,
                         DataSet<Tuple2<Long, Long>> transitions,
                         DataDomain domain) {
     this.delta = delta;

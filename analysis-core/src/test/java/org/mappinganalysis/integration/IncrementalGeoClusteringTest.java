@@ -4,6 +4,8 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Doubles;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -63,7 +65,7 @@ public class IncrementalGeoClusteringTest {
   /**
    * 100% of settlements dataset, baseline
    *
-   * pr: 0.99504 re: 0.96037 F1: 0.97740
+   * precision: 0.9969 recall: 0.9556 F1: 0.9758
    */
   @Test
   public void allSettlementsAtOnceTest() throws Exception {
@@ -78,11 +80,10 @@ public class IncrementalGeoClusteringTest {
       clustering config
      */
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
-    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.INITIAL_CLUSTERING);
-    config.setSimSortSimilarity(0.7);
 
     IncrementalClustering.IncrementalClusteringBuilder baseBuilder =
         new IncrementalClustering
@@ -105,14 +106,15 @@ public class IncrementalGeoClusteringTest {
     assertEquals(resultingVerticesList.size(), resultingVerticesSet.size());
 
     assertEquals(3054, resultingVerticesList.size());
-//    QualityUtils.printGeoQuality(clusters, config); // TODO test quality
+    QualityUtils.printGeoQuality(clusters, config);
   }
 
   /**
-   * GEO INC no holistic integration test
+   * GEO INCREMENTAL integration test
    * default setting, initial clustering 80%, add 10%, add a source, add final 10%
    *
-   * pr: 0.99616 re: 0.94534 F1: 0.97009
+   * (old) pr: 0.99616 re: 0.94534 F1: 0.97009
+   * precision: 0.9961 recall: 0.9406 F1: 0.9676
    */
   @Test
   public void incrementalVertexAdditionClusteringTest() throws Exception {
@@ -134,11 +136,10 @@ public class IncrementalGeoClusteringTest {
     clustering config
      */
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
-    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.INITIAL_CLUSTERING);
-    config.setSimSortSimilarity(0.5);
 
     IncrementalClustering initClustering =
         new IncrementalClustering
@@ -276,7 +277,7 @@ public class IncrementalGeoClusteringTest {
     resultingVerticesList = Lists.newArrayList();
     for (Vertex<Long, ObjectMap> representative : representatives) {
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
-      LOG.info("vertex2: " + representative.toString());
+//      LOG.info("vertex2: " + representative.toString());
     }
 
     resultingVerticesSet = Sets.newHashSet(resultingVerticesList);
@@ -295,8 +296,21 @@ public class IncrementalGeoClusteringTest {
    * GEO INC HUNGARIAN integration test holistic
    * initial clustering 80%, add 10%, add a source, add final 10%
    *
-   * pr: 0.99616 re: 0.94534 F1: 0.97009 (without hungarian)
-   * pr: 0.99617 re: 0.94807 F1: 0.97152 <-- this test
+   * old results not reproducible, hungarian not working any longer
+   *
+   * pr: 0.99616 re: 0.94534 F1: 0.97009 (without hungarian) (old)
+   * pr: 0.99617 re: 0.94807 F1: 0.97152 <-- this test (old)
+   *
+   * current:
+   * SimSort does not bring better results.
+   *
+   * **MaxBoth** (new results)
+   * precision: 0.9941 recall: 0.9276 F1: 0.9597  BS2
+   *
+   * bs 3:
+   * precision: 0.9941 recall: 0.9228 F1: 0.9571 MB 0.9 minSim
+   * precision: 0.9941 recall: 0.9198 F1: 0.9555 MB 0.8 minSim
+   * precision: 0.9951 recall: 0.8873 F1: 0.9381 MB 0.7 minSim
    */
   @Test
   public void incrementalGeoHungarianClusteringTest() throws Exception {
@@ -318,6 +332,9 @@ public class IncrementalGeoClusteringTest {
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.INITIAL_CLUSTERING);
     config.setSimSortSimilarity(0.5);
+    config.setMinResultSimilarity(0.8);
+    config.setMatchStrategy(MatchStrategy.MAX_BOTH);
+    config.setBlockingLength(4);
 
     IncrementalClustering initClustering =
         new IncrementalClustering
@@ -335,6 +352,7 @@ public class IncrementalGeoClusteringTest {
         .writeVertices(clusters);
     env.execute();
 
+    System.out.println(config.toString());
     /*
       actual tests
      */
@@ -460,6 +478,7 @@ public class IncrementalGeoClusteringTest {
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     env.execute();
 
+    System.out.println(config.toString());
     /*
       actual tests
      */
@@ -467,7 +486,7 @@ public class IncrementalGeoClusteringTest {
     resultingVerticesList = Lists.newArrayList();
     for (Vertex<Long, ObjectMap> representative : representatives) {
       resultingVerticesList.addAll(representative.getValue().getVerticesList());
-      LOG.info("vertex2: " + representative.toString());
+//      LOG.info("vertex2: " + representative.toString());
     }
     uniqueVerticesSet = Sets.newHashSet(resultingVerticesList);
     assertEquals(resultingVerticesList.size(), uniqueVerticesSet.size());
@@ -478,7 +497,286 @@ public class IncrementalGeoClusteringTest {
     QualityUtils.printGeoQuality(checkElements, config);
   }
 
+
   /**
+   * DINA
+   * initial clustering with 80% of all
+   * add 10%
+   * add 10%
+   */
+  @Test
+  public void dinaInitClusteringTwiceAditionTest() throws Exception {
+    String graphPath = IncrementalGeoClusteringTest.class
+        .getResource("/data/geography").getFile();
+    final Graph<Long, ObjectMap, NullValue> baseGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    GN_EIGHTY.addAll(Sets.union(NYT_EIGHTY, DBP_EIGHTY));
+    GN_EIGHTY.addAll(FB_EIGHTY);
+    Graph<Long, ObjectMap, NullValue> inputGraph = baseGraph
+        .filterOnVertices(new VertexFilterFunction(GN_EIGHTY));
+
+    /*
+    clustering config
+     */
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.INITIAL_CLUSTERING);
+
+    IncrementalClustering initClustering =
+        new IncrementalClustering
+            .IncrementalClusteringBuilder(config).build();
+
+    /*
+      start clustering
+     */
+    DataSet<Vertex<Long, ObjectMap>> clusters = inputGraph
+        .run(initClustering);
+
+    new JSONDataSink(graphPath.concat("/eighty/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    /*
+    SECOND PART, MERGE 10% DBP NYT GN
+     */
+    inputGraph = new JSONDataSource(
+        graphPath.concat("/eighty/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+    GN_PLUS_TEN.addAll(Sets.union(NYT_PLUS_TEN, DBP_PLUS_TEN));
+    GN_PLUS_TEN.addAll(FB_PLUS_TEN);
+    DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+        .filterOnVertices(new VertexFilterFunction(GN_PLUS_TEN))
+        .getVertices();
+
+    config.setStep(ClusteringStep.VERTEX_ADDITION);
+    IncrementalClustering vertexAddTenPercentClustering =
+        new IncrementalClustering
+            .IncrementalClusteringBuilder(config)
+            .setMatchElements(newVertices)
+            .build();
+
+    clusters = inputGraph.run(vertexAddTenPercentClustering);
+    new JSONDataSink(graphPath.concat("/eightyPlusTen/"), "test")
+        .writeVertices(clusters);
+    env.execute();
+
+    /*
+    3. PART, MERGE LAST 10%
+     */
+    inputGraph = new JSONDataSource(
+        graphPath.concat("/plusFb/output/test/"), "test", true, env)
+        .getGraph(ObjectMap.class, NullValue.class);
+    GN_FINAL.addAll(Sets.union(DBP_FINAL, NYT_FINAL));
+    GN_FINAL.addAll(FB_FINAL);
+    newVertices = baseGraph
+        .filterOnVertices(new VertexFilterFunction(GN_FINAL))
+        .getVertices();
+
+    IncrementalClustering finalAddClustering =
+        new IncrementalClustering
+            .IncrementalClusteringBuilder(config)
+            .setMatchElements(newVertices)
+            .build();
+
+    clusters = inputGraph.run(finalAddClustering);
+
+    ArrayList<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+    DataSource<Vertex<Long, ObjectMap>> checkElements = env.fromCollection(representatives);
+    QualityUtils.printGeoQuality(checkElements, config);
+  }
+
+
+  /**
+   * DINA
+   * source-specific/base approach with 80% of all
+   * add 10%
+   * add 10%
+   */
+  @Test
+  public void dinaSourceClusteringTwiceAditionTest() throws Exception {
+    String graphPath = IncrementalGeoClusteringTest.class
+        .getResource("/data/geography").getFile();
+    final Graph<Long, ObjectMap, NullValue> baseGraph =
+        new JSONDataSource(graphPath, true, env)
+            .getGraph(ObjectMap.class, NullValue.class);
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setStrategy(IncrementalClusteringStrategy.MULTI);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setStep(ClusteringStep.VERTEX_ADDITION);
+    config.setMatchStrategy(MatchStrategy.MAX_BOTH);
+    config.setBlockingLength(1);
+    config.setMinResultSimilarity(0.4);
+
+    graphPath = graphPath.concat("temp/");
+
+    List<Set<Long>> list = Lists.newArrayList();
+    List<String> sources = Lists.newArrayList(
+        Constants.NYT_NS, Constants.GN_NS, Constants.FB_NS, Constants.DBP_NS);
+
+    list.add(NYT_EIGHTY);
+    list.add(GN_EIGHTY);
+    list.add(FB_EIGHTY);
+    list.add(DBP_EIGHTY);
+    Graph<Long, ObjectMap, NullValue> workingGraph = null;
+    DataSet<Vertex<Long, ObjectMap>> clusters;
+    List<Vertex<Long, ObjectMap>> representatives = null;
+
+    boolean isFirst = true;
+    boolean isSecond = true;
+    int sourceString = 0;
+    for (Set<Long> sourceEntities : list) {
+      LOG.info("Working on source: " + sources.get(sourceString));
+      if (isFirst) { // first, only one source is selected as clusters repr
+        workingGraph = baseGraph
+            .filterOnVertices(new VertexFilterFunction(sourceEntities));
+        isFirst = false;
+      }
+      else {
+        if (isSecond) { // second, working graph should not be read from file
+          isSecond = false;
+        }
+        else {
+          workingGraph = new JSONDataSource(
+              graphPath.concat("output/test/"),
+              "test",
+              true,
+              env)
+              .getGraph(ObjectMap.class, NullValue.class);
+        }
+        DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+            .getVertices()
+            .filter(new VertexFilterFunction(sourceEntities));
+
+        IncrementalClustering clustering = new IncrementalClustering
+            .IncrementalClusteringBuilder(config)
+            .setMatchElements(newVertices)
+            .setNewSource(sources.get(sourceString))
+            .build();
+
+        clusters = workingGraph.run(clustering);
+        new JSONDataSink(graphPath, "test")
+            .writeVertices(clusters);
+        env.execute();
+      }
+      sourceString++;
+    }
+
+    /*
+    SECOND PART, MERGE 10% DBP NYT GN
+     */
+      Graph<Long, ObjectMap, NullValue> inputGraph = new JSONDataSource(
+          graphPath.concat("output/test/"), "test", true, env)
+          .getGraph(ObjectMap.class, NullValue.class)
+//          .mapVertices(new GeoTempTransformFunction(config.getDataDomain()))
+          ;
+
+    inputGraph.getVertices().first(10).print();
+    // input is music format
+
+    GN_PLUS_TEN.addAll(Sets.union(NYT_PLUS_TEN, DBP_PLUS_TEN));
+    GN_PLUS_TEN.addAll(FB_PLUS_TEN);
+    DataSet<Vertex<Long, ObjectMap>> newVertices = baseGraph
+          .filterOnVertices(new VertexFilterFunction(GN_PLUS_TEN))
+          .getVertices()
+        .map(vertex -> { // TODO quick'n'dirty
+          if (vertex.getValue().hasGeoPropertiesValid()) {
+            vertex.getValue().setArtist(vertex.getValue().getLatitude().toString());
+            vertex.getValue().setAlbum(vertex.getValue().getLongitude().toString());
+            vertex.getValue().remove(Constants.LAT);
+            vertex.getValue().remove(Constants.LON);
+            vertex.getValue().remove(Constants.TYPE);
+          }
+
+          return vertex;
+        })
+        .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+      newVertices.first(10).print();
+      // added are geo format
+
+      config.setStep(ClusteringStep.VERTEX_ADDITION);
+      IncrementalClustering vertexAddTenPercentClustering =
+          new IncrementalClustering
+              .IncrementalClusteringBuilder(config)
+              .setMatchElements(newVertices)
+              .build();
+
+      clusters = inputGraph.run(vertexAddTenPercentClustering);
+      new JSONDataSink(graphPath.concat("/eightyPlusTen/"), "test")
+          .writeVertices(clusters);
+      env.execute();
+
+    /*
+    3. PART, MERGE LAST 10%
+     */
+      inputGraph = new JSONDataSource(
+          graphPath.concat("/eightyPlusTen/output/test/"), "test", true, env)
+          .getGraph(ObjectMap.class, NullValue.class)
+//          .mapVertices(new GeoTempTransformFunction(config.getDataDomain()))
+      ;
+      GN_FINAL.addAll(Sets.union(DBP_FINAL, NYT_FINAL));
+      GN_FINAL.addAll(FB_FINAL);
+      newVertices = baseGraph
+          .filterOnVertices(new VertexFilterFunction(GN_FINAL))
+          .getVertices()
+          .map(vertex -> { // TODO quick'n'dirty
+            if (vertex.getValue().hasGeoPropertiesValid()) {
+              vertex.getValue().setArtist(vertex.getValue().getLatitude().toString());
+              vertex.getValue().setAlbum(vertex.getValue().getLongitude().toString());
+              vertex.getValue().remove(Constants.LAT);
+              vertex.getValue().remove(Constants.LON);
+            }
+
+            return vertex;
+          })
+          .returns(new TypeHint<Vertex<Long, ObjectMap>>() {});
+
+      IncrementalClustering finalAddClustering =
+          new IncrementalClustering
+              .IncrementalClusteringBuilder(config)
+              .setMatchElements(newVertices)
+              .build();
+
+      clusters = inputGraph.run(finalAddClustering);
+
+      representatives = Lists.newArrayList();
+      clusters.output(new LocalCollectionOutputFormat<>(representatives));
+      env.execute();
+
+      LOG.info("vertex add final size: " + representatives.size());
+
+      List<Long> resultingVerticesList = Lists.newArrayList();
+      for (Vertex<Long, ObjectMap> representative : representatives) {
+        resultingVerticesList.addAll(representative.getValue().getVerticesList());
+//      LOG.info("vertex2: " + representative.toString());
+      }
+
+      HashSet<Long> resultingVerticesSet = Sets.newHashSet(resultingVerticesList);
+      // ensure that there are no duplicates
+//    assertEquals(resultingVerticesList.size(), resultingVerticesSet.size());
+      // actual number of contained vertices
+//    assertEquals(3054, resultingVerticesList.size());
+//    assertEquals(secondStepSize + firstStepDataSize + fourthStepSize,
+//        resultingVerticesList.size());
+
+      DataSource<Vertex<Long, ObjectMap>> checkElements = env.fromCollection(representatives);
+      QualityUtils.printGeoQuality(checkElements, config);
+
+  }
+
+
+  /**
+   * hungarian not working anymore, but max-both
+   *
    * GEO INC SOURCE BY SOURCE integration test hungarian,
    * sources with more geo properties should be first
    *
@@ -487,8 +785,6 @@ public class IncrementalGeoClusteringTest {
    * (http://sws.geonames.org/,749)
    * (http://dbpedia.org/,445)
    */
-//          .flatMap(new HungarianDualVertexMergeFlatMapFunction(
-//      config.getDataDomain())) // TODO manual threshold
   @Test
   public void allPermutationsSourceBySourceHungarianIncTest() throws Exception {
     String graphPath = IncrementalGeoClusteringTest.class
@@ -502,10 +798,9 @@ public class IncrementalGeoClusteringTest {
     config.setStrategy(IncrementalClusteringStrategy.MULTI);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setStep(ClusteringStep.SOURCE_ADDITION);
-    config.setSimSortSimilarity(0.7);
     config.setMatchStrategy(MatchStrategy.MAX_BOTH);
-    config.setBlockingLength(4);
-    config.setMinResultSimilarity(0.7);
+    config.setBlockingLength(1);
+    config.setMinResultSimilarity(0.4);
 
     HashMap<String, BigDecimal> resultMap = Maps.newHashMap();
     List<String> sourcesList = Constants.GEO_SOURCES;
@@ -515,13 +810,18 @@ public class IncrementalGeoClusteringTest {
     List<Vertex<Long, ObjectMap>> representatives = null;
 
 
-//    for (List<String> list : permutedLists) {
-    List<String> list = Lists.newArrayList();
-      list.add(Constants.FB_NS);
-      list.add(Constants.NYT_NS);
-      list.add(Constants.GN_NS);
-      list.add(Constants.DBP_NS);
+    for (List<String> list : permutedLists) {
+//    List<String> list = Lists.newArrayList();
+//
+//    list.add(Constants.FB_NS);
+//    list.add(Constants.GN_NS);
+//    list.add(Constants.NYT_NS);
+//    list.add(Constants.DBP_NS);
 
+//      list.add(Constants.NYT_NS);
+//      list.add(Constants.GN_NS);
+//      list.add(Constants.DBP_NS);
+//      list.add(Constants.FB_NS);
       Graph<Long, ObjectMap, NullValue> workingGraph = null;
       DataSet<Vertex<Long, ObjectMap>> clusters;
       representatives = null;
@@ -565,7 +865,11 @@ public class IncrementalGeoClusteringTest {
         }
       }
 
-      assert representatives != null;
+    assert representatives != null;
+    for (Vertex<Long, ObjectMap> representative : representatives) {
+//      System.out.println("result: " + representative.toString());
+    }
+
       HashMap<String, BigDecimal> singleResult = QualityUtils
           .printGeoQuality(env.fromCollection(representatives), config);
 
@@ -576,7 +880,7 @@ public class IncrementalGeoClusteringTest {
               .setScale(4, BigDecimal.ROUND_HALF_UP));
       resultMap.put( singleString, singleResult.get("f1")
           .setScale(4, BigDecimal.ROUND_HALF_UP));
-//    }
+    }
 
     /*
       actual tests
@@ -591,22 +895,22 @@ public class IncrementalGeoClusteringTest {
     assertEquals(3054, resultingVerticesList.size());
 
     // print sorted list
-    List<Map.Entry<String, BigDecimal>> sorted_map =
+    List<Map.Entry<String, BigDecimal>> sortedMap =
         resultMap.entrySet()
             .stream()
             .sorted(reverseOrder(Map.Entry.comparingByValue()))
             .collect(Collectors.toList());
 
     boolean first = true;
-    for (Map.Entry<String, BigDecimal> entry : sorted_map) {
-      if (first) {
-        assertTrue(entry
-            .getKey()
-            .startsWith("http://rdf.freebase.com/, http://sws.geonames.org/, " +
-                "http://data.nytimes.com/, http://dbpedia.org/"));
-        assertEquals(0.9838, entry.getValue().doubleValue(), 0.0001);
-        first = false;
-      }
+    for (Map.Entry<String, BigDecimal> entry : sortedMap) {
+//      if (first) {
+//        assertTrue(entry
+//            .getKey()
+//            .startsWith("http://rdf.freebase.com/, http://sws.geonames.org/, " +
+//                "http://data.nytimes.com/, http://dbpedia.org/"));
+//        assertEquals(0.9838, entry.getValue().doubleValue(), 0.0001);
+//        first = false;
+//      }
       LOG.info(entry.toString());
     }
   }
@@ -649,6 +953,32 @@ public class IncrementalGeoClusteringTest {
       } else if (tuple.f0.equals("http://rdf.freebase.com/")) {
         assertEquals(774, tuple.f1.intValue());
       }
+    }
+  }
+
+  private static class GeoTempTransformFunction implements MapFunction<Vertex<Long, ObjectMap>, ObjectMap> {
+    private DataDomain dataDomain;
+
+    public GeoTempTransformFunction(DataDomain dataDomain) {
+      this.dataDomain = dataDomain;
+    }
+
+    @Override
+    public ObjectMap map(Vertex<Long, ObjectMap> vertex) throws Exception {
+      ObjectMap properties = vertex.getValue();
+
+      if (dataDomain == DataDomain.GEOGRAPHY
+          && properties.containsKey(Constants.ALBUM)
+          && properties.containsKey(Constants.ARTIST)) {
+        properties.setGeoProperties(
+            Doubles.tryParse(properties.getAlbum()),
+            Doubles.tryParse(properties.getArtist())
+        );
+        properties.remove(Constants.ARTIST);
+        properties.remove(Constants.ALBUM);
+      }
+
+      return properties;
     }
   }
 }

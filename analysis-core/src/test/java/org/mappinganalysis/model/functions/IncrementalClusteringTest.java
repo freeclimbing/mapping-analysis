@@ -261,6 +261,7 @@ public class IncrementalClusteringTest {
     IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
     config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
     config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setBlockingLength(4);
 
     DataSet<Vertex<Long, ObjectMap>> baseClusters = getGnNytVertices();
 
@@ -283,9 +284,7 @@ public class IncrementalClusteringTest {
         .where(0)
         .equalTo(0)
         .with(new FinalMergeGeoVertexCreator())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+        .runOperation(new RepresentativeCreator(config));
 
 //    plusDbp.print();
 //    LOG.info(plusDbp.count());
@@ -345,13 +344,16 @@ public class IncrementalClusteringTest {
         new JSONDataSource(graphPath, true, env)
             .getGraph();
 
+    IncrementalConfig config = new IncrementalConfig(DataDomain.GEOGRAPHY, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setBlockingLength(4);
+
     return graph
         .mapVertices(new InternalTypeMapFunction())
         .getVertices()
         .map(new AddShadingTypeMapFunction())
-        .runOperation(new RepresentativeCreator(
-            DataDomain.GEOGRAPHY,
-            BlockingStrategy.STANDARD_BLOCKING));
+        .runOperation(new RepresentativeCreator(config));
   }
 
 //  @Test

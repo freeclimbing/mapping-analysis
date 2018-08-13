@@ -14,13 +14,16 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
+import org.mappinganalysis.NcBaseTest;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
+import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -126,6 +129,30 @@ public class MusicbrainzBenchmarkTest {
       }
     }
     System.out.println(vertices.count());
+  }
+
+  @Test
+  public void gradoopInputTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
+        "/user/saeedi/MusicDataset/2000k/config1_th0.7tt/";
+    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, Constants.MUSIC, env);
+
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(0.5);
+
+    graph.getEdges().first(10).print();
+
+//    graph.run(new DefaultPreprocessing(config))
+//        .getVertices().print();
+//    graph.getVertices().print();
   }
 
   /**
@@ -244,7 +271,7 @@ public class MusicbrainzBenchmarkTest {
   @Test
   public void basicBlockingLabelTest() throws Exception {
     String test = "003-Symphony 1 in C minor,  some  op. 11: III. Menuetto & Trio";
-    String musicBlockingLabel = Utils.getMusicBlockingLabel(test);
+    String musicBlockingLabel = Utils.getMusicBlockingLabel(test, 4);
 
     assertTrue(musicBlockingLabel.equals("hony"));
   }

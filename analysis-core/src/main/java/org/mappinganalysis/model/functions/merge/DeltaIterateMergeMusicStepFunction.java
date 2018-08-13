@@ -12,7 +12,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
@@ -27,7 +27,7 @@ public class DeltaIterateMergeMusicStepFunction {
   private DataSet<MergeMusicTriplet> workset;
   private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
   private int sourcesCount;
-  private DataSet<MergeMusicTuple> delta;
+  private DataSet<MergeTuple> delta;
 
   DeltaIterateMergeMusicStepFunction(
       DataSet<MergeMusicTriplet> workset,
@@ -93,12 +93,12 @@ public class DeltaIterateMergeMusicStepFunction {
     return workset;
   }
 
-  DataSet<MergeMusicTuple> getDelta() {
+  DataSet<MergeTuple> getDelta() {
     delta = delta.map(x -> {
 //      LOG.info(x.toString());
       return x;
     })
-        .returns(new TypeHint<MergeMusicTuple>() {});
+        .returns(new TypeHint<MergeTuple>() {});
     return delta;
   }
 

@@ -11,14 +11,14 @@ import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.Constants;
 
 public class BlockSplitTripletCreator
-    implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(BlockSplitTripletCreator.class);
-  private DataSet<MergeMusicTuple> inputTuples;
+  private DataSet<MergeTuple> inputTuples;
   private DataDomain dataDomain;
   private String newSource = Constants.EMPTY_STRING;
 
@@ -37,7 +37,7 @@ public class BlockSplitTripletCreator
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTuple> inputData) {
+  public void setInput(DataSet<MergeTuple> inputData) {
     inputTuples = inputData;
   }
 
@@ -103,11 +103,11 @@ public class BlockSplitTripletCreator
 
     return tripletCandidates.join(inputTuples)
         .where(0).equalTo(0)
-        .with(new JoinFunction<Tuple2<Long,Long>, MergeMusicTuple,
-            Tuple2<MergeMusicTuple, Long>>() {
+        .with(new JoinFunction<Tuple2<Long,Long>, MergeTuple,
+            Tuple2<MergeTuple, Long>>() {
           @Override
-          public Tuple2<MergeMusicTuple, Long> join(
-              Tuple2<Long, Long> left, MergeMusicTuple right) throws Exception {
+          public Tuple2<MergeTuple, Long> join(
+              Tuple2<Long, Long> left, MergeTuple right) throws Exception {
             return new Tuple2<>(right, left.f1);
           }
         })

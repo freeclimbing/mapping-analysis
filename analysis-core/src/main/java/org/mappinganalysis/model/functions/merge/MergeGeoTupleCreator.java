@@ -1,6 +1,5 @@
 package org.mappinganalysis.model.functions.merge;
 
-import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -44,18 +43,16 @@ public class MergeGeoTupleCreator
     ObjectMap properties = vertex.getValue();
     properties.setMode(Constants.GEO);
 
-//    LOG.info("PROPERTIES: " + properties.toString() + " " + vertex.getId());
     tuple.setId(vertex.getId());
     tuple.setLabel(properties.getLabel());
+
     if (properties.hasGeoPropertiesValid()) {
       tuple.setLatitude(properties.getLatitude());
       tuple.setLongitude(properties.getLongitude());
     }
     tuple.setIntTypes(properties.getIntTypes());
+
     tuple.setIntSources(properties.getIntDataSources());
-    if (properties.getVerticesList() == null) {
-      properties.setClusterVertices(Sets.newHashSet(vertex.getId()));
-    }
     tuple.addClusteredElements(properties.getVerticesList());
     tuple.setBlockingLabel(Utils.getBlockingKey(
         blockingStrategy,
@@ -63,7 +60,6 @@ public class MergeGeoTupleCreator
         properties.getLabel(),
         0));
 
-//    LOG.info("### CREATE: " + tuple.toString());
     return tuple;
   }
 }

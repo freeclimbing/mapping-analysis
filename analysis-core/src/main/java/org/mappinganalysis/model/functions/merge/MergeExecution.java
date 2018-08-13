@@ -152,15 +152,15 @@ public class MergeExecution
       ########## MUSIC/NC ##############
      */
     if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
-      DataSet<MergeMusicTuple> initialSolutionSet = baseClusters
-            .map(new MergeMusicTupleCreator(BlockingStrategy.STANDARD_BLOCKING, domain));
+      DataSet<MergeTuple> initialSolutionSet = baseClusters
+            .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, domain));
 //      } else {
 //        initialSolutionSet = baseClusters
 //            .map(new MergeMusicTupleCreator(BlockingStrategy.NO_BLOCKING, domain)); // TODO check LSH
 //      }
 
       // prep phase initial working set
-      DataSet<MergeMusicTuple> preBlockingClusters = initialSolutionSet
+      DataSet<MergeTuple> preBlockingClusters = initialSolutionSet
           .filter(new SourceCountRestrictionFilter<>(domain, sourcesCount));
       SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction;
       if (domain == DataDomain.MUSIC) {
@@ -209,7 +209,7 @@ public class MergeExecution
             .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
             .runOperation(similarityComputation);
 
-        DataSet<MergeMusicTuple> simpleTuples = idfPartTriplets
+        DataSet<MergeTuple> simpleTuples = idfPartTriplets
             .<Tuple2<Long, Long>>project(0, 1)
             .flatMap((Tuple2<Long, Long> tuple, Collector<Tuple1<Long>> out) -> {
               out.collect(new Tuple1<>(tuple.f0));
@@ -219,10 +219,10 @@ public class MergeExecution
             .rightOuterJoin(preBlockingClusters)
             .where(0)
             .equalTo(0)
-            .with(new FlatJoinFunction<Tuple1<Long>, MergeMusicTuple, MergeMusicTuple>() {
+            .with(new FlatJoinFunction<Tuple1<Long>, MergeTuple, MergeTuple>() {
               @Override
-              public void join(Tuple1<Long> idfIds, MergeMusicTuple unmatchedTuple,
-                               Collector<MergeMusicTuple> out) throws Exception {
+              public void join(Tuple1<Long> idfIds, MergeTuple unmatchedTuple,
+                               Collector<MergeTuple> out) throws Exception {
                 if (idfIds == null) {
                   out.collect(unmatchedTuple);
                 }
@@ -240,7 +240,7 @@ public class MergeExecution
       }
 
       // initialize the iteration
-      DeltaIteration<MergeMusicTuple, MergeMusicTriplet> iteration = initialSolutionSet
+      DeltaIteration<MergeTuple, MergeMusicTriplet> iteration = initialSolutionSet
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
 
       /*

@@ -69,12 +69,14 @@ public abstract class SimilarityComputation<T, O>
     private SimilarityStrategy strategy;
     private double threshold;
 
-    public SimilarityComputationBuilder<T, O> setStrategy(SimilarityStrategy strategy) {
+    public SimilarityComputationBuilder<T, O> setStrategy(
+        SimilarityStrategy strategy) {
       this.strategy = strategy;
       return this;
     }
 
-    public SimilarityComputationBuilder<T, O> setSimilarityFunction(SimilarityFunction<T, O> function) {
+    public SimilarityComputationBuilder<T, O> setSimilarityFunction(
+        SimilarityFunction<T, O> function) {
       this.function = function;
       return this;
     }
@@ -82,7 +84,8 @@ public abstract class SimilarityComputation<T, O>
     /**
      * Set minimum threshold for similarity
      */
-    public SimilarityComputationBuilder<T, O> setThreshold(double threshold) {
+    public SimilarityComputationBuilder<T, O> setThreshold(
+        double threshold) {
       this.threshold = threshold;
       return this;
     }
@@ -96,7 +99,7 @@ public abstract class SimilarityComputation<T, O>
       if (strategy == SimilarityStrategy.MERGE) {
         return new MergeSimilarityComputation<>(function, strategy, threshold);
       } else if (strategy == SimilarityStrategy.EDGE_SIM) {
-        return new EdgeSimilarityComputation<>(function, strategy, threshold);
+        return new GeoSimilarityComputation<>(function, strategy, threshold);
       } else if (strategy == SimilarityStrategy.MUSIC) {
         return new MusicSimilarityComputation<>(function, strategy, threshold);
       } else {

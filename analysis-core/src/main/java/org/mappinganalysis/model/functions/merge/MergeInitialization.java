@@ -11,7 +11,7 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.GeographicMajorityPropertiesGroupReduceFunction;
 import org.mappinganalysis.model.functions.simcomputation.AggSimValueTripletMapFunction;
-import org.mappinganalysis.model.functions.simcomputation.EdgeSimilarityFunction;
+import org.mappinganalysis.model.functions.simcomputation.GeoSimilarityFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
@@ -72,7 +72,7 @@ public class MergeInitialization
       DataSet<Vertex<Long, ObjectMap>> representativeVertices,
       DataSet<Triplet<Long, ObjectMap, NullValue>> oldHashCcTriplets) {
 
-    EdgeSimilarityFunction simFunction = new EdgeSimilarityFunction(
+    GeoSimilarityFunction simFunction = new GeoSimilarityFunction(
         Constants.COSINE_TRIGRAM, Constants.GEO,
         Constants.MAXIMAL_GEO_DISTANCE); // todo agg mode?
 

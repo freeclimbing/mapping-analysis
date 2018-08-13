@@ -9,6 +9,7 @@ import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -26,6 +27,7 @@ import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
@@ -92,9 +94,21 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     /*
       preprocessing
      */
-      Graph<Long, ObjectMap, NullValue> graph =
-          new JSONDataSource(inputPath, INPUT_STEP, env)
-              .getGraph(ObjectMap.class, NullValue.class);
+
+    /*
+     input for incremental paper
+     */
+      LogicalGraph logicalGraph = Utils
+          .getGradoopGraph(inputPath, env);
+      Graph<Long, ObjectMap, NullValue> graph = Utils
+          .getInputGraph(logicalGraph, Constants.MUSIC, env);
+
+      /*
+       normal (old) graph input
+       */
+//      Graph<Long, ObjectMap, NullValue> graph =
+//          new JSONDataSource(inputPath, INPUT_STEP, env)
+//              .getGraph(ObjectMap.class, NullValue.class);
 
       new JSONDataSink(inputPath, PREPROCESSING_STEP)
           .writeGraph(graph.run(new DefaultPreprocessing(config)));

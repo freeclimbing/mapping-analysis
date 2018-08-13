@@ -23,16 +23,6 @@ public class RepresentativeCreator
   private final int blockingLength;
 
   /**
-   * Only for tests.
-   */
-  @Deprecated
-  public RepresentativeCreator(DataDomain domain, BlockingStrategy blockingStrategy) {
-    this.domain = domain;
-    this.blockingStrategy = blockingStrategy;
-    this.blockingLength = 4; // TODO FIX tests
-  }
-
-  /**
    * Create representatives for vertices within incremental setting.
    * Adds blocking label, clustered vertices and cluster sources to representative.
    */

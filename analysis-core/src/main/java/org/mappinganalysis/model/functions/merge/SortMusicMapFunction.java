@@ -3,7 +3,7 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 
 /**
  */
@@ -14,7 +14,7 @@ public class SortMusicMapFunction
   @Override
   public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
     if (triplet.getSrcId() > triplet.getTrgId()) {
-      MergeMusicTuple tmpTuple = triplet.getSrcTuple();
+      MergeTuple tmpTuple = triplet.getSrcTuple();
 
       triplet.setSrcId(triplet.getTrgId());
       triplet.setSrcTuple(triplet.getTrgTuple());

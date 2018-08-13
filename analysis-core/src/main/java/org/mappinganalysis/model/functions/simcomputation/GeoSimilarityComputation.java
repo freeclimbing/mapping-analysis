@@ -6,11 +6,11 @@ import org.mappinganalysis.model.impl.SimilarityStrategy;
 /**
  * Actual implementation for computing similarities for all edges in a given graph.
  */
-public class EdgeSimilarityComputation<T, O> extends SimilarityComputation<T, O> {
+public class GeoSimilarityComputation<T, O> extends SimilarityComputation<T, O> {
 
-  EdgeSimilarityComputation(SimilarityFunction<T, O> function,
-                            SimilarityStrategy strategy,
-                            Double threshold) {
+  GeoSimilarityComputation(SimilarityFunction<T, O> function,
+                           SimilarityStrategy strategy,
+                           Double threshold) {
     super(function, strategy, threshold);
   }
 }

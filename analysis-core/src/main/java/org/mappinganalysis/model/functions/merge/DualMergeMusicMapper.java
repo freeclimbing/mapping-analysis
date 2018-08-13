@@ -4,7 +4,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
@@ -15,23 +15,23 @@ import java.util.Set;
  * Merge implementation for music dataset.
  */
 public class DualMergeMusicMapper
-    implements FlatMapFunction<MergeMusicTriplet, MergeMusicTuple> {
+    implements FlatMapFunction<MergeMusicTriplet, MergeTuple> {
   private static final Logger LOG = Logger.getLogger(DualMergeMusicMapper.class);
 
   @Override
-  public void flatMap(MergeMusicTriplet triplet, Collector<MergeMusicTuple> out) throws Exception {
-    MergeMusicTuple priority = triplet.getSrcTuple();
-    MergeMusicTuple minor = triplet.getTrgTuple();
+  public void flatMap(MergeMusicTriplet triplet, Collector<MergeTuple> out) throws Exception {
+    MergeTuple priority = triplet.getSrcTuple();
+    MergeTuple minor = triplet.getTrgTuple();
 
     Set<Long> trgElements = minor.getClusteredElements();
     Set<Long> srcElements = priority.getClusteredElements();
     if (srcElements.size() < trgElements.size()) {
-      MergeMusicTuple tmp = minor;
+      MergeTuple tmp = minor;
       minor = priority;
       priority = tmp;
     }
 
-    MergeMusicTuple mergedCluster = new MergeMusicTuple();
+    MergeTuple mergedCluster = new MergeTuple();
     mergedCluster.setId(priority.getId() > minor.getId() ? minor.getId() : priority.getId());
 
     srcElements.addAll(trgElements);
@@ -116,7 +116,7 @@ public class DualMergeMusicMapper
       mergedCluster.setArtistTitleAlbum(Constants.EMPTY_STRING);
     }
 
-    MergeMusicTuple fakeCluster = new MergeMusicTuple(
+    MergeTuple fakeCluster = new MergeTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 
 //    LOG.info("fake: " + fakeCluster.toString());

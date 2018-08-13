@@ -2,12 +2,10 @@ package org.mappinganalysis;
 
 import com.google.common.collect.Lists;
 import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -17,28 +15,22 @@ import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
 import org.mappinganalysis.corruption.EdgeCreateCorruptionFunction;
 import org.mappinganalysis.corruption.EdgeRemoveCorruptionFunction;
-import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.graph.utils.AllEdgesCreateGroupReducer;
-import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.graph.utils.EdgeComputationOnVerticesForKeySelector;
+import org.mappinganalysis.graph.utils.EdgeComputationStrategy;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
 import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
 import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
 import org.mappinganalysis.model.functions.merge.*;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
-import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
-import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
-import org.mappinganalysis.util.functions.QualityEdgeCreator;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 
 import java.util.List;
@@ -125,6 +117,8 @@ public class MusicBrainzTest {
 
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
     config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(0.4);
+
     String graphPath =
         "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/csimq/";
     List<String> sourceList = Lists.newArrayList(
@@ -137,7 +131,7 @@ public class MusicBrainzTest {
       LogicalGraph logicalGraph = Utils
           .getGradoopGraph(pmPath, env);
       Graph<Long, ObjectMap, NullValue> inputGraph = Utils
-          .getInputGraph(logicalGraph, Constants.MUSIC, env);
+          .getInputGraph(logicalGraph, config.getMode(), env);
 
       LOG.info("inEdges: " + inputGraph.getEdgeIds().count());
       Graph<Long, ObjectMap, ObjectMap> graph = inputGraph
@@ -146,13 +140,13 @@ public class MusicBrainzTest {
 
 //      for (int simFor = 20; simFor <= 30; simFor += 5) {
 //        double simThreshold = (double) simFor / 100;
-      double simThreshold = 0.4;
+      config.setSimSortSimilarity(0.4);
     /*
        representative creation
      */
         DataSet<Vertex<Long, ObjectMap>> representatives = graph
             .run(new TypeGroupBy(env))
-            .run(new SimSort(DataDomain.MUSIC, Constants.COSINE_TRIGRAM, simThreshold, env))
+            .run(new SimSort(config))
             .getVertices()
             .runOperation(new RepresentativeCreatorMultiMerge(DataDomain.MUSIC));
 
@@ -163,7 +157,6 @@ public class MusicBrainzTest {
         String reprOut = outPath.concat("/output/");
         new JSONDataSink(reprOut, "repr")
             .writeVertices(representatives);
-//        printQuality(dataset, 0.0, simThreshold, representatives, Constants.EMPTY_STRING, 5);
 //      } // sim for
       env.execute();
 
@@ -173,8 +166,12 @@ public class MusicBrainzTest {
               reprOut.concat("output/repr/"), true, env)
               .getVertices();
 
-      for (int mergeFor = 40; mergeFor <= 95; mergeFor += 5) {
+      /*
+      0.55 best precision: 0.994 recall: 0.9436 F1: 0.9681
+       */
+      for (int mergeFor = 40; mergeFor <= 70; mergeFor += 5) {
         double mergeThreshold = (double) mergeFor / 100;
+        config.setMinResultSimilarity(mergeThreshold);
 
         DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
             .runOperation(new MergeInitialization(DataDomain.MUSIC))
@@ -185,91 +182,14 @@ public class MusicBrainzTest {
                 5,
                 env));
 
-        printQuality(dataset, mergeThreshold, 0.4, merged, Constants.EMPTY_STRING, 5);
+        QualityUtils.printMusicQuality(merged,
+            config,
+            pmPath,
+            "fileName",
+            "local"
+            );
       }
     }
-  }
-
-  private void printQuality(
-      String dataset,
-      double mergeThreshold,
-      double simSortThreshold,
-      DataSet<Vertex<Long, ObjectMap>> merged,
-      String pmPath,
-      int sourcesCount) throws Exception {
-    if (mergeThreshold == 0.0) {
-      dataset = dataset.concat("REPR");
-    }
-    DataSet<Tuple2<Long, Long>> clusterEdges = merged
-        .flatMap(new QualityEdgeCreator());
-
-    String path = "/data/musicbrainz/input/";
-    DataSet<Tuple2<Long, Long>> goldLinks;
-
-    if (pmPath.equals(Constants.EMPTY_STRING)) {
-      pmPath = NcBaseTest.class
-          .getResource(path).getFile();
-
-      DataSet<Tuple2<String, String>> perfectMapping = env
-          .readCsvFile(pmPath.concat("musicbrainz-20000-A01.csv.dapo"))
-          .ignoreFirstLine()
-          .includeFields(true, true, false, false, false, false, false, false, false, false, false, false)
-          .types(String.class, String.class);
-
-      goldLinks = perfectMapping
-          .map(tuple -> new Vertex<>(Long.parseLong(tuple.f0), Long.parseLong(tuple.f1)))
-          .returns(new TypeHint<Vertex<Long, Long>>() {})
-          .groupBy(1)
-          .reduceGroup(new AllEdgesCreateGroupReducer<>())
-          .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
-          .returns(new TypeHint<Tuple2<Long, Long>>() {});
-    } else {
-      goldLinks = getPmEdges(pmPath)
-          .map(edge -> new Tuple2<>(edge.f0, edge.f1))
-          .returns(new TypeHint<Tuple2<Long, Long>>() {});
-    }
-
-    DataSet<Tuple2<Long, Long>> truePositives = goldLinks
-        .join(clusterEdges)
-        .where(0, 1).equalTo(0, 1)
-        .with(new JoinFunction<Tuple2<Long, Long>, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
-          @Override
-          public Tuple2<Long, Long> join(Tuple2<Long, Long> first, Tuple2<Long, Long> second) throws Exception {
-            return first;
-          }
-        });
-
-    long goldCount = goldLinks.count();
-//    LOG.info("gold links: " + goldCount); // new execution
-    long checkCount = clusterEdges.count();
-    long tpCount = truePositives.count();
-
-    double precision = (double) tpCount / checkCount; // tp / (tp + fp)
-    double recall = (double) tpCount / goldCount; // tp / (fn + tp)
-    LOG.info("\n############### dataset: " + dataset + " mergeThreshold: " + mergeThreshold + " simSortThreshold: " + simSortThreshold);
-    LOG.info("TP+FN: " + goldCount);
-    LOG.info("TP+FP: " + checkCount);
-    LOG.info("TP: " + tpCount);
-
-    LOG.info("precision: " + precision + " recall: " + recall
-        + " F1: " + 2 * precision * recall / (precision + recall));
-    LOG.info("######################################################");
-  }
-
-  /**
-   * fix duplicate nc test
-   */
-  private DataSet<Edge<Long, NullValue>> getPmEdges(String graphPath) {
-    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
-    DataSet<Tuple2<Long, Long>> clsIds = Utils.getInputGraph(logicalGraph, Constants.NC, env)
-        .getVertices()
-        .map(vertex -> new Tuple2<>(vertex.getId(),
-            (long) vertex.getValue().get("clsId")))
-        .returns(new TypeHint<Tuple2<Long, Long>>() {});
-
-    return clsIds
-        .groupBy(1)
-        .reduceGroup(new AllEdgesCreateGroupReducer<>());
   }
 
   /**
@@ -351,54 +271,5 @@ public class MusicBrainzTest {
                 env));
 
     mergedVertices.print();
-  }
-
-  /**
-   * detailed merge part test, not needed anymore?
-   */
-  @Test
-  public void testMusicMergeFirstPart() throws Exception {
-    env = TestBase.setupLocalEnvironment();
-
-    String path = MusicBrainzTest.class
-        .getResource("/data/musicbrainz/merge/").getFile();
-
-    DataSet<Vertex<Long, ObjectMap>> mergedVertices =
-        new JSONDataSource(path, true, env)
-            .getVertices()
-            .runOperation(new MergeInitialization(DataDomain.MUSIC));
-
-    DataSet<MergeMusicTuple> clusters = mergedVertices
-        .map(new MergeMusicTupleCreator());
-
-    SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction =
-        new MergeMusicSimilarity(Constants.COSINE_TRIGRAM);
-
-    SimilarityComputation<MergeMusicTriplet,
-        MergeMusicTriplet> similarityComputation
-        = new SimilarityComputation
-        .SimilarityComputationBuilder<MergeMusicTriplet,
-        MergeMusicTriplet>()
-        .setSimilarityFunction(simFunction)
-        .setStrategy(SimilarityStrategy.MERGE)
-        .setThreshold(0.5)
-        .build();
-
-    // initial working set
-    DataSet<MergeMusicTriplet> initialWorkingSet = clusters
-        .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, 5))
-        .groupBy(10)
-        .reduceGroup(new MergeMusicTripletCreator(5))
-        .runOperation(similarityComputation);
-
-    DataSet<Tuple2<Long, Long>> transitions = initialWorkingSet
-        .flatMap(new TransitionElementsFlatMapFunction<>(DataDomain.MUSIC));
-
-    initialWorkingSet.print();
-    transitions.print();
-    // no elements, need real test for testing NonChanged
-    initialWorkingSet
-      .runOperation(new WorksetNewClusterRemoveOperation<>(transitions))
-      .print();
   }
 }

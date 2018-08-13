@@ -13,7 +13,7 @@ import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
@@ -107,9 +107,9 @@ public class NCBenchmarkParts implements ProgramDescription {
             for (int mergeFor = 95; mergeFor >= 90; mergeFor -= 5) {
               double mergeThreshold = (double) mergeFor / 100;
 
-              DataSet<MergeMusicTuple> preBlockingClusters = representatives
+              DataSet<MergeTuple> preBlockingClusters = representatives
                   .runOperation(new MergeInitialization(DataDomain.NC))
-                  .map(new MergeMusicTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.NC))
+                  .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.NC))
                   .filter(new SourceCountRestrictionFilter<>(DataDomain.NC, sourcesCount));
 
               SimilarityComputation<MergeMusicTriplet,

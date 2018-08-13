@@ -1,5 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
+import com.google.common.primitives.Doubles;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.types.NullValue;
@@ -15,15 +16,15 @@ import java.util.Set;
 /**
  * Basic edge similarity function (geographic)
  */
-public class EdgeSimilarityFunction
+public class GeoSimilarityFunction
     extends SimilarityFunction<Triplet<Long, ObjectMap, NullValue>, Triplet<Long, ObjectMap, ObjectMap>>
     implements Serializable {
-  private static final Logger LOG = Logger.getLogger(EdgeSimilarityFunction.class);
+  private static final Logger LOG = Logger.getLogger(GeoSimilarityFunction.class);
 
   private final String mode;
   private final double maxDistInMeter;
 
-  public EdgeSimilarityFunction(String metric, String mode, double maxDistInMeter) {
+  public GeoSimilarityFunction(String metric, String mode, double maxDistInMeter) {
     this.metric = metric;
     this.mode = mode;
     this.maxDistInMeter = maxDistInMeter;
@@ -42,6 +43,19 @@ public class EdgeSimilarityFunction
         trgProps.getLabel(),
         metric);
     result.getEdge().getValue().put(Constants.SIM_LABEL, labelSimilarity);
+
+    // TODO remove dirty solution, check if needed
+    if (srcProps.containsKey(Constants.ARTIST) && srcProps.containsKey(Constants.ALBUM)) {
+      System.out.println(srcProps.toString());
+      srcProps.setGeoProperties(
+          Doubles.tryParse(srcProps.getArtist()),
+          Doubles.tryParse(srcProps.getAlbum()));
+    }
+    if (trgProps.containsKey(Constants.ARTIST) && trgProps.containsKey(Constants.ALBUM)) {
+      trgProps.setGeoProperties(
+          Doubles.tryParse(trgProps.getArtist()),
+          Doubles.tryParse(trgProps.getAlbum()));
+    }
 
     Double geoSimilarity = Utils.getGeoSimilarity(srcProps.getLatitude(),
         srcProps.getLongitude(),

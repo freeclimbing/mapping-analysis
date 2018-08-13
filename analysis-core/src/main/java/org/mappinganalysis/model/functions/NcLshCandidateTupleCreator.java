@@ -18,7 +18,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.lsh.LshCandidateCreator;
 import org.mappinganalysis.model.functions.blocking.lsh.utils.CandidateNcMergeTripletCreator;
@@ -28,11 +28,11 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 public class NcLshCandidateTupleCreator
-    implements CustomUnaryOperation<MergeMusicTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
   private static final Logger LOG = Logger.getLogger(NcLshCandidateTupleCreator.class);
   private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
   private ExecutionEnvironment env;
-  private DataSet<MergeMusicTuple> inputTuples;
+  private DataSet<MergeTuple> inputTuples;
   private int valueRangeLsh;
   private int numberOfFamilies;
   private int numberOfHashesPerFamily;
@@ -62,7 +62,7 @@ public class NcLshCandidateTupleCreator
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTuple> inputData) {
+  public void setInput(DataSet<MergeTuple> inputData) {
     inputTuples = inputData;
   }
 
@@ -165,9 +165,9 @@ public class NcLshCandidateTupleCreator
         ;
 
     DataSet<Tuple2<Long, Long>> inputCidContainedVertexTuple = inputTuples
-        .flatMap(new FlatMapFunction<MergeMusicTuple, Tuple2<Long, Long>>() {
+        .flatMap(new FlatMapFunction<MergeTuple, Tuple2<Long, Long>>() {
           @Override
-          public void flatMap(MergeMusicTuple cluster, Collector<Tuple2<Long, Long>> out) throws Exception {
+          public void flatMap(MergeTuple cluster, Collector<Tuple2<Long, Long>> out) throws Exception {
             for (Long vertex : cluster.getClusteredElements()) {
 //                LOG.info("flat geo tuple ITER: " + cluster.toString());
               out.collect(new Tuple2<>(cluster.f0, vertex));
@@ -198,7 +198,7 @@ public class NcLshCandidateTupleCreator
         .where(0) // contained vertex
         .equalTo(0)
         .with((left, right) -> right)
-        .returns(new TypeHint<MergeMusicTuple>() {})
+        .returns(new TypeHint<MergeTuple>() {})
         .map(tuple -> {
           MergeMusicTriplet newTriplet = new MergeMusicTriplet(tuple, tuple, 0d);
           if (newTriplet.f0 == null
@@ -211,8 +211,10 @@ public class NcLshCandidateTupleCreator
             LOG.info(newTriplet.toString());
           }
           LOG.info(newTriplet.toString());
-          if (tuple.f0 <= 206972389)
-            LOG.info("recovered tuple: " + tuple.toString());
+          if (tuple.f0 <= 206972389) {
+            // TODO change to string method, add mode
+//            LOG.info("recovered tuple: " + tuple.toString());
+          }
           return newTriplet;
         })
         .returns(new TypeHint<MergeMusicTriplet>() {});

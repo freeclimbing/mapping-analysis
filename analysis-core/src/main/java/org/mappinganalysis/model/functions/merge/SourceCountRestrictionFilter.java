@@ -4,7 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
 /**
@@ -32,7 +32,7 @@ public class SourceCountRestrictionFilter<T> implements FilterFunction<T> {
       MergeGeoTuple tmp = (MergeGeoTuple) tuple;
       return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
     } else {
-      MergeMusicTuple tmp = (MergeMusicTuple) tuple;
+      MergeTuple tmp = (MergeTuple) tuple;
       return AbstractionUtils.getSourceCount(tmp.getIntSources()) < sourcesCount;
 
     }

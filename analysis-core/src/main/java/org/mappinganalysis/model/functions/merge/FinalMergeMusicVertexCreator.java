@@ -4,14 +4,14 @@ import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
  * Transformation from MusicTuple elements to Vertex<Long, ObjectMap>.
  */
 public class FinalMergeMusicVertexCreator
-    implements FlatJoinFunction<MergeMusicTuple, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
+    implements FlatJoinFunction<MergeTuple, Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private final DataDomain domain;
 
   FinalMergeMusicVertexCreator(DataDomain domain) {
@@ -19,7 +19,7 @@ public class FinalMergeMusicVertexCreator
   }
 
   @Override
-  public void join(MergeMusicTuple tuple,
+  public void join(MergeTuple tuple,
                    Vertex<Long, ObjectMap> second,
                    Collector<Vertex<Long, ObjectMap>> out) throws Exception {
     Vertex<Long, ObjectMap> result = tuple.toVertex(domain);

@@ -349,10 +349,6 @@ public class ObjectMap
     if (geoValue == null) {
       return null;
     }
-    // old check, perhaps deprecated? only single latitude/longitude allowed
-    Preconditions.checkArgument(!(geoValue instanceof Set)
-        && !(geoValue instanceof List), "lat or lon instance of Set or List - should not happen: " + geoValue);
-    Preconditions.checkArgument(!(geoValue instanceof String), "string value: " + geoValue);
 
     Double result = Doubles.tryParse(geoValue.toString());
 
@@ -676,6 +672,7 @@ public class ObjectMap
 
   /**
    * Get artist for entity. If no artist is available, return {@value Constants#NO_VALUE}.
+   * latitude
    */
   public String getArtist() {
     if (map.containsKey(Constants.ARTIST)) {
@@ -697,6 +694,7 @@ public class ObjectMap
 
   /**
    * Get album for entity. If no album is available, return {@value Constants#NO_VALUE}.
+   * longitude
    */
   public String getAlbum() {
     if (map.containsKey(Constants.ALBUM)) {
@@ -724,6 +722,10 @@ public class ObjectMap
       }
     }
 //    setIDFs(idfs);
+  }
+
+  public void setFinalBlockingKey(String value) {
+    map.put(Constants.BLOCKING_LABEL, value);
   }
 
   /**

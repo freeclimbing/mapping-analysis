@@ -34,6 +34,7 @@ import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -286,7 +287,6 @@ public class NcBaseTest {
   public void ncToFileTest() throws Exception {
     int sourcesCount = 10;
     env = TestBase.setupLocalEnvironment();
-    LOG.info(env.getParallelism());
     IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
     config.setMetric(Constants.JARO_WINKLER);
 
@@ -348,22 +348,17 @@ public class NcBaseTest {
                     sourcesCount,
                     env));
 
-            String finalPath = graphPath.concat("output/m") + mergeFor
-                + "s" + simFor + "/";
-            new JSONDataSink(finalPath, "merge")
-                .writeVertices(merged);
+            ArrayList<Vertex<Long, ObjectMap>> result = Lists.newArrayList();
+            merged.output(new LocalCollectionOutputFormat<>(result));
             env.execute();
-
 //            String reprOut = graphPath.concat("/output/m") + mergeFor
 //                + "s" + simFor + "/";
 
-            DataSet<Vertex<Long, ObjectMap>> diskMerged =
-                new org.mappinganalysis.io.impl.json.JSONDataSource(
-                    finalPath.concat("output/merge/"), true, env)
-                    .getVertices();
-
-            QualityUtils.printQuality(dataset, mergeThreshold, simSortThreshold,
-                diskMerged, Constants.EMPTY_STRING, sourcesCount, env);
+            QualityUtils.printNcQuality(env.fromCollection(result),
+                config,
+                graphPath.concat("/output/"), // only for test
+                "local",
+                dataset); // jobName!?
           }
         }
     }

@@ -130,6 +130,7 @@ public class Utils {
   }
 
   public static LogicalGraph getGradoopGraph(String graphPath, ExecutionEnvironment env) {
+    System.out.println("Read Gradoop graph from path: " + graphPath);
     final String graphHeadFile  = graphPath.concat("graphHeads.json");
     final String vertexFile     = graphPath.concat("vertices.json");
     final String edgeFile       = graphPath.concat("edges.json");
@@ -180,7 +181,7 @@ public class Utils {
         || strategy == BlockingStrategy.BLOCK_SPLIT) {
       if (bMode.equals(Constants.GEO)) {
 
-        return getGeoBlockingLabel(label);
+        return getGeoBlockingLabel(label, blockingLength);
       } else if (bMode.equals(Constants.MUSIC)) { //|| bMode.equals(Constants.NC)) {
 
         return getMusicBlockingLabel(label, blockingLength);
@@ -213,6 +214,9 @@ public class Utils {
     } else if (blockingLength == 6) {
       specialLength = 2;
       lastChar = 3;
+    } else if (blockingLength == 8) {
+      specialLength = 3;
+      lastChar = 4;
     } else { // default setting
       specialLength = 1;
       lastChar = 2;
@@ -352,6 +356,23 @@ public class Utils {
   public static ObjectMap handleGeoProperties(
       Vertex<Long, ObjectMap> priorities,
       Vertex<Long, ObjectMap> minorities) {
+
+    if (priorities.getValue().containsKey(Constants.ARTIST)
+        && priorities.getValue().containsKey(Constants.ALBUM)) {
+      // album longitude
+      priorities.getValue().setGeoProperties(
+          Doubles.tryParse(priorities.getValue().getArtist()),
+          Doubles.tryParse(priorities.getValue().getAlbum()));
+    }
+
+    if (minorities.getValue().containsKey(Constants.ARTIST)
+        && minorities.getValue().containsKey(Constants.ALBUM)) {
+      // album longitude
+      minorities.getValue().setGeoProperties(
+          Doubles.tryParse(minorities.getValue().getArtist()),
+          Doubles.tryParse(minorities.getValue().getAlbum()));
+    }
+
     HashMap<String, GeoCode> geoMap = Maps.newHashMap();
     geoMap = addGeoToMap(geoMap, priorities);
     geoMap = addGeoToMap(geoMap, minorities);
@@ -459,12 +480,23 @@ public class Utils {
     Preconditions.checkNotNull(right);
 
     if (!isSane(left) || !isSane(right)) {
-//      LOG.info(left + " --- " + right);
       return null;
     }
 
     double similarity = getMetric(metric)
         .compare(simplify(left), simplify(right));
+
+    return getExactDoubleResult(similarity);
+  }
+
+  public static Double getGeoSimilarityAndSimplifyForMetric(
+      String left, String right, String metric) {
+    if (!isSane(left) || !isSane(right)) {
+      return null;
+    }
+
+    double similarity = getMetric(metric)
+        .compare(geoSimplify(left), geoSimplify(right));
 
     return getExactDoubleResult(similarity);
   }
@@ -642,14 +674,6 @@ public class Utils {
   }
 
   /**
-   * Legacy method to get blocking label.
-   */
-  @Deprecated
-  public static String getMusicBlockingLabel(String label) {
-    return getMusicBlockingLabel(label, 4);
-  }
-
-  /**
    * music blocking
    * Get the first x chars of string.
    *
@@ -779,16 +803,22 @@ public class Utils {
    * Get the first 3 chars of string. If label is shorter, fill up with '#'.
    */
   public static String getGeoBlockingLabel(String label) {
-    if (label.length() < 3) {
-      label += StringUtils.repeat("#", 3 - label.length());
+    return getGeoBlockingLabel(label, 3);
+  }
+    public static String getGeoBlockingLabel(String label, int blockingLength) {
+    if (label.length() < blockingLength) {
+      // TODO test return directly
+      label += StringUtils.repeat(
+          "#",
+          blockingLength - label.length());
     }
 
-    label = label.substring(0, 3).toLowerCase();
+    label = label.substring(0, blockingLength).toLowerCase();
     label = label.replaceAll("[^a-zA-Z0-9#]+","#");
 
     // needed for chinese chars for example
-    if (label.length() < 3) {
-      label += StringUtils.repeat("#", 3 - label.length());
+    if (label.length() < blockingLength) {
+      label += StringUtils.repeat("#", blockingLength - label.length());
     }
 
     return label;
@@ -804,6 +834,20 @@ public class Utils {
         value.toLowerCase()
             .replaceAll("[\\p{Punct}]", " "),
         ' ');
+  }
+
+  public static String geoSimplify(String value) {
+    Pattern stringPattern = Pattern.compile("[\\p{Punct}]");
+
+    value = Splitter.on(stringPattern)
+        .trimResults()
+        .omitEmptyStrings()
+        .split(value)
+        .iterator()
+        .next();
+
+    return CharMatcher.WHITESPACE.trimAndCollapseFrom(
+        value.toLowerCase(),' ');
   }
 
   public static StringMetric getMetric(String metric) {
@@ -826,9 +870,6 @@ public class Utils {
     return with(new CosineSimilarity<>())
         .tokenize(Tokenizers.qGramWithPadding(3))
         .build();
-    // old:
-    // .simplify(Simplifiers.removeAll("[\\\\(|,].*"))
-    // .simplify(Simplifiers.replaceNonWord())
   }
 
   /**

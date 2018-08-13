@@ -5,7 +5,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeMusicTriplet;
-import org.mappinganalysis.model.MergeMusicTuple;
+import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
 
@@ -14,8 +14,8 @@ import org.mappinganalysis.util.Constants;
  */
 class TripletCandidateRestrictor
     implements FlatJoinFunction<
-    Tuple2<MergeMusicTuple,Long>,
-    MergeMusicTuple,
+    Tuple2<MergeTuple,Long>,
+    MergeTuple,
     MergeMusicTriplet> {
 
   private DataDomain dataDomain;
@@ -28,8 +28,8 @@ class TripletCandidateRestrictor
 
   @Override
   public void join(
-      Tuple2<MergeMusicTuple, Long> first,
-      MergeMusicTuple second,
+      Tuple2<MergeTuple, Long> first,
+      MergeTuple second,
       Collector<MergeMusicTriplet> out) throws Exception {
     MergeMusicTriplet triplet = new MergeMusicTriplet(first.f0, second);
 

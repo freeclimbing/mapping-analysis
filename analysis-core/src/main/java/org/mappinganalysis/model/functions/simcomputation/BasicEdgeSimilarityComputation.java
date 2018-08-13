@@ -1,11 +1,9 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.graph.*;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
@@ -49,7 +47,7 @@ public class BasicEdgeSimilarityComputation
         this.simFunction = new NcSimilarityFunction(metric);
         break;
       case Constants.GEO:
-        this.simFunction = new EdgeSimilarityFunction(
+        this.simFunction = new GeoSimilarityFunction(
             metric,
             mode,
             Constants.MAXIMAL_GEO_DISTANCE);
@@ -70,7 +68,7 @@ public class BasicEdgeSimilarityComputation
     } else if (config.getDataDomain() == DataDomain.NC) {
       this.simFunction = new NcSimilarityFunction(config.getMetric());
     } else if (config.getDataDomain() == DataDomain.GEOGRAPHY) {
-      this.simFunction = new EdgeSimilarityFunction(
+      this.simFunction = new GeoSimilarityFunction(
           config.getMetric(),
           config.getMode(),
           Constants.MAXIMAL_GEO_DISTANCE);
