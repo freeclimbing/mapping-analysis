@@ -40,8 +40,6 @@ public class QualityComputation implements ProgramDescription {
     INPUT_PATH = args[0];
     VERTEX_FILE_NAME = args[1];
     MODE = args[2];
-
-    Constants.SOURCE_COUNT = 5;
     DataDomain domain = DataDomain.MUSIC;
 
     DataSet<Vertex<Long, ObjectMap>> inputVertices =

@@ -510,7 +510,6 @@ public class NcBaseTest {
   @Test
   public void mergeNcSimulateOneBlockTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
     String metric = Constants.COSINE_TRIGRAM;
 
     List<Long> entryList = Lists.newArrayList();

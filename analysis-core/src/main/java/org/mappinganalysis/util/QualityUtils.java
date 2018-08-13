@@ -103,6 +103,65 @@ public class QualityUtils {
   }
 
   /**
+   * new music
+   */
+  public static HashMap<String, BigDecimal> printNewMusicQuality(
+      DataSet<Vertex<Long, ObjectMap>> checkClusters,
+      Config config,
+      String inputPath,
+      DataSet<Tuple2<Long, Long>> evalResultList,
+      String vertexFileName,
+      String qualityExecMode) throws Exception {
+
+    DataSet<Tuple2<Long, Long>> clusterEdges = checkClusters
+        .map(new StatisticsClusterCounterRichMapFunction("test-"))
+        .flatMap(new QualityEdgeCreator())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TEST_LINKS_ACCUMULATOR));
+
+    DataSet<Tuple2<String, String>> perfectMapping;
+
+
+    DataSet<Tuple2<Long, Long>> goldLinks = evalResultList
+        .map(tuple -> new Vertex<>(tuple.f0, tuple.f1))
+        .returns(new TypeHint<Vertex<Long, Long>>() {})
+        .groupBy(1)
+        .reduceGroup(new AllEdgesCreateGroupReducer<>())
+        .map(edge -> new Tuple2<>(edge.getSource(), edge.getTarget()))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {})
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.GOLD_LINKS_ACCUMULATOR));
+
+    DataSet<Tuple2<Long, Long>> truePositives = goldLinks
+        .join(clusterEdges)
+        .where(0, 1).equalTo(0, 1)
+        .with(new GetLeftSideJoinFunction())
+        .map(new StatisticsCountElementsRichMapFunction<>(
+            Constants.TRUE_POSITIVE_ACCUMULATOR));
+
+    if (qualityExecMode.equals("cluster")) {
+      new JSONDataSink(inputPath, "statistics")
+          .writeTuples(truePositives);
+    } else {
+      ArrayList<Tuple2<Long, Long>> representatives = Lists.newArrayList();
+      truePositives.output(new LocalCollectionOutputFormat<>(representatives));
+    }
+
+    JobExecutionResult jobResult = config
+        .getExecutionEnvironment()
+        .execute("statistics");
+
+    printExecPlusAccumulatorResults(jobResult);
+
+    return getAndprintRecallPrecisionFM(
+        config,
+        vertexFileName,
+        jobResult.getAccumulatorResult(Constants.GOLD_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TEST_LINKS_ACCUMULATOR),
+        jobResult.getAccumulatorResult(Constants.TRUE_POSITIVE_ACCUMULATOR));
+  }
+
+  /**
    * Print music dataset quality for different sizes, use Accumulators.
    * @param checkClusters vertices to be checked
    * @param config execution config
@@ -124,13 +183,13 @@ public class QualityUtils {
 
     DataSet<Tuple2<String, String>> perfectMapping;
     String readFromPath;
-    if (vertexFileName.contains("2000000")) {
+    if (vertexFileName.contains("200000")) {
       if (!inputPath.endsWith(Constants.SLASH)) {
         readFromPath = inputPath.concat(Constants.SLASH);
       } else {
         readFromPath = inputPath;
       }
-      readFromPath = readFromPath.concat("input/").concat(vertexFileName);
+        readFromPath = readFromPath.concat("input/").concat(vertexFileName);
     } else {
       readFromPath = QualityUtils.class
           .getResource("/data/musicbrainz/input/")

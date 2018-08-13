@@ -18,24 +18,25 @@ public class GradoopEdgeToGellyEdgeMapper
   }
 
   @Override
-  public Edge<Long, NullValue> map(org.gradoop.common.model.impl.pojo.Edge value) throws Exception {
+  public Edge<Long, NullValue> map(
+      org.gradoop.common.model.impl.pojo.Edge value) throws Exception {
+    boolean hasLeftRightVertexId = false;
     assert value.getProperties() != null;
     for (Property property : value.getProperties()) {
-      System.out.println(property + " " +property.getValue().toString());
       if (property.getKey().equals("left")) {
         reuseEdge.setSource(property.getValue().getLong());
+        hasLeftRightVertexId = true;
       } else if (property.getKey().equals("right")) {
         reuseEdge.setTarget(property.getValue().getLong());
+        hasLeftRightVertexId = true;
       }
     }
 
-    if (reuseEdge.getSource() == null) {
-      Long hash = Utils.getHash(value.getSourceId().toString());
-      reuseEdge.setSource(hash);
-    }
-    if (reuseEdge.getTarget() == null) {
-      Long hash = Utils.getHash(value.getTargetId().toString());
-      reuseEdge.setTarget(hash);
+    if (!hasLeftRightVertexId) {
+      reuseEdge.setSource(
+          Utils.getHash(value.getSourceId().toString()));
+      reuseEdge.setTarget(
+          Utils.getHash(value.getTargetId().toString()));
     }
 
     reuseEdge.setValue(NullValue.getInstance());

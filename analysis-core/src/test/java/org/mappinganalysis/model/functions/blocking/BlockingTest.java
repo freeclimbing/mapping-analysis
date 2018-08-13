@@ -8,6 +8,7 @@ import org.apache.flink.types.NullValue;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.MergeMusicTriplet;
 import org.mappinganalysis.model.ObjectMap;
@@ -28,7 +29,10 @@ public class BlockingTest {
         .getGraph();
 
     DataSet<MergeMusicTriplet> triplets = baseGraph.getVertices()
-        .map(new MergeTupleCreator())
+        .map(new MergeTupleCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.MUSIC,
+            4))
         .runOperation(new BlockSplitTripletCreator());
 
     triplets.print();
@@ -49,7 +53,10 @@ public class BlockingTest {
         .union(baseGraph.getVertices().filter(new SourceFilterFunction("2")));
 
     DataSet<MergeMusicTriplet> triplets = inVertices
-        .map(new MergeTupleCreator())
+        .map(new MergeTupleCreator(
+            BlockingStrategy.STANDARD_BLOCKING,
+            DataDomain.MUSIC,
+            4))
         .runOperation(new BlockSplitTripletCreator());
 
     System.out.println(triplets.count());

@@ -48,7 +48,7 @@ public class SingleIdfComputation {
             .getVertices();
 
     DataSet<MergeTuple> clusters = mergedVertices
-        .map(new MergeTupleCreator(BlockingStrategy.IDF_BLOCKING));
+        .map(new MergeTupleCreator(BlockingStrategy.IDF_BLOCKING, DataDomain.MUSIC, 4));
 
     DataSet<MergeTuple> preBlockingClusters = clusters
         .filter(new SourceCountRestrictionFilter<>(DataDomain.MUSIC, 5));

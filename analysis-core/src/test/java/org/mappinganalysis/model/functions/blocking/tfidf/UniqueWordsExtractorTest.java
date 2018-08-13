@@ -21,6 +21,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
@@ -85,7 +86,7 @@ public class UniqueWordsExtractorTest {
             return vertex;
           }
         })
-        .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING));
+        .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.MUSIC, 4));
 //            BlockingStrategy.IDF_BLOCKING));
 
     // 2SmoothSavageLife2

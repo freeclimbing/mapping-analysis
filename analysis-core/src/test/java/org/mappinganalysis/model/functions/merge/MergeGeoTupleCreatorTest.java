@@ -21,7 +21,6 @@ public class MergeGeoTupleCreatorTest {
   @Test
   public void testMergeTupleCreator() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
 
     String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec/").getFile();

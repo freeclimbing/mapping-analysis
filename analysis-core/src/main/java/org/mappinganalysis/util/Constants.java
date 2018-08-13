@@ -417,7 +417,6 @@ public class Constants {
   /**
    * Number of different data sources in the data set.
    */
-  public static Integer SOURCE_COUNT;
   public static String LL_MODE = "";
   public static String PROC_MODE = "";
 }

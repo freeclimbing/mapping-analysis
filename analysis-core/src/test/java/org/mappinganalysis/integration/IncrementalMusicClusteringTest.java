@@ -798,13 +798,13 @@ precision: 0.9892561983471074 recall: 0.8839384615384616 F1: 0.9336366590835229
   public void qualityTest() throws Exception {
     String inputPath =
 //        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/nentwig/musicbrainz/";
-    "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/10p/inputGraphs/initialGraph/";
+    "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/user/saeedi/5p/inputGraphs/initialGraph/";
 
 
 
-
-    String jobName = "10987654321Inc-Nc-Mb-Sa-Bs2-0.9";
-    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    String jobName = "54321Inc-Nc-Mb-Va-Bs6-0.7";
+//    String jobName = "10987654321Inc-Nc-Mb-Sa-Bs2-0.9";
+    IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
 
     Graph<Long, ObjectMap, NullValue> statisticsGraph
         = new JSONDataSource(inputPath, jobName, env)

@@ -49,6 +49,9 @@ public class MergeTuple
       if (!getLabel().isEmpty()) {
         properties.setLabel(getLabel());
       }
+      if (!getArtistTitleAlbum().isEmpty()) {
+        properties.setLabel(getArtistTitleAlbum());
+      }
       if (!getAlbum().isEmpty()) {
         properties.setAlbum(getAlbum());
       }
@@ -209,7 +212,6 @@ public class MergeTuple
     return f12;
   }
 
-  @Deprecated
   public String toString() {
     return String.valueOf(getId()) + Constants.COMMA +
         getLabel() + Constants.COMMA +

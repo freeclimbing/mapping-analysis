@@ -126,7 +126,6 @@ public class MergeGeoBlockingTest {
   @Test
   public void testInit() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
 
     String filePath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeInit/").getFile();
@@ -159,7 +158,6 @@ public class MergeGeoBlockingTest {
   @Test
   public void testExecuteMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
 
     String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec/").getFile();
@@ -205,7 +203,6 @@ public class MergeGeoBlockingTest {
   // weimar + weimar republic, lake louise
   public void testExecuteNoMerge() throws Exception {
     env = TestBase.setupLocalEnvironment();
-    TestBase.setupConstants();
 
     String graphPath = MergeGeoBlockingTest.class
         .getResource("/data/representative/mergeExec2/").getFile();

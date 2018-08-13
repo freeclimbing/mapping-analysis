@@ -109,7 +109,7 @@ public class NCBenchmarkParts implements ProgramDescription {
 
               DataSet<MergeTuple> preBlockingClusters = representatives
                   .runOperation(new MergeInitialization(DataDomain.NC))
-                  .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.NC))
+                  .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.NC, 4))
                   .filter(new SourceCountRestrictionFilter<>(DataDomain.NC, sourcesCount));
 
               SimilarityComputation<MergeMusicTriplet,

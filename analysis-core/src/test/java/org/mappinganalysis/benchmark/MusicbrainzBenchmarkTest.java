@@ -4,10 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
+import com.sun.tools.javac.util.GraphUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.MapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
@@ -24,8 +28,14 @@ import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
+import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
+import org.mappinganalysis.model.functions.decomposition.simsort.SimSort;
+import org.mappinganalysis.model.functions.decomposition.typegroupby.TypeGroupBy;
+import org.mappinganalysis.model.functions.merge.MergeExecution;
+import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.IncrementalConfig;
 import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
@@ -137,22 +147,48 @@ public class MusicbrainzBenchmarkTest {
 
     final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
         "/user/saeedi/MusicDataset/2000k/config1_th0.7tt/";
+//                "/user/saeedi/MusicDataset/200k/config1_new/";
     LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
 
     Graph<Long, ObjectMap, NullValue> graph = Utils
         .getInputGraph(logicalGraph, Constants.MUSIC, env);
 
+    DataSet<Tuple2<Long, Long>> evalResultList = graph.getVertices()
+        .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get("clsId")))
+        .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
-    config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setSimSortSimilarity(0.5);
+    config.setBlockingLength(4);
+    config.setMinResultSimilarity(0.8);
+    config.setExistingSourcesCount(5);
 
-    graph.getEdges().first(10).print();
+    DataSet<Vertex<Long, ObjectMap>> clusters = graph.run(new DefaultPreprocessing(config))
+        .run(new TypeGroupBy(env))
+        .run(new SimSort(config))
+        .getVertices()
+        .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
 
-//    graph.run(new DefaultPreprocessing(config))
-//        .getVertices().print();
-//    graph.getVertices().print();
+    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+    DataSet<Vertex<Long, ObjectMap>> resultingClusters = env
+        .fromCollection(representatives)
+        .runOperation(new MergeExecution(config));
+
+    representatives = Lists.newArrayList();
+    resultingClusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+    QualityUtils.printNewMusicQuality(env.fromCollection(representatives),
+        config,
+        graphPath,
+        evalResultList,
+        "2000k",
+        "local");
   }
 
   /**

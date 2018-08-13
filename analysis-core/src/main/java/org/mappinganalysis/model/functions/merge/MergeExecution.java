@@ -22,6 +22,7 @@ import org.mappinganalysis.model.functions.preprocessing.AddShadingTypeMapFuncti
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.model.impl.SimilarityStrategy;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.config.IncrementalConfig;
 
 /**
  * Merge process, iteratively collate similar clusters in compliance with restrictions
@@ -31,6 +32,7 @@ public class MergeExecution
     implements CustomUnaryOperation<Vertex<Long, ObjectMap>, Vertex<Long, ObjectMap>> {
   private static final Logger LOG = Logger.getLogger(MergeExecution.class);
   private final String metric;
+  private int blockingLength = 4; // fix default setting
   private DataDomain domain;
   private BlockingStrategy blockingStrategy;
   private double mergeThreshold;
@@ -43,6 +45,19 @@ public class MergeExecution
   private int numberOfFamilies;
   private int numberOfHashesPerFamily;
 
+  /**
+   * Try to use as default constructor, if possible.
+   */
+  public MergeExecution(IncrementalConfig config) {
+    this(config.getDataDomain(),
+        config.getMetric(),
+        config.getBlockingStrategy(),
+        config.getMinResultSimilarity(),
+        config.getSourcesCount(),
+        config.getExecutionEnvironment(),
+        config.getBlockingLength());
+  }
+
   public MergeExecution(DataDomain domain,
                         String metric,
                         double mergeThreshold,
@@ -50,10 +65,29 @@ public class MergeExecution
                         ExecutionEnvironment env) {
     this(domain,
         metric,
-        BlockingStrategy.STANDARD_BLOCKING,
+        BlockingStrategy.BLOCK_SPLIT,
         mergeThreshold,
         sourcesCount,
         env);
+  }
+
+  /**
+   * old constructor
+   */
+  @Deprecated
+  public MergeExecution(DataDomain domain,
+                        String metric,
+                        BlockingStrategy blockingStrategy,
+                        double mergeThreshold,
+                        int sourcesCount,
+                        ExecutionEnvironment env) {
+    this(domain,
+        metric,
+        blockingStrategy,
+        mergeThreshold,
+        sourcesCount,
+        env,
+        4);
   }
 
   public MergeExecution(DataDomain domain,
@@ -61,13 +95,15 @@ public class MergeExecution
                         BlockingStrategy blockingStrategy,
                         double mergeThreshold,
                         int sourcesCount,
-                        ExecutionEnvironment env) {
+                        ExecutionEnvironment env,
+                        int blockingLength) {
     this.domain = domain;
     this.metric = metric;
     this.blockingStrategy = blockingStrategy;
     this.mergeThreshold = mergeThreshold;
     this.sourcesCount = sourcesCount;
     this.env = env;
+    this.blockingLength = blockingLength;
   }
 
   // only LSH
@@ -153,11 +189,7 @@ public class MergeExecution
      */
     if (domain == DataDomain.MUSIC || domain == DataDomain.NC) {
       DataSet<MergeTuple> initialSolutionSet = baseClusters
-            .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, domain));
-//      } else {
-//        initialSolutionSet = baseClusters
-//            .map(new MergeMusicTupleCreator(BlockingStrategy.NO_BLOCKING, domain)); // TODO check LSH
-//      }
+            .map(new MergeTupleCreator(blockingStrategy, domain, blockingLength));
 
       // prep phase initial working set
       DataSet<MergeTuple> preBlockingClusters = initialSolutionSet

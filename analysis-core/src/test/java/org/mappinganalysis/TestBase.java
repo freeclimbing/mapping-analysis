@@ -11,11 +11,6 @@ import org.mappinganalysis.util.config.Config;
  * Base methods testing
  */
 public class TestBase {
-  public static void setupConstants() {
-//    Constants.INPUT_PATH = "linklion";
-    Constants.SOURCE_COUNT = 5;
-  }
-
   public static ExecutionEnvironment setupLocalEnvironment() {
 //    Configuration conf = new Configuration();
 //    conf.setInteger(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, 32768);//16384);
@@ -23,7 +18,6 @@ public class TestBase {
 //        new LocalEnvironment(conf);
     env.setParallelism(Runtime.getRuntime().availableProcessors());
     env.getConfig().disableSysoutLogging();
-
 
     return env;
   }

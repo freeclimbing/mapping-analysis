@@ -43,12 +43,7 @@ public class DeltaIterateMergeMusicStepFunction {
   }
 
   public void compute() {
-    DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset)
-        .map(x -> {
-//          LOG.info("max: " + x.toString());
-          return x;
-        })
-        .returns(new TypeHint<MergeMusicTriplet>() {});
+    DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
 
     /*
       delta is the solution set which is changed over the iterations
@@ -61,7 +56,6 @@ public class DeltaIterateMergeMusicStepFunction {
 
     // remove max triplets from workset, they are getting merged anyway
     // duplicate of WorksetNewClusterRemoveOperation
-
     workset = workset.leftOuterJoin(maxTriplets)
         .where(0,1)
         .equalTo(0,1)

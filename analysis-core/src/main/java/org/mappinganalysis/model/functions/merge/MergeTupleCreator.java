@@ -26,11 +26,6 @@ public class MergeTupleCreator
   private DataDomain domain;
   private int blockingLength;
 
-  @Deprecated
-  public MergeTupleCreator(BlockingStrategy blockingStrategy) {
-    this(blockingStrategy, DataDomain.MUSIC, 4);
-  }
-
   /**
    * Default constructor
    * @param config config
@@ -42,23 +37,8 @@ public class MergeTupleCreator
   }
 
   /**
-   * Test only
+   * Default constructor.
    */
-  @Deprecated
-  public MergeTupleCreator() {
-    this(BlockingStrategy.STANDARD_BLOCKING, DataDomain.MUSIC, 4);
-  }
-
-  /**
-   * old: NC Benchmark parts and MergeExecution only
-   */
-  @Deprecated
-  public MergeTupleCreator(
-      BlockingStrategy blockingStrategy,
-      DataDomain domain) {
-    this(blockingStrategy, domain, 4);
-  }
-
   public MergeTupleCreator(
       BlockingStrategy blockingStrategy,
       DataDomain domain,
@@ -73,8 +53,9 @@ public class MergeTupleCreator
     MergeTuple tuple = new MergeTuple();
 
     ObjectMap properties = vertex.getValue();
-
 //    System.out.println("debug vertex props: " + properties.toString());
+
+    // rly not needed? remvoe
     properties.setMode(domain);
 
     tuple.setId(vertex.getId());
@@ -89,10 +70,15 @@ public class MergeTupleCreator
       tuple.setNumber(properties.getNumber());
       tuple.setYear(properties.getYear());
 
-//    if (domain == DataDomain.MUSIC) {
-      artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex.getValue());
+      if (vertex.getValue().get(Constants.ARTIST_TITLE_ALBUM) == null) {
+        artistTitleAlbum = Utils.createSimpleArtistTitleAlbum(vertex.getValue());
+      } else {
+        artistTitleAlbum = vertex.getValue().getArtistTitleAlbum();
+      }
+
       tuple.setArtistTitleAlbum(artistTitleAlbum);
-//    }
+
+//      System.out.println("added ata: " + tuple.toString());
     }
 
 

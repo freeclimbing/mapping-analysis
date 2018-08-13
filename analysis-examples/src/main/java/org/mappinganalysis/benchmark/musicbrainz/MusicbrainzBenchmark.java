@@ -3,8 +3,10 @@ package org.mappinganalysis.benchmark.musicbrainz;
 import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.ProgramDescription;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Edge;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
@@ -27,6 +29,7 @@ import org.mappinganalysis.model.functions.merge.MergeExecution;
 import org.mappinganalysis.model.functions.merge.MergeInitialization;
 import org.mappinganalysis.model.functions.preprocessing.DefaultPreprocessing;
 import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.QualityUtils;
 import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.config.Config;
 import org.mappinganalysis.util.config.IncrementalConfig;
@@ -62,9 +65,17 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     final String mode = args[2];
     final String metric = args[4];
 
-    Constants.SOURCE_COUNT = 5;
-    DataDomain domain = DataDomain.MUSIC;
     JobExecutionResult result;
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
+    config.setMetric(metric);
+    config.setSimSortSimilarity(0.5);
+    config.setMinResultSimilarity(0.8); // MERGE SIM
+    config.setExistingSourcesCount(5);
+    config.setBlockingLength(4);
+
+    DataSet<Tuple2<Long, Long>> evalResultList = null;
 
     if (!mode.equals("merge")) {
       /*
@@ -86,11 +97,6 @@ public class MusicbrainzBenchmark implements ProgramDescription {
         return;
       }
 
-      IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
-      config.setBlockingStrategy(BlockingStrategy.STANDARD_BLOCKING);
-      config.setMetric(metric);
-      config.setSimSortSimilarity(0.5);
-
     /*
       preprocessing
      */
@@ -102,7 +108,9 @@ public class MusicbrainzBenchmark implements ProgramDescription {
           .getGradoopGraph(inputPath, env);
       Graph<Long, ObjectMap, NullValue> graph = Utils
           .getInputGraph(logicalGraph, Constants.MUSIC, env);
-
+      evalResultList = graph.getVertices()
+          .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get("clsId")))
+          .returns(new TypeHint<Tuple2<Long, Long>>() {});
       /*
        normal (old) graph input
        */
@@ -122,12 +130,9 @@ public class MusicbrainzBenchmark implements ProgramDescription {
           new JSONDataSource(inputPath, PREPROCESSING_STEP, env)
               .getGraph()
               .run(new TypeGroupBy(env))
-              .run(new SimSort(domain,
-                  metric,
-                  0.5,
-                  env))
+              .run(new SimSort(config))
               .getVertices()
-              .runOperation(new RepresentativeCreatorMultiMerge(domain));
+              .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
 
       new JSONDataSink(inputPath, DECOMPOSITION_STEP)
           .writeVertices(vertices);
@@ -141,17 +146,23 @@ public class MusicbrainzBenchmark implements ProgramDescription {
     DataSet<Vertex<Long, ObjectMap>> mergedVertices =
         new JSONDataSource(inputPath, DECOMPOSITION_STEP, env)
             .getVertices()
-            .runOperation(new MergeInitialization(DataDomain.MUSIC))
-            .runOperation(new MergeExecution(DataDomain.MUSIC,
-                metric,
-                0.5,
-                Constants.SOURCE_COUNT,
-                env));
+            .runOperation(new MergeExecution(config));
 
     new JSONDataSink(inputPath, MERGE_STEP)
         .writeVertices(mergedVertices);
     result = env.execute(MER_JOB);
     System.out.println(MER_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+
+    DataSet<Vertex<Long, ObjectMap>> clusters = new JSONDataSource(inputPath, MERGE_STEP, env)
+        .getGraph()
+        .getVertices();
+
+    QualityUtils.printNewMusicQuality(clusters,
+        config,
+        inputPath,
+        evalResultList,
+        vertexFileName,
+        "cluster");
   }
 
   @Override

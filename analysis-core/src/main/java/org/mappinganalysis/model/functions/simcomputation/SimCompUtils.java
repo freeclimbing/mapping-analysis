@@ -25,6 +25,8 @@ public class SimCompUtils {
   }
 
   public static Double handleString(String attrName, MergeMusicTriplet triplet, String metric) {
+//    System.out.println("simcomputils: " + attrName);
+//    System.out.println(triplet.toString());
     String left = triplet.getSrcTuple().getString(attrName);
     String right = triplet.getTrgTuple().getString(attrName);
 

@@ -42,12 +42,13 @@ public class MusicMajorityPropertiesGroupReduceFunction
       updateClusterVertexIds(clusterVertices, vertex);
       updateClusterOntologies(clusterOntologies, vertex);
 
-      addAttributeToMap(Constants.LABEL, labelMap, vertex);
-      addAttributeToMap(Constants.ARTIST, artistMap, vertex);
-      addAttributeToMap(Constants.ALBUM, albumMap, vertex);
-      addAttributeToMap(Constants.NUMBER, numberMap, vertex);
-      addIntAttributeToMap(Constants.LENGTH, lengthMap, vertex);
-      addIntAttributeToMap(Constants.YEAR, yearMap, vertex);
+      addAttributeToMap(Constants.ARTIST_TITLE_ALBUM, labelMap, vertex);
+//      addAttributeToMap(Constants.LABEL, labelMap, vertex);
+//      addAttributeToMap(Constants.ARTIST, artistMap, vertex);
+//      addAttributeToMap(Constants.ALBUM, albumMap, vertex);
+//      addAttributeToMap(Constants.NUMBER, numberMap, vertex);
+//      addIntAttributeToMap(Constants.LENGTH, lengthMap, vertex);
+//      addIntAttributeToMap(Constants.YEAR, yearMap, vertex);
 
 //      resultProps.addTypes(Constants.TYPE_INTERN, vertex.getValue().getTypes(Constants.TYPE_INTERN));
 
@@ -59,7 +60,8 @@ public class MusicMajorityPropertiesGroupReduceFunction
 
     // decide for best one
     if (!labelMap.isEmpty()) {
-      resultProps.setLabel(Utils.getFinalValue(labelMap));
+      resultProps.setArtistTitleAlbum(Utils.getFinalValue(labelMap));
+//      resultProps.setLabel(Utils.getFinalValue(labelMap));
     }
     if (!artistMap.isEmpty()) {
       resultProps.setArtist(Utils.getFinalValue(artistMap));
