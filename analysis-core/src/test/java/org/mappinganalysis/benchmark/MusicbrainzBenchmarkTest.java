@@ -146,13 +146,12 @@ public class MusicbrainzBenchmarkTest {
     env = TestBase.setupLocalEnvironment();
 
     final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
-        "/user/saeedi/MusicDataset/2000k/config1_th0.7tt/";
-//                "/user/saeedi/MusicDataset/200k/config1_new/";
-    LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
-
+//        "/user/saeedi/MusicDataset/2000k/config1_th0.7tt/";
+                "/user/saeedi/MusicDataset/200k/config1_new/";
+    LogicalGraph logicalGraph = Utils
+        .getGradoopGraph(graphPath, env);
     Graph<Long, ObjectMap, NullValue> graph = Utils
         .getInputGraph(logicalGraph, Constants.MUSIC, env);
-
     DataSet<Tuple2<Long, Long>> evalResultList = graph.getVertices()
         .map(vertex -> new Tuple2<>(vertex.getId(), (long) vertex.getValue().get("clsId")))
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
@@ -165,7 +164,8 @@ public class MusicbrainzBenchmarkTest {
     config.setMinResultSimilarity(0.8);
     config.setExistingSourcesCount(5);
 
-    DataSet<Vertex<Long, ObjectMap>> clusters = graph.run(new DefaultPreprocessing(config))
+    DataSet<Vertex<Long, ObjectMap>> clusters = graph
+        .run(new DefaultPreprocessing(config))
         .run(new TypeGroupBy(env))
         .run(new SimSort(config))
         .getVertices()
