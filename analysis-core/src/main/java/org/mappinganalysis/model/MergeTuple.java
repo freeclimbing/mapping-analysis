@@ -49,7 +49,7 @@ public class MergeTuple
       if (!getLabel().isEmpty()) {
         properties.setLabel(getLabel());
       }
-      if (!getArtistTitleAlbum().isEmpty()) {
+      if (getArtistTitleAlbum() != null && !getArtistTitleAlbum().isEmpty()) {
         properties.setLabel(getArtistTitleAlbum());
       }
       if (!getAlbum().isEmpty()) {
