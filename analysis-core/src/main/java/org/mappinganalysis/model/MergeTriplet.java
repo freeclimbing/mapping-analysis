@@ -6,14 +6,14 @@ import org.mappinganalysis.util.Constants;
 /**
  * L, L, T, T, sim, blocking label
  */
-public class MergeMusicTriplet
+public class MergeTriplet
     extends Tuple6<Long, Long, MergeTuple, MergeTuple, Double, String> {
-  public MergeMusicTriplet() {
+  public MergeTriplet() {
   }
 
-  public MergeMusicTriplet(MergeTuple srcTuple,
-                           MergeTuple trgTuple,
-                           Double similarity) {
+  public MergeTriplet(MergeTuple srcTuple,
+                      MergeTuple trgTuple,
+                      Double similarity) {
     this.f0 = srcTuple.getId();
     this.f1 = trgTuple.getId();
     this.f2 = srcTuple;
@@ -22,15 +22,15 @@ public class MergeMusicTriplet
     this.f5 = Constants.EMPTY_STRING;
   }
 
-  public MergeMusicTriplet(MergeTuple left,
-                           MergeTuple right) {
+  public MergeTriplet(MergeTuple left,
+                      MergeTuple right) {
     setIdAndTuples(left, right);
     this.f4 = 0d;
     this.f5 = Constants.EMPTY_STRING;
   }
 
-  public MergeMusicTriplet(Long srcTuple,
-                           Long trgTuple) {
+  public MergeTriplet(Long srcTuple,
+                      Long trgTuple) {
     this.f0 = srcTuple;
     this.f1 = trgTuple;
     this.f2 = new MergeTuple(srcTuple);

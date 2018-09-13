@@ -7,7 +7,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 
@@ -15,13 +15,13 @@ import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
  * Compute changes within one delta iteration step, music domain.
  */
 public class ChangesMusicOperation
-    implements CustomUnaryOperation<MergeMusicTriplet, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTriplet, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(ChangesMusicOperation.class);
 
   private DataSet<MergeTuple> delta;
   private DataSet<Tuple2<Long, Long>> transitions;
   private DataDomain domain;
-  private DataSet<MergeMusicTriplet> workset;
+  private DataSet<MergeTriplet> workset;
 
   ChangesMusicOperation(DataSet<MergeTuple> delta,
                         DataSet<Tuple2<Long, Long>> transitions,
@@ -32,13 +32,13 @@ public class ChangesMusicOperation
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTriplet> inputData) {
+  public void setInput(DataSet<MergeTriplet> inputData) {
     this.workset = inputData;
   }
 
   @Override
-  public DataSet<MergeMusicTriplet> createResult() {
-    DataSet<MergeMusicTriplet> leftChanges = workset.join(transitions)
+  public DataSet<MergeTriplet> createResult() {
+    DataSet<MergeTriplet> leftChanges = workset.join(transitions)
         .where(0)
         .equalTo(0)
         .with(new TransitionMusicJoinFunction(0))
@@ -48,7 +48,7 @@ public class ChangesMusicOperation
         .equalTo(0)
         .with(new TripletTupleMusicJoinFunction(0));
 
-    DataSet<MergeMusicTriplet> notChangedLeftSide = workset.leftOuterJoin(transitions)
+    DataSet<MergeTriplet> notChangedLeftSide = workset.leftOuterJoin(transitions)
         .where(0)
         .equalTo(0)
         .with(new LeftMinusRightSideJoinFunction<>());
@@ -58,7 +58,7 @@ public class ChangesMusicOperation
 //          }
 //        });
 
-    DataSet<MergeMusicTriplet> rightChanges = leftChanges.union(notChangedLeftSide)
+    DataSet<MergeTriplet> rightChanges = leftChanges.union(notChangedLeftSide)
 //        .where(0,1)
 //        .equalTo(0,1)
 //        .with((left, right) -> { // leftChanges could contain elements which are changed
@@ -82,9 +82,9 @@ public class ChangesMusicOperation
     DataSet<Tuple2<Long, Long>> removeFromLeftChanges = rightChanges.leftOuterJoin(transitions)
         .where(1)
         .equalTo(1)
-        .with(new FlatJoinFunction<MergeMusicTriplet, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
+        .with(new FlatJoinFunction<MergeTriplet, Tuple2<Long, Long>, Tuple2<Long, Long>>() {
           @Override
-          public void join(MergeMusicTriplet first, Tuple2<Long, Long> second, Collector<Tuple2<Long, Long>> out) throws Exception {
+          public void join(MergeTriplet first, Tuple2<Long, Long> second, Collector<Tuple2<Long, Long>> out) throws Exception {
             out.collect(new Tuple2<>(first.f0, second.f0));
           }
         });

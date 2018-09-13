@@ -35,7 +35,8 @@ import org.mappinganalysis.util.functions.keyselector.CcIdKeySelector;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This benchmark class is an updated version of the original MusicbrainzBenchmark.
+ * This benchmark class is an updated version of the original MusicbrainzBenchmark,
+ * simplifying the execution and removing unneeded methods.
  *
  * The old version has problems with any of the changes from the previous months.
  */

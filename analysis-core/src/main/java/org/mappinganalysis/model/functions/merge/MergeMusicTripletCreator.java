@@ -4,7 +4,7 @@ import com.google.common.collect.Sets;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
@@ -14,7 +14,7 @@ import java.util.HashSet;
  * Create Triplets and do blocking.
  */
 public class MergeMusicTripletCreator
-    implements GroupReduceFunction<MergeTuple, MergeMusicTriplet> {
+    implements GroupReduceFunction<MergeTuple, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(MergeMusicTripletCreator.class);
   private final int sourcesCount;
 
@@ -24,7 +24,7 @@ public class MergeMusicTripletCreator
 
   @Override
   public void reduce(Iterable<MergeTuple> values,
-                     Collector<MergeMusicTriplet> out) throws Exception {
+                     Collector<MergeTriplet> out) throws Exception {
     HashSet<MergeTuple> leftSide = Sets.newHashSet(values);
     HashSet<MergeTuple> rightSide = Sets.newHashSet(leftSide);
 
@@ -38,7 +38,7 @@ public class MergeMusicTripletCreator
 
         if (summedSources <= sourcesCount
             && !AbstractionUtils.hasOverlap(leftSources, rightTuple.getIntSources())) {
-          MergeMusicTriplet triplet = new MergeMusicTriplet(leftTuple, rightTuple);
+          MergeTriplet triplet = new MergeTriplet(leftTuple, rightTuple);
           triplet.setBlockingLabel(leftTuple.getBlockingLabel());
 
 //          LOG.info("MMTC 4: " + triplet.toString());

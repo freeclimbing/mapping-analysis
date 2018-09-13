@@ -4,14 +4,14 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Triplet;
 import org.apache.flink.graph.Vertex;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 
 /**
  * Provide a transformation from MusicTriplet to Triplet<Long, ObjectMap, NullValue>.
  */
 class MusicTripletToTripletFunction
-    implements MapFunction<MergeMusicTriplet, Triplet<Long, ObjectMap, ObjectMap>> {
+    implements MapFunction<MergeTriplet, Triplet<Long, ObjectMap, ObjectMap>> {
   private DataDomain dataDomain;
   private String newSource;
 
@@ -26,7 +26,7 @@ class MusicTripletToTripletFunction
   }
 
   @Override
-  public Triplet<Long, ObjectMap, ObjectMap> map(MergeMusicTriplet triplet) throws Exception {
+  public Triplet<Long, ObjectMap, ObjectMap> map(MergeTriplet triplet) throws Exception {
     Vertex<Long, ObjectMap> source;
     Vertex<Long, ObjectMap> target;
 

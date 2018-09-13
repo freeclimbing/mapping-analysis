@@ -2,17 +2,17 @@ package org.mappinganalysis.model.functions.merge;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 
 /**
  */
 public class SortMusicMapFunction
-    implements MapFunction<MergeMusicTriplet, MergeMusicTriplet> {
+    implements MapFunction<MergeTriplet, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(SortMusicMapFunction.class);
 
   @Override
-  public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
+  public MergeTriplet map(MergeTriplet triplet) throws Exception {
     if (triplet.getSrcId() > triplet.getTrgId()) {
       MergeTuple tmpTuple = triplet.getSrcTuple();
 

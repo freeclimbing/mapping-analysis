@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
@@ -112,17 +112,17 @@ public class NCBenchmarkParts implements ProgramDescription {
                   .map(new MergeTupleCreator(BlockingStrategy.STANDARD_BLOCKING, DataDomain.NC, 4))
                   .filter(new SourceCountRestrictionFilter<>(DataDomain.NC, sourcesCount));
 
-              SimilarityComputation<MergeMusicTriplet,
-                  MergeMusicTriplet> similarityComputation
+              SimilarityComputation<MergeTriplet,
+                  MergeTriplet> similarityComputation
                   = new SimilarityComputation
-                  .SimilarityComputationBuilder<MergeMusicTriplet,
-                  MergeMusicTriplet>()
+                  .SimilarityComputationBuilder<MergeTriplet,
+                  MergeTriplet>()
                   .setSimilarityFunction(new MergeNcSimilarity(metric))
                   .setStrategy(SimilarityStrategy.MERGE)
                   .setThreshold(mergeThreshold)
                   .build();
 
-              DataSet<MergeMusicTriplet> initialWorkingSet = null;
+              DataSet<MergeTriplet> initialWorkingSet = null;
 
             /* Blocking (MUSIC/NC only) */
               if (blockingStrategy == BlockingStrategy.STANDARD_BLOCKING) {

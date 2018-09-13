@@ -3,7 +3,7 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -15,11 +15,11 @@ import java.util.Set;
  * Merge implementation for music dataset.
  */
 public class DualMergeMusicMapper
-    implements FlatMapFunction<MergeMusicTriplet, MergeTuple> {
+    implements FlatMapFunction<MergeTriplet, MergeTuple> {
   private static final Logger LOG = Logger.getLogger(DualMergeMusicMapper.class);
 
   @Override
-  public void flatMap(MergeMusicTriplet triplet, Collector<MergeTuple> out) throws Exception {
+  public void flatMap(MergeTriplet triplet, Collector<MergeTuple> out) throws Exception {
     MergeTuple priority = triplet.getSrcTuple();
     MergeTuple minor = triplet.getTrgTuple();
 
@@ -119,8 +119,8 @@ public class DualMergeMusicMapper
     MergeTuple fakeCluster = new MergeTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 
-//    LOG.info("fake: " + fakeCluster.toString());
-//    LOG.info("merged: " + mergedCluster.toString());
+    LOG.info("fake: " + fakeCluster.toString());
+    LOG.info("merged: " + mergedCluster.toString());
 
     out.collect(fakeCluster);
 //    LOG.info("fake: " + fakeCluster.toString());

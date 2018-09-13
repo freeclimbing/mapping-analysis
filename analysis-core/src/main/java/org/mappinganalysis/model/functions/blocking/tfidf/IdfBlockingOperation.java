@@ -18,7 +18,7 @@ import org.apache.flink.graph.library.GSAConnectedComponents;
 import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 
@@ -26,7 +26,7 @@ import org.mappinganalysis.model.ObjectMap;
  * tf idf blocking
  */
 public class IdfBlockingOperation
-    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(IdfBlockingOperation.class);
   private DataSet<MergeTuple> inputData;
   private final static String[] STOP_WORDS = {
@@ -50,7 +50,7 @@ public class IdfBlockingOperation
   }
 
   @Override
-  public DataSet<MergeMusicTriplet> createResult() {
+  public DataSet<MergeTriplet> createResult() {
     DataSet<Tuple2<Long, String>> preparedInputData = inputData
         .map(new PrepareInputMapper());
 
@@ -102,9 +102,9 @@ public class IdfBlockingOperation
         .join(ccVertices)
         .where(0)
         .equalTo(0)
-        .with(new JoinFunction<MergeMusicTriplet, Vertex<Long, Long>, MergeMusicTriplet>() {
+        .with(new JoinFunction<MergeTriplet, Vertex<Long, Long>, MergeTriplet>() {
           @Override
-          public MergeMusicTriplet join(MergeMusicTriplet triplet, Vertex<Long, Long> second) throws Exception {
+          public MergeTriplet join(MergeTriplet triplet, Vertex<Long, Long> second) throws Exception {
             triplet.setBlockingLabel(second.getValue().toString());
             return triplet;
           }
@@ -172,12 +172,12 @@ public class IdfBlockingOperation
   private static class JoinIdfSecondFunction
       implements JoinFunction<Tuple4<Long,Long,MergeTuple,Integer>,
       MergeTuple,
-      MergeMusicTriplet> {
+      MergeTriplet> {
     @Override
-    public MergeMusicTriplet join(
+    public MergeTriplet join(
         Tuple4<Long, Long, MergeTuple, Integer> first,
         MergeTuple second) throws Exception {
-      return new MergeMusicTriplet(first.f2, second);
+      return new MergeTriplet(first.f2, second);
     }
   }
 

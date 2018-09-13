@@ -2,7 +2,7 @@ package org.mappinganalysis.model.functions.merge;
 
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtils;
@@ -14,7 +14,7 @@ import java.io.Serializable;
  * Add restrictions if only 1 similarity is available. TODO look MeanAggregationMode
  */
 public class MergeMusicSimilarity
-    extends SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet>
+    extends SimilarityFunction<MergeTriplet, MergeTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeMusicSimilarity.class);
   private MeanAggregationFunction aggregationFunction;
@@ -43,7 +43,7 @@ public class MergeMusicSimilarity
    * @return updated triplet
    */
   @Override
-  public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
+  public MergeTriplet map(MergeTriplet triplet) throws Exception {
     Double artistLabelAlbumSim = getAttributeSimilarity(Constants.ARTIST_TITLE_ALBUM, triplet);
     Double yearSim = getAttributeSimilarity(Constants.YEAR, triplet);
     Double lengthSim = getAttributeSimilarity(Constants.LENGTH, triplet);
@@ -74,7 +74,7 @@ public class MergeMusicSimilarity
     return triplet;
   }
 
-  private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet) {
+  private Double getAttributeSimilarity(String attrName, MergeTriplet triplet) {
     switch (attrName) {
       case Constants.ARTIST_TITLE_ALBUM:
         return SimCompUtils.handleString(Constants.LABEL, triplet, metric);

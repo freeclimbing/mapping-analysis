@@ -504,6 +504,77 @@ public class NcBaseTest {
     assertEquals(1, 1);
   }
 
+
+  @Test
+  public void staticNCTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    final String graphPath = NcBaseTest.class
+              .getResource("/data/nc/10s2/").getFile();
+
+//    final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +
+//        "/user/saeedi/5p/inputGraphs/config1_th0.7/";
+    LogicalGraph logicalGraph = Utils
+        .getGradoopGraph(graphPath, env);
+    Graph<Long, ObjectMap, NullValue> graph = Utils
+        .getInputGraph(logicalGraph, Constants.NC, env);
+
+//    graph = graph.filterOnVertices(vertex -> {
+//          if (vertex.getValue().getNumber().startsWith("2861")) {
+//            System.out.println(vertex.toString());
+//            return true;
+//          }
+//          else {
+//            return false;
+//          }
+//        });
+
+//    System.out.println(
+//        .count());
+
+//    graph.filterOnVertices(x -> {
+//      if (x.getValue().getNumber().startsWith("286"))
+//    })
+
+    IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
+    config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
+    config.setMetric(Constants.COSINE_TRIGRAM);
+    config.setSimSortSimilarity(0.5);
+    config.setBlockingLength(6);
+    config.setMinResultSimilarity(0.8);
+    config.setExistingSourcesCount(5);
+
+    DataSet<Vertex<Long, ObjectMap>> clusters = graph
+        .run(new DefaultPreprocessing(config))
+        .run(new TypeGroupBy(env))
+        .run(new SimSort(config))
+        .getVertices()
+        .runOperation(new RepresentativeCreatorMultiMerge(config.getDataDomain()));
+
+    List<Vertex<Long, ObjectMap>> representatives = Lists.newArrayList();
+    clusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+    DataSet<Vertex<Long, ObjectMap>> resultingClusters = env
+        .fromCollection(representatives)
+        .runOperation(new MergeExecution(config));
+
+    representatives = Lists.newArrayList();
+    resultingClusters.output(new LocalCollectionOutputFormat<>(representatives));
+    env.execute();
+
+//    for (Vertex<Long, ObjectMap> representative : representatives) {
+//      System.out.println(representative);
+//    }
+
+    QualityUtils.printNcQuality(env.fromCollection(representatives),
+        config,
+        graphPath,
+        "local",
+        "10");
+  }
+
+
   /**
    * With Cosine Similarity, results look much better.
    */

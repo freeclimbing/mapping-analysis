@@ -2,7 +2,7 @@ package org.mappinganalysis.model.functions.simcomputation;
 
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.Utils;
 
 import java.io.Serializable;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  * Geo edge similarity function.
  */
 public class GeoTripletSimilarityFunction
-    extends SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet>
+    extends SimilarityFunction<MergeTriplet, MergeTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(GeoTripletSimilarityFunction.class);
 
@@ -21,7 +21,7 @@ public class GeoTripletSimilarityFunction
   }
 
   @Override
-  public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
+  public MergeTriplet map(MergeTriplet triplet) throws Exception {
 
     Double labelSimilarity = Utils.getGeoSimilarityAndSimplifyForMetric(
         triplet.getSrcTuple().getLabel(),

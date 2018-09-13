@@ -10,13 +10,13 @@ import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.functions.stats.StatisticsCountElementsRichMapFunction;
 import org.mappinganalysis.util.Constants;
 
 public class BlockSplitTripletCreator
-    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(BlockSplitTripletCreator.class);
   private DataSet<MergeTuple> inputTuples;
   private DataDomain dataDomain;
@@ -46,7 +46,7 @@ public class BlockSplitTripletCreator
    * blocking key == bkey
    */
   @Override
-  public DataSet<MergeMusicTriplet> createResult() {
+  public DataSet<MergeTriplet> createResult() {
     DataSet<Tuple3<Long, String, Integer>> bkeyPid = inputTuples
         .map(new TuplePartitionIdMapper());
 
@@ -86,18 +86,14 @@ public class BlockSplitTripletCreator
         .where(1).equalTo(0)
         .with(new ConcatAllInfoToVertex());
 
-    /* Load Balancing */
-    DataSet<Tuple5<Long, String, Long, Boolean, Integer>> tupleBkeyVindexIsLastReducerId
-        = tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
-        .flatMap(new ReplicateAndAssignReducerId())
-        .partitionCustom(new PartitionVertices(), 4);
-
     /* Make pairs */
     DataSet<Tuple2<Long, Long>> tripletCandidates
-        = tupleBkeyVindexIsLastReducerId
-        .groupBy(1)
+        = tupleBkeyVindexBlockSizePrevBlockPairsAllPairs
+        .flatMap(new ReplicateAndAssignReducerId()) // start: load balancing
+        .partitionCustom(new PartitionVertices(), 4) // end: load balancing
+        .groupBy(1) // start: make pairs (tuple, bkey, vIndex, isLast, reducerId)
         .sortGroup(2, Order.ASCENDING)
-        .combineGroup(new CreatePairedVertices())
+        .combineGroup(new CreatePairedVertices()) // end: make pairs
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.BLOCK_SPLIT_TRIPLET_ACCUMULATOR));
 

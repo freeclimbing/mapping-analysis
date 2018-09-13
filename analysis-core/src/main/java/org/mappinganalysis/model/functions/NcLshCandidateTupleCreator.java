@@ -17,7 +17,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.utils.ConnectedComponentIdAdder;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.lsh.LshCandidateCreator;
@@ -28,9 +28,9 @@ import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 public class NcLshCandidateTupleCreator
-    implements CustomUnaryOperation<MergeTuple, MergeMusicTriplet> {
+    implements CustomUnaryOperation<MergeTuple, MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(NcLshCandidateTupleCreator.class);
-  private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
+  private SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation;
   private ExecutionEnvironment env;
   private DataSet<MergeTuple> inputTuples;
   private int valueRangeLsh;
@@ -41,7 +41,7 @@ public class NcLshCandidateTupleCreator
    * Constructor for incremental clustering, ids are not (???)
    */
   public NcLshCandidateTupleCreator(
-      SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+      SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation,
       ExecutionEnvironment env) {
     this.similarityComputation = similarityComputation;
 //    this.domain = domain; // TODO USE domain
@@ -49,7 +49,7 @@ public class NcLshCandidateTupleCreator
   }
 
   public NcLshCandidateTupleCreator(
-      SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+      SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation,
       int valueRangeLsh,
       int numberOfFamilies,
       int numberOfHashesPerFamily,
@@ -67,7 +67,7 @@ public class NcLshCandidateTupleCreator
   }
 
   @Override
-  public DataSet<MergeMusicTriplet> createResult() {
+  public DataSet<MergeTriplet> createResult() {
     boolean isIdfOptimizeEnabled = true;
     /* LOG */
     boolean isLogEnabled = false;
@@ -94,7 +94,7 @@ public class NcLshCandidateTupleCreator
             numberOfFamilies,
             numberOfHashesPerFamily));
 
-    DataSet<MergeMusicTriplet> mergeMusicTriplets = lshCandidates
+    DataSet<MergeTriplet> mergeMusicTriplets = lshCandidates
 //          .map(x -> {
 //            if (isLogEnabled) { // && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
 ////                (x.f1 == 298L || x.f1 == 299L || x.f1 == 5013L || x.f1 == 5447L)) {
@@ -104,8 +104,8 @@ public class NcLshCandidateTupleCreator
 //          })
 //          .returns(new TypeHint<Tuple2<Long, Long>>() {
 //          })
-        .map(candidate -> new MergeMusicTriplet(candidate.f0, candidate.f1))
-        .returns(new TypeHint<MergeMusicTriplet>() {})
+        .map(candidate -> new MergeTriplet(candidate.f0, candidate.f1))
+        .returns(new TypeHint<MergeTriplet>() {})
         .join(inputTuples)
         .where(0)
         .equalTo(0)
@@ -121,7 +121,7 @@ public class NcLshCandidateTupleCreator
             }
             return x;
           })
-          .returns(new TypeHint<MergeMusicTriplet>() {})
+          .returns(new TypeHint<MergeTriplet>() {})
         ;
 
 //    try {
@@ -130,7 +130,7 @@ public class NcLshCandidateTupleCreator
 //      e.printStackTrace();
 //    }
 
-    MapOperator<MergeMusicTriplet, MergeMusicTriplet> finalMergeMusicT = mergeMusicTriplets
+    MapOperator<MergeTriplet, MergeTriplet> finalMergeMusicT = mergeMusicTriplets
         .runOperation(similarityComputation)
         .map(x -> {
           if (isLogEnabled) { // && (x.f0 == 298L || x.f0 == 299L || x.f0 == 5013L || x.f0 == 5447L) &&
@@ -139,13 +139,13 @@ public class NcLshCandidateTupleCreator
           }
           return x;
         })
-        .returns(new TypeHint<MergeMusicTriplet>() {
+        .returns(new TypeHint<MergeTriplet>() {
         });
 
     DataSet<Tuple1<Long>> coveredTuples = finalMergeMusicT
-        .flatMap(new FlatMapFunction<MergeMusicTriplet, Tuple1<Long>>() {
+        .flatMap(new FlatMapFunction<MergeTriplet, Tuple1<Long>>() {
           @Override
-          public void flatMap(MergeMusicTriplet triplet, Collector<Tuple1<Long>> out) throws Exception {
+          public void flatMap(MergeTriplet triplet, Collector<Tuple1<Long>> out) throws Exception {
             for (Long src : triplet.getSrcTuple().getClusteredElements()) {
               out.collect(new Tuple1<>(src));
             }
@@ -176,7 +176,7 @@ public class NcLshCandidateTupleCreator
         })
         .distinct();
 
-    DataSet<MergeMusicTriplet> recovered = inputCidContainedVertexTuple
+    DataSet<MergeTriplet> recovered = inputCidContainedVertexTuple
         .leftOuterJoin(coveredTuples)
         .where(1)
         .equalTo(0)
@@ -200,7 +200,7 @@ public class NcLshCandidateTupleCreator
         .with((left, right) -> right)
         .returns(new TypeHint<MergeTuple>() {})
         .map(tuple -> {
-          MergeMusicTriplet newTriplet = new MergeMusicTriplet(tuple, tuple, 0d);
+          MergeTriplet newTriplet = new MergeTriplet(tuple, tuple, 0d);
           if (newTriplet.f0 == null
               || newTriplet.f1 == null
               || newTriplet.f2 == null
@@ -217,7 +217,7 @@ public class NcLshCandidateTupleCreator
           }
           return newTriplet;
         })
-        .returns(new TypeHint<MergeMusicTriplet>() {});
+        .returns(new TypeHint<MergeTriplet>() {});
 
     mergeMusicTriplets = mergeMusicTriplets.union(recovered)
 //          .map(x -> {
@@ -256,9 +256,9 @@ public class NcLshCandidateTupleCreator
     return mergeMusicTriplets.join(vertices)
         .where(0)
         .equalTo(0)
-        .with(new JoinFunction<MergeMusicTriplet, Vertex<Long,ObjectMap>, MergeMusicTriplet>() {
+        .with(new JoinFunction<MergeTriplet, Vertex<Long,ObjectMap>, MergeTriplet>() {
           @Override
-          public MergeMusicTriplet join(MergeMusicTriplet triplet, Vertex<Long, ObjectMap> vertex) throws Exception {
+          public MergeTriplet join(MergeTriplet triplet, Vertex<Long, ObjectMap> vertex) throws Exception {
             triplet.setBlockingLabel(vertex.getValue().getCcId().toString());
             triplet.getSrcTuple().setBlockingLabel(vertex.getValue().getCcId().toString());
             triplet.getTrgTuple().setBlockingLabel(vertex.getValue().getCcId().toString());

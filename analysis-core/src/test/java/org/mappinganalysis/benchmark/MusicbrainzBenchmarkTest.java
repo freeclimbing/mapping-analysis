@@ -142,7 +142,7 @@ public class MusicbrainzBenchmarkTest {
   }
 
   @Test
-  public void gradoopInputTest() throws Exception {
+  public void optimizedMusicbrainzTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
 
     final String graphPath = "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000" +

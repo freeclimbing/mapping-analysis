@@ -12,7 +12,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.incremental.HungarianAlgorithmReduceFunction;
@@ -78,11 +78,11 @@ class SourceAdditionClustering
     }
 
 
-    SimilarityComputation<MergeMusicTriplet,
-        MergeMusicTriplet> similarityComputation
+    SimilarityComputation<MergeTriplet,
+        MergeTriplet> similarityComputation
         = new SimilarityComputation
-        .SimilarityComputationBuilder<MergeMusicTriplet,
-        MergeMusicTriplet>()
+        .SimilarityComputationBuilder<MergeTriplet,
+        MergeTriplet>()
         .setSimilarityFunction(similarityFunction)
         .setStrategy(SimilarityStrategy.MUSIC)
         .build();

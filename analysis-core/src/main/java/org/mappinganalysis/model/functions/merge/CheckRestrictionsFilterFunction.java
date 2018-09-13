@@ -5,7 +5,7 @@ import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
 import org.mappinganalysis.model.MergeGeoTuple;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 
@@ -37,7 +37,7 @@ public class CheckRestrictionsFilterFunction<T>
       MergeGeoTuple trg = triplet.getTrgTuple();
       trgIntSources = trg.getIntSources();
     } else {
-      MergeMusicTriplet triplet = (MergeMusicTriplet) input;
+      MergeTriplet triplet = (MergeTriplet) input;
 
       MergeTuple src = triplet.getSrcTuple();
       srcIntSources = src.getIntSources();

@@ -66,7 +66,7 @@ public class NcMajorityPropertiesGroupReduceFunction
 
     resultVertex.setValue(resultProps);
 
-//    LOG.info(resultVertex.getValue().toString());
+//    LOG.info("ncmajprop: " + resultVertex.getValue().toString());
 
     collector.collect(resultVertex);
   }

@@ -3,13 +3,13 @@ package org.mappinganalysis.model.functions.merge;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 
 /**
  */
 public class ComputePrepareMusicOperation
-    implements CustomUnaryOperation<MergeMusicTriplet, MergeMusicTriplet> {
-  private DataSet<MergeMusicTriplet> triplets;
+    implements CustomUnaryOperation<MergeTriplet, MergeTriplet> {
+  private DataSet<MergeTriplet> triplets;
   private DataDomain domain;
   private int sourcesCount;
 
@@ -19,12 +19,12 @@ public class ComputePrepareMusicOperation
   }
 
   @Override
-  public void setInput(DataSet<MergeMusicTriplet> inputData) {
+  public void setInput(DataSet<MergeTriplet> inputData) {
     this.triplets = inputData;
   }
 
   @Override
-  public DataSet<MergeMusicTriplet> createResult() {
+  public DataSet<MergeTriplet> createResult() {
     return triplets
         .map(new SortMusicMapFunction())
         .distinct(0,1) // needed

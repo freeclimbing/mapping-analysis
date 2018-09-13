@@ -2,7 +2,7 @@ package org.mappinganalysis.util.functions.filter;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.mappinganalysis.model.MergeGeoTriplet;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 
 /**
  * Basic minimal threshold function to reduce merge triplets in merge process.
@@ -24,8 +24,8 @@ public class MinThresholdFilterFunction<T> implements FilterFunction<T> {
     if (value instanceof MergeGeoTriplet) {
       MergeGeoTriplet triplet = (MergeGeoTriplet) value;
       return triplet.getSimilarity() >= threshold;
-    } else  if (value instanceof MergeMusicTriplet) {
-      MergeMusicTriplet triplet = (MergeMusicTriplet) value;
+    } else  if (value instanceof MergeTriplet) {
+      MergeTriplet triplet = (MergeTriplet) value;
       return triplet.getSimilarity() >= threshold;
     } else {
       return false;

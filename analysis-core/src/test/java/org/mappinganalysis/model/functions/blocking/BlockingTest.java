@@ -10,7 +10,7 @@ import org.mappinganalysis.TestBase;
 import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.csv.CSVDataSource;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
@@ -28,7 +28,7 @@ public class BlockingTest {
         = new CSVDataSource(path, vertexFileName, env)
         .getGraph();
 
-    DataSet<MergeMusicTriplet> triplets = baseGraph.getVertices()
+    DataSet<MergeTriplet> triplets = baseGraph.getVertices()
         .map(new MergeTupleCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.MUSIC,
@@ -52,7 +52,7 @@ public class BlockingTest {
         .filter(new SourceFilterFunction("1"))
         .union(baseGraph.getVertices().filter(new SourceFilterFunction("2")));
 
-    DataSet<MergeMusicTriplet> triplets = inVertices
+    DataSet<MergeTriplet> triplets = inVertices
         .map(new MergeTupleCreator(
             BlockingStrategy.STANDARD_BLOCKING,
             DataDomain.MUSIC,

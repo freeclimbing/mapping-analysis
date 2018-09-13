@@ -3,17 +3,17 @@ package org.mappinganalysis.model.functions.merge;
 import com.google.common.primitives.Doubles;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.log4j.Logger;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 
 /**
  */
 public class MaxSimMinIdMusicReducer
-    implements ReduceFunction<MergeMusicTriplet> {
+    implements ReduceFunction<MergeTriplet> {
   private static final Logger LOG = Logger.getLogger(MaxSimMinIdGeoReducer.class);
 
   @Override
-  public MergeMusicTriplet reduce(MergeMusicTriplet left,
-                                  MergeMusicTriplet right) throws Exception {
+  public MergeTriplet reduce(MergeTriplet left,
+                             MergeTriplet right) throws Exception {
 //    LOG.info(left.toString() + " #### " + right.toString());
 
     if (Doubles.compare(left.getSimilarity(), right.getSimilarity()) > 0 ) {

@@ -194,7 +194,7 @@ public class MergeExecution
       // prep phase initial working set
       DataSet<MergeTuple> preBlockingClusters = initialSolutionSet
           .filter(new SourceCountRestrictionFilter<>(domain, sourcesCount));
-      SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet> simFunction;
+      SimilarityFunction<MergeTriplet, MergeTriplet> simFunction;
       if (domain == DataDomain.MUSIC) {
         simFunction = new MergeMusicSimilarity(metric);
       } else if (domain == DataDomain.NC) {
@@ -203,18 +203,18 @@ public class MergeExecution
         throw new IllegalArgumentException("simfunction: Unsupported domain: " + domain);
       }
 
-      SimilarityComputation<MergeMusicTriplet,
-          MergeMusicTriplet> similarityComputation
+      SimilarityComputation<MergeTriplet,
+          MergeTriplet> similarityComputation
           = new SimilarityComputation
-          .SimilarityComputationBuilder<MergeMusicTriplet,
-          MergeMusicTriplet>()
+          .SimilarityComputationBuilder<MergeTriplet,
+          MergeTriplet>()
           .setSimilarityFunction(simFunction)
           .setStrategy(SimilarityStrategy.MERGE)
           .setThreshold(mergeThreshold)
           .build();
 
       // initial working set
-      DataSet<MergeMusicTriplet> initialWorkingSet;
+      DataSet<MergeTriplet> initialWorkingSet;
 
       /*
         Blocking (MUSIC/NC only)
@@ -227,8 +227,13 @@ public class MergeExecution
       } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
         initialWorkingSet = preBlockingClusters
             .runOperation(new BlockSplitTripletCreator())
-            .runOperation(similarityComputation);
+            .runOperation(similarityComputation)
+        .map(x -> {
+          System.out.println("blocking + sim: " + x.toString());
+          return x;
+        });
       } else if (blockingStrategy == BlockingStrategy.LSH_BLOCKING) {
+        // not working at the moment
         initialWorkingSet = preBlockingClusters.runOperation(
             new NcLshCandidateTupleCreator(
                 similarityComputation,
@@ -237,7 +242,8 @@ public class MergeExecution
                 numberOfHashesPerFamily,
                 env));
       } else if (blockingStrategy == BlockingStrategy.IDF_BLOCKING) {
-        DataSet<MergeMusicTriplet> idfPartTriplets = preBlockingClusters
+        // not working at the moment
+        DataSet<MergeTriplet> idfPartTriplets = preBlockingClusters
             .runOperation(new IdfBlockingOperation(2, env)) // TODO define support globally
             .runOperation(similarityComputation);
 
@@ -261,7 +267,7 @@ public class MergeExecution
               }
             });
 
-        DataSet<MergeMusicTriplet> simpleTriplets = simpleTuples
+        DataSet<MergeTriplet> simpleTriplets = simpleTuples
             .groupBy(10) // blocking key
             .reduceGroup(new MergeMusicTripletCreator(sourcesCount))
             .runOperation(similarityComputation);
@@ -272,13 +278,13 @@ public class MergeExecution
       }
 
       // initialize the iteration
-      DeltaIteration<MergeTuple, MergeMusicTriplet> iteration = initialSolutionSet
+      DeltaIteration<MergeTuple, MergeTriplet> iteration = initialSolutionSet
           .iterateDelta(initialWorkingSet, Integer.MAX_VALUE, 0);
 
       /*
         start step function - creates changed vertices and merges clusters
        */
-      DeltaIterateMergeMusicStepFunction stepFunction = new DeltaIterateMergeMusicStepFunction(
+      DeltaIterateMergeStepFunction stepFunction = new DeltaIterateMergeStepFunction(
           iteration.getWorkset(),
           similarityComputation,
           sourcesCount,

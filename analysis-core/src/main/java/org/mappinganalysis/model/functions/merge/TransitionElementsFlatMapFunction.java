@@ -6,7 +6,7 @@ import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.model.MergeGeoTriplet;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 
 /**
  */
@@ -35,7 +35,7 @@ public class TransitionElementsFlatMapFunction<T>
       out.collect(new Tuple2<>(triplet.getSrcId(), min));
       out.collect(new Tuple2<>(triplet.getTrgId(), min));
     } else {
-      MergeMusicTriplet triplet = (MergeMusicTriplet) input;
+      MergeTriplet triplet = (MergeTriplet) input;
       Long min = triplet.getSrcId() < triplet.getTrgId()
           ? triplet.getSrcId() : triplet.getTrgId();
 //            LOG.info("Transision: " + triplet.getSrcId() + " " + triplet.getTrgId() + " " + min);

@@ -11,7 +11,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.model.functions.simcomputation.SimilarityComputation;
 import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
@@ -21,17 +21,17 @@ import java.util.HashSet;
 /**
  * Flink delta iteration step function for music domain.
  */
-public class DeltaIterateMergeMusicStepFunction {
-  private static final Logger LOG = Logger.getLogger(DeltaIterateMergeMusicStepFunction.class);
+public class DeltaIterateMergeStepFunction {
+  private static final Logger LOG = Logger.getLogger(DeltaIterateMergeStepFunction.class);
   private DataDomain domain;
-  private DataSet<MergeMusicTriplet> workset;
-  private SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation;
+  private DataSet<MergeTriplet> workset;
+  private SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation;
   private int sourcesCount;
   private DataSet<MergeTuple> delta;
 
-  DeltaIterateMergeMusicStepFunction(
-      DataSet<MergeMusicTriplet> workset,
-      SimilarityComputation<MergeMusicTriplet, MergeMusicTriplet> similarityComputation,
+  DeltaIterateMergeStepFunction(
+      DataSet<MergeTriplet> workset,
+      SimilarityComputation<MergeTriplet, MergeTriplet> similarityComputation,
       int sourcesCount,
       DataDomain domain) {
     this.workset = workset;
@@ -43,7 +43,7 @@ public class DeltaIterateMergeMusicStepFunction {
   }
 
   public void compute() {
-    DataSet<MergeMusicTriplet> maxTriplets = getIterationMaxTriplets(workset);
+    DataSet<MergeTriplet> maxTriplets = getIterationMaxTriplets(workset);
 
     /*
       delta is the solution set which is changed over the iterations
@@ -66,13 +66,13 @@ public class DeltaIterateMergeMusicStepFunction {
         .flatMap(new TransitionElementsFlatMapFunction<>(domain));
 
     // remove workset triples containing max element src or trg
-    DataSet<MergeMusicTriplet> nextUnchangedWorkset = workset
+    DataSet<MergeTriplet> nextUnchangedWorkset = workset
         .runOperation(new WorksetNewClusterRemoveOperation<>(transitions))
         .map(x -> {
 //          LOG.info("nextUnchanged: " + x.toString());
           return x;
         })
-        .returns(new TypeHint<MergeMusicTriplet>() {});
+        .returns(new TypeHint<MergeTriplet>() {});
     // HOLD EXCLUDE 2
 
     workset = workset
@@ -83,7 +83,7 @@ public class DeltaIterateMergeMusicStepFunction {
     ;
   }
 
-  DataSet<MergeMusicTriplet> getWorkset() {
+  DataSet<MergeTriplet> getWorkset() {
     return workset;
   }
 
@@ -101,24 +101,27 @@ public class DeltaIterateMergeMusicStepFunction {
    * more than one triplet has highest similarity, take lowest entity id.
    * @return only maximal similarity triplet for each blocking key
    */
-  private static DataSet<MergeMusicTriplet> getIterationMaxTriplets(
-      DataSet<MergeMusicTriplet> workset) {
+  private static DataSet<MergeTriplet> getIterationMaxTriplets(
+      DataSet<MergeTriplet> workset) {
 
     // max sim, blocking key
     return workset.join(workset.groupBy(5).max(4))
         .where(4,5)
         .equalTo(4,5)
-        .with((first, second) -> first)
-        .returns(new TypeHint<MergeMusicTriplet>() {})
+        .with((first, second) -> {
+          System.out.println("FIRST: " + first.toString());
+          return first;
+        })
+        .returns(new TypeHint<MergeTriplet>() {})
         .groupBy(5)
         .sortGroup(0, Order.ASCENDING)
         .sortGroup(1, Order.ASCENDING)
-        .reduceGroup(new GroupReduceFunction<MergeMusicTriplet, MergeMusicTriplet>() {
+        .reduceGroup(new GroupReduceFunction<MergeTriplet, MergeTriplet>() {
           @Override
-          public void reduce(Iterable<MergeMusicTriplet> values,
-                             Collector<MergeMusicTriplet> out) throws Exception {
+          public void reduce(Iterable<MergeTriplet> values,
+                             Collector<MergeTriplet> out) throws Exception {
             HashSet<Long> processedSet = Sets.newHashSet();
-            for (MergeMusicTriplet value : values) {
+            for (MergeTriplet value : values) {
               if (!processedSet.contains(value.getSrcId())
                   && !processedSet.contains(value.getTrgId())) {
                 processedSet.add(value.getTrgId());

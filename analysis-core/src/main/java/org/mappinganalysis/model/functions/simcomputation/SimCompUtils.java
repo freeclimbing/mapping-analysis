@@ -1,6 +1,6 @@
 package org.mappinganalysis.model.functions.simcomputation;
 
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
@@ -9,7 +9,7 @@ import org.mappinganalysis.util.Utils;
  * MUSIC, NC
  */
 public class SimCompUtils {
-  public static Double handleNumber(MergeMusicTriplet triplet) {
+  public static Double handleNumber(MergeTriplet triplet) {
     String srcNumber = triplet.getSrcTuple().getNumber();
     String trgNumber = triplet.getTrgTuple().getNumber();
 
@@ -24,7 +24,7 @@ public class SimCompUtils {
     }
   }
 
-  public static Double handleString(String attrName, MergeMusicTriplet triplet, String metric) {
+  public static Double handleString(String attrName, MergeTriplet triplet, String metric) {
 //    System.out.println("simcomputils: " + attrName);
 //    System.out.println(triplet.toString());
     String left = triplet.getSrcTuple().getString(attrName);
@@ -34,14 +34,14 @@ public class SimCompUtils {
   }
 
 
-  public static Double handleLength(MergeMusicTriplet triplet) {
+  public static Double handleLength(MergeTriplet triplet) {
     Integer srcLength = triplet.getSrcTuple().getLength();
     Integer trgLength = triplet.getTrgTuple().getLength();
 
     return getDoubleSimilarity(srcLength, trgLength);
   }
 
-  public static Double handleYear(MergeMusicTriplet triplet) {
+  public static Double handleYear(MergeTriplet triplet) {
     Integer srcYear = triplet.getSrcTuple().getYear();
     Integer trgYear = triplet.getTrgTuple().getYear();
 

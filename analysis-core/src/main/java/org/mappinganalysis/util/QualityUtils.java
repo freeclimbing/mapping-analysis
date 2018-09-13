@@ -325,13 +325,13 @@ public class QualityUtils {
         .map(new StatisticsCountElementsRichMapFunction<>(
             Constants.TRUE_POSITIVE_ACCUMULATOR));
 
-//    if (clusterExecution.equals("a")) {
+    if (clusterExecution.equals("local")) {
       Collection<Tuple2<Long, Long>> representatives = Lists.newArrayList();
       truePositives.output(new LocalCollectionOutputFormat<>(representatives));
-//    } else {
-//      new JSONDataSink(inputPath, jobName.concat("tp"))
-//          .writeTuples(truePositives);
-//    }
+    } else {
+      new JSONDataSink(inputPath, jobName.concat("tp"))
+          .writeTuples(truePositives);
+    }
 
     JobExecutionResult jobResult = config
         .getExecutionEnvironment()

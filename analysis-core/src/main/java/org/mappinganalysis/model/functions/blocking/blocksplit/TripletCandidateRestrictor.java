@@ -4,7 +4,7 @@ import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.mappinganalysis.io.impl.DataDomain;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.MergeTuple;
 import org.mappinganalysis.util.AbstractionUtils;
 import org.mappinganalysis.util.Constants;
@@ -16,7 +16,7 @@ class TripletCandidateRestrictor
     implements FlatJoinFunction<
     Tuple2<MergeTuple,Long>,
     MergeTuple,
-    MergeMusicTriplet> {
+    MergeTriplet> {
 
   private DataDomain dataDomain;
   private String newSource;
@@ -30,8 +30,8 @@ class TripletCandidateRestrictor
   public void join(
       Tuple2<MergeTuple, Long> first,
       MergeTuple second,
-      Collector<MergeMusicTriplet> out) throws Exception {
-    MergeMusicTriplet triplet = new MergeMusicTriplet(first.f0, second);
+      Collector<MergeTriplet> out) throws Exception {
+    MergeTriplet triplet = new MergeTriplet(first.f0, second);
 
     if (!newSource.equals(Constants.EMPTY_STRING)) {
       boolean sourceContains = AbstractionUtils
@@ -48,7 +48,7 @@ class TripletCandidateRestrictor
     }
   }
 
-  private void createResult(Collector<MergeMusicTriplet> out, MergeMusicTriplet triplet) {
+  private void createResult(Collector<MergeTriplet> out, MergeTriplet triplet) {
     if (!AbstractionUtils.hasOverlap(
         triplet.getSrcTuple().getIntSources(),
         triplet.getTrgTuple().getIntSources())) {

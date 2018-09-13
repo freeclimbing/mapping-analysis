@@ -2,7 +2,7 @@ package org.mappinganalysis.model.functions.merge;
 
 import org.apache.log4j.Logger;
 import org.mappinganalysis.graph.SimilarityFunction;
-import org.mappinganalysis.model.MergeMusicTriplet;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.simcomputation.MeanAggregationFunction;
 import org.mappinganalysis.model.functions.simcomputation.SimCompUtils;
@@ -14,7 +14,7 @@ import java.io.Serializable;
  * compute similarities for nc dataset within merge phase based on properties
  */
 public class MergeNcSimilarity
-    extends SimilarityFunction<MergeMusicTriplet, MergeMusicTriplet>
+    extends SimilarityFunction<MergeTriplet, MergeTriplet>
     implements Serializable {
   private static final Logger LOG = Logger.getLogger(MergeMusicSimilarity.class);
   private MeanAggregationFunction aggregationFunction;
@@ -30,7 +30,7 @@ public class MergeNcSimilarity
   }
 
   @Override
-  public MergeMusicTriplet map(MergeMusicTriplet triplet) throws Exception {
+  public MergeTriplet map(MergeTriplet triplet) throws Exception {
     Double labelSimilarity = getAttributeSimilarity(Constants.LABEL, triplet, metric);
     Double artistSimilarity = getAttributeSimilarity(Constants.ARTIST, triplet, metric);
     Double albumSimilarity = getAttributeSimilarity(Constants.ALBUM, triplet, metric);
@@ -69,10 +69,12 @@ public class MergeNcSimilarity
 //      LOG.info("precheck: " + values.toString());
 //    }
 
+//    System.out.println("mergeNCSim: " + triplet.toString());
+
     return triplet;
   }
 
-  private Double getAttributeSimilarity(String attrName, MergeMusicTriplet triplet, String metric) {
+  private Double getAttributeSimilarity(String attrName, MergeTriplet triplet, String metric) {
     switch (attrName) {
       case Constants.LABEL:
         return SimCompUtils.handleString(Constants.LABEL, triplet, metric);

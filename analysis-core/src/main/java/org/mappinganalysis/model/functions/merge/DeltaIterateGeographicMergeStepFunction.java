@@ -12,6 +12,7 @@ import org.mappinganalysis.util.functions.LeftMinusRightSideJoinFunction;
 /**
  * Merge step function logic.
  */
+@Deprecated
 public class DeltaIterateGeographicMergeStepFunction {
   private static final Logger LOG = Logger.getLogger(DeltaIterateGeographicMergeStepFunction.class);
   private DataDomain domain;
