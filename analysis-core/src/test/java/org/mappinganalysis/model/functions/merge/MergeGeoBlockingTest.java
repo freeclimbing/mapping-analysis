@@ -35,7 +35,7 @@ public class MergeGeoBlockingTest {
   private static final Logger LOG = Logger.getLogger(MergeGeoBlockingTest.class);
 
   /**
-   * Musicbrainz test for csimq paper with input from Alieh.
+   * Settlements test for csimq paper with input from Alieh.
    */
   @Test
   public void csimqSettlementTest() throws Exception {
@@ -48,7 +48,8 @@ public class MergeGeoBlockingTest {
     List<String> sourceList = Lists.newArrayList(
         "5_0.75/"
 //        ,
-//        "6_0.8/", "7_0.85/", "8_0.9/"
+//        "6_0.8/", "7_0.85/",
+// "8_0.9/"
     );
     for (String dataset : sourceList) {
       String pmPath = graphPath.concat(dataset);
@@ -77,42 +78,43 @@ public class MergeGeoBlockingTest {
       /*
         tmp solution
        */
-      String outPath = "/home/markus/repos/mapping-analysis/analysis-core/target/test-classes/data/settlement-benchmark/csimq/";
-      String reprOut = outPath.concat("/output/");
-      new JSONDataSink(reprOut, "repr")
-          .writeVertices(representatives);
+//      String outPath = "/home/markus/repos/mapping-analysis/analysis-core/target/test-classes/data/settlement-benchmark/csimq/";
+//      String reprOut = outPath.concat("/output/");
+//      new JSONDataSink(reprOut, "repr")
+//          .writeVertices(representatives);
+//
+//      env.execute();
 
-      env.execute();
 //        printQuality(dataset, 0.0, simThreshold, representatives, Constants.EMPTY_STRING, 4);
 //      }
 
 
-      // merge
-      DataSet<Vertex<Long, ObjectMap>> diskRepresentatives =
-          new org.mappinganalysis.io.impl.json.JSONDataSource(
-              reprOut.concat("output/repr/"), true, env)
-              .getVertices();
-
-//      for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
-        double mergeThreshold = 0.8;
-//            (double) mergeFor / 100;
-
-        DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
-            .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
-            .runOperation(new MergeExecution(
-                DataDomain.GEOGRAPHY,
-                config.getMetric(),
-                mergeThreshold,
-                4,
-                env));
+//      // merge
+//      DataSet<Vertex<Long, ObjectMap>> diskRepresentatives =
+//          new org.mappinganalysis.io.impl.json.JSONDataSource(
+//              reprOut.concat("output/repr/"), true, env)
+//              .getVertices();
+//
+////      for (int mergeFor = 50; mergeFor <= 95; mergeFor += 5) {
+//        double mergeThreshold = 0.8;
+////            (double) mergeFor / 100;
+//
+//        DataSet<Vertex<Long, ObjectMap>> merged = diskRepresentatives
+//            .runOperation(new MergeInitialization(DataDomain.GEOGRAPHY))
+//            .runOperation(new MergeExecution(
+//                DataDomain.GEOGRAPHY,
+//                config.getMetric(),
+//                mergeThreshold,
+//                4,
+//                env));
 
         Config properties = new Config(DataDomain.GEOGRAPHY, env);
         properties.setProperty(Constants.DATASET, dataset);
-        properties.put(Constants.MERGE_THRESHOLD, mergeThreshold);
+//        properties.put(Constants.MERGE_THRESHOLD, mergeThreshold);
         properties.put(Constants.SIMSORT_THRESHOLD, simThreshold);
         properties.put(Constants.SOURCE_COUNT_LABEL, 4);
 
-        QualityUtils.printGeoQuality(merged, properties);
+        QualityUtils.printGeoQuality(representatives, properties);
 //      }
     }
   }

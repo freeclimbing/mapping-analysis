@@ -55,7 +55,8 @@ public class OptimizedMusicbrainzBenchmark implements ProgramDescription {
             "args[2]: blocking key length");
     final String inputPath = args[0];
     final String vertexFileName = args[1];
-    final int blockingLength = (Ints.tryParse(args[2]) == null) ? 4 : Ints.tryParse(args[2]);
+    Integer tmpBlockingKey = Ints.tryParse(args[2]);
+    final int blockingLength = (tmpBlockingKey == null) ? 4 : tmpBlockingKey;
 
     IncrementalConfig config = new IncrementalConfig(DataDomain.MUSIC, env);
     config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
@@ -90,6 +91,18 @@ public class OptimizedMusicbrainzBenchmark implements ProgramDescription {
         .writeVertices(vertices);
     JobExecutionResult result = env.execute(DEC_JOB);
     System.out.println(DEC_JOB + " needed " + result.getNetRuntime(TimeUnit.SECONDS) + " seconds.");
+
+
+    DataSet<Vertex<Long, ObjectMap>> statsVertices = new JSONDataSource(
+        inputPath, DECOMPOSITION_STEP, env)
+        .getVertices();
+
+    QualityUtils.printNewMusicQuality(statsVertices,
+        config,
+        inputPath,
+        evalResultList,
+        vertexFileName,
+        "cluster");
 
     /*
       merge

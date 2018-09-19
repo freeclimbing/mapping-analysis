@@ -88,11 +88,6 @@ public class DeltaIterateMergeStepFunction {
   }
 
   DataSet<MergeTuple> getDelta() {
-    delta = delta.map(x -> {
-//      LOG.info(x.toString());
-      return x;
-    })
-        .returns(new TypeHint<MergeTuple>() {});
     return delta;
   }
 
@@ -104,39 +99,46 @@ public class DeltaIterateMergeStepFunction {
   private static DataSet<MergeTriplet> getIterationMaxTriplets(
       DataSet<MergeTriplet> workset) {
 
+
     // max sim, blocking key
-    return workset.join(workset.groupBy(5).max(4))
-        .where(4,5)
-        .equalTo(4,5)
-        .with((first, second) -> {
-          System.out.println("FIRST: " + first.toString());
-          return first;
-        })
-        .returns(new TypeHint<MergeTriplet>() {})
-        .groupBy(5)
-        .sortGroup(0, Order.ASCENDING)
-        .sortGroup(1, Order.ASCENDING)
-        .reduceGroup(new GroupReduceFunction<MergeTriplet, MergeTriplet>() {
-          @Override
-          public void reduce(Iterable<MergeTriplet> values,
-                             Collector<MergeTriplet> out) throws Exception {
-            HashSet<Long> processedSet = Sets.newHashSet();
-            for (MergeTriplet value : values) {
-              if (!processedSet.contains(value.getSrcId())
-                  && !processedSet.contains(value.getTrgId())) {
-                processedSet.add(value.getTrgId());
-                processedSet.add(value.getSrcId());
-
-                out.collect(value);
-              }
-            }
-          }
-        });
-
-//
-//    return workset
+//    return workset.join(workset.groupBy(5).max(4))
+//        .where(5,4)
+//        .equalTo(5,4)
+//        .with((first, second) -> {
+//          System.out.println("FIRST: " + first.toString());
+//          return first;
+//        })
+//        .returns(new TypeHint<MergeTriplet>() {})
 //        .groupBy(5)
-//        .reduce(new MaxSimMinIdMusicReducer());
+//        .sortGroup(0, Order.ASCENDING)
+//        .sortGroup(1, Order.ASCENDING)
+//        .first(1)
+////        .reduceGroup(new GroupReduceFunction<MergeTriplet, MergeTriplet>() {
+////          @Override
+////          public void reduce(Iterable<MergeTriplet> values,
+////                             Collector<MergeTriplet> out) throws Exception {
+////            HashSet<Long> processedSet = Sets.newHashSet();
+////            for (MergeTriplet value : values) {
+////              if (!processedSet.contains(value.getSrcId())
+////                  && !processedSet.contains(value.getTrgId())) {
+////                processedSet.add(value.getTrgId());
+////                processedSet.add(value.getSrcId());
+////
+////                out.collect(value);
+////              }
+////            }
+////          }
+////        })
+//        .map(x-> {
+//          System.out.println("final return: " + x.toString());
+//          return x;
+//        })
+//        .returns(new TypeHint<MergeTriplet>() {});
+
+
+    return workset
+        .groupBy(5)
+        .reduce(new MaxSimMinIdMusicReducer());
   }
 
   /**

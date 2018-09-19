@@ -14,9 +14,7 @@ import org.mappinganalysis.util.Constants;
  */
 class TripletCandidateRestrictor
     implements FlatJoinFunction<
-    Tuple2<MergeTuple,Long>,
-    MergeTuple,
-    MergeTriplet> {
+    Tuple2<MergeTuple,Long>, MergeTuple, MergeTriplet> {
 
   private DataDomain dataDomain;
   private String newSource;

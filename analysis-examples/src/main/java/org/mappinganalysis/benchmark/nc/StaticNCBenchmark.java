@@ -1,6 +1,7 @@
 package org.mappinganalysis.benchmark.nc;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.flink.api.common.ProgramDescription;
 import org.apache.flink.api.java.DataSet;
@@ -37,17 +38,24 @@ public class StaticNCBenchmark implements ProgramDescription {
    * DINA 2018 paper comparison Split+Merge numbers static approach.
    */
   public static void main(String[] args) throws Exception {
-    Preconditions.checkArgument(args.length == 2,
-        "args[0]: input dir, args[1]: blocking length (2, 4, default: 6)");
+    Preconditions.checkArgument(args.length == 3,
+        "args[0]: input dir, " +
+            "args[1]: blocking length (2, 4, default: 6)" +
+            "args[2]: mergeThreshold (minResultSim)");
     final String inputPath = args[0];
-    final int blockingLength = (Ints.tryParse(args[1]) == null) ? 6 : Ints.tryParse(args[1]);
+    final int blockingLength = (Ints.tryParse(args[1]) == null)
+        ? 6 : Ints.tryParse(args[1]);
+
+    final Double preThreshold = Doubles.tryParse(args[2]);
+    final double mergeThreshold = (preThreshold == null)
+        ? 0.8 : preThreshold;
 
     IncrementalConfig config = new IncrementalConfig(DataDomain.NC, env);
     config.setBlockingStrategy(BlockingStrategy.BLOCK_SPLIT);
     config.setMetric(Constants.COSINE_TRIGRAM);
     config.setSimSortSimilarity(0.5);
     config.setBlockingLength(blockingLength);
-    config.setMinResultSimilarity(0.8);
+    config.setMinResultSimilarity(mergeThreshold);
     config.setExistingSourcesCount(5);
 
     // Read input graph

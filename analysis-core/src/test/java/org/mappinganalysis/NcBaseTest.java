@@ -3,7 +3,9 @@ package org.mappinganalysis;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -11,16 +13,22 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.GroupReduceOperator;
+import org.apache.flink.api.java.operators.JoinOperator;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
+import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
@@ -36,6 +44,7 @@ import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -505,6 +514,11 @@ public class NcBaseTest {
   }
 
 
+  /**
+   * TODO really TEST this setting and check that most of the
+   * TODO merges are done in the first iteration step
+   */
+
   @Test
   public void staticNCTest() throws Exception {
     env = TestBase.setupLocalEnvironment();
@@ -555,6 +569,12 @@ public class NcBaseTest {
     clusters.output(new LocalCollectionOutputFormat<>(representatives));
     env.execute();
 
+    QualityUtils.printNcQuality(env.fromCollection(representatives),
+        config,
+        graphPath,
+        "local",
+        "10");
+
     DataSet<Vertex<Long, ObjectMap>> resultingClusters = env
         .fromCollection(representatives)
         .runOperation(new MergeExecution(config));
@@ -574,6 +594,110 @@ public class NcBaseTest {
         "10");
   }
 
+
+  @Test
+  public void groupingTest() throws Exception {
+    List<Tuple4<Integer, Integer, String, Double>> tupleList = Lists.newArrayList();
+
+    tupleList.add(new Tuple4<>(10, 11, "def", 0.8));
+    tupleList.add(new Tuple4<>(8, 9, "abc", 0.8));
+    tupleList.add(new Tuple4<>(6, 7, "abc", 0.8));
+    tupleList.add(new Tuple4<>(6, 7, "abc", 0.5));
+    tupleList.add(new Tuple4<>(6, 7, "abc", 0.1));
+    tupleList.add(new Tuple4<>(2, 3, "def", 0.85));
+    tupleList.add(new Tuple4<>(12, 13, "abc", 0.85));
+    tupleList.add(new Tuple4<>(0, 1, "abc", 0.8));
+
+    tupleList.add(new Tuple4<>(4, 5, "abc", 0.7));
+
+    env = TestBase.setupLocalEnvironment();
+
+    DataSource<Tuple4<Integer, Integer, String, Double>> tuples = env.fromCollection(tupleList);
+
+    System.out.println("### only max: ");
+
+    // this is now wrong
+    tuples.groupBy(2).max(3).andMin(0).andMin(1).print();
+//
+//    System.out.println("### only maxby: ");
+//
+//    tuples.groupBy(2).maxBy(3).print();
+//
+//    System.out.println("### maxby + join:");
+//
+//    tuples.join(tuples.groupBy(2).maxBy(3))
+//        .where(2,3)
+//        .equalTo(2,3)
+//        .with(((first, second) -> first))
+//        .returns(new TypeHint<Tuple4<Integer, Integer, String, Double>>() {})
+//        .print();
+
+    System.out.println("\n### max + join:");
+
+    DataSet<Tuple4<Integer, Integer, String, Double>> tmpResult = tuples
+        .join(tuples.groupBy(2).max(3))
+        .where(2, 3)
+        .equalTo(2, 3)
+        .with(((first, second) -> first))
+        .returns(new TypeHint<Tuple4<Integer, Integer, String, Double>>() {
+        });
+
+//    tuples.groupBy(2).reduce(
+//        new ReduceFunction<Tuple4<Integer, Integer, String, Double>>() {
+//      @Override
+//      public Tuple4<Integer, Integer, String, Double> reduce(
+//          Tuple4<Integer, Integer, String, Double> left,
+//          Tuple4<Integer, Integer, String, Double> right) throws Exception {
+//        if (left.f3.doubleValue() == right.f3) {
+//          if (left.f0 < right.f0) {
+//            return left;
+//          } else if (left.f0 == right.f0.intValue()) {
+//            if (left.f1 < right.f1) {
+//              return left;
+//            } else {
+//              return right;
+//            }
+//          } else {
+//            return right;
+//          }
+//        }
+//        return left.f3 > right.f3 ? left : right;
+//      }
+//    }).print();
+
+
+    DataSet<Tuple4<Integer, Integer, String, Double>> preResult = tmpResult
+        .groupBy(2)
+        .sortGroup(0, Order.ASCENDING)
+        .sortGroup(1, Order.ASCENDING)
+        .first(1);
+//        .reduceGroup(new GroupReduceFunction<Tuple4<Integer, Integer, String, Double>,
+//            Tuple4<Integer, Integer, String, Double>>() {
+//          @Override
+//          public void reduce(
+//              Iterable<Tuple4<Integer, Integer, String, Double>> values,
+//              Collector<Tuple4<Integer, Integer, String, Double>> out)
+//              throws Exception {
+//            HashSet<Integer> processedSet = Sets.newHashSet();
+//            for (Tuple4<Integer, Integer, String, Double> value : values) {
+//              System.out.println("processing: " + value.toString());
+//
+//              if (!processedSet.contains(value.f0)
+//                  && !processedSet.contains(value.f1)) {
+//                processedSet.add(value.f1);
+//                processedSet.add(value.f0);
+//
+//                out.collect(value);
+//              }
+//            }
+//          }
+//        });
+
+
+    preResult.print();
+//    tuples.print();
+
+  }
 
   /**
    * With Cosine Similarity, results look much better.

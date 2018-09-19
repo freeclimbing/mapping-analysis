@@ -26,7 +26,7 @@ public class MergeTriplet
                       MergeTuple right) {
     setIdAndTuples(left, right);
     this.f4 = 0d;
-    this.f5 = Constants.EMPTY_STRING;
+    this.f5 = left.getBlockingLabel();
   }
 
   public MergeTriplet(Long srcTuple,

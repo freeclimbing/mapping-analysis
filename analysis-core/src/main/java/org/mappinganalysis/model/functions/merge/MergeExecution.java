@@ -227,11 +227,7 @@ public class MergeExecution
       } else if (blockingStrategy == BlockingStrategy.BLOCK_SPLIT) {
         initialWorkingSet = preBlockingClusters
             .runOperation(new BlockSplitTripletCreator())
-            .runOperation(similarityComputation)
-        .map(x -> {
-          System.out.println("blocking + sim: " + x.toString());
-          return x;
-        });
+            .runOperation(similarityComputation);
       } else if (blockingStrategy == BlockingStrategy.LSH_BLOCKING) {
         // not working at the moment
         initialWorkingSet = preBlockingClusters.runOperation(

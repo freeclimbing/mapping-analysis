@@ -1,10 +1,14 @@
 package org.mappinganalysis.model.functions.blocking;
 
+import org.apache.flink.api.common.operators.Order;
+import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
+import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
 import org.mappinganalysis.TestBase;
 import org.mappinganalysis.benchmark.MusicbrainzBenchmarkTest;
@@ -14,10 +18,47 @@ import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.blocksplit.BlockSplitTripletCreator;
 import org.mappinganalysis.model.functions.merge.MergeTupleCreator;
+import org.mappinganalysis.util.Constants;
+import org.mappinganalysis.util.Utils;
 import org.mappinganalysis.util.functions.filter.SourceFilterFunction;
 
 public class BlockingTest {
   private static ExecutionEnvironment env = TestBase.setupLocalEnvironment();
+
+  @Test
+  public void blockSplitDistributionTest() throws Exception {
+    String inputPath =
+        "hdfs://bdclu1.informatik.intern.uni-leipzig.de:9000/" +
+            "user/saeedi/10p/inputGraphs/initialGraph/";
+    LogicalGraph logicalGraph = Utils
+        .getGradoopGraph(inputPath, env);
+    Utils
+        .getInputGraph(logicalGraph, Constants.NC, env)
+    .getVertices()
+        .map(vertex -> {
+          String blockingKey = Utils.getBlockingKey(
+              BlockingStrategy.BLOCK_SPLIT,
+              Constants.NC,
+              Utils.getNcBlockingLabel(
+                  vertex.getValue().getArtist(), vertex.getValue().getLabel(), 6),
+              6);
+          return new Tuple2<>(blockingKey, 1);
+        })
+        .returns(new TypeHint<Tuple2<String, Integer>>() {})
+        .groupBy(0)
+        .sum(1)
+        .map(tuple -> new Tuple2<>(tuple.f1, 1))
+        .returns(new TypeHint<Tuple2<Integer, Integer>>() {})
+        .groupBy(0)
+        .sum(1)
+        .setParallelism(1)
+        .sortPartition(0, Order.DESCENDING)
+//        .first(1000)
+        .print();
+
+
+
+  }
 
   @Test
   public void getGraphTest() throws Exception {
