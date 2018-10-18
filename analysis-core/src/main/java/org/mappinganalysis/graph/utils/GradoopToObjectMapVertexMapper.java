@@ -1,5 +1,6 @@
 package org.mappinganalysis.graph.utils;
 
+import com.google.common.base.Preconditions;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.graph.Vertex;
 import org.apache.log4j.Logger;
@@ -44,15 +45,10 @@ public class GradoopToObjectMapVertexMapper
     for (String property : gradoopProperties.getKeys()) {
       switch (property) {
         case Constants.REC_ID:
-          String idString = gradoopProperties.get(property).getString();
-          if (domain.equals(Constants.NC)) {
-            reuseVertex.setId(Utils.getIdFromNcId(idString));
-          } else if (domain.equals(Constants.GEO)) {
-            reuseVertex.setId(Long.valueOf(idString));
-          }
+          reuseVertex.setId(Utils.getIdFromNcId(gradoopProperties, domain));
           break;
-        case "field": // alieh data
-            properties.setArtistTitleAlbum(gradoopProperties.get("field").getString());
+        case Constants.FIELD: // alieh data
+            properties.setArtistTitleAlbum(gradoopProperties.get(property).getString());
             break;
         case Constants.SURNAME:
         case Constants.TITLE:
@@ -64,6 +60,7 @@ public class GradoopToObjectMapVertexMapper
           properties.setAlbum(gradoopProperties.get(property).getString());
           break;
         case Constants.TYPE:
+        case Constants.SRC_ID:
           properties.setDataSource(gradoopProperties.get(property).getString());
           break;
         case Constants.NAME:
@@ -73,10 +70,6 @@ public class GradoopToObjectMapVertexMapper
         case Constants.POSTCOD:
         case Constants.NUMBER:
           properties.setNumber(gradoopProperties.get(property).getString());
-          break;
-        case Constants.CLS_ID:
-          properties.put(Constants.CLS_ID,
-              Long.parseLong(gradoopProperties.get(property).getString()));
           break;
         case Constants.LANGUAGE:
           properties.setLanguage(MusicUtils.fixLanguage(
@@ -106,6 +99,8 @@ public class GradoopToObjectMapVertexMapper
 
       properties.setGeoProperties(lat, lon);
     }
+
+    Preconditions.checkNotNull(properties.getDataSource(), "no data source parsed");
 
     reuseVertex.setValue(properties);
     return reuseVertex;

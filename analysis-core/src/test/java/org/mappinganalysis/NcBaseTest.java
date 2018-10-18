@@ -3,9 +3,7 @@ package org.mappinganalysis;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.operators.Order;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -13,22 +11,17 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.io.LocalCollectionOutputFormat;
 import org.apache.flink.api.java.operators.DataSource;
-import org.apache.flink.api.java.operators.GroupReduceOperator;
-import org.apache.flink.api.java.operators.JoinOperator;
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.util.Collector;
 import org.apache.log4j.Logger;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.junit.Test;
 import org.mappinganalysis.io.impl.DataDomain;
 import org.mappinganalysis.io.impl.json.JSONDataSink;
 import org.mappinganalysis.io.impl.json.JSONDataSource;
-import org.mappinganalysis.model.MergeTriplet;
 import org.mappinganalysis.model.ObjectMap;
 import org.mappinganalysis.model.functions.blocking.BlockingStrategy;
 import org.mappinganalysis.model.functions.decomposition.representative.RepresentativeCreatorMultiMerge;
@@ -44,7 +37,6 @@ import org.mappinganalysis.util.config.IncrementalConfig;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -249,6 +241,32 @@ public class NcBaseTest {
         .print();
   }
 
+  @Test
+  public void ncTwoDifferentFormatTest() throws Exception {
+    env = TestBase.setupLocalEnvironment();
+
+    List<String> pathList = Lists.newArrayList(
+        "/data/nc/no-clsid-format/", // i.e., /user/saeedi/5p/inputGraphs/th_0.80/
+        "/data/nc/10s5/" // i.e., /user/saeedi/5p/inputGraphs/config1_th0.7/
+    );
+
+    for (String path : pathList) {
+      final String graphPath = NcBaseTest.class
+          .getResource(path).getFile();
+
+      LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
+      Utils.getInputGraph(logicalGraph, Constants.NC, env)
+          .getVertices()
+          .filter(vertex -> {
+            assertTrue(vertex.getId().toString().length() > 8);
+            assertTrue(vertex.getValue().getDataSource() != null
+                && !vertex.getValue().getDataSource().isEmpty());
+
+            return true;
+          })
+          .collect();
+    }
+  }
   /**
    * test for csimq paper with alieh
    */

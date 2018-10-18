@@ -43,9 +43,9 @@ public class StaticNCBenchmark implements ProgramDescription {
             "args[1]: blocking length (2, 4, default: 6)" +
             "args[2]: mergeThreshold (minResultSim)");
     final String inputPath = args[0];
-    final int blockingLength = (Ints.tryParse(args[1]) == null)
-        ? 6 : Ints.tryParse(args[1]);
-
+    final Integer blockingLengthArg = Ints.tryParse(args[1]);
+    final int blockingLength = (blockingLengthArg == null)
+        ? 6 : blockingLengthArg;
     final Double preThreshold = Doubles.tryParse(args[2]);
     final double mergeThreshold = (preThreshold == null)
         ? 0.8 : preThreshold;
@@ -80,6 +80,7 @@ public class StaticNCBenchmark implements ProgramDescription {
         inputPath, DECOMPOSITION, env)
         .getVertices();
 
+    /** get perfect mapping from input graph TODO */
     QualityUtils.printNcQuality(statsVertices,
         config,
         inputPath,

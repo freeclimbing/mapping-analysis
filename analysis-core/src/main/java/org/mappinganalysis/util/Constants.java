@@ -254,7 +254,8 @@ public class Constants {
   public static final String DS_COUNT = "ds-count";
 
   public static final String REC_ID = "recId";
-  public static final String CLS_ID = "clsId";
+  public static final String SRC_ID = "srcId";
+  public static final String FIELD = "field";
 
   /**
    * Music vocabulary

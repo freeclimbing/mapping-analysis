@@ -2,6 +2,7 @@ package org.mappinganalysis.util;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Longs;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -412,10 +413,15 @@ public class QualityUtils {
       ExecutionEnvironment env) throws Exception {
     LogicalGraph logicalGraph = Utils.getGradoopGraph(graphPath, env);
 
+    // add gold cluster ids (components) retrieved from vertex ids
     DataSet<Tuple2<Long, Long>> clsIds = Utils.getInputGraph(logicalGraph, Constants.NC, env)
         .getVertices()
-        .map(vertex -> new Tuple2<>(vertex.getId(),
-            (long) vertex.getValue().get("clsId")))
+        .map(vertex -> {
+          String vertexIdString = vertex.getId().toString();
+          vertexIdString = vertexIdString.substring(vertexIdString.length() - 8);
+
+          return new Tuple2<>(vertex.getId(), Longs.tryParse(vertexIdString));
+        })
         .returns(new TypeHint<Tuple2<Long, Long>>() {});
 
     return clsIds

@@ -119,12 +119,9 @@ public class DualMergeMusicMapper
     MergeTuple fakeCluster = new MergeTuple(
         priority.getId() > minor.getId() ? priority.getId() : minor.getId());
 
-    LOG.info("fake: " + fakeCluster.toString());
-    LOG.info("merged: " + mergedCluster.toString());
-
-    out.collect(fakeCluster);
 //    LOG.info("fake: " + fakeCluster.toString());
-//    LOG.info("merge: " + mergedCluster.toString());
+//    LOG.info("merged: " + mergedCluster.toString());
+    out.collect(fakeCluster);
     out.collect(mergedCluster);
   }
 }

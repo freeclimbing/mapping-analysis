@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.log4j.Logger;
 import org.gradoop.common.model.impl.pojo.Edge;
 import org.gradoop.common.model.impl.pojo.Vertex;
+import org.mappinganalysis.util.Constants;
 import org.mappinganalysis.util.Utils;
 
 public class GradoopToGellyEdgeJoinFunction
@@ -19,7 +20,7 @@ public class GradoopToGellyEdgeJoinFunction
   public Edge join(Edge edge, Vertex vertex) throws Exception {
 //    LOG.info("recid prop value: " + vertex.getPropertyValue("recId").toString());
     if (vertex.hasProperty("recId")) {
-      long recId = Utils.getIdFromNcId(vertex.getPropertyValue("recId").toString());
+      long recId = Utils.getIdFromNcId(vertex.getProperties(), Constants.NC);
       if (side == 0) {
         edge.setProperty("left", recId);
       } else {

@@ -10,6 +10,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.java.DataSet;
@@ -21,6 +22,7 @@ import org.apache.flink.graph.Graph;
 import org.apache.flink.graph.Vertex;
 import org.apache.flink.types.NullValue;
 import org.apache.log4j.Logger;
+import org.gradoop.common.model.impl.properties.Properties;
 import org.gradoop.flink.io.impl.json.JSONDataSource;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.functions.epgm.Id;
@@ -460,7 +462,46 @@ public class Utils {
 
   /**
    * Helper method for input data from North Carolina dataset recId.
+   *
+   * recId can contain source: 02119728s1
+   * redId without source: 07783356
    */
+  public static long getIdFromNcId(Properties properties, String domain) {
+    String idString = properties.get(Constants.REC_ID).getString();
+
+    if (domain.equals(Constants.NC)) {
+      /*
+      easy way
+      possibility 1: with 's' and therefore with source
+      */
+      if (idString.contains("s")) {
+        return Utils.getIdFromNcId(idString);
+      }
+      /*
+      harder way
+      possibility 2: no 's' contained
+      */
+      else {
+        String tmpSrc;
+        if (properties.containsKey(Constants.TYPE)) {
+          tmpSrc = properties.get(Constants.TYPE).getString();
+        } else if (properties.containsKey(Constants.SRC_ID)) {
+          tmpSrc = properties.get(Constants.SRC_ID).getString();
+        } else {
+          throw new IllegalArgumentException(
+              "no source entry contained while parsing gradoop vertex");
+        }
+        tmpSrc = tmpSrc.replaceAll("[a-zA-Z]", "");
+
+        return Longs.tryParse(tmpSrc.concat(idString));
+      }
+    } else if (domain.equals(Constants.GEO)) {
+      return Longs.tryParse(idString);
+    } else {
+      throw new IllegalArgumentException("domain not supported: " + domain);
+    }
+  }
+
   public static long getIdFromNcId(String idString) {
     String result = Constants.EMPTY_STRING;
 
